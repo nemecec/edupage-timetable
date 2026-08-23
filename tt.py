@@ -89,11 +89,12 @@ STRINGS = {
         "schoolColours": "Colours from the timetable",
         "customColours": "Colours of my own",
         "appName": "School timetable",
+        "filter": "Filter",
+        "groupsHeading": "Show only these study groups:",
         "titleHeading": "Title:",
         "titleWho": "Student name",
         "titleSchool": "School name",
         "titleClass": "Class name",
-        "namePlaceholder": "e.g. Ere",
         "print": "Print…",
         "backup": "Settings as JSON",
         "reset": "Reset groups & colours",
@@ -170,11 +171,12 @@ STRINGS = {
         "schoolColours": "Tunniplaani värvid",
         "customColours": "Minu omad värvid",
         "appName": "Kooli tunniplaan",
+        "filter": "Filter",
+        "groupsHeading": "Näita ainult neid õpperühmi:",
         "titleHeading": "Pealkiri:",
         "titleWho": "Õpilase nimi",
         "titleSchool": "Kooli nimi",
         "titleClass": "Klassi nimi",
-        "namePlaceholder": "nt Ere",
         "print": "Prindi…",
         "backup": "Seaded JSON-ina",
         "reset": "Lähtesta rühmad ja värvid",
@@ -1188,7 +1190,8 @@ PAGE = """<!DOCTYPE html>
   </div>
 </div>
 
-<div class="panel">
+<details class="panel" id="filterPanel" open>
+  <summary data-i18n="filter"></summary>
   <div class="row">
     <div class="field primary">
       <label for="school" data-i18n="school"></label>
@@ -1199,8 +1202,13 @@ PAGE = """<!DOCTYPE html>
       <select id="klass"></select>
     </div>
   </div>
-  <div class="row" id="divisions"></div>
-</div>
+  <div class="row" id="groupsRow">
+    <div class="field" style="width:100%">
+      <label data-i18n="groupsHeading"></label>
+      <div class="row" id="divisions" style="margin-top:6px;padding-top:0;border-top:none"></div>
+    </div>
+  </div>
+</details>
 
 <details class="panel" id="displayPanel">
   <summary data-i18n="display"></summary>
@@ -1211,7 +1219,7 @@ PAGE = """<!DOCTYPE html>
         <div class="line">
           <label class="inline"><input type="checkbox" id="showWho">
             <span data-i18n="titleWho"></span></label>
-          <input type="text" id="who" data-i18n-ph="namePlaceholder" size="18">
+          <input type="text" id="who" size="18">
         </div>
         <div class="line">
           <label class="inline"><input type="checkbox" id="showSchool">
@@ -1326,7 +1334,7 @@ const defaults = () => ({
   school: DATA.initialSchool, klass: DATA.initialClass,
   lang: DATA.lang, picks: {}, colors: {}, who: {}, events: {},
   titleSchool: {}, titleClass: {},
-  showWho: true, showSchool: true, showClass: true,
+  showWho: false, showSchool: true, showClass: true,
   showTeacher: true, teacherName: "short",
   showRoom: true, showGroup: true,
   showSubject: true, subjectName: "full",
@@ -2197,9 +2205,9 @@ function renderClasses() {
 function renderDivisions() {
   const host = document.getElementById("divisions");
   const cls = currentClass(), mine = picks();
+  document.getElementById("groupsRow").hidden = !cls.v.length;
   if (!cls.v.length) {
-    host.innerHTML = '<div class="field"><label>' + esc(t("groups")) + "</label>" +
-      "<span>" + esc(t("noGroups")) + "</span></div>";
+    host.innerHTML = "";
     return;
   }
   /* The heading says what is taught in the group. Divisions carrying more
@@ -2382,6 +2390,25 @@ typed(who, "who");
 typed(eventsBox, "events");
 typed(titleSchool, "titleSchool");
 typed(titleClass, "titleClass");
+
+/* These two show what the timetable calls itself until someone types over it.
+   An empty box would mean retyping the whole name to change one word, so
+   entering the field fills in what is currently shown; leaving it having
+   changed nothing empties it again, so the setting stays unset and the shared
+   link stays short. */
+for (const [field, key] of [[titleSchool, "titleSchool"], [titleClass, "titleClass"]]) {
+  field.addEventListener("focus", () => {
+    if (!field.value) field.value = field.placeholder;
+  });
+  field.addEventListener("blur", () => {
+    if (field.value.trim() === field.placeholder) field.value = "";
+    if (field.value !== perClass(key)) {
+      state[key][picksKey()] = field.value;
+      save();
+      paint();
+    }
+  });
+}
 /* Never write over a field the reader is in the middle of typing into. The two
    title fields show what the timetable calls itself until someone types over
    it, so an empty box and the school's own wording look the same. */

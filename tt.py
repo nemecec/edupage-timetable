@@ -103,11 +103,11 @@ STRINGS = {
         "shareHint": ("Everything you have chosen is in the address bar, so a "
                       "bookmark or a shared link carries it along."),
         "qrHint": "Edit it here",
-        "colourHint": ("Click a swatch to change one, or click any lesson in the "
-                       "timetable itself. Click a colour's code to copy it, ready "
-                       "to paste into an event of your own."),
-        "copyColour": "Copy this colour",
-        "copied": "copied",
+        "colourHint": ("Type or paste a colour code to set one, or click the "
+                       "swatch beside it, or click any lesson in the timetable "
+                       "itself. Clicking a code selects it, ready to copy into an "
+                       "event of your own."),
+        "colourCode": "Colour code — type, paste, or copy",
         "groups": "Groups",
         "noGroups": "This class is not split into groups.",
         "all": "— all —",
@@ -188,11 +188,11 @@ STRINGS = {
         "shareHint": ("Kõik valikud on aadressiribal, nii et järjehoidja või "
                       "jagatud link kannab need kaasa."),
         "qrHint": "Muuda siin",
-        "colourHint": ("Klõpsa värvikastil või tunniplaanis tunnil, et värvi "
-                       "muuta. Klõpsa värvikoodil, et see kopeerida ja oma "
-                       "sündmusele kleepida."),
-        "copyColour": "Kopeeri see värv",
-        "copied": "kopeeritud",
+        "colourHint": ("Kirjuta või kleebi värvikood, klõpsa selle kõrval oleval "
+                       "värvikastil või klõpsa tunniplaanis tunnil. Koodil "
+                       "klõpsamine valib selle, et saaksid oma sündmusele "
+                       "kopeerida."),
+        "colourCode": "Värvikood — kirjuta, kleebi või kopeeri",
         "groups": "Rühmad",
         "noGroups": "See klass ei ole rühmadeks jaotatud.",
         "all": "— kõik —",
@@ -1190,10 +1190,12 @@ PAGE = """<!DOCTYPE html>
   .legend { display: flex; flex-wrap: wrap; gap: 8px 14px; }
   .legend .item { display: flex; align-items: center; gap: 6px; font-size: 12px; }
   .legend input[type=color] { width: 26px; height: 20px; padding: 0; border: 1px solid var(--line); }
-  .legend .hex { font: 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
-                 padding: 2px 4px; border: 1px solid transparent; border-radius: 4px;
-                 background: none; color: var(--muted); cursor: copy; }
-  .legend .hex:hover { border-color: var(--line); color: var(--accent); background: #fff; }
+  .legend .hex { font: 11px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+                 width: 7.5em; padding: 3px 5px; border: 1px solid transparent;
+                 border-radius: 4px; background: none; color: var(--muted); }
+  .legend .hex:hover { border-color: var(--line); background: #fff; }
+  .legend .hex:focus { border-color: var(--accent); background: #fff; color: inherit;
+                       outline: none; }
   .count { color: var(--muted); font-size: 12px; margin: 10px 0; }
   @media print { body { padding: 0; } .panel, .count { display: none; } }
 </style>
@@ -1845,6 +1847,14 @@ function qrSvg(text, side) {
          '<path d="' + path + '" fill="#000"/></svg>';
 }
 
+/* A typed colour, as hex, or nothing if it is not one yet. Anything CSS knows
+   is allowed — "orange" and "#f80" both land on a colour the picker can show. */
+function asHex(text) {
+  const want = (text || "").trim();
+  if (!want || !(window.CSS && CSS.supports && CSS.supports("color", want))) return "";
+  return cssColour(want).toUpperCase();
+}
+
 /* Named CSS colours have to become hex before luminance can be measured. */
 const _swatch = document.createElement("span");
 function cssColour(value) {
@@ -2197,7 +2207,7 @@ function setColour(subject, value) {
   if (swatch && swatch.value !== value) swatch.value = value;
   const code = [...document.querySelectorAll("#legend .hex")]
                  .find(x => x.dataset.subject === subject);
-  if (code) code.textContent = value;
+  if (code && code !== document.activeElement) code.value = value;
 }
 
 function renderLegend(shown) {
@@ -2209,26 +2219,26 @@ function renderLegend(shown) {
   document.getElementById("legend").innerHTML = used.map(s =>
     '<span class="item"><input type="color" data-subject="' + esc(s) + '" value="' +
     colorFor(s).bg + '">' + esc(s) +
-    '<button type="button" class="hex" data-subject="' + esc(s) + '" title="' +
-    esc(t("copyColour")) + '">' + esc(colorFor(s).bg) + "</button></span>").join("");
+    '<input type="text" class="hex" spellcheck="false" data-subject="' + esc(s) +
+    '" value="' + esc(colorFor(s).bg) + '" size="8" title="' +
+    esc(t("colourCode")) + '"></span>').join("");
   document.querySelectorAll("#legend input[type=color]").forEach(inp => {
     inp.addEventListener("input", () => {
       setColour(inp.dataset.subject, inp.value);
     });
   });
-  document.querySelectorAll("#legend .hex").forEach(button => {
-    button.addEventListener("click", async () => {
-      const code = colorFor(button.dataset.subject).bg;
-      try {
-        await navigator.clipboard.writeText(code);
-        button.textContent = t("copied");
-      } catch (e) {
-        const range = document.createRange();
-        range.selectNodeContents(button);
-        window.getSelection().removeAllRanges();
-        window.getSelection().addRange(range);
-      }
-      setTimeout(() => { button.textContent = colorFor(button.dataset.subject).bg; }, 1500);
+  /* The code is the control, not a caption: focusing it selects the whole
+     value so it can be copied straight into an event, and typing or pasting a
+     new one sets the colour. The system colour panel behind the swatch is a
+     different program's window and cannot be given a field like this. */
+  document.querySelectorAll("#legend .hex").forEach(field => {
+    field.addEventListener("focus", () => field.select());
+    field.addEventListener("input", () => {
+      const hex = asHex(field.value);
+      if (hex) setColour(field.dataset.subject, hex);
+    });
+    field.addEventListener("blur", () => {
+      field.value = colorFor(field.dataset.subject).bg;
     });
   });
 }

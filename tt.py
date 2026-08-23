@@ -2373,10 +2373,21 @@ document.getElementById("applySettings").addEventListener("click", () => {
 /* Text fields keep the state up to date on every keystroke but only repaint on
    a short timer, so a long line is never typed against a redraw. The redraw
    leaves the legend alone as well: rebuilding it would close an open picker. */
-function typed(el, bag) {
+/* Typing into a field whose line is switched off would do nothing visible, so
+   writing something turns it back on. Clearing it does not turn it off again:
+   emptying a box is not the same as asking for the line to go away. */
+function reveal(key) {
+  if (!key || state[key]) return;
+  state[key] = true;
+  const box = document.getElementById(key);
+  if (box) box.checked = true;
+}
+
+function typed(el, bag, shows) {
   let timer = 0;
   el.addEventListener("input", () => {
     state[bag][picksKey()] = el.value;
+    if (el.value.trim()) reveal(shows);
     save();
     clearTimeout(timer);
     timer = setTimeout(paint, 150);
@@ -2386,17 +2397,18 @@ const who = document.getElementById("who");
 const eventsBox = document.getElementById("events");
 const titleSchool = document.getElementById("titleSchool");
 const titleClass = document.getElementById("titleClass");
-typed(who, "who");
+typed(who, "who", "showWho");
 typed(eventsBox, "events");
-typed(titleSchool, "titleSchool");
-typed(titleClass, "titleClass");
+typed(titleSchool, "titleSchool", "showSchool");
+typed(titleClass, "titleClass", "showClass");
 
 /* These two show what the timetable calls itself until someone types over it.
    An empty box would mean retyping the whole name to change one word, so
    entering the field fills in what is currently shown; leaving it having
    changed nothing empties it again, so the setting stays unset and the shared
    link stays short. */
-for (const [field, key] of [[titleSchool, "titleSchool"], [titleClass, "titleClass"]]) {
+for (const [field, key, shows] of [[titleSchool, "titleSchool", "showSchool"],
+                                   [titleClass, "titleClass", "showClass"]]) {
   field.addEventListener("focus", () => {
     if (!field.value) field.value = field.placeholder;
   });
@@ -2404,6 +2416,7 @@ for (const [field, key] of [[titleSchool, "titleSchool"], [titleClass, "titleCla
     if (field.value.trim() === field.placeholder) field.value = "";
     if (field.value !== perClass(key)) {
       state[key][picksKey()] = field.value;
+      if (field.value.trim()) reveal(shows);
       save();
       paint();
     }

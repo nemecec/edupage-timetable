@@ -25,7 +25,8 @@ jobs:
       - name: Lint the templates
         run: |
           pip install --quiet cfn-lint
-          cfn-lint deploy/dns.yaml deploy/site.yaml --region us-east-1
+          cfn-lint deploy/cert.yaml --region us-east-1
+          cfn-lint deploy/dns.yaml deploy/site.yaml --region eu-central-1
 
   # One fetch, two builds, compared — run by hand, never on a push. The school's
   # server is someone else's, and it starts refusing an address that has asked

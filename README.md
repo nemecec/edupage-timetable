@@ -161,8 +161,8 @@ pickers still override them.
 
 `deploy/` puts the page on the public internet at
 [little.tools/timetable](https://little.tools/timetable/): a private S3
-bucket behind CloudFront, with a nightly GitHub Actions run that reruns this
-generator and writes the result back. Nothing sits in the request path, so a
+bucket in Frankfurt behind CloudFront, with a nightly GitHub Actions run that
+reruns this generator and writes the result back. Nothing sits in the request path, so a
 failed build leaves the previous page serving, and the workflow authenticates
 with a short-lived OIDC token rather than a stored key. See
 [deploy/README.md](deploy/README.md) — about $0.50 a month for the hosted zone,

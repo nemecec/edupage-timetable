@@ -47,11 +47,19 @@ jobs:
         with:
           python-version: "3.13"
 
+      # site.conf decides where the bucket is; nothing here keeps its own copy.
+      - name: Where does the site live?
+        id: conf
+        if: steps.ready.outputs.ready == 'true'
+        run: |
+          . deploy/site.conf
+          echo "region=$REGION" >> "$GITHUB_OUTPUT"
+
       - uses: aws-actions/configure-aws-credentials@v5
         if: steps.ready.outputs.ready == 'true'
         with:
           role-to-assume: ${{ secrets.AWS_PUBLISH_ROLE }}
-          aws-region: us-east-1
+          aws-region: ${{ steps.conf.outputs.region }}
 
       - name: Build and publish
         if: steps.ready.outputs.ready == 'true'

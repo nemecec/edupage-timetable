@@ -25,16 +25,34 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      # Before the AWS side exists there is nothing to publish into, and a red
+      # cross on a repository that is merely not deployed yet says nothing
+      # useful. Deploy it (see deploy/README.md) and this starts working.
+      - name: Is there somewhere to publish to?
+        id: ready
+        env:
+          ROLE: ${{ secrets.AWS_PUBLISH_ROLE }}
+        run: |
+          if [ -n "$ROLE" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::AWS_PUBLISH_ROLE is not set — skipping. Run deploy/deploy.sh secrets."
+          fi
+
       - uses: actions/setup-python@v6
+        if: steps.ready.outputs.ready == 'true'
         with:
           python-version: "3.13"
 
       - uses: aws-actions/configure-aws-credentials@v5
+        if: steps.ready.outputs.ready == 'true'
         with:
           role-to-assume: ${{ secrets.AWS_PUBLISH_ROLE }}
           aws-region: us-east-1
 
       - name: Build and publish
+        if: steps.ready.outputs.ready == 'true'
         env:
           BUCKET: ${{ secrets.AWS_BUCKET }}
           DISTRIBUTION: ${{ secrets.AWS_DISTRIBUTION }}

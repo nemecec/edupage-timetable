@@ -55,6 +55,21 @@ jobs:
           . deploy/site.conf
           echo "region=$REGION" >> "$GITHUB_OUTPUT"
 
+      - name: What does the token actually claim?
+        if: steps.ready.outputs.ready == 'true'
+        run: |
+          token=$(curl -sS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=sts.amazonaws.com" | python3 -c \
+            "import sys,json; print(json.load(sys.stdin)['value'])")
+          python3 - "$token" <<'EOF'
+          import base64, json, sys
+          head, body = sys.argv[1].split(".")[:2]
+          d = lambda p: json.loads(base64.urlsafe_b64decode(p + "=" * (-len(p) % 4)))
+          print("iss  =", d(body).get("iss"))
+          print("sub  =", d(body).get("sub"))
+          print("alg  =", d(head).get("alg"), " kid =", d(head).get("kid", "")[:16])
+          EOF
+
       - uses: aws-actions/configure-aws-credentials@v5
         if: steps.ready.outputs.ready == 'true'
         with:

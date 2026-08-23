@@ -1126,8 +1126,12 @@ PAGE = """<!DOCTYPE html>
   .ev.brk { background: repeating-linear-gradient(135deg, #f4f5f7 0 6px, #eceef1 6px 12px);
             color: #6b7280; border-color: #e2e5ea; }
   .ev.brk .what { font-weight: 500; font-size: 11px; }
-  .ev.mine { border-width: 2px; border-color: rgba(0,0,0,.34); z-index: 2;
-             box-shadow: 0 1px 4px rgba(0,0,0,.28); }
+  /* A personal event is drawn over the timetable, so it needs to be above it —
+     but it should not look like a different kind of thing. Given one colour it
+     is a lesson in every visible respect; the heavier border is for an event
+     that asked for its own text colour, where the border follows it. */
+  .ev.mine { z-index: 2; }
+  .ev.mine.outlined { border-width: 2px; box-shadow: 0 1px 4px rgba(0,0,0,.28); }
   input[type=text] { font: inherit; padding: 5px 8px; border: 1px solid var(--line);
                      border-radius: 5px; background: #fff; color: inherit; }
   .hiddenpick { position: absolute; width: 1px; height: 1px; padding: 0; border: none;
@@ -1811,9 +1815,10 @@ function renderTimeline(school, cls, shown, mine, scale) {
         ? '<div class="when">' + esc(when) + "</div>" +
           '<div class="what">' + esc(it.label) + "</div>"
         : '<div class="what">' + esc(when + " " + it.label) + "</div>";
-      h += '<div class="ev mine' + (height < 40 ? " tight" : "") + '" style="' +
-           place(it, over ? 16 : 0) + "background:" + it.bg + ";color:" + fg + ";border-color:" +
-           (it.fg ? fg : "rgba(0,0,0,.34)") + '" title="' +
+      h += '<div class="ev mine' + (it.fg ? " outlined" : "") +
+           (height < 40 ? " tight" : "") + '" style="' + place(it, over ? 16 : 0) +
+           "background:" + it.bg + ";color:" + fg +
+           (it.fg ? ";border-color:" + fg : "") + '" title="' +
            esc(it.label + "\\n" + when) + '">' + body + "</div>";
     }
     h += "</div>";
@@ -1922,7 +1927,7 @@ function mineCell(list) {
   if (!list.length) return "<td></td>";
   return "<td>" + list.slice().sort((p, q) => p.a - q.a).map(ev =>
     '<div class="lesson" style="background:' + ev.bg + ";color:" + eventFg(ev) +
-    ";border:1px solid " + (ev.fg || "transparent") +
+    (ev.fg ? ";border:1px solid " + ev.fg : "") +
     '"><div class="name">' + esc(ev.label) + "</div>" +
     '<div class="time">' + esc(hhmm(ev.a) + "–" + hhmm(ev.z)) +
     "</div></div>").join("") + "</td>";

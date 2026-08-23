@@ -271,8 +271,11 @@ deterministic, just a different deterministic assignment.
   own: *line 1: "#zzzzzz" is not a colour*.
 
   In the timeline, events are drawn **on top of** the timetable rather than
-  beside it: the lessons keep their full width and the event lies over them,
-  bordered and shadowed. It is inset a little where something is underneath, so
+  beside it: the lessons keep their full width and the event lies over them.
+  Given one colour it is drawn exactly as a lesson is, so borrowing a subject's
+  colour code produces a box indistinguishable from that subject's. Name a text
+  colour as well and it gains a border in that colour, since asking for one is
+  asking to be told apart. It is inset a little where something is underneath, so
   what it covers still shows at the edge, and drawn full width where the hour is
   empty — an evening activity covers nothing, and narrowing it there would look
   like a mistake rather than a layer. That is what makes an event usable for marking

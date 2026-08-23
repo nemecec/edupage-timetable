@@ -1450,8 +1450,13 @@ function sourceUrl(school) {
 function renderSubtitle(school) {
   const stamp = DATA.built ? esc(t("footer.built", DATA.built)) : "";
   const link = '<a href="' + esc(sourceUrl(school)) + '">' + esc(t("sourceLink")) + "</a>";
+  /* school.v is the line the school configured to print under its own
+     timetable — "Kehtivus: 24/08/2026-18/12/2026". It is the school's text, so
+     translating it is not on the table, and it earns no room here: where it
+     carries a date, school.t already says the same thing, and at two of the
+     four schools it is the label with nothing after it. */
   document.getElementById("subtitle").innerHTML =
-    [esc(school.t), esc(school.v), link, stamp].filter(Boolean).join(" · ") +
+    [esc(school.t), link, stamp].filter(Boolean).join(" · ") +
     '<div class="unofficial">' + esc(t("footer.disclaimer")) + "</div>";
 }
 

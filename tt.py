@@ -1276,17 +1276,19 @@ try {
    hands it to someone else. Only what differs from the defaults goes in, which
    keeps a typical link short — short enough to put in a QR code. The fragment
    never leaves the browser, so nothing is sent anywhere by carrying it. */
-const b64url = (text) => {
+/* Declarations, not arrow constants: the state is read out of the address bar
+   before this point in the file, and a const would still be in its dead zone. */
+function b64url(text) {
   const bytes = new TextEncoder().encode(text);
   let binary = "";
   for (const byte of bytes) binary += String.fromCharCode(byte);
   return btoa(binary).split("+").join("-").split("/").join("_").split("=").join("");
-};
-const unb64url = (code) => {
+}
+function unb64url(code) {
   const padded = code.split("-").join("+").split("_").join("/");
   const binary = atob(padded + "===".slice((padded.length + 3) % 4));
   return new TextDecoder().decode(Uint8Array.from(binary, c => c.charCodeAt(0)));
-};
+}
 
 function changedFromDefaults() {
   const base = defaults(), out = {};

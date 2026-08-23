@@ -5,18 +5,30 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: Can this runner reach EduPage at all?
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with: { python-version: "3.13" }
+      - name: curl vs python, same runner, same moment
         run: |
-          echo "--- runner egress address ---"
-          curl -s --max-time 10 https://api.ipify.org || echo "(no ipify)"; echo
-          echo "--- control: a host we know answers ---"
-          curl -s -o /dev/null -w "example.com %{http_code} in %{time_total}s\n" \
-            --max-time 15 https://example.com || echo "control FAILED"
-          echo "--- dns ---"
-          getent ahosts tera.edupage.org || true
-          echo "--- tera.edupage.org over IPv4 ---"
-          curl -4 -s -o /dev/null -w "  %{http_code} in %{time_total}s\n" \
-            --max-time 20 https://tera.edupage.org/timetable/view.php || echo "  IPv4 FAILED ($?)"
-          echo "--- tcp reachability ---"
-          timeout 10 bash -c 'cat < /dev/null > /dev/tcp/148.251.77.16/443' \
-            && echo "  port 443 open" || echo "  port 443 unreachable"
+          echo "--- curl, no family forced ---"
+          curl -s -o /dev/null -w "  %{http_code} via %{remote_ip} in %{time_total}s\n" \
+            --max-time 20 https://tera.edupage.org/timetable/view.php || echo "  FAILED"
+          echo "--- python urlopen, default resolution ---"
+          python3 - <<'PY'
+          import socket, time, urllib.request
+          for family, label in ((0, "default"), (socket.AF_INET, "ipv4"), (socket.AF_INET6, "ipv6")):
+              real = socket.getaddrinfo
+              if family:
+                  socket.getaddrinfo = lambda *a, **k: [x for x in real(*a, **k) if x[0] == family]
+              t = time.time()
+              try:
+                  req = urllib.request.Request("https://tera.edupage.org/timetable/view.php",
+                                               headers={"User-Agent": "Mozilla/5.0"})
+                  with urllib.request.urlopen(req, timeout=25) as r:
+                      print(f"  {label}: {r.status} in {time.time()-t:.2f}s")
+              except Exception as e:
+                  print(f"  {label}: {type(e).__name__} {e} after {time.time()-t:.2f}s")
+              socket.getaddrinfo = real
+          PY
+          echo "--- the generator itself ---"
+          time python3 tt.py --list -v 2>&1 | head -12 || echo "  generator FAILED"

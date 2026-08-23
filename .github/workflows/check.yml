@@ -27,14 +27,14 @@ jobs:
           pip install --quiet cfn-lint
           cfn-lint deploy/dns.yaml deploy/site.yaml --region us-east-1
 
-  # One fetch, two builds, compared. Nothing is committed to make this hermetic:
-  # the API responses are an output, not source, and an Actions cache is evicted
-  # after a week of quiet — a fixture that can vanish is worse than none.
-  #
-  # Only one timetable is fetched. The determinism this is checking does not
-  # need four, and the school's server is someone else's, asked for nothing more
-  # than necessary on every push.
+  # One fetch, two builds, compared — run by hand, never on a push. The school's
+  # server is someone else's, and it starts refusing an address that has asked
+  # too often; spending that budget on every commit would risk the nightly
+  # publish, which is the run that actually matters. Nothing is committed to make
+  # this hermetic either: the API responses are an output, not source, and an
+  # Actions cache is evicted after a week of quiet.
   build:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5

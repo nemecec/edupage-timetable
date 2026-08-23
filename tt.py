@@ -38,7 +38,8 @@ UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
 # several times over. A nightly job should ride that out rather than skip a day,
 # so every fetch gets a few attempts with a widening gap between them.
 
-ATTEMPTS = 3
+ATTEMPTS = 4
+BACKOFF = (5, 20, 60)      # seconds; a nightly job can afford to wait one out
 
 
 def _transient(exc):
@@ -55,7 +56,7 @@ def open_url(req, timeout):
         except (urllib.error.URLError, OSError) as exc:
             if attempt == ATTEMPTS or not _transient(exc):
                 raise
-            pause = 2 ** attempt
+            pause = BACKOFF[min(attempt, len(BACKOFF)) - 1]
             print(f"{exc}; retrying in {pause}s ({attempt}/{ATTEMPTS - 1})",
                   file=sys.stderr)
             time.sleep(pause)

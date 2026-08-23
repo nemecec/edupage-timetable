@@ -3,12 +3,14 @@ name: publish
 # The school changes its timetable a few times a year, so a nightly check is
 # generous. The build is deterministic: an unchanged timetable renders identical
 # bytes and publishes nothing, so most runs end without touching the site.
+# Fresh data is fetched nightly, or when asked for — never as a side effect of a
+# push. The school's server rations how often one address may ask, and a day of
+# ordinary commits could spend that ration before the nightly run gets its turn.
+# After changing the generator, publish with the Run workflow button, or run
+# deploy/deploy.sh publish from a machine that has not been hammering the API.
 on:
   schedule:
     - cron: "20 3 * * *"
-  push:
-    branches: [main]
-    paths: ["tt.py", "deploy/**", ".github/workflows/publish.yml"]
   workflow_dispatch:
 
 concurrency:

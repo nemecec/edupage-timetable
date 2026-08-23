@@ -493,6 +493,17 @@ def short_label(text):
     return label or (text or "").strip() or "?"
 
 
+def worth_showing(line):
+    """The line a school prints under its timetable, unless it is only a label.
+
+    Two of the four here have set "Kehtivus:" and left the dates blank, which is
+    a heading with nothing under it. Anything the school did fill in is kept as
+    they wrote it — this decides whether there is something, not what it says.
+    """
+    label, sep, value = line.rpartition(":")
+    return line.strip() if (value.strip() if sep else line.strip()) else ""
+
+
 def timetable_meta(result):
     """Days, periods and validity are per timetable, not per class."""
     T = tables(result)
@@ -506,7 +517,7 @@ def timetable_meta(result):
         "days": days,
         "periods": periods,
         "showTimes": any(p["start"] not in ("", "00:00") for p in periods),
-        "validity": settings.get("m_strDateBellowTimeTable", ""),
+        "validity": worth_showing(settings.get("m_strDateBellowTimeTable", "")),
         "classNames": [c["name"] for c in T["classes"]],
     }
 
@@ -1451,12 +1462,11 @@ function renderSubtitle(school) {
   const stamp = DATA.built ? esc(t("footer.built", DATA.built)) : "";
   const link = '<a href="' + esc(sourceUrl(school)) + '">' + esc(t("sourceLink")) + "</a>";
   /* school.v is the line the school configured to print under its own
-     timetable — "Kehtivus: 24/08/2026-18/12/2026". It is the school's text, so
-     translating it is not on the table, and it earns no room here: where it
-     carries a date, school.t already says the same thing, and at two of the
-     four schools it is the label with nothing after it. */
+     timetable — "Kehtivus: 24/08/2026-18/12/2026". Their text, so it stays in
+     their language; the build drops it where they set a label and left it
+     blank, so nothing shows a heading with nothing under it. */
   document.getElementById("subtitle").innerHTML =
-    [esc(school.t), link, stamp].filter(Boolean).join(" · ") +
+    [esc(school.t), esc(school.v), link, stamp].filter(Boolean).join(" · ") +
     '<div class="unofficial">' + esc(t("footer.disclaimer")) + "</div>";
 }
 

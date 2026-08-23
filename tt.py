@@ -19,14 +19,13 @@ Standard library only.
 
 import argparse
 import colorsys
-import errno
 import hashlib
 import html
 import json
 import os
 import re
-import socket
 import sys
+import time
 import urllib.error
 import urllib.request
 
@@ -34,39 +33,32 @@ UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36")
 
 
-# EduPage publishes an AAAA record, and some hosts — GitHub's runners among them
-# — have no route to IPv6 at all. urllib takes the first address it is given and
-# fails outright rather than trying the next, so a run there dies with "network
-# is unreachable" while curl on the same box is fine. One retry pinned to IPv4
-# settles it, and IPv6 stays preferred everywhere it does work.
+# The school's server stalls now and then — a connection that opens and then
+# never answers, most reliably when it has just been asked for everything
+# several times over. A nightly job should ride that out rather than skip a day,
+# so every fetch gets a few attempts with a widening gap between them.
 
-_system_getaddrinfo = socket.getaddrinfo
-_pinned_to_ipv4 = False
+ATTEMPTS = 3
 
 
-def _ipv4_first(*args, **kwargs):
-    found = _system_getaddrinfo(*args, **kwargs)
-    return [a for a in found if a[0] == socket.AF_INET] or found
-
-
-def _no_route(exc):
-    reason = getattr(exc, "reason", exc)
-    return isinstance(reason, OSError) and reason.errno in (
-        errno.ENETUNREACH, errno.EAFNOSUPPORT, errno.EHOSTUNREACH)
+def _transient(exc):
+    """Whether trying again could plausibly help."""
+    if isinstance(exc, urllib.error.HTTPError):
+        return exc.code == 429 or exc.code >= 500
+    return True          # timeout, reset, refused, no route: all worth a retry
 
 
 def open_url(req, timeout):
-    """urlopen, falling back to IPv4 when there is no route to IPv6."""
-    global _pinned_to_ipv4
-    try:
-        return urllib.request.urlopen(req, timeout=timeout)
-    except (urllib.error.URLError, OSError) as exc:
-        if _pinned_to_ipv4 or not _no_route(exc):
-            raise
-        print("no route to IPv6; retrying over IPv4", file=sys.stderr)
-        _pinned_to_ipv4 = True
-        socket.getaddrinfo = _ipv4_first
-        return urllib.request.urlopen(req, timeout=timeout)
+    for attempt in range(1, ATTEMPTS + 1):
+        try:
+            return urllib.request.urlopen(req, timeout=timeout)
+        except (urllib.error.URLError, OSError) as exc:
+            if attempt == ATTEMPTS or not _transient(exc):
+                raise
+            pause = 2 ** attempt
+            print(f"{exc}; retrying in {pause}s ({attempt}/{ATTEMPTS - 1})",
+                  file=sys.stderr)
+            time.sleep(pause)
 
 
 # --------------------------------------------------------------------------

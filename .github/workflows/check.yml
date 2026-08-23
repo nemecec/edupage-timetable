@@ -3,7 +3,9 @@ name: check
 on:
   push:
     branches: [main]
+    paths: ["tt.py", "deploy/**", ".github/workflows/**"]
   pull_request:
+    paths: ["tt.py", "deploy/**", ".github/workflows/**"]
   workflow_dispatch:
 
 permissions:
@@ -27,9 +29,11 @@ jobs:
 
   # One fetch, two builds, compared. Nothing is committed to make this hermetic:
   # the API responses are an output, not source, and an Actions cache is evicted
-  # after a week of quiet — a fixture that can vanish is worse than none. The
-  # cost is that this job also fails when the school's server is down, which is
-  # a thing worth being told about anyway.
+  # after a week of quiet — a fixture that can vanish is worse than none.
+  #
+  # Only one timetable is fetched. The determinism this is checking does not
+  # need four, and the school's server is someone else's, asked for nothing more
+  # than necessary on every push.
   build:
     runs-on: ubuntu-latest
     steps:
@@ -39,7 +43,7 @@ jobs:
           python-version: "3.13"
       - name: Build twice from one fetch and compare
         run: |
-          python3 tt.py --school ProTERA --class 8 -o one.html    # fetches, caches
-          python3 tt.py --school ProTERA --class 8 -o two.html    # reuses the cache
+          python3 tt.py --only ProTERA --class 8 -o one.html    # fetches, caches
+          python3 tt.py --only ProTERA --class 8 -o two.html    # reuses the cache
           cmp one.html two.html
           echo "deterministic: $(wc -c < one.html) bytes"

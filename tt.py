@@ -104,7 +104,10 @@ STRINGS = {
                       "bookmark or a shared link carries it along."),
         "qrHint": "Edit it here",
         "colourHint": ("Click a swatch to change one, or click any lesson in the "
-                       "timetable itself."),
+                       "timetable itself. Click a colour's code to copy it, ready "
+                       "to paste into an event of your own."),
+        "copyColour": "Copy this colour",
+        "copied": "copied",
         "groups": "Groups",
         "noGroups": "This class is not split into groups.",
         "all": "— all —",
@@ -186,7 +189,10 @@ STRINGS = {
                       "jagatud link kannab need kaasa."),
         "qrHint": "Muuda siin",
         "colourHint": ("Klõpsa värvikastil või tunniplaanis tunnil, et värvi "
-                       "muuta."),
+                       "muuta. Klõpsa värvikoodil, et see kopeerida ja oma "
+                       "sündmusele kleepida."),
+        "copyColour": "Kopeeri see värv",
+        "copied": "kopeeritud",
         "groups": "Rühmad",
         "noGroups": "See klass ei ole rühmadeks jaotatud.",
         "all": "— kõik —",
@@ -1184,6 +1190,10 @@ PAGE = """<!DOCTYPE html>
   .legend { display: flex; flex-wrap: wrap; gap: 8px 14px; }
   .legend .item { display: flex; align-items: center; gap: 6px; font-size: 12px; }
   .legend input[type=color] { width: 26px; height: 20px; padding: 0; border: 1px solid var(--line); }
+  .legend .hex { font: 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+                 padding: 2px 4px; border: 1px solid transparent; border-radius: 4px;
+                 background: none; color: var(--muted); cursor: copy; }
+  .legend .hex:hover { border-color: var(--line); color: var(--accent); background: #fff; }
   .count { color: var(--muted); font-size: 12px; margin: 10px 0; }
   @media print { body { padding: 0; } .panel, .count { display: none; } }
 </style>
@@ -2185,18 +2195,40 @@ function setColour(subject, value) {
   const swatch = [...document.querySelectorAll("#legend input[type=color]")]
                    .find(x => x.dataset.subject === subject);
   if (swatch && swatch.value !== value) swatch.value = value;
+  const code = [...document.querySelectorAll("#legend .hex")]
+                 .find(x => x.dataset.subject === subject);
+  if (code) code.textContent = value;
 }
 
 function renderLegend(shown) {
   document.getElementById("colourHint").textContent = t("colourHint");
   document.getElementById("share").title = t("shareHint");
   const used = [...new Set(shown.map(e => e.s))].sort();
+  /* The code beside each swatch is the one the events box takes, so a colour
+     seen here can be reused there without going hunting for it. */
   document.getElementById("legend").innerHTML = used.map(s =>
     '<span class="item"><input type="color" data-subject="' + esc(s) + '" value="' +
-    colorFor(s).bg + '">' + esc(s) + "</span>").join("");
+    colorFor(s).bg + '">' + esc(s) +
+    '<button type="button" class="hex" data-subject="' + esc(s) + '" title="' +
+    esc(t("copyColour")) + '">' + esc(colorFor(s).bg) + "</button></span>").join("");
   document.querySelectorAll("#legend input[type=color]").forEach(inp => {
     inp.addEventListener("input", () => {
       setColour(inp.dataset.subject, inp.value);
+    });
+  });
+  document.querySelectorAll("#legend .hex").forEach(button => {
+    button.addEventListener("click", async () => {
+      const code = colorFor(button.dataset.subject).bg;
+      try {
+        await navigator.clipboard.writeText(code);
+        button.textContent = t("copied");
+      } catch (e) {
+        const range = document.createRange();
+        range.selectNodeContents(button);
+        window.getSelection().removeAllRanges();
+        window.getSelection().addRange(range);
+      }
+      setTimeout(() => { button.textContent = colorFor(button.dataset.subject).bg; }, 1500);
     });
   });
 }

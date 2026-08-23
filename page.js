@@ -1109,13 +1109,14 @@ function countVisit() {
      /timetable/index.html do not become two rows. */
   const here = location.pathname.replace(/\/*(index\.html)?\/*$/, "");
   const klass = String(cls.n).trim();
-  /* Always Estonian, whatever the reader picked: the title is stored per path
-     and the last visit wins, so a label that follows the interface language
-     would flip between "8. klass" and "class 8" for the same row. */
-  const et = DATA.strings.et || DATA.strings.en;
+  /* Always English, whatever the reader picked: the title is stored per path
+     and the last visit wins, so a label that followed the interface language
+     would flip between "class 8" and "8. klass" for the same row. The school's
+     own name is left as the school writes it. */
+  const fixed = DATA.strings.en || {};
   const label = {
     path: here + "/" + school.n + "/" + klass,
-    title: school.l + ", " + (et.classN || "{0}").split("{0}").join(klass),
+    title: school.l + ", " + (fixed.classN || "{0}").split("{0}").join(klass),
     referrer: "",
   };
   const send = () => {

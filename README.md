@@ -226,8 +226,9 @@ The counter keeps one title per path, so the label is sent as a path as well —
 `/timetable/68/8` for ProTERA's class 8 — or every class would collapse into a
 single row showing whichever title arrived last. That is a string in a beacon;
 the address a reader sees and shares stays `/timetable/`. The label is always
-in Estonian, whichever language the interface is in, so the same class does not
-flip between two names in the dashboard.
+in English, whichever language the interface is in, so the same class does not
+flip between two names in the dashboard; the school's own name is left as the
+school writes it.
 
 ## Determinism
 

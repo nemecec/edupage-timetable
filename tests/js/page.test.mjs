@@ -89,7 +89,9 @@ test("the counter is told the school's own name, never the reader's", () => {
   const inEstonian = run(`state.lang = "et"; globalThis.sent = null;
                           countVisit(); JSON.stringify(sent)`);
   assert.equal(inEnglish, inEstonian);
-  assert.match(JSON.parse(inEnglish).title, /klass|[A-Za-zÀ-ÿ]/);
+  // English is the fixed one, even when the interface is not.
+  assert.match(JSON.parse(inEstonian).title, /class /);
+  assert.doesNotMatch(JSON.parse(inEstonian).title, /klass/);
 });
 
 test("one address however it was reached", () => {

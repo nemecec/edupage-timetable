@@ -76,26 +76,30 @@ STRINGS = {
         "school": "School", "class": "Class", "classN": "class {0}",
         "display": "Display options",
         "advanced": "Advanced",
-        "schoolColours": "The school's own colours",
-        "shortNames": "Short subject names",
+        "showHeading": "For each lesson, show:",
+        "showTeacher": "Teacher",
         "showRoom": "Room",
         "showGroup": "Study group",
+        "showSubject": "Subject",
+        "nameFull": "full name",
+        "nameShort": "abbreviated",
+        "subjectFull": "full name",
+        "subjectShort": "short name",
+        "coloursHeading": "Lesson colours:",
+        "schoolColours": "Colours from the timetable",
+        "customColours": "Colours of my own",
         "name": "Name",
         "namePlaceholder": "e.g. Ere",
         "print": "Print…",
         "backup": "Settings as JSON",
         "reset": "Reset groups & colours",
-        "link": "Link to this timetable",
-        "linkHint": ("Everything you have chosen is in the address bar, so a "
-                     "bookmark or a shared link carries it with them."),
-        "linkCopy": "Copy link",
-        "linkCopied": "Copied",
-        "qrHint": "Scan to reopen with these settings",
-        "teachers": "Teachers",
-        "teachers.short": "Abbreviation",
-        "teachers.full": "Full name",
-        "teachers.none": "Hide",
-        "colourHint": "Click a lesson to recolour its subject",
+        "share": "Share",
+        "shared": "Link copied",
+        "shareHint": ("Everything you have chosen is in the address bar, so a "
+                      "bookmark or a shared link carries it along."),
+        "qrHint": "Edit it here",
+        "colourHint": ("Click a swatch to change one, or click any lesson in the "
+                       "timetable itself."),
         "groups": "Groups",
         "noGroups": "This class is not split into groups.",
         "all": "— all —",
@@ -148,26 +152,30 @@ STRINGS = {
         "school": "Kool", "class": "Klass", "classN": "{0}. klass",
         "display": "Kuvamise seaded",
         "advanced": "Täpsemad seaded",
-        "schoolColours": "Kooli enda värvid",
-        "shortNames": "Lühikesed ainenimed",
+        "showHeading": "Iga tunni juures näita:",
+        "showTeacher": "Õpetaja",
         "showRoom": "Ruum",
         "showGroup": "Õpperühm",
+        "showSubject": "Aine",
+        "nameFull": "täisnimi",
+        "nameShort": "lühend",
+        "subjectFull": "täisnimi",
+        "subjectShort": "lühinimi",
+        "coloursHeading": "Tundide värvid:",
+        "schoolColours": "Tunniplaani värvid",
+        "customColours": "Minu omad värvid",
         "name": "Nimi",
         "namePlaceholder": "nt Ere",
         "print": "Prindi…",
         "backup": "Seaded JSON-ina",
         "reset": "Lähtesta rühmad ja värvid",
-        "link": "Selle tunniplaani link",
-        "linkHint": ("Kõik valikud on aadressiribal, nii et järjehoidja või "
-                     "jagatud link kannab need kaasa."),
-        "linkCopy": "Kopeeri link",
-        "linkCopied": "Kopeeritud",
-        "qrHint": "Skanni, et avada need seaded uuesti",
-        "teachers": "Õpetajad",
-        "teachers.short": "Lühend",
-        "teachers.full": "Täisnimi",
-        "teachers.none": "Peida",
-        "colourHint": "Klõpsa tunnil, et selle aine värvi muuta",
+        "share": "Jaga",
+        "shared": "Link kopeeritud",
+        "shareHint": ("Kõik valikud on aadressiribal, nii et järjehoidja või "
+                      "jagatud link kannab need kaasa."),
+        "qrHint": "Muuda siin",
+        "colourHint": ("Klõpsa värvikastil või tunniplaanis tunnil, et värvi "
+                       "muuta."),
         "groups": "Rühmad",
         "noGroups": "See klass ei ole rühmadeks jaotatud.",
         "all": "— kõik —",
@@ -987,7 +995,26 @@ PAGE = """<!DOCTYPE html>
     color: var(--fg); background: var(--bg);
   }
   h1 { font-size: 20px; margin: 0 0 2px; }
-  .sub { color: var(--muted); margin-bottom: 18px; }
+  .sub { color: var(--muted); }
+  .topbar { display: flex; justify-content: space-between; align-items: flex-start;
+            gap: 18px; margin-bottom: 18px; }
+  /* The heading takes what is left; the actions keep their corner. Without the
+     zero minimum a long validity line pushes them onto their own row. */
+  .topbar > :first-child { flex: 1 1 auto; min-width: 0; }
+  .topactions { flex: 0 0 auto; display: flex; gap: 8px; align-items: center; }
+  @media (max-width: 700px) { .topbar { flex-wrap: wrap; } }
+  button.go { background: #12805c; border-color: #0e6b4d; color: #fff; font-weight: 600; }
+  button.go:hover { background: #0e6b4d; border-color: #0e6b4d; color: #fff; }
+  .field label.inline, .checklist label.inline {
+    text-transform: none; letter-spacing: .01em; font-size: 13px; color: inherit;
+    display: inline-flex; align-items: center; gap: 6px; margin: 0; font-weight: 400; }
+  .checklist { display: flex; flex-direction: column; gap: 7px; margin-top: 4px; }
+  .checklist .line { display: flex; align-items: center; gap: 18px; min-height: 20px; }
+  .checklist .line > label.inline:first-child { min-width: 9.5rem; }
+  .choice { display: flex; gap: 14px; }
+  .choice.off { opacity: .4; pointer-events: none; }
+  #colourPicker { margin-top: 10px; }
+  #colourPicker.off { display: none; }
   .panel {
     background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
     padding: 14px 16px; margin-bottom: 18px;
@@ -1091,7 +1118,7 @@ PAGE = """<!DOCTYPE html>
   .ptbl .pwhen { font-size: calc(var(--pfont, 12.5px) * .84); }
   .ptbl .pbreak { font-weight: 400; }
   .ptbl .corner { border: none; }
-  body.printview .count, body.printview h1, body.printview .sub { display: none; }
+  body.printview .count, body.printview .topbar { display: none; }
   body.printview #grid { width: 1054px; }          /* 297mm less two 9mm margins */
   body.printview .ptbl .pcell, body.printview .ptbl .pnum,
   body.printview .ptbl .ptime, body.printview .ptbl td:empty,
@@ -1108,7 +1135,7 @@ PAGE = """<!DOCTYPE html>
       print-color-adjust: exact !important;
     }
     body { padding: 0; }
-    .panel, .count, h1, .sub { display: none; }
+    .panel, .count, .topbar { display: none; }
     #grid { width: auto; }
 
     .ptitle { font-size: 17px; font-weight: 700; text-align: center; }
@@ -1134,8 +1161,17 @@ PAGE = """<!DOCTYPE html>
 </style>
 </head>
 <body>
-<h1 id="heading">Timetable</h1>
-<div class="sub" id="subtitle"></div>
+<div class="topbar">
+  <div>
+    <h1 id="heading">Timetable</h1>
+    <div class="sub" id="subtitle"></div>
+  </div>
+  <div class="topactions">
+    <select id="lang" aria-label="Language"></select>
+    <button id="share" data-i18n="share"></button>
+    <button id="doprint" class="go" data-i18n="print"></button>
+  </div>
+</div>
 
 <div class="panel">
   <div class="row">
@@ -1147,13 +1183,6 @@ PAGE = """<!DOCTYPE html>
       <label for="klass" data-i18n="class"></label>
       <select id="klass"></select>
     </div>
-    <div class="field"><label for="who" data-i18n="name"></label>
-      <input type="text" id="who" data-i18n-ph="namePlaceholder" size="12"></div>
-    <div class="field">
-      <label for="lang" data-i18n="lang"></label>
-      <select id="lang"></select>
-    </div>
-    <button id="doprint" data-i18n="print"></button>
   </div>
   <div class="row" id="divisions"></div>
 </div>
@@ -1162,24 +1191,62 @@ PAGE = """<!DOCTYPE html>
   <summary data-i18n="display"></summary>
   <div class="row">
     <div class="field">
-      <label for="teachers" data-i18n="teachers"></label>
-      <select id="teachers">
-        <option value="short" data-i18n="teachers.short"></option>
-        <option value="full" data-i18n="teachers.full"></option>
-        <option value="none" data-i18n="teachers.none"></option>
-      </select>
-    </div>
-    <div class="toggles">
-      <label><input type="checkbox" id="showRoom"> <span data-i18n="showRoom"></span></label>
-      <label><input type="checkbox" id="showGroup"> <span data-i18n="showGroup"></span></label>
-      <label><input type="checkbox" id="compact"> <span data-i18n="shortNames"></span></label>
-      <label><input type="checkbox" id="schoolColors"> <span data-i18n="schoolColours"></span></label>
+      <label for="who" data-i18n="name"></label>
+      <input type="text" id="who" data-i18n-ph="namePlaceholder" size="14">
     </div>
   </div>
   <div class="row">
-    <div style="width:100%">
-      <div class="legend" id="legend"></div>
-      <div class="divsub" id="colourHint" style="margin-top:8px"></div>
+    <div class="field" style="width:100%">
+      <label data-i18n="showHeading"></label>
+      <div class="checklist">
+        <div class="line">
+          <label class="inline"><input type="checkbox" id="showTeacher">
+            <span data-i18n="showTeacher"></span></label>
+          <span class="choice" id="teacherChoice">
+            <label class="inline"><input type="radio" name="teacherName" value="full">
+              <span data-i18n="nameFull"></span></label>
+            <label class="inline"><input type="radio" name="teacherName" value="short">
+              <span data-i18n="nameShort"></span></label>
+          </span>
+        </div>
+        <div class="line">
+          <label class="inline"><input type="checkbox" id="showRoom">
+            <span data-i18n="showRoom"></span></label>
+        </div>
+        <div class="line">
+          <label class="inline"><input type="checkbox" id="showGroup">
+            <span data-i18n="showGroup"></span></label>
+        </div>
+        <div class="line">
+          <label class="inline"><input type="checkbox" id="showSubject">
+            <span data-i18n="showSubject"></span></label>
+          <span class="choice" id="subjectChoice">
+            <label class="inline"><input type="radio" name="subjectName" value="full">
+              <span data-i18n="subjectFull"></span></label>
+            <label class="inline"><input type="radio" name="subjectName" value="short">
+              <span data-i18n="subjectShort"></span></label>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="field" style="width:100%">
+      <label data-i18n="coloursHeading"></label>
+      <div class="checklist">
+        <div class="line">
+          <label class="inline"><input type="checkbox" id="schoolColors">
+            <span data-i18n="schoolColours"></span></label>
+        </div>
+        <div class="line">
+          <label class="inline"><input type="checkbox" id="customColours">
+            <span data-i18n="customColours"></span></label>
+        </div>
+      </div>
+      <div id="colourPicker">
+        <div class="divsub" id="colourHint"></div>
+        <div class="legend" id="legend"></div>
+      </div>
     </div>
   </div>
 </details>
@@ -1198,21 +1265,13 @@ PAGE = """<!DOCTYPE html>
 <details class="panel" id="advancedPanel">
   <summary data-i18n="advanced"></summary>
   <div class="field" style="width:100%;margin-top:12px">
-    <label for="link" data-i18n="link"></label>
-    <input type="text" id="link" readonly>
-    <div class="divsub" id="linkHint" style="margin-top:5px"></div>
-  </div>
-  <div class="row" style="margin-top:10px;padding-top:0;border-top:none">
-    <button id="copyLink" data-i18n="linkCopy"></button>
-    <button id="reset" data-i18n="reset"></button>
-  </div>
-  <div class="field" style="width:100%;margin-top:14px">
     <label for="settingsText" data-i18n="backup"></label>
     <textarea id="settingsText" rows="5" spellcheck="false"></textarea>
   </div>
   <div class="row" style="margin-top:8px;padding-top:0;border-top:none">
     <button id="copySettings" data-i18n="settings.copy"></button>
     <button id="applySettings" data-i18n="settings.apply"></button>
+    <button id="reset" data-i18n="reset"></button>
     <span class="evwarn" id="settingsMsg"></span>
   </div>
 </details>
@@ -1235,27 +1294,32 @@ const KEY = "tt:" + DATA.edupage + ":" + DATA.year;
 const defaults = () => ({
   school: DATA.initialSchool, klass: DATA.initialClass,
   lang: DATA.lang, picks: {}, colors: {}, who: {}, events: {},
-  schoolColors: false, compact: false, teachers: "short",
+  showTeacher: true, teacherName: "short",
   showRoom: true, showGroup: true,
+  showSubject: true, subjectName: "full",
+  schoolColors: false, customColours: true,
 });
-/* Settings can come from an older version of this page — from localStorage or
-   from a pasted backup — so bring whatever shape they are in up to date rather
-   than letting a stale field break the whole render. */
+/* Settings arrive from localStorage, from a link, or from a pasted backup — all
+   of them outside this page's control. Anything of the wrong shape is replaced
+   by its default rather than allowed to break the render. */
 function normalise(saved) {
-  const out = Object.assign(defaults(), saved || {});
-  const was = saved || {};
-  /* Names and events used to be single values; they are now per school+class. */
-  const legacyWho = typeof was.who === "string" ? was.who.trim() : "";
-  for (const bag of ["picks", "colors", "who", "events"]) {
-    if (!out[bag] || typeof out[bag] !== "object" || Array.isArray(out[bag])) out[bag] = {};
+  const base = defaults();
+  const out = Object.assign({}, base);
+  const was = (saved && typeof saved === "object" && !Array.isArray(saved)) ? saved : {};
+  for (const key of Object.keys(base)) {
+    const value = was[key];
+    if (value === undefined) continue;
+    if (typeof base[key] === "object") {
+      if (value && typeof value === "object" && !Array.isArray(value)) out[key] = value;
+    } else if (typeof value === typeof base[key]) {
+      out[key] = value;
+    }
   }
-  if (legacyWho && was.school && was.klass) out.who[was.school + "/" + was.klass] = legacyWho;
-  if (!["short", "full", "none"].includes(out.teachers)) out.teachers = defaults().teachers;
+  for (const [key, allowed] of [["teacherName", ["short", "full"]],
+                                ["subjectName", ["short", "full"]]]) {
+    if (!allowed.includes(out[key])) out[key] = base[key];
+  }
   if (!DATA.languages.some(l => l[0] === out.lang)) out.lang = DATA.lang;
-  /* Settings that no longer exist: the view picker, its transpose companion and
-     the print-preview toggle. Printing is a moment now, and the layout follows
-     from whether the school publishes a day plan. */
-  for (const gone of ["byPeriod", "view", "transpose", "print"]) delete out[gone];
   return out;
 }
 
@@ -1328,8 +1392,6 @@ const save = () => {
   try {
     const url = shareUrl();
     if (url !== location.href) history.replaceState(null, "", url);
-    const field = document.getElementById("link");
-    if (field) field.value = url;
   } catch (e) { /* a browser that will not rewrite the address bar: no matter */ }
 };
 
@@ -1340,12 +1402,17 @@ const save = () => {
    as shown: a sheet handed to someone else should say where it came from. */
 function renderFooter(school) {
   const url = "https://" + DATA.edupage + ".edupage.org/timetable/view.php?num=" + school.n;
-  const bits = ['<span class="warn">' + esc(t("footer.disclaimer")) + "</span>",
-                t("footer.source", '<a href="' + esc(url) + '">' + esc(url) + "</a>")];
-  if (DATA.built) bits.push(esc(t("footer.built", DATA.built)));
+  const stamp = DATA.built ? esc(t("footer.built", DATA.built)) : "";
+  /* On paper the sheet is the point, so the footer shrinks to when the data was
+     read and a way back to the page. The rest is a screen concern. */
+  const bits = printing ? (stamp ? [stamp] : []) : [
+    '<span class="warn">' + esc(t("footer.disclaimer")) + "</span>",
+    t("footer.source", '<a href="' + esc(url) + '">' + esc(url) + "</a>") +
+      (stamp ? " · " + stamp : ""),
+  ];
   /* Say so where it is true. A page that counts its readers should admit it,
      and this one only counts when it was built for a public address. */
-  if (DATA.counts) bits.push(esc(t("footer.counts")));
+  if (DATA.counts && !printing) bits.push(esc(t("footer.counts")));
   /* 36mm keeps a typical link at about half a millimetre per module, which a
      phone reads without ceremony. A link carrying many custom colours gets
      denser; it still scans, just less forgivingly. */
@@ -1354,6 +1421,7 @@ function renderFooter(school) {
     '<div class="lines">' + bits.join("<br>") + "</div>" +
     (code ? '<div class="qrbox">' + code +
             '<div class="qrhint">' + esc(t("qrHint")) + "</div></div>" : "");
+  document.getElementById("foot").classList.toggle("bare", printing && !bits.length);
 }
 
 function displayTitle(school, cls) {
@@ -1418,7 +1486,7 @@ function readable(bg) {
   return cr(L, dark) >= cr(L, 1) ? "#14171A" : "#FFFFFF";
 }
 function colorFor(subject) {
-  if (state.colors[subject]) {
+  if (state.customColours && state.colors[subject]) {
     const bg = state.colors[subject];
     return { bg: bg, fg: readable(bg) };
   }
@@ -1543,7 +1611,7 @@ function daysWith(school, mine) {
   return idx.sort((a, b) => a - b);
 }
 
-function renderTimeline(school, cls, shown, mine) {
+function renderTimeline(school, cls, shown, mine, scale) {
   const dayIdx = daysWith(school, mine);
 
   const perDay = new Map(dayIdx.map(i => [i, []]));
@@ -1567,9 +1635,9 @@ function renderTimeline(school, cls, shown, mine) {
   let lo = Math.min(...all.map(x => x.a)), hi = Math.max(...all.map(x => x.z));
   lo = Math.floor(lo / 30) * 30; hi = Math.ceil(hi / 30) * 30;
   const span = hi - lo;
-  /* On paper the whole day has to fit the sheet, footer and all; on screen keep
-     it readable. */
-  const ppm = printing ? Math.min(2.2, (632 - footHeight()) / span) : 1.05;
+  /* Pixels per minute. On screen a fixed, readable scale; on paper whatever
+     fills the sheet, which the caller finds by measuring. */
+  const ppm = scale || 1.05;
   const H = Math.round(span * ppm);
 
   let h = "";
@@ -1624,10 +1692,10 @@ function renderTimeline(school, cls, shown, mine) {
       const tip = [subjectName(e, false), e.g.join("/"), e.T.join(" / "),
                    e.r.join(" / "), when, e.u > 1 ? t("paired") : t("single"),
                    e.o ? t("noExactTime") : ""].filter(Boolean).join("\\n");
-      const name = subjectName(e, state.compact);
+      const name = lessonTitle(e);
       let body = '<div class="when">' + esc(when) + (e.o ? " ?" : "") + "</div>" +
                  '<div class="what">' + esc(name) + "</div>";
-      if (height >= 54 && !state.compact && meta.length) {
+      if (height >= 54 && meta.length) {
         body += '<div class="who2">' + esc(meta.join(" · ")) + "</div>";
       }
       h += '<div class="ev' + (height < 40 ? " tight" : "") + (e.o ? " approx" : "") +
@@ -1722,10 +1790,16 @@ function subjectName(e, short) {
   return (e.S && e.S.length ? e.S : [e.s]).map(one).join(" + ");
 }
 
+/* The subject as the reader asked to see it, or nothing at all. */
+function lessonTitle(e) {
+  if (!state.showSubject) return "";
+  return subjectName(e, state.subjectName === "short");
+}
+
 /* Teacher names: the school's abbreviation, the full name, or neither. */
 function teacherText(e) {
-  if (state.teachers === "none") return "";
-  const names = state.teachers === "full" ? e.T : e.t;
+  if (!state.showTeacher) return "";
+  const names = state.teacherName === "full" ? e.T : e.t;
   return (names || []).join(" / ");
 }
 
@@ -1751,7 +1825,7 @@ function mineCell(list) {
 
 function lessonHtml(e, time) {
   const meta = detailLine(e);
-  const label = subjectName(e, state.compact);
+  const label = lessonTitle(e);
   const note = e.o ? t("noExactTime") : "";
   const tip = [subjectName(e, false), e.g.join("/"), e.T.join(" / "), e.r.join(" / "),
                time, e.u > 1 ? t("paired") : t("single"), note]
@@ -1760,7 +1834,7 @@ function lessonHtml(e, time) {
   return '<div class="lesson' + (e.c ? " cont" : "") + '" data-subject="' + esc(e.s) +
     '" style="background:' + col.bg + ";color:" + col.fg + '" title="' + esc(tip) + '">' +
     '<div class="name">' + esc(label) + "</div>" +
-    (!state.compact && (time || e.o)
+    ((time || e.o)
         ? '<div class="time">' + (e.o ? esc(t("noTimeShort")) : esc(time)) + "</div>" : "") +
     (meta.length ? '<div class="meta">' + esc(meta.join(" · ")) + "</div>" : "") +
     "</div>";
@@ -1826,6 +1900,26 @@ const SHEET_H = 726;              // 210mm less two 9mm margins, at 96dpi
    row of personal events. Air goes first: the rows give up their padding down
    to a floor, and only then does the type step down. The view on screen is laid
    out at the size of the sheet, so this measures the real thing. */
+/* The largest scale at which the day still fits one sheet, footer and all.
+   Found by drawing it and measuring rather than by arithmetic on constants: the
+   footer changes size with the QR code and the language, and a guess that was
+   right once quietly stops being right. */
+function fitTimeline(school, cls, shown, mine) {
+  const grid = document.getElementById("grid");
+  const keep = grid.innerHTML;
+  let small = 0.4, big = 3.0;
+  for (let step = 0; step < 9; step++) {
+    const mid = (small + big) / 2;
+    grid.innerHTML = renderTimeline(school, cls, shown, mine, mid);
+    const used = grid.getBoundingClientRect().height + footHeight();
+    /* A few pixels in hand: the print layout rounds differently from the screen
+       one, and landing exactly on the limit means landing just past it. */
+    if (used <= SHEET_H - 8) small = mid; else big = mid;
+  }
+  grid.innerHTML = keep;
+  return small;
+}
+
 /* Outer height of the footer, margins included: the sheet has to hold it, and
    getBoundingClientRect leaves margins out. */
 function footHeight() {
@@ -1933,7 +2027,7 @@ function paint() {
 function render() {
   const school = currentSchool(), cls = currentClass();
   state.school = school.n; state.klass = cls.n;
-  document.getElementById("teachers").value = state.teachers;
+  syncDisplayControls();
 
   document.getElementById("heading").textContent = displayTitle(school, cls);
   renderFooter(school);
@@ -1961,7 +2055,8 @@ function render() {
 
   if (timeline) {
     document.getElementById("grid").innerHTML =
-      renderTimeline(school, cls, shown, parsed.events);
+      renderTimeline(school, cls, shown, parsed.events,
+                     printing ? fitTimeline(school, cls, shown, parsed.events) : 0);
     document.getElementById("count").textContent =
       t("lessonCount", shown.length) + (parsed.events.length ?
         " · " + t("mineCount", parsed.events.length) : "");
@@ -2000,6 +2095,8 @@ function render() {
 
 function setColour(subject, value) {
   state.colors[subject] = value;
+  state.customColours = true;      // choosing one is asking for them
+  document.getElementById("customColours").checked = true;
   save();
   paint();
   const swatch = [...document.querySelectorAll("#legend input[type=color]")]
@@ -2009,6 +2106,7 @@ function setColour(subject, value) {
 
 function renderLegend(shown) {
   document.getElementById("colourHint").textContent = t("colourHint");
+  document.getElementById("share").title = t("shareHint");
   const used = [...new Set(shown.map(e => e.s))].sort();
   document.getElementById("legend").innerHTML = used.map(s =>
     '<span class="item"><input type="color" data-subject="' + esc(s) + '" value="' +
@@ -2084,12 +2182,37 @@ document.getElementById("klass").addEventListener("change", (ev) => {
 
 function bindToggle(id, key) {
   const el = document.getElementById(id);
-  el.checked = !!state[key];
   el.addEventListener("change", () => { state[key] = el.checked; save(); render(); });
 }
-bindToggle("schoolColors", "schoolColors");
-bindToggle("showRoom", "showRoom");
-bindToggle("showGroup", "showGroup");
+function bindChoice(name, key) {
+  document.querySelectorAll('input[name="' + name + '"]').forEach(radio => {
+    radio.addEventListener("change", () => {
+      if (radio.checked) { state[key] = radio.value; save(); render(); }
+    });
+  });
+}
+["showTeacher", "showRoom", "showGroup", "showSubject",
+ "schoolColors", "customColours"].forEach(key => bindToggle(key, key));
+bindChoice("teacherName", "teacherName");
+bindChoice("subjectName", "subjectName");
+
+/* The controls follow the state, and the two that only make sense alongside
+   something else — how to write a name, which colours to pick — dim or vanish
+   when that something is switched off. */
+function syncDisplayControls() {
+  for (const key of ["showTeacher", "showRoom", "showGroup", "showSubject",
+                     "schoolColors", "customColours"]) {
+    document.getElementById(key).checked = !!state[key];
+  }
+  for (const [name, key] of [["teacherName", "teacherName"], ["subjectName", "subjectName"]]) {
+    document.querySelectorAll('input[name="' + name + '"]').forEach(radio => {
+      radio.checked = radio.value === state[key];
+    });
+  }
+  document.getElementById("teacherChoice").classList.toggle("off", !state.showTeacher);
+  document.getElementById("subjectChoice").classList.toggle("off", !state.showSubject);
+  document.getElementById("colourPicker").classList.toggle("off", !state.customColours);
+}
 /* Clicking a lesson opens a colour picker anchored under it. The input is a
    permanent hidden node, so nothing rebuilds it while the picker is open. */
 const pick = document.getElementById("pick");
@@ -2109,23 +2232,15 @@ pick.addEventListener("input", () => setColour(pick.dataset.subject, pick.value)
    closes, so the next thing typed goes to the page and not into a dead input. */
 pick.addEventListener("change", () => pick.blur());
 
-document.getElementById("teachers").addEventListener("change", (ev) => {
-  state.teachers = ev.target.value; save(); render();
-});
 document.getElementById("lang").addEventListener("change", (ev) => {
   state.lang = ev.target.value;
   save(); applyStrings(); renderDivisions(); render();
 });
-bindToggle("compact", "compact");
 
 document.getElementById("reset").addEventListener("click", () => {
   const { school, klass, lang } = state;
   state = Object.assign(defaults(), { school, klass, lang });
   save();
-  document.getElementById("schoolColors").checked = false;
-  document.getElementById("showRoom").checked = true;
-  document.getElementById("showGroup").checked = true;
-  document.getElementById("compact").checked = false;
   renderDivisions(); render();
 });
 
@@ -2138,23 +2253,21 @@ const settingsMsg = document.getElementById("settingsMsg");
 
 advancedPanel.addEventListener("toggle", () => {
   if (advancedPanel.open) {
-    document.getElementById("link").value = shareUrl();
     settingsText.value = JSON.stringify(state, null, 2);
     settingsMsg.textContent = "";
   }
 });
-document.getElementById("linkHint").textContent = t("linkHint");
-document.getElementById("copyLink").addEventListener("click", async () => {
-  const button = document.getElementById("copyLink"), field = document.getElementById("link");
-  field.value = shareUrl();
+/* Sharing is copying the address, since the address is the whole configuration. */
+document.getElementById("share").addEventListener("click", async () => {
+  const button = document.getElementById("share");
   try {
-    await navigator.clipboard.writeText(field.value);
-    button.textContent = t("linkCopied");
+    await navigator.clipboard.writeText(shareUrl());
+    button.textContent = t("shared");
   } catch (e) {
-    field.select();
     button.textContent = t("settings.selected");
   }
-  setTimeout(() => { button.textContent = t("linkCopy"); }, 2500);
+  button.title = t("shareHint");
+  setTimeout(() => { button.textContent = t("share"); }, 2500);
 });
 document.getElementById("copySettings").addEventListener("click", async () => {
   settingsText.value = JSON.stringify(state, null, 2);

@@ -1,0 +1,45 @@
+name: check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # Everything that can be judged without leaving the runner.
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - name: Compile
+        run: python3 -m compileall -q tt.py deploy/publish.py
+      - name: Lint the templates
+        run: |
+          pip install --quiet cfn-lint
+          cfn-lint deploy/dns.yaml deploy/site.yaml --region us-east-1
+
+  # One fetch, two builds, compared. Nothing is committed to make this hermetic:
+  # the API responses are an output, not source, and an Actions cache is evicted
+  # after a week of quiet — a fixture that can vanish is worse than none. The
+  # cost is that this job also fails when the school's server is down, which is
+  # a thing worth being told about anyway.
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - name: Build twice from one fetch and compare
+        run: |
+          python3 tt.py --school ProTERA --class 8 -o one.html    # fetches, caches
+          python3 tt.py --school ProTERA --class 8 -o two.html    # reuses the cache
+          cmp one.html two.html
+          echo "deterministic: $(wc -c < one.html) bytes"

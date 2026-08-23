@@ -1,0 +1,8 @@
+# Built page and the API responses it was built from: both are outputs, and both
+# are one `python3 tt.py` away.
+schedule.html
+cache/
+
+__pycache__/
+*.pyc
+.DS_Store

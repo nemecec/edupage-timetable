@@ -1,0 +1,48 @@
+name: publish
+
+# The school changes its timetable a few times a year, so a nightly check is
+# generous. The build is deterministic: an unchanged timetable renders identical
+# bytes and publishes nothing, so most runs end without touching the site.
+on:
+  schedule:
+    - cron: "20 3 * * *"
+  push:
+    branches: [main]
+    paths: ["tt.py", "deploy/**", ".github/workflows/publish.yml"]
+  workflow_dispatch:
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write        # to exchange for AWS credentials; nothing is stored
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ secrets.AWS_PUBLISH_ROLE }}
+          aws-region: us-east-1
+
+      - name: Build and publish
+        env:
+          BUCKET: ${{ secrets.AWS_BUCKET }}
+          DISTRIBUTION: ${{ secrets.AWS_DISTRIBUTION }}
+          PREFIX: tera-timetable
+          GOATCOUNTER: ${{ vars.GOATCOUNTER_SITE }}
+          EDUPAGE: tera
+          YEAR: "2026"
+          INITIAL_SCHOOL: ProTERA
+          INITIAL_CLASS: "8"
+          SITE_LANGUAGE: et
+        run: python3 deploy/publish.py

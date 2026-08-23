@@ -88,7 +88,11 @@ STRINGS = {
         "coloursHeading": "Lesson colours:",
         "schoolColours": "Colours from the timetable",
         "customColours": "Colours of my own",
-        "name": "Name",
+        "appName": "School timetable",
+        "titleHeading": "Title:",
+        "titleWho": "Student name",
+        "titleSchool": "School name",
+        "titleClass": "Class name",
         "namePlaceholder": "e.g. Ere",
         "print": "Print…",
         "backup": "Settings as JSON",
@@ -141,6 +145,7 @@ STRINGS = {
         "footer.disclaimer": ("Unofficial. Built from the school's public timetable "
                               "data; not published or maintained by the school."),
         "footer.source": "Source: {0}",
+        "sourceLink": "source",
         "footer.built": "data fetched {0}",
         "footer.counts": ("Visits are counted with GoatCounter: no cookies, "
                           "nothing personal, nothing shared."),
@@ -164,7 +169,11 @@ STRINGS = {
         "coloursHeading": "Tundide värvid:",
         "schoolColours": "Tunniplaani värvid",
         "customColours": "Minu omad värvid",
-        "name": "Nimi",
+        "appName": "Kooli tunniplaan",
+        "titleHeading": "Pealkiri:",
+        "titleWho": "Õpilase nimi",
+        "titleSchool": "Kooli nimi",
+        "titleClass": "Klassi nimi",
         "namePlaceholder": "nt Ere",
         "print": "Prindi…",
         "backup": "Seaded JSON-ina",
@@ -217,6 +226,7 @@ STRINGS = {
         "footer.disclaimer": ("Mitteametlik. Koostatud kooli avalikest tunniplaani "
                               "andmetest; kool seda lehte ei avalda ega halda."),
         "footer.source": "Allikas: {0}",
+        "sourceLink": "allikas",
         "footer.built": "andmed laaditud {0}",
         "footer.counts": ("Külastusi loeb GoatCounter: küpsiseid ei kasutata, "
                           "isikuandmeid ei koguta ega jagata."),
@@ -995,7 +1005,10 @@ PAGE = """<!DOCTYPE html>
     color: var(--fg); background: var(--bg);
   }
   h1 { font-size: 20px; margin: 0 0 2px; }
-  .sub { color: var(--muted); }
+  .sub { color: var(--muted); font-size: 13px; }
+  .sub a { color: var(--accent); }
+  .unofficial { margin-top: 2px; font-size: 12px; color: #8a919b; }
+  .foot:empty { display: none; }
   .topbar { display: flex; justify-content: space-between; align-items: flex-start;
             gap: 18px; margin-bottom: 18px; }
   /* The heading takes what is left; the actions keep their corner. Without the
@@ -1110,6 +1123,8 @@ PAGE = """<!DOCTYPE html>
   .ptbl th, .ptbl td { border: 1px solid #000; padding: 4px 5px; text-align: center;
                        vertical-align: middle; font-size: var(--pfont, 12.5px); }
   .ptbl .ptitle { font-size: 19px; font-weight: 700; padding: 8px; border: 1px solid #000; }
+  .ptitle.sheet { font-size: 19px; font-weight: 700; text-align: center;
+                  padding: 0 0 10px; border: none; }
   .ptbl thead .phead { font-size: 11px; font-weight: 700; }
   .ptbl .pnum { font-weight: 700; width: 26px; }
   .ptbl .ptime { font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums;
@@ -1163,7 +1178,7 @@ PAGE = """<!DOCTYPE html>
 <body>
 <div class="topbar">
   <div>
-    <h1 id="heading">Timetable</h1>
+    <h1 id="heading" data-i18n="appName"></h1>
     <div class="sub" id="subtitle"></div>
   </div>
   <div class="topactions">
@@ -1190,9 +1205,25 @@ PAGE = """<!DOCTYPE html>
 <details class="panel" id="displayPanel">
   <summary data-i18n="display"></summary>
   <div class="row">
-    <div class="field">
-      <label for="who" data-i18n="name"></label>
-      <input type="text" id="who" data-i18n-ph="namePlaceholder" size="14">
+    <div class="field" style="width:100%">
+      <label data-i18n="titleHeading"></label>
+      <div class="checklist">
+        <div class="line">
+          <label class="inline"><input type="checkbox" id="showWho">
+            <span data-i18n="titleWho"></span></label>
+          <input type="text" id="who" data-i18n-ph="namePlaceholder" size="18">
+        </div>
+        <div class="line">
+          <label class="inline"><input type="checkbox" id="showSchool">
+            <span data-i18n="titleSchool"></span></label>
+          <input type="text" id="titleSchool" size="30">
+        </div>
+        <div class="line">
+          <label class="inline"><input type="checkbox" id="showClass">
+            <span data-i18n="titleClass"></span></label>
+          <input type="text" id="titleClass" size="18">
+        </div>
+      </div>
     </div>
   </div>
   <div class="row">
@@ -1294,6 +1325,8 @@ const KEY = "tt:" + DATA.edupage + ":" + DATA.year;
 const defaults = () => ({
   school: DATA.initialSchool, klass: DATA.initialClass,
   lang: DATA.lang, picks: {}, colors: {}, who: {}, events: {},
+  titleSchool: {}, titleClass: {},
+  showWho: true, showSchool: true, showClass: true,
   showTeacher: true, teacherName: "short",
   showRoom: true, showGroup: true,
   showSubject: true, subjectName: "full",
@@ -1400,16 +1433,26 @@ const save = () => {
    can never drift apart. */
 /* Provenance, and the fact that this is nobody's official page. Printed as well
    as shown: a sheet handed to someone else should say where it came from. */
-function renderFooter(school) {
-  const url = "https://" + DATA.edupage + ".edupage.org/timetable/view.php?num=" + school.n;
+function sourceUrl(school) {
+  return "https://" + DATA.edupage + ".edupage.org/timetable/view.php?num=" + school.n;
+}
+
+/* Where this came from and when, next to what it is: all of it belongs in the
+   heading rather than at the bottom of the page. */
+function renderSubtitle(school) {
   const stamp = DATA.built ? esc(t("footer.built", DATA.built)) : "";
-  /* On paper the sheet is the point, so the footer shrinks to when the data was
-     read and a way back to the page. The rest is a screen concern. */
-  const bits = printing ? (stamp ? [stamp] : []) : [
-    '<span class="warn">' + esc(t("footer.disclaimer")) + "</span>",
-    t("footer.source", '<a href="' + esc(url) + '">' + esc(url) + "</a>") +
-      (stamp ? " · " + stamp : ""),
-  ];
+  const link = '<a href="' + esc(sourceUrl(school)) + '">' + esc(t("sourceLink")) + "</a>";
+  document.getElementById("subtitle").innerHTML =
+    [esc(school.t), esc(school.v), link, stamp].filter(Boolean).join(" · ") +
+    '<div class="unofficial">' + esc(t("footer.disclaimer")) + "</div>";
+}
+
+function renderFooter(school) {
+  const stamp = DATA.built ? esc(t("footer.built", DATA.built)) : "";
+  /* On paper the heading is gone, so the date it was read comes down here with
+     the code that leads back to the page. On screen both live in the heading and
+     the footer says only what the page is. */
+  const bits = printing ? (stamp ? [stamp] : []) : [];
   /* Say so where it is true. A page that counts its readers should admit it,
      and this one only counts when it was built for a public address. */
   if (DATA.counts && !printing) bits.push(esc(t("footer.counts")));
@@ -1424,9 +1467,23 @@ function renderFooter(school) {
   document.getElementById("foot").classList.toggle("bare", printing && !bits.length);
 }
 
+/* What the heading and both printouts call this timetable. Each part can be
+   switched off or written differently — a school's official name is not always
+   the one a family uses — and the heading updates as it is typed, so the effect
+   is visible before anything is printed. */
+function titleParts(school, cls) {
+  return {
+    who: (perClass("who") || "").trim(),
+    school: (perClass("titleSchool") || "").trim() || school.l,
+    klass: (perClass("titleClass") || "").trim() || t("classN", cls.n),
+  };
+}
+
 function displayTitle(school, cls) {
-  const who = (perClass("who") || "").trim();
-  return (who ? who + " — " : "") + school.l + ", " + t("classN", cls.n);
+  const part = titleParts(school, cls);
+  const right = [state.showSchool ? part.school : "", state.showClass ? part.klass : ""]
+                  .filter(Boolean).join(", ");
+  return [state.showWho ? part.who : "", right].filter(Boolean).join(" — ");
 }
 
 /* Interface strings only; anything from the timetable stays in the language
@@ -1640,11 +1697,11 @@ function renderTimeline(school, cls, shown, mine, scale) {
   const ppm = scale || 1.05;
   const H = Math.round(span * ppm);
 
-  let h = "";
-  if (printing) {
-    h += '<div class="ptitle" style="border:none;padding:0 0 8px">' +
-         esc(displayTitle(school, cls)) + "</div>";
-  }
+  /* Over the timetable rather than at the top of the page, and drawn the same
+     way on screen as on paper: whatever is typed into the title fields shows up
+     here at once, which is the only way to see what will print. */
+  const named = displayTitle(school, cls);
+  let h = named ? '<div class="ptitle sheet">' + esc(named) + "</div>" : "";
   h += '<div class="tl" style="--ppm:' + ppm + ";--half:" + (30 * ppm) +
           "px;--hour:" + (60 * ppm) + 'px">';
   h += '<div class="tlhead"><div class="cell gut"></div>' +
@@ -2028,13 +2085,11 @@ function render() {
   const school = currentSchool(), cls = currentClass();
   state.school = school.n; state.klass = cls.n;
   syncDisplayControls();
+  syncPerClassInputs();
 
-  document.getElementById("heading").textContent = displayTitle(school, cls);
   renderFooter(school);
-  const named = (perClass("who") || "").trim();
-  document.title = (named ? named + " · " : "") + t("classN", cls.n) + " · " + school.l;
-  document.getElementById("subtitle").textContent =
-    [school.t, school.v, DATA.edupage + ".edupage.org"].filter(Boolean).join(" · ");
+  document.title = displayTitle(school, cls) || t("classN", cls.n);
+  renderSubtitle(school);
 
   const mine = picks();
   const timeline = onTimeline();
@@ -2191,7 +2246,8 @@ function bindChoice(name, key) {
     });
   });
 }
-["showTeacher", "showRoom", "showGroup", "showSubject",
+["showWho", "showSchool", "showClass",
+ "showTeacher", "showRoom", "showGroup", "showSubject",
  "schoolColors", "customColours"].forEach(key => bindToggle(key, key));
 bindChoice("teacherName", "teacherName");
 bindChoice("subjectName", "subjectName");
@@ -2200,7 +2256,8 @@ bindChoice("subjectName", "subjectName");
    something else — how to write a name, which colours to pick — dim or vanish
    when that something is switched off. */
 function syncDisplayControls() {
-  for (const key of ["showTeacher", "showRoom", "showGroup", "showSubject",
+  for (const key of ["showWho", "showSchool", "showClass",
+                     "showTeacher", "showRoom", "showGroup", "showSubject",
                      "schoolColors", "customColours"]) {
     document.getElementById(key).checked = !!state[key];
   }
@@ -2319,12 +2376,27 @@ function typed(el, bag) {
 }
 const who = document.getElementById("who");
 const eventsBox = document.getElementById("events");
+const titleSchool = document.getElementById("titleSchool");
+const titleClass = document.getElementById("titleClass");
 typed(who, "who");
 typed(eventsBox, "events");
-/* Never write over a field the reader is in the middle of typing into. */
+typed(titleSchool, "titleSchool");
+typed(titleClass, "titleClass");
+/* Never write over a field the reader is in the middle of typing into. The two
+   title fields show what the timetable calls itself until someone types over
+   it, so an empty box and the school's own wording look the same. */
 function syncPerClassInputs() {
+  const school = currentSchool(), cls = currentClass();
   if (document.activeElement !== who) who.value = perClass("who");
   if (document.activeElement !== eventsBox) eventsBox.value = perClass("events");
+  if (document.activeElement !== titleSchool) {
+    titleSchool.value = perClass("titleSchool");
+    titleSchool.placeholder = school.l;
+  }
+  if (document.activeElement !== titleClass) {
+    titleClass.value = perClass("titleClass");
+    titleClass.placeholder = t("classN", cls.n);
+  }
 }
 /* Printing is a moment, not a setting: lay the page out for paper, print it,
    put it back. Nothing about it is worth remembering between visits. */

@@ -271,8 +271,11 @@ deterministic, just a different deterministic assignment.
   own: *line 1: "#zzzzzz" is not a colour*.
 
   In the timeline, events are drawn **on top of** the timetable rather than
-  beside it: the lessons keep their full width and the event is inset over them,
-  bordered and shadowed. That is what makes an event usable for marking
+  beside it: the lessons keep their full width and the event lies over them,
+  bordered and shadowed. It is inset a little where something is underneath, so
+  what it covers still shows at the edge, and drawn full width where the hour is
+  empty — an evening activity covers nothing, and narrowing it there would look
+  like a mistake rather than a layer. That is what makes an event usable for marking
   something out inside a break. The school's canteen plan — which grade eats
   when, inside the long break — is written this way, one line per day, as the
   last line above does: no rebuild, and it can differ per child. Events still pack against each other, so two at once

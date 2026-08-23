@@ -1727,9 +1727,12 @@ function renderTimeline(school, cls, shown, mine, scale) {
   h += "</div>";
 
   /* Where a box sits in its column. Lessons and breaks share the full width
-     between them; personal events are inset and drawn afterwards, so they lie
-     over the timetable rather than squeezing it — which is what makes them
-     usable for marking something out inside a break. */
+     between them; a personal event is drawn afterwards, over the top, so it
+     never squeezes the timetable — which is what makes it usable for marking
+     something out inside a break.
+     It is inset only where there is something underneath worth glimpsing. An
+     event in an empty evening covers nothing, so narrowing it there would look
+     like a mistake rather than a layer. */
   const place = (it, inset) => {
     const lanes = it._lanes || 1, lane = it._lane || 0;
     const each = (100 - inset) / lanes;
@@ -1769,7 +1772,9 @@ function renderTimeline(school, cls, shown, mine, scale) {
     }
     /* The layer on top. Events are packed among themselves, so two of them at
        once still sit side by side rather than hiding one another. */
+    const base = items.filter(x => !x.mine);
     for (const it of pack(items.filter(x => x.mine))) {
+      const over = base.some(x => x.a < it.z && it.a < x.z);
       const height = Math.max(14, Math.round((it.z - it.a) * ppm) - 1);
       const when = hhmm(it.a) + "–" + hhmm(it.z);
       const fg = eventFg(it);
@@ -1780,7 +1785,7 @@ function renderTimeline(school, cls, shown, mine, scale) {
           '<div class="what">' + esc(it.label) + "</div>"
         : '<div class="what">' + esc(when + " " + it.label) + "</div>";
       h += '<div class="ev mine' + (height < 40 ? " tight" : "") + '" style="' +
-           place(it, 16) + "background:" + it.bg + ";color:" + fg + ";border-color:" +
+           place(it, over ? 16 : 0) + "background:" + it.bg + ";color:" + fg + ";border-color:" +
            (it.fg ? fg : "rgba(0,0,0,.34)") + '" title="' +
            esc(it.label + "\\n" + when) + '">' + body + "</div>";
     }

@@ -16,6 +16,19 @@ const defaults = () => ({
 /* Settings arrive from localStorage, from a link, or from a pasted backup — all
    of them outside this page's control. Anything of the wrong shape is replaced
    by its default rather than allowed to break the render. */
+/* A colour and nothing else. Everything that sets one writes a hex code, and
+   these values are concatenated into style attributes — so a link carrying
+   anything else is a link trying to write markup, not to pick a colour. */
+const HEX = /^#([0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
+
+function onlyColours(bag) {
+  const out = {};
+  for (const [subject, value] of Object.entries(bag)) {
+    if (typeof value === "string" && HEX.test(value.trim())) out[subject] = value.trim();
+  }
+  return out;
+}
+
 function normalise(saved) {
   const base = defaults();
   const out = Object.assign({}, base);
@@ -34,6 +47,7 @@ function normalise(saved) {
     if (!allowed.includes(out[key])) out[key] = base[key];
   }
   if (!DATA.languages.some(l => l[0] === out.lang)) out.lang = DATA.lang;
+  out.colors = onlyColours(out.colors);
   return out;
 }
 
@@ -51,6 +65,10 @@ try {
     for (const bag of ["picks", "colors", "who", "events"]) {
       if (shared[bag]) merged[bag] = Object.assign({}, state[bag], shared[bag]);
     }
+    /* The per-bag merge runs after normalise, so the colours it brings in have
+       not been through it. Nothing hostile survives the escaping at the sinks
+       either way, but a link's junk should not end up saved. */
+    merged.colors = onlyColours(merged.colors);
     state = merged;
     /* Keep what the link brought, so closing it and coming back later still
        shows the same timetable. */
@@ -202,8 +220,9 @@ function applyStrings() {
   });
 }
 
-const esc = (s) => String(s).replace(/[&<>"]/g, c =>
-  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const esc = (s) => String(s).replace(/[&<>"'`]/g, c =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;",
+     "'": "&#39;", "`": "&#96;" }[c]));
 
 function currentSchool() {
   return SCHOOLS.find(s => s.n === state.school) || SCHOOLS[0];
@@ -444,8 +463,8 @@ function renderTimeline(school, cls, shown, mine, scale) {
         body += '<div class="who2">' + esc(meta.join(" · ")) + "</div>";
       }
       h += '<div class="ev' + (height < 40 ? " tight" : "") + (e.o ? " approx" : "") +
-           '" data-subject="' + esc(e.s) + '" style="' + geom + "background:" + col.bg +
-           ";color:" + col.fg + '" title="' + esc(tip) + '">' + body + "</div>";
+           '" data-subject="' + esc(e.s) + '" style="' + geom + "background:" + esc(col.bg) +
+           ";color:" + esc(col.fg) + '" title="' + esc(tip) + '">' + body + "</div>";
     }
     /* The layer on top. Events are packed among themselves, so two of them at
        once still sit side by side rather than hiding one another. */
@@ -463,8 +482,8 @@ function renderTimeline(school, cls, shown, mine, scale) {
         : '<div class="what">' + esc(when + " " + it.label) + "</div>";
       h += '<div class="ev mine' + (it.fg ? " outlined" : "") +
            (height < 40 ? " tight" : "") + '" style="' + place(it, over ? 16 : 0) +
-           "background:" + it.bg + ";color:" + fg +
-           (it.fg ? ";border-color:" + fg : "") + '" title="' +
+           "background:" + esc(it.bg) + ";color:" + esc(fg) +
+           (it.fg ? ";border-color:" + esc(fg) : "") + '" title="' +
            esc(it.label + "\n" + when) + '">' + body + "</div>";
     }
     h += "</div>";
@@ -526,7 +545,13 @@ function cssColour(value) {
    from — three of the four here publish none — so those fall back to the aSc
    period grid rather than rendering nothing. Nothing to choose; the data
    decides. */
-const onTimeline = () => currentSchool().b;
+function onTimeline() {
+  if (!currentSchool().b) return false;
+  /* A day plan the class is not covered by leaves its lessons untimed, and a
+     timeline of untimed lessons is a blank page. Better the grid, which needs
+     no times, than nothing at all. */
+  return currentClass().e.some(e => e.a != null);
+}
 /* What goes on a lesson's second line: room, teacher and group are each
    independently switchable, so the box can be as dense or as bare as wanted. */
 function detailLine(e) {
@@ -572,8 +597,8 @@ const perClass = (bag) => {
 function mineCell(list) {
   if (!list.length) return "<td></td>";
   return "<td>" + list.slice().sort((p, q) => p.a - q.a).map(ev =>
-    '<div class="lesson" style="background:' + ev.bg + ";color:" + eventFg(ev) +
-    (ev.fg ? ";border:1px solid " + ev.fg : "") +
+    '<div class="lesson" style="background:' + esc(ev.bg) + ";color:" + esc(eventFg(ev)) +
+    (ev.fg ? ";border:1px solid " + esc(ev.fg) : "") +
     '"><div class="name">' + esc(ev.label) + "</div>" +
     '<div class="time">' + esc(hhmm(ev.a) + "–" + hhmm(ev.z)) +
     "</div></div>").join("") + "</td>";
@@ -588,7 +613,8 @@ function lessonHtml(e, time) {
               .filter(Boolean).join("\n");
   const col = colorFor(e.s);
   return '<div class="lesson' + (e.c ? " cont" : "") + '" data-subject="' + esc(e.s) +
-    '" style="background:' + col.bg + ";color:" + col.fg + '" title="' + esc(tip) + '">' +
+    '" style="background:' + esc(col.bg) + ";color:" + esc(col.fg) +
+    '" title="' + esc(tip) + '">' +
     '<div class="name">' + esc(label) + "</div>" +
     ((time || e.o)
         ? '<div class="time">' + (e.o ? esc(t("noTimeShort")) : esc(time)) + "</div>" : "") +
@@ -736,7 +762,7 @@ function renderPrint(school, cls, shown, mine) {
         return esc(shown + room) + when;
       }).join("<br>");
       h += '<td class="pcell" data-subject="' + esc(here[0].s) + '" style="background:' +
-           col.bg + ";color:" + col.fg + '">' + body + "</td>";
+           esc(col.bg) + ";color:" + esc(col.fg) + '">' + body + "</td>";
     }
     h += "</tr>";
     if (!school.bs.includes(n) || n >= cls.m) continue;
@@ -760,7 +786,7 @@ function renderPrint(school, cls, shown, mine) {
       const list = mine.filter(ev => ev.day === i).sort((p, q) => p.a - q.a);
       if (!list.length) { h += "<td></td>"; continue; }
       h += '<td class="pcell" style="padding:0">' + list.map(ev =>
-        '<div style="padding:3px 4px;background:' + ev.bg + ";color:" + eventFg(ev) +
+        '<div style="padding:3px 4px;background:' + esc(ev.bg) + ";color:" + esc(eventFg(ev)) +
         '">' + esc(ev.label) +
         '<br><span class="pwhen">(' + esc(hhmm(ev.a) + "–" + hhmm(ev.z)) +
         ")</span></div>").join("") + "</td>";
@@ -869,7 +895,7 @@ function renderLegend(shown) {
      seen here can be reused there without going hunting for it. */
   document.getElementById("legend").innerHTML = used.map(s =>
     '<span class="item"><input type="color" data-subject="' + esc(s) + '" value="' +
-    colorFor(s).bg + '">' + esc(s) +
+    esc(colorFor(s).bg) + '">' + esc(s) +
     '<input type="text" class="hex" spellcheck="false" data-subject="' + esc(s) +
     '" value="' + esc(colorFor(s).bg) + '" size="8" title="' +
     esc(t("colourCode")) + '"></span>').join("");
@@ -1073,11 +1099,6 @@ document.getElementById("applySettings").addEventListener("click", () => {
   if (!SCHOOLS.some(x => x.n === state.school)) state.school = DATA.initialSchool;
   if (!currentSchool().c.some(c => c.n === state.klass)) state.klass = currentSchool().c[0].n;
   save();
-  for (const [id, key] of [["print", "print"], ["transpose", "transpose"],
-                           ["schoolColors", "schoolColors"], ["compact", "compact"],
-                           ["showRoom", "showRoom"], ["showGroup", "showGroup"]]) {
-    document.getElementById(id).checked = !!state[key];
-  }
   renderLanguages(); renderSchools(); renderClasses();
   applyStrings(); renderDivisions(); syncPerClassInputs(); render();
   settingsMsg.textContent = t("settings.applied");

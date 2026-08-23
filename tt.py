@@ -373,7 +373,10 @@ def band_slots(cfg, class_name, day):
     a block covering two aSc periods is one box either way.
     """
     for band in cfg.get("bands", []):
-        if class_name not in band["classes"]:
+        # aSc hands back what someone typed, trailing space and all: LõunaTERA
+        # has a class called "Silva ". Matching it literally lost that class its
+        # times, and a class with no times draws nothing at all.
+        if class_name.strip() not in [c.strip() for c in band["classes"]]:
             continue
         for days, blocks in band["days"].items():
             if day not in days:
@@ -541,12 +544,11 @@ def day_slots(blocks, n_periods, always_paired=0):
         longest[start] = max(longest.get(start, 1), duration)
     slots, pos = [], 1
     while pos <= n_periods:
-        if pos in longest:
-            step = longest[pos]
-        elif len(slots) < always_paired:
-            step = 2
-        else:
-            step = 1
+        # A school that teaches its first slots as doubles does so whatever card
+        # happens to sit there: a single in slot 1 is still the first lesson,
+        # and treating it as 45 minutes would start every later slot early.
+        forced = 2 if len(slots) < always_paired else 1
+        step = max(longest.get(pos, 1), forced)
         slots.append({"period": pos, "periods": step, "used": pos in longest})
         pos += step
     while slots and not slots[-1]["used"]:      # trim trailing free slots
@@ -688,46 +690,69 @@ def extract(result, class_name, n_periods=None, cfg=None):
 
 
 def merge_blocks(entries):
-    """One box per published block, even when it holds two different subjects.
+    """One box per lesson the school publishes, however aSc happens to record it.
 
-    The school writes 9.00-10.50 as a single block; inside it may sit Häälestus
-    and then Üldõpetus. Splitting the block in half would invent times nobody
-    published, so the two become one box naming both, in the order they run.
+    A published block covers one or two aSc periods. Inside it there may be a
+    sequence — Häälestus and then Üldõpetus, which the school writes as a single
+    9.00-10.50 — or a set of choices running side by side, Kodundus or Käsitöö
+    or Puutöö. Both can also be recorded as one card per period rather than one
+    card spanning two, and then the same lesson appears twice over.
 
-    Only a sequence is merged. Lessons starting in the same period are choices
-    running side by side — Kodundus or Käsitöö or Puutöö — and stay apart, as do
-    any that name a group. The colour goes to whichever subject fills more of
-    the block, and to the later one when they fill it equally: a block that
-    opens with a warm-up should look like what it becomes.
+    So: entries naming a group are left alone, because a group is already the
+    thing that tells them apart. Otherwise, if every entry starts on its own
+    period the block is a sequence and becomes one box naming each subject in
+    turn. If any two share a period, the block holds choices, and each subject's
+    entries merge among themselves so the choices stay side by side.
+
+    The colour goes to whichever subject fills more of the block, and to the
+    later one when they fill it equally: a block that opens with a warm-up
+    should look like what it becomes.
     """
-    out, merged = [], {}
+    out, blocks = [], {}
     for e in entries:
         if e["part"]:
             continue
-        merged.setdefault((e["day"], e["slot"]), []).append(e)
-    for (day, slot), here in sorted(merged.items()):
-        starts = {x["startPeriod"] for x in here}
-        if (len(here) == 1 or len(starts) < len(here)
-                or len({x["subject"] for x in here}) == 1
-                or any(x["groups"] for x in here)):
+        blocks.setdefault((e["day"], e["slot"]), []).append(e)
+
+    for (day, slot), here in sorted(blocks.items()):
+        if len(here) == 1 or any(x["groups"] for x in here):
             out.extend(here)
             continue
-        here.sort(key=lambda x: x["startPeriod"])
-        lead = max(here, key=lambda x: (x["duration"], x["startPeriod"]))
-        joined = dict(lead)
-        joined["names"] = [x["subject"] for x in here]
-        joined["duration"] = sum(x["duration"] for x in here)
-        joined["startPeriod"] = here[0]["startPeriod"]
-        for field in ("teachers", "teacherShorts", "rooms"):
-            seen = []
-            for x in here:
-                for v in x[field]:
-                    if v not in seen:
-                        seen.append(v)
-            joined[field] = seen
-        out.append(joined)
+        starts = {x["startPeriod"] for x in here}
+        if len(starts) == len(here):
+            out.append(_one_box(here))
+            continue
+        by_subject = {}
+        for x in here:
+            by_subject.setdefault(x["subject"], []).append(x)
+        for group in by_subject.values():
+            out.append(group[0] if len(group) == 1 else _one_box(group))
+
     out.sort(key=lambda e: (e["day"], e["period"], e["subject"], "/".join(e["groups"])))
     return out
+
+
+def _one_box(here):
+    """Fold several entries of one block into the single box they describe."""
+    here = sorted(here, key=lambda x: x["startPeriod"])
+    lead = max(here, key=lambda x: (x["duration"], x["startPeriod"]))
+    joined = dict(lead)
+    names = []
+    for x in here:
+        if x["subject"] not in names:
+            names.append(x["subject"])
+    joined["names"] = names if len(names) > 1 else None
+    joined["duration"] = sum(x["duration"] for x in here)
+    joined["startPeriod"] = here[0]["startPeriod"]
+    joined["period"] = here[0]["period"]
+    for field in ("teachers", "teacherShorts", "rooms"):
+        seen = []
+        for x in here:
+            for value in x[field]:
+                if value not in seen:
+                    seen.append(value)
+        joined[field] = seen
+    return joined
 
 
 def label_divisions(divisions, entries):
@@ -945,6 +970,11 @@ def _hexpair(hue, light, sat):
     return {"bg": "#%02X%02X%02X" % (r, g, b), "fg": fg}
 
 
+# What the school typed into aSc ends up inside a style attribute on a public
+# page. Anything that is not plainly a colour is dropped rather than trusted.
+HEX_COLOUR = re.compile(r"^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$")
+
+
 def compact(schools):
     """Shrink the model for embedding: short keys, subject facts hoisted out.
 
@@ -957,7 +987,7 @@ def compact(schools):
             for e in cls["entries"]:
                 meta = subject_meta.setdefault(e["subject"], {})
                 meta.setdefault("short", e["subjectShort"])
-                if e["schoolColor"]:
+                if HEX_COLOUR.match(e["schoolColor"] or ""):
                     meta.setdefault("color", e["schoolColor"])
     out = []
     for school in schools:
@@ -1425,7 +1455,9 @@ def render_html(schools, edupage, year, initial_school, initial_class, lang="en"
         "subjects": subject_meta,
         "schools": entries_data,
     }
-    blob = json.dumps(payload, ensure_ascii=False, sort_keys=True).replace("</", "<\\/")
+    # "</" would close the block early; "<!--<script" would open a nested one and
+    # swallow the real close. Neither can survive as a literal "<".
+    blob = json.dumps(payload, ensure_ascii=False, sort_keys=True).replace("<", "\\u003c")
     tag = GOATCOUNTER.format(site=html.escape(goatcounter, quote=True)) if goatcounter else ""
     return (PAGE
             .replace("__APP__", beside("page.js"))

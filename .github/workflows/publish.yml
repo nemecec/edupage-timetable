@@ -22,7 +22,7 @@ jobs:
   rebuild:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5
 
       - name: Is there somewhere to publish to?
         id: ready
@@ -43,7 +43,7 @@ jobs:
           . deploy/site.conf
           echo "region=$REGION" >> "$GITHUB_OUTPUT"
 
-      - uses: aws-actions/configure-aws-credentials@v5
+      - uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708  # v5
         if: steps.ready.outputs.ready == 'true'
         with:
           role-to-assume: ${{ secrets.AWS_PUBLISH_ROLE }}

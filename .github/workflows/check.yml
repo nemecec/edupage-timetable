@@ -3,25 +3,41 @@ name: check
 on:
   push:
     branches: [main]
-    paths: ["tt.py", "deploy/**", ".github/workflows/**"]
+    paths: ["tt.py", "page.js", "tests/**", "deploy/**", ".github/workflows/**"]
   pull_request:
-    paths: ["tt.py", "deploy/**", ".github/workflows/**"]
+    paths: ["tt.py", "page.js", "tests/**", "deploy/**", ".github/workflows/**"]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  # Everything that can be judged without leaving the runner.
-  lint:
+  # Everything that can be judged without leaving the runner. The fixtures under
+  # tests/fixtures are the school's API responses, frozen, so none of this needs
+  # the network — which is the point: the school's server is someone else's, and
+  # it rations how often one address may ask.
+  test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6
         with:
           python-version: "3.13"
+
       - name: Compile
-        run: python3 -m compileall -q tt.py deploy/publish.py
+        run: python3 -m compileall -q tt.py deploy/publish.py deploy/lambda_function.py
+
+      # A backslash typo in the page's JavaScript used to ship a blank page with
+      # CI green. Now it does not.
+      - name: Check the page's JavaScript parses
+        run: node --check page.js
+
+      - name: Python tests
+        run: python3 -m unittest discover -s tests -v
+
+      - name: JavaScript tests
+        run: node --test tests/js/*.test.mjs
+
       - name: Lint the templates
         run: |
           pip install --quiet cfn-lint
@@ -29,17 +45,14 @@ jobs:
           cfn-lint deploy/dns.yaml deploy/site.yaml --region eu-central-1
 
   # One fetch, two builds, compared — run by hand, never on a push. The school's
-  # server is someone else's, and it starts refusing an address that has asked
-  # too often; spending that budget on every commit would risk the nightly
-  # publish, which is the run that actually matters. Nothing is committed to make
-  # this hermetic either: the API responses are an output, not source, and an
-  # Actions cache is evicted after a week of quiet.
+  # server starts refusing an address that has asked too often, and that budget
+  # belongs to the nightly publish rather than to every commit.
   build:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6
         with:
           python-version: "3.13"
       - name: Build twice from one fetch and compare

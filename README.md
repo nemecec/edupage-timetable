@@ -47,7 +47,7 @@ timetables instead.
 Two flags exist for the hosted copy and are off by default, so an ordinary build
 stays reproducible and reaches nothing but EduPage:
 
-    --built 2026-08-23        print the fetch date in the footer
+    --built 2026-08-23        print the date the data was read
     --goatcounter SITE        count page views at SITE.goatcounter.com
 
 Every visible timetable and class is embedded regardless; `--school` and
@@ -63,48 +63,86 @@ given without `--school` is looked up across all timetables.
 | `--class NAME` | class selected on first open |
 | `--lang en\|et` | interface language the page opens in (default `en`) |
 | `--json FILE` | also write the extracted data as readable JSON |
+| `--cache DIR` | where API responses are cached (default `cache/` beside the script) |
 | `--refresh` | ignore the on-disk cache and refetch |
 | `-v` | show what it is doing |
 
 Python 3 standard library only — no pip installs, no browser.
 
-For `tera` in 2026 the result is 4 schools, 41 classes and 2041 lesson slots in
-a ~390 KB file.
+For `tera` in 2026 the result is 4 schools, 41 classes and about 1,900 lesson
+slots in a ~550 KB file — 57 KB over the wire, since it compresses well.
+
+    python3 -m unittest discover -s tests     # the generator
+    node --test tests/js/*.test.mjs           # the page's own logic
+
+Both run without a network: `tests/fixtures` holds the school's API responses,
+frozen.
 
 ## Lesson times and the day plan
 
-EduPage carries no times for these timetables — every period is `00:00` and the
-`bells` table is empty — so the day plan lives in `BELLS` at the top of `tt.py`,
-keyed by a substring of the timetable title. Only **ProTERA** is filled in; the
-other schools render without times and say so.
+The four timetables get their times from three different places, and one gets
+none at all.
 
-A day is a sequence of **slots** ("the 1st lesson", "the 2nd lesson"), and a
-slot holds either a paired lesson (`P`, two aSc periods) or a single one (`L`,
-one period). Which it is varies day by day, and that is what makes the times
-branch. Rather than enumerate the branches, the script runs a clock:
+**SädeTERA** is the easy case: EduPage carries real times for its periods, so
+they are used as they come.
+
+For the others EduPage carries nothing — every period reads `00:00` and the
+`bells` table is empty — so the day plan lives in `BELLS` at the top of `tt.py`,
+keyed by a substring of the timetable title. Two schools publish one, in two
+quite different shapes.
+
+**ProTERA runs off a clock.** A day is a sequence of slots, and a slot holds
+either a paired lesson (`P`, two aSc periods) or a single one (`L`). Which it is
+varies day by day, and that is what makes the times branch. Rather than
+enumerate the branches, the times are computed:
 
     start 9.00 · single = 45 min · paired = 80 min · slots 1-2 always paired
-    gaps after slot 1 = 10 min, 2 = 60 min (Söömine), 3 = 20 min (Amps), else 5 min
+    gaps after slot 1 = 10 min, 2 = 60 min, 3 = 20 min, else 5 min
 
-That reproduces every cell of the school's printed Päevaplaan, so all
-combinations are generated rather than listed. Two details it gets right:
+That reproduces every cell of the printed Päevaplaan, so all combinations fall
+out rather than being listed. Two details it gets right:
 
 - A slot can hold a single **and** a pair at once, for different groups — the
   Päevaplaan writes this as `14.30-15.15 L / 14.30-15.50 P`. The slot fixes the
   start; each lesson's own length fixes the end.
-- The end of slot 3 shifts the rest of the day, which is why Amps falls at
-  13.35-13.55 on some days and 14.10-14.30 on others.
+- The end of slot 3 shifts the rest of the day, which is why the break named
+  `Söömine, tiimitund, vaba aeg` falls at 13.35-13.55 on some days and
+  14.10-14.30 on others. Only its first word is shown in the grid.
+
+**LõunaTERA publishes fixed blocks instead**, so there is no clock to run. Each
+block says which aSc periods it holds and when it is:
+
+    (first period, how many periods, start, end)
+
+Two grade bands run different days, and the breaks — Puder, Lõuna/Õue, Hea aeg —
+are lessons in the timetable rather than gaps between them, so they need no
+special handling at all. A block covering two periods is one box. What sits
+inside it decides how:
+
+- Two subjects, one per period: a sequence, so one box naming both in order,
+  coloured by whichever fills more of the block and by the later one on a tie —
+  a block that opens with a warm-up should look like what it becomes.
+- Two subjects sharing a period: choices running side by side, so they stay
+  apart, and each subject's own cards merge among themselves.
+- Anything naming a group is left alone; the group already tells them apart.
+
+Class names are matched with surrounding space ignored, because aSc hands back
+what someone typed — one class is called `Silva `, and matching that literally
+once cost it every one of its times.
+
+**TäheTERA publishes nothing yet**, so its lessons have no times and the page
+says so.
 
 Two things worth knowing:
 
 1. The Päevaplaan leaves slot 5 blank in the `3=L, 4=P` column, but ProTERA
-   class 8 does have a lesson there on Mondays (period 8). The clock puts it at
+   class 8 does have a lesson there on Mondays. The clock puts it at
    **15.20-16.05**, matching the identical slot in the neighbouring column.
    This is the one inferred time.
-2. One lesson in 2041 starts part-way through a slot that other groups take
-   whole (ProTERA class 8, Thursday, group 8.k, period 2 only). The day plan
-   never splits a pair, so no time is claimed — the cell reads *"time not in day
-   plan"*.
+2. One lesson starts part-way through a slot that other groups take whole
+   (ProTERA class 8, Thursday, group 8.k, period 2 only). The day plan never
+   splits a pair, so no time is claimed — the box is dashed and reads *"time not
+   in day plan"*.
 
 ## Languages
 
@@ -161,93 +199,72 @@ pickers still override them.
 
 `deploy/` puts the page on the public internet at
 [little.tools/timetable](https://little.tools/timetable/): a private S3
-bucket in Frankfurt behind CloudFront, with a nightly GitHub Actions run that
-reruns this generator and writes the result back. Nothing sits in the request path, so a
+bucket in Frankfurt behind CloudFront, with a nightly EventBridge schedule
+running this generator in Lambda and writing the result back. Nothing sits in the request path, so a
 failed build leaves the previous page serving, and the workflow authenticates
 with a short-lived OIDC token rather than a stored key. See
 [deploy/README.md](deploy/README.md) — about $0.50 a month for the hosted zone,
 everything else within the free tiers.
 
-Every page carries a footer naming itself unofficial, linking the school's own
-timetable page for whichever timetable is on screen, and printing the date the
-data was fetched. It prints along with the timetable, so a sheet that leaves the
-building still says where it came from. Where visits are counted, the footer says
-that too.
+Every page names itself unofficial under its heading, beside a link to the
+school's own timetable page for whichever timetable is on screen and the date the
+data was read. A printed sheet keeps the date and a QR code back to the page,
+and leaves the rest on screen. Where visits are counted, the page says so.
 
 ## Determinism
 
-API responses are cached under `cache/`. Given the same upstream data the output
-is byte-identical between runs, including subject colours (hue comes from the
-golden angle over the sorted subject list, jittered by an MD5 of the subject
-name). Re-running with `--refresh` against unchanged upstream data reproduces
-the same bytes.
+Given the same upstream data the output is byte-identical, so the file can be
+regenerated and diffed. API responses are cached under `cache/`; `--refresh`
+ignores them.
 
-Because the palette is computed over the subjects of *all* embedded timetables,
-restricting the set with `--only` shifts the colours. That is still
-deterministic, just a different deterministic assignment.
+Nothing samples the clock or a random source. Subject colours are worked out
+from the subject list alone: hue comes from the subject's family band, members
+spread evenly across it, lightness stepping through a fixed cycle and saturation
+dropping a tier once a family is crowded. Subjects matching no family get
+golden-angle hues at lower saturation. Which subjects are present therefore
+decides the palette — `--only` changes the colours, because it changes the list.
+
+The one deliberate exception is `--built`, which stamps a date. It is left empty
+unless asked for, so an ordinary build stays reproducible.
 
 ## The generated page
 
-- **School** and **Class** pickers. Switching school resets the class, since
-  class lists differ between them.
-- **Group pickers**, one per division, each named after what is taught in it
-  rather than by its group codes: a division carrying one subject is that
-  subject (*Ajutreening*, *Matemaatika*), two or three are listed
-  (*Käsitöö / Tehnoloogiaõpetus*), and four or more are shortened to the two
-  commonest with an ellipsis. The broad split a class uses for most of its
-  lessons is headed *Main group*, and names its subjects the same way. Hovering
-  the heading gives the full list, however long. The group codes stay underneath
-  as a subtitle, so nothing is ambiguous. Leave a picker on *— all —* to keep every group on that
-  axis; whole-class lessons always show. Divisions with no lessons are dropped.
-  Choices are remembered per school+class, so switching away and back keeps them.
-- **Timeline** (the default) draws a continuous clock down the side, ruled every
-  30 minutes, and places every box at its true start and height. A 45-minute
-  lesson is visibly shorter than an 80-minute one, and lessons that do not begin
-  on a standard boundary simply sit where they belong instead of being forced
-  into a row. Each box carries its own start-end time in a smaller font.
-  Overlapping lessons — several groups at once, when no filter is set — share
-  the column the way a calendar does. Breaks are hatched bands; the one lesson
-  whose exact time the day plan does not define gets a dashed border and a `?`.
-- **Table** is the slot grid: columns are the day's lessons (the Päevaplaan's
-  1-5), a paired lesson is one cell, and the breaks get their own columns.
-  **Days as columns** transposes it.
-- **aSc period grid** is the raw 8-period table, for cross-checking against the
-  official page. Schools with no bell schedule only get this one.
-- **Teachers** shows each lesson's teacher as the school's abbreviation, the
-  full name, or not at all. **Room** and **Group** switch those details on and
-  off independently — all three default to showing, and **Short subject names**
-  now only affects the subject itself.
-- **School colours** switches from the generated palette to the colours set in
-  aSc. Either can be overridden per subject: use the swatch in the legend, or
-  just **click any lesson in the grid** to recolour its subject. Text
-  automatically flips between black and white for whatever colour is chosen.
-- Hovering a lesson shows the full tooltip: subject, group, teacher's full name,
-  room.
-- In the aSc period grid, multi-period lessons repeat in each period they cover
-  with the continuation dimmed, so every cell stands alone. In the slot grid they are simply one cell. In
-  ProTERA class 8, 52 of the 70 lessons are paired, so this is the common case
-  rather than an edge case.
-- **Print view (A4 landscape)** lays out whichever view is selected for paper,
-  scaled to fill one sheet: the timeline as a to-scale calendar, or the table in
-  the layout the school's own printouts use — slots down the side with a single
-  **Aeg** column, days across, breaks as rows, and any day that departs from a
-  slot's usual time carrying its own time in brackets. **Name** puts a child's
-  name in the title. The page sets `@page { size: A4 landscape }`, so
-  **Print…** (or Cmd/Ctrl+P) gives one landscape sheet with the controls hidden
-  and the colours preserved — the page forces `print-color-adjust: exact`, so
-  backgrounds survive even with Chrome's "Background graphics" left unticked,
-  which is its default. Verified for both views with that box off: 297 × 210 mm
-  on a single page, colours intact.
+Nothing chooses a view: the data does. A school with a day plan, and a class it
+covers, gets the **timeline**. Everything else gets aSc's raw period grid, which
+needs no times.
 
-  One sheet is the point of this view, so it fits itself to the page rather than
-  spilling onto a second. The table is laid out on screen at the exact size of
-  the sheet — same width, same type, same row padding — so what the fitting
-  measures is what will print. Air goes first: the rows give up their padding
-  down to a floor, and only then does the type step down, from 12.5px in small
-  steps until it fits. A class with several lessons stacked in one cell, a row of
-  personal events — each takes a little more, and the page absorbs it. Checked across all nine ProTERA classes, in both layouts, with no
-  events and with six: one page every time, and the roomy classes keep their
-  full padding.
+- **Filter** — school and class, then one picker per division, each named after
+  what is taught in it rather than by its group codes: a division carrying one
+  subject is that subject (*Ajutreening*), two or three are listed
+  (*Käsitöö / Tehnoloogiaõpetus*), four or more are shortened to the two
+  commonest with an ellipsis. Hovering gives the whole list. The group codes sit
+  underneath as a subtitle. Leave a picker on *— all —* to keep every group on
+  that axis; whole-class lessons always show. Divisions with no lessons are
+  dropped, and choices are remembered per school+class.
+- **The timeline** draws a continuous clock down the side, ruled every 30
+  minutes, and places every box at its true start and height. A 45-minute lesson
+  is visibly shorter than an 80-minute one, and a lesson that does not begin on a
+  standard boundary sits where it belongs rather than being forced into a row.
+  Each box carries its own start-end time. Overlapping lessons — several groups
+  at once, when no filter is set — share the column the way a calendar does.
+  Breaks are hatched bands; the one lesson whose exact time the day plan does not
+  define gets a dashed border and a `?`.
+- **The period grid** is the fallback: aSc's own periods, one column each, with a
+  multi-period lesson repeated in every period it covers and the continuation
+  dimmed. Where the school publishes period times, they appear in the headers.
+- **Display options** sets what each lesson box says. Teacher, room, study group
+  and subject are independent, and teacher and subject each choose between the
+  full name and the school's abbreviation. **Lesson colours** offers the school's
+  own colours from aSc, and colours of your own; with the latter on, each subject
+  gets a swatch and an editable code — type or paste a colour to set it, click
+  the code to select it for copying into an event. Clicking any lesson in the
+  timetable recolours its subject too. Text flips between black and white for
+  whatever colour is chosen.
+- **Title** is three independent rows — student name, school name, class name —
+  each with a checkbox and a field. The two that come from the timetable are
+  pre-filled with what it says, so one word can be changed without retyping the
+  rest, and typing into any of them ticks its row. The result appears above the
+  timetable as it is typed, which is what will print.
 - **My own events** — a text box, one event per line, for everything the school
   does not know about:
 
@@ -260,118 +277,74 @@ deterministic, just a different deterministic assignment.
   `Re`, `L`); times take `:` or `.`; the label is the rest of the line and may
   contain spaces. Blank lines and lines starting with `#` are ignored, and
   anything unparseable is reported underneath with its line number rather than
-  silently dropped. An event on a day the school week does not cover — a
-  Saturday rehearsal — adds that day.
+  silently dropped. An event on a day the school week does not cover — a Saturday
+  rehearsal — adds that day.
 
-  The colour column is any CSS colour name, hex or function, and sets the
-  background; the text then comes out black or white, whichever reads better on
-  it. Write it as `<text>/<background>` — `#333333/#dddddd` — to set both, and
-  the box's border follows the text colour. Only a slash between whole colours
-  counts, so `rgb(0,0,0/50%)` still parses as one. A bad half is named on its
-  own: *line 1: "#zzzzzz" is not a colour*.
+  The colour column is any CSS colour and sets the background; the text then
+  comes out black or white, whichever reads better. Write it as
+  `<text>/<background>` to set both, and the box gains a border in the text
+  colour. Only a slash between whole colours counts, so `rgb(0,0,0/50%)` still
+  parses as one.
 
-  In the timeline, events are drawn **on top of** the timetable rather than
-  beside it: the lessons keep their full width and the event lies over them.
-  Given one colour it is drawn exactly as a lesson is, so borrowing a subject's
-  colour code produces a box indistinguishable from that subject's. Name a text
-  colour as well and it gains a border in that colour, since asking for one is
-  asking to be told apart. It is inset a little where something is underneath, so
-  what it covers still shows at the edge, and drawn full width where the hour is
-  empty — an evening activity covers nothing, and narrowing it there would look
-  like a mistake rather than a layer. That is what makes an event usable for marking
-  something out inside a break. The school's canteen plan — which grade eats
-  when, inside the long break — is written this way, one line per day, as the
-  last line above does: no rebuild, and it can differ per child. Events still pack against each other, so two at once
-  sit side by side instead of hiding one another, and a box too short for two
-  lines puts its time and label on one.
-
-  The other views have no geometry to draw over, so events get a **My own**
-  column in the table — a row when transposed, and the last row of the printout
-  — since an event at 17.15 belongs to no lesson slot. Typing into the box
-  stores every keystroke but repaints on a short timer, so a long line is never
-  typed against a redraw.
-- **The address bar carries everything** that has been chosen — group picks,
-  colours, personal events, the name, the language, the display switches — so a
-  bookmark keeps it and a link hands it to someone else. Only what differs from
-  the defaults is encoded, which keeps a typical link near 200 characters. The
-  fragment never leaves the browser, so carrying settings sends them nowhere.
+  Events are drawn **on top of** the timetable rather than beside it: the lessons
+  keep their full width. An event is inset a little where something is underneath,
+  so what it covers still shows at the edge, and drawn full width where the hour
+  is empty. Given one colour it looks exactly like a lesson; the border only
+  appears where a text colour was asked for. In the period grid, where there is
+  no geometry to draw over, events get a **My own** column instead.
+- **Share** copies the address, because the address is the whole configuration:
+  group picks, colours, events, names, language and every display switch, encoded
+  in the fragment. Only what differs from the defaults goes in, which keeps a
+  typical link near 200 characters. The fragment never leaves the browser.
   Opening a link merges its per-class settings rather than replacing them, so a
   link for one child does not wipe a sibling's.
-- **The printout carries a QR code** of that same link, so a sheet on the fridge
-  can be picked back up on a phone with every choice still on it. It is drawn
-  from a vendored copy of a QR library rather than an image service — see
-  [vendor/](vendor/) — at 36mm, which puts a typical link at about half a
-  millimetre per module.
-- **Back up settings…** shows the whole configuration as JSON: group picks,
-  custom colours, personal events, names, and view options, for every class you
-  have set up. Copy it to keep a backup, or paste one back and apply it. Older
-  backups still load, since they are merged onto the current defaults.
-- **Name** identifies whose timetable this is. It appears in the page heading,
-  the browser tab and both print layouts, which all share one title, and it is
-  stored per class — so two children in one file each keep their own.
-- **Language** switches the whole interface between English and Estonian.
+- **Print…** lays the page out for A4 landscape and prints it. It is a moment,
+  not a setting: the page returns to normal afterwards. The timeline scales
+  itself to fill exactly one sheet, measured rather than guessed. Colours survive
+  even with Chrome's "Background graphics" unticked, which is its default, because
+  the page forces `print-color-adjust: exact`.
+- **The printed sheet** carries the date the data was read and a QR code of the
+  link, captioned *Edit it here*, so a sheet on the fridge can be picked back up
+  on a phone with every choice still on it. The page's other furniture — the
+  disclaimer, the source link, the controls — stays on screen.
+- **Advanced** holds the whole configuration as JSON, to copy or paste back, and
+  **Reset groups & colours**.
+- **Language** switches the interface between English and Estonian. Everything
+  the school entered — subject names, group codes, rooms, teacher names, the line
+  it prints under its own timetable — stays in the language it was entered in.
 - All state lives in `localStorage`, so each reader sets theirs once.
 
 ## Verification
 
-Extraction was checked against the official rendering: all 70 lesson boxes for
-ProTERA class 8 match the page's own SVG exactly — the 69 that carry a tooltip
-by subject, groups, teachers and room, with no extras or omissions, and the one
-that carries none (*Praktikum*, which has no room, group or teacher) by the text
-the page draws.
+`python3 -m unittest discover -s tests` and `node --test tests/js/*.test.mjs`,
+both on every push. Neither touches the network: `tests/fixtures` holds the
+school's own API responses, frozen, so a build takes a moment and CI never
+spends the rate limit that the nightly publish needs.
 
-The bell clock was checked cell by cell against the printed Päevaplaan: all five
-published day shapes, both halves of the two-variant slot-4 cell, and the
-Söömine/Amps times in each branch.
+The Python tests cover the reasoning the generator does for itself — the bell
+clock against the printed Päevaplaan, LõunaTERA's published blocks and the rules
+about which lessons merge, the colour palette's WCAG contrast (including 200
+subjects forced through it), and the parts of the pipeline where a mistake is
+silent rather than loud. Two are invariants over a whole build rather than
+examples: no class in a school that publishes times may have untimed lessons,
+and no lesson may be drawn twice in the same place. Both were written because
+each had just happened.
 
-Every subject colour was checked for WCAG AA text contrast, and both print
-layouts were rendered to PDF to confirm A4 landscape on one page. The event
-parser was exercised over valid English and Estonian lines and every failure
-mode — unknown weekday, out-of-range hour, bad colour, reversed times,
-unparseable line — and the settings backup was round-tripped through a class
-switch to confirm picks, colours, events and names all come back.
+The JavaScript tests run `page.js` itself under a small stand-in for the browser
+and cover the event parser — every weekday token in both languages, every way a
+line can be rejected — the colour splitting, the settings normaliser, the share
+link's round trip, and the calendar packing.
 
-The publisher was exercised end to end without touching AWS, against a stub
-standing in for the CLI: it renders the page, uploads it once with the right
-content type and cache header, and on a second run with unchanged data uploads
-nothing and raises no invalidation. Both CloudFormation templates pass
-`cfn-lint`, which caught two faults worth having found — resource names carrying
-the domain's dots, illegal for a Lambda or CloudFront function name and fatal for
-the S3 origin's TLS, and an `s3:HeadObject` IAM action that does not exist.
+Beyond the suite, extraction was checked against the official rendering: all 70
+lesson boxes for ProTERA class 8 match the school's own page — the 69 that carry
+a tooltip by subject, groups, teachers and room, and the one that carries none
+by the text the page draws. The bell clock was checked cell by cell against the
+printed Päevaplaan, and LõunaTERA's blocks against the school's published day
+plan. The QR code is verified by decoding: the printed page is rasterised and
+read back with an independent decoder, and the string compared to the link
+character for character. Both print layouts were rendered with background
+graphics disabled to confirm the colours still come through.
 
-CI splits along the same line: a `lint` job that compiles the sources and checks
-the templates without leaving the runner, and a `build` job that fetches once,
-builds twice from that one fetch and compares the bytes. Nothing is committed to
-make the build hermetic — the API responses are an output, not source, and an
-Actions cache is evicted after a week of quiet, so a fixture that can disappear
-is worse than none. The trade is that `build` also goes red when the school's
-server is down, which is worth being told about.
-
-The QR code was verified by decoding it back, not by eye: the printed page is
-rasterised and read with an independent decoder, and the string that comes back
-is compared to the link character for character. That passes at 200dpi — well
-below what any printer does — and at 300, 400 and 600. The library it uses was
-checked against a second implementation before being adopted; for URL-shaped
-input the two produce identical module grids.
-
-Both print layouts were re-rendered with background graphics disabled to confirm
-the colours still come through, and the timeline's axis was measured to confirm
-the boxes sit exactly on their gridlines with the first and last labels clear of
-the edges. Every weekday token above was fed through the parser and checked to land on the
-right day. Both languages were checked across the whole interface — headings, controls,
-group pickers, counts, parser errors, weekday names and the printout title — and
-the Estonian print output was rendered to PDF as a single A4 landscape page.
-
-The school's canteen plan was written out as personal events — all five days,
-including Friday's two sittings — and rendered over the long break, confirming
-that each box lands on its true minute, that the lessons keep their full width
-with the overlay in place, that two overlapping events still divide the layer
-between them, and that a `<text>/<background>` pair drives the text and border
-in all three views — with each bad half of a pair named on its own line, in both
-languages. Personal events were
-confirmed to appear in all three views and in both printouts, and the printout
-was re-fitted for every ProTERA class with none and with six events. Every
-lesson entry, slot time and division was diffed against a build from the
-previous version of the script to confirm none of this changed the timetable
-itself, and the output is still byte-identical from cache and from a live
-`--refresh`.
+The CloudFormation templates pass `cfn-lint` in CI. `node --check` runs against
+`page.js`, because a backslash typo in it used to ship a blank page with CI
+green.

@@ -19,7 +19,6 @@ Standard library only.
 
 import argparse
 import colorsys
-import hashlib
 import html
 import json
 import os
@@ -109,7 +108,6 @@ STRINGS = {
                        "event of your own."),
         "colourCode": "Colour code — type, paste, or copy",
         "groups": "Groups",
-        "noGroups": "This class is not split into groups.",
         "all": "— all —",
         "time": "Time",
         "nothing": "Nothing to show.",
@@ -117,7 +115,6 @@ STRINGS = {
         "single": "single",
         "noExactTime": "exact time not in the day plan",
         "noTimeShort": "time not in day plan",
-        "lessonsShown": "{0} of {1} lessons shown",
         "slotsShown": "{0} of {1} lesson slots shown",
         "noFilter": "(no group filter active)",
         "noBells": "no bell schedule for this school, times unknown",
@@ -194,7 +191,6 @@ STRINGS = {
                        "kopeerida."),
         "colourCode": "Värvikood — kirjuta, kleebi või kopeeri",
         "groups": "Rühmad",
-        "noGroups": "See klass ei ole rühmadeks jaotatud.",
         "all": "— kõik —",
         "time": "Aeg",
         "nothing": "Pole midagi näidata.",
@@ -202,7 +198,6 @@ STRINGS = {
         "single": "üksiktund",
         "noExactTime": "täpset aega päevaplaanis pole",
         "noTimeShort": "aeg puudub päevaplaanis",
-        "lessonsShown": "näidatud {0} tundi {1}-st",
         "slotsShown": "näidatud {0} tunnipesa {1}-st",
         "noFilter": "(rühmafilter puudub)",
         "noBells": "sellel koolil pole päevaplaani, ajad teadmata",
@@ -685,7 +680,6 @@ def extract(result, class_name, n_periods=None, cfg=None):
         "entries": entries,
         "shape": shape,
         "maxSlots": max((len(v["slots"]) for v in shape.values()), default=0),
-        "typical": typical_times(shape),
     }
 
 
@@ -787,29 +781,6 @@ def label_divisions(divisions, entries):
             div["label"] = ", ".join(ranked[:2]) + " …"
 
 
-def typical_times(shape):
-    """The time each slot and break usually runs at, for the print view's Aeg
-    column. Days that differ are annotated in the cell itself, the way the
-    school's own printouts do it."""
-    def commonest(values):
-        counts = {}
-        for v in values:
-            counts[v] = counts.get(v, 0) + 1
-        return max(counts, key=lambda v: (counts[v], v)) if counts else ""
-
-    slots, breaks = {}, {}
-    for day in shape.values():
-        for i, slot in enumerate(day["slots"], start=1):
-            if slot.get("start"):
-                slots.setdefault(i, []).append(f"{slot['start']}–{slot['end']}")
-        for brk in day["breaks"]:
-            breaks.setdefault(brk["after"], []).append(f"{brk['start']}–{brk['end']}")
-    return {
-        "slots": {str(k): commonest(v) for k, v in slots.items()},
-        "breaks": {str(k): commonest(v) for k, v in breaks.items()},
-    }
-
-
 def collect(client, year, only, verbose):
     """Every visible timetable, with every class in it, extracted."""
     listing = client.timetables(year)
@@ -847,7 +818,6 @@ def collect(client, year, only, verbose):
             "showTimes": meta["showTimes"],
             "bells": bool(cfg),
             "bellName": (cfg or {}).get("name", ""),
-            "breakSlots": [g["after"] for g in (cfg or {}).get("gaps", []) if g.get("name")],
             "classes": classes,
         })
         if verbose:
@@ -1002,13 +972,11 @@ def compact(schools):
             "ts": school["showTimes"],
             "b": school["bells"],
             "bn": school["bellName"],
-            "bs": school["breakSlots"],
             "c": [{
                 "n": cls["name"],
                 "v": [{"id": d["id"], "groups": d["groups"], "l": d["label"],
                        "sj": d["subjects"]}
                       for d in cls["divisions"]],
-                "y": cls["typical"],
                 "m": cls["maxSlots"],
                 "h": {str(day): {
                     "s": [{"p": s["period"], "d": s["periods"],

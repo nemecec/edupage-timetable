@@ -624,50 +624,20 @@ function lessonHtml(e, time) {
 
 /* Columns are slots plus the named breaks that sit between them, or aSc
    periods when slot mode is off. */
+/* Columns of the fallback grid. Only a school with no usable day plan gets
+   here, so these are always aSc's raw periods. */
 function columnModel(school, cls) {
-  if (!onTimeline()) return school.p.map(p => ({ kind: "period", p: p }));
-  const cols = [];
-  for (let n = 1; n <= cls.m; n++) {
-    cols.push({ kind: "slot", n: n });
-    if (school.bs.includes(n) && n < cls.m) cols.push({ kind: "break", after: n });
-  }
-  return cols;
+  return school.p.map(p => ({ kind: "period", p: p }));
 }
 
 function columnLabel(school, cls, col) {
-  if (col.kind === "period") {
-    if (!school.ts) return esc(col.p.l);
-    return esc(col.p.l) + '<br><span class="slottime">' + esc(col.p.s + "–" + col.p.e) + "</span>";
-  }
-  if (col.kind === "slot") {
-    /* Show the time in the header when every day agrees on it, which is the
-       case for the slots before the day plan starts branching. */
-    const times = cls.e.filter(e => e.k === col.n && e.w).map(e => e.w);
-    const same = times.length && times.every(t => t === times[0]);
-    return String(col.n) + (same ? '<br><span class="slottime">' + esc(times[0]) + "</span>" : "");
-  }
-  const name = (Object.values(cls.h).flatMap(v => v.b).find(b => b.a === col.after) || {}).n || "";
-  return esc(name.split(",")[0]);
+  if (!school.ts) return esc(col.p.l);
+  return esc(col.p.l) + '<br><span class="slottime">' + esc(col.p.s + "–" + col.p.e) + "</span>";
 }
 
 function bodyCell(cls, dayIdx, col, bucket) {
-  if (col.kind === "break") {
-    const shape = cls.h[dayIdx];
-    const brk = shape && shape.b.find(b => b.a === col.after);
-    const hasLater = shape && shape.s.length > col.after;
-    if (!brk || !hasLater) return '<td class="brk"></td>';
-    return '<td class="brk"><div class="time">' + esc(brk.s + "–" + brk.e) + "</div></td>";
-  }
-  if (col.kind === "period") {
-    return "<td>" + (bucket.get(dayIdx + ":p" + col.p.n) || [])
-      .map(e => lessonHtml(e, e.c ? "" : e.w)).join("") + "</td>";
-  }
-  const shape = cls.h[dayIdx];
-  const slot = shape && shape.s[col.n - 1];
-  const time = slot && slot.a ? slot.a + "–" + slot.z : "";
-  const here = bucket.get(dayIdx + ":s" + col.n) || [];
-  if (!here.length) return "<td></td>";
-  return "<td>" + here.map(e => lessonHtml(e, e.w || time)).join("") + "</td>";
+  return "<td>" + (bucket.get(dayIdx + ":p" + col.p.n) || [])
+    .map(e => lessonHtml(e, e.c ? "" : e.w)).join("") + "</td>";
 }
 
 /* One landscape sheet is the whole point of this view, and how tall a row
@@ -710,90 +680,6 @@ function footHeight() {
   const s = getComputedStyle(f);
   return f.getBoundingClientRect().height +
          (parseFloat(s.marginTop) || 0) + (parseFloat(s.marginBottom) || 0);
-}
-
-function fitPrint() {
-  const t = document.querySelector("#grid .ptbl");
-  if (!t) return;
-  const room = SHEET_H - footHeight();
-  const fits = () => t.getBoundingClientRect().height <= room;
-  for (let font = 12.5; ; font -= 0.75) {
-    t.style.setProperty("--pfont", font + "px");
-    for (let pad = 15; pad >= 3; pad--) {
-      t.style.setProperty("--ppad", pad + "px");
-      if (fits()) return;
-    }
-    if (font <= 8) return;        // as small as this view is willing to go
-  }
-}
-
-/* The school's own printout: slots down the side with one Aeg column, days
-   across, breaks as their own rows. Where a day departs from the usual time,
-   the cell carries its own — the same convention the paper versions use. */
-function renderPrint(school, cls, shown, mine) {
-  const bucket = new Map();
-  for (const e of shown) {
-    const k = e.d + ":s" + e.k;
-    if (!bucket.has(k)) bucket.set(k, []);
-    bucket.get(k).push(e);
-  }
-  const dayIdx = daysWith(school, mine);
-  const title = displayTitle(school, cls);
-
-  let h = '<table class="ptbl"><thead>';
-  h += '<tr><th class="corner"></th><th class="ptitle" colspan="' + (dayIdx.length + 1) + '">' +
-       esc(title) + "</th></tr>";
-  h += '<tr><th class="corner"></th><th class="phead">' + esc(t("time")) + "</th>" +
-       dayIdx.map(i => '<th class="phead">' + esc(dayLabel(school, i)) + "</th>").join("") + "</tr>";
-  h += "</thead><tbody>";
-
-  for (let n = 1; n <= cls.m; n++) {
-    const usual = (cls.y.slots || {})[n] || "";
-    h += '<tr><th class="pnum">' + n + '</th><th class="ptime">' + esc(usual) + "</th>";
-    for (const i of dayIdx) {
-      const here = bucket.get(i + ":s" + n) || [];
-      if (!here.length) { h += "<td></td>"; continue; }
-      const col = colorFor(here[0].s);
-      const body = here.map(e => {
-        const room = e.r.length ? " (" + e.r.join("/") + ")" : "";
-        const shown = subjectName(e, false);
-        const when = e.o ? "" : (e.w && e.w !== usual
-          ? '<br><span class="pwhen">(' + esc(e.w) + ")</span>" : "");
-        return esc(shown + room) + when;
-      }).join("<br>");
-      h += '<td class="pcell" data-subject="' + esc(here[0].s) + '" style="background:' +
-           esc(col.bg) + ";color:" + esc(col.fg) + '">' + body + "</td>";
-    }
-    h += "</tr>";
-    if (!school.bs.includes(n) || n >= cls.m) continue;
-    const usualBreak = (cls.y.breaks || {})[n] || "";
-    const name = (Object.values(cls.h).flatMap(v => v.b).find(b => b.a === n) || {}).n || "";
-    h += '<tr><th class="corner"></th><th class="ptime">' + esc(usualBreak) + "</th>";
-    for (const i of dayIdx) {
-      const shape = cls.h[i];
-      const brk = shape && shape.b.find(b => b.a === n);
-      if (!brk || !(shape.s.length > n)) { h += "<td></td>"; continue; }
-      const own = brk.s + "–" + brk.e;
-      h += '<td class="pbreak">' + esc(name.split(",")[0]) +
-           (own !== usualBreak ? '<br><span class="pwhen">(' + esc(own) + ")</span>" : "") +
-           "</td>";
-    }
-    h += "</tr>";
-  }
-  if (mine.length) {
-    h += '<tr><th class="corner"></th><th class="ptime">' + esc(t("mineCol")) + "</th>";
-    for (const i of dayIdx) {
-      const list = mine.filter(ev => ev.day === i).sort((p, q) => p.a - q.a);
-      if (!list.length) { h += "<td></td>"; continue; }
-      h += '<td class="pcell" style="padding:0">' + list.map(ev =>
-        '<div style="padding:3px 4px;background:' + esc(ev.bg) + ";color:" + esc(eventFg(ev)) +
-        '">' + esc(ev.label) +
-        '<br><span class="pwhen">(' + esc(hhmm(ev.a) + "–" + hhmm(ev.z)) +
-        ")</span></div>").join("") + "</td>";
-    }
-    h += "</tr>";
-  }
-  return h + "</tbody></table>";
 }
 
 /* Repaint the grid but leave the legend alone. Its colour inputs are live DOM
@@ -850,8 +736,7 @@ function render() {
   let h = "<table><thead><tr><th></th>";
   {
     for (const col of cols) {
-      const cls2 = col.kind === "break" ? ' class="brk"' : "";
-      h += "<th" + cls2 + ">" + columnLabel(school, cls, col) + "</th>";
+      h += "<th>" + columnLabel(school, cls, col) + "</th>";
     }
     if (anyMine) h += "<th>" + esc(t("mineCol")) + "</th>";
     h += "</tr></thead><tbody>";
@@ -866,7 +751,7 @@ function render() {
 
   const total = cls.e.filter(e => !timeline || !e.c).length;
   document.getElementById("count").textContent =
-    t(timeline ? "lessonsShown" : "slotsShown", shown.length, total) +
+    t("slotsShown", shown.length, total) +
     (shown.length === total ? " " + t("noFilter") : "") +
     (parsed.events.length ? " · " + t("mineCount", parsed.events.length) : "") +
     (school.b ? "" : " · " + t("noBells"));

@@ -116,12 +116,17 @@ class WholePage(unittest.TestCase):
         for marker in ("function parseEvents", "function renderTimeline", "qrcode"):
             self.assertIn(marker, self.page, "page.js or the QR library is not inlined")
 
+    # The counter's script tag is there only when a site was named at build
+    # time, and page.js is written to find nothing and do nothing when it is
+    # absent. Every other id must exist in every build.
+    OPTIONAL_IDS = {"gc"}
+
     def test_every_element_the_page_reaches_for_exists(self):
         """A renamed id is a blank page that no syntax check would catch."""
         with open(os.path.join(ROOT, "page.js"), encoding="utf-8") as fh:
             wanted = set(re.findall(r'getElementById\("([^"]+)"\)', fh.read()))
         self.assertGreater(len(wanted), 20, "the scan found suspiciously few")
-        for name in sorted(wanted):
+        for name in sorted(wanted - self.OPTIONAL_IDS):
             with self.subTest(id=name):
                 self.assertIn('id="%s"' % name, self.page)
 
@@ -145,7 +150,11 @@ class WholePage(unittest.TestCase):
         self.assertNotIn("<", blob, "a '<' in school data could end the block early")
 
     def test_a_plain_build_carries_no_tracker_and_no_date(self):
-        self.assertNotIn("goatcounter", self.page)
+        # page.js always holds the code that would count a visit; what a plain
+        # build must not hold is anything that reaches a third party.
+        self.assertNotIn("gc.zgo.at", self.page)
+        self.assertNotIn("data-goatcounter", self.page)
+        self.assertNotIn('id="gc"', self.page)
         self.assertEqual(self.data["built"], "")
 
     def test_the_same_input_gives_the_same_page(self):
@@ -157,15 +166,19 @@ class WholePage(unittest.TestCase):
 class Counting(unittest.TestCase):
     def test_a_local_build_calls_nobody(self):
         page, _ = build()
-        self.assertNotIn("goatcounter", page)
+        for reach in ("gc.zgo.at", "data-goatcounter", 'id="gc"'):
+            self.assertNotIn(reach, page)
 
     def test_the_counter_is_never_told_the_child_s_name(self):
-        # The page puts the name in the title, and the counter reports the
-        # title. Pinning it is the only thing keeping the name off the wire.
+        # Left alone the counter reports document.title, and the page puts the
+        # name there. It counts by hand instead, out of the school's own names.
         page, _ = build("--goatcounter", "little-tools-timetable")
         self.assertIn("gc.zgo.at/count.js", page)
-        self.assertIn('window.goatcounter = {title: "timetable"', page)
+        self.assertIn("window.goatcounter = {no_onload: true", page)
         self.assertLess(page.index("window.goatcounter ="), page.index("gc.zgo.at"))
+        # The hand-off between the two: page.js waits on the tag by its id.
+        self.assertIn('<script id="gc"', page)
+        self.assertIn('document.getElementById("gc")', page)
 
 
 class SchoolYear(unittest.TestCase):

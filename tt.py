@@ -1415,16 +1415,24 @@ def pick_initial(schools, want_school, want_class):
     return school["ttNum"], klass
 
 
-# Page counts with nothing personal in them. The counter reports document.title
-# along with the visit, and this page puts the child's name in the title — so the
-# title it reports is pinned to a constant first. Without that line a name typed
-# into the Title field would be sent to a third party on every visit, which is
-# exactly what the page tells the reader does not happen.
+# Page counts, with the label decided here rather than taken from the page.
+#
+# Left to itself the counter reports document.title, and this page puts the
+# child's name in the title — that name would then be sent to a third party on
+# every visit, which is exactly what the page tells the reader does not happen.
+# So the count is made by hand instead (`no_onload`), once page.js knows which
+# timetable is on screen, out of the school's own names for it. What the reader
+# typed is never part of it.
+#
+# The label is sent as a path as well as a title: the counter keeps one title
+# per path, so a title alone would collapse every class into a single row and
+# show whichever arrived last. The address the reader sees is untouched — this
+# is only what the beacon says.
 #
 # The script is only in the file when a site is named at build time, so a local
 # build makes no third-party request at all.
-GOATCOUNTER = ('<script>window.goatcounter = {{title: "timetable", referrer: ""}};</script>'
-               '<script data-goatcounter="https://{site}.goatcounter.com/count"'
+GOATCOUNTER = ('<script>window.goatcounter = {{no_onload: true, referrer: ""}};</script>'
+               '<script id="gc" data-goatcounter="https://{site}.goatcounter.com/count"'
                ' async src="https://gc.zgo.at/count.js"></script>')
 
 

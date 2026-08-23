@@ -88,7 +88,7 @@ export function load() {
       createRange: () => ({ selectNodeContents() {}, selectNode() {} }),
       addEventListener() {},
     },
-    location: { href: "https://example.test/t/", hash: "", search: "" },
+    location: { href: "https://example.test/t/", pathname: "/t/", hash: "", search: "" },
     history: { replaceState() {} },
     localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
     navigator: { clipboard: { writeText: () => Promise.resolve() } },

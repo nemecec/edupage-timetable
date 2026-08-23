@@ -60,6 +60,58 @@ test("only something that is plainly a colour can be stored as one", () => {
   assert.deepEqual(json(`onlyColours({a: "  #fff  "})`), { a: "#fff" });
 });
 
+test("the counter is told the school's own name, never the reader's", () => {
+  // What a parent types is exactly what must not go out.
+  run(`state.who = {}; state.titleSchool = {}; state.titleClass = {};
+       state.who[picksKey()] = "Mari Maasikas";
+       state.titleSchool[picksKey()] = "Mari's school";
+       state.titleClass[picksKey()] = "Mari's class";
+       state.showWho = true;
+       window.goatcounter = { count: (label) => { globalThis.sent = label; } };
+       globalThis.sent = null;
+       countVisit();`);
+  const sent = json(`sent`);
+  const heading = json(`displayTitle(currentSchool(), currentClass())`);
+
+  assert.ok(sent, "the visit was counted");
+  assert.match(heading, /Mari Maasikas/);          // on screen, as asked
+  assert.doesNotMatch(JSON.stringify(sent), /Mari/); // and nowhere in the beacon
+  assert.equal(sent.referrer, "");
+
+  // Enough to tell one class from another, since the counter keeps one title
+  // per path and would otherwise show them all as one row.
+  assert.match(sent.path, /^\/t\/[^/]+\/[^/]+$/);
+  assert.ok(sent.title.includes(json(`currentSchool().l`)));
+
+  // Same row whichever language the reader is in, or the label would flip.
+  const inEnglish = run(`state.lang = "en"; globalThis.sent = null;
+                         countVisit(); JSON.stringify(sent)`);
+  const inEstonian = run(`state.lang = "et"; globalThis.sent = null;
+                          countVisit(); JSON.stringify(sent)`);
+  assert.equal(inEnglish, inEstonian);
+  assert.match(JSON.parse(inEnglish).title, /klass|[A-Za-zÀ-ÿ]/);
+});
+
+test("one address however it was reached", () => {
+  run(`window.goatcounter = { count: (o) => { globalThis.sent = o; } };`);
+  const seen = new Set();
+  for (const path of ["/t/", "/t", "/t/index.html", "/t/index.html/"]) {
+    run(`location.pathname = ${JSON.stringify(path)}; countVisit();`);
+    seen.add(json(`sent.path`));
+  }
+  run(`location.pathname = "/t/";`);
+  assert.equal(seen.size, 1, [...seen].join(" vs "));
+});
+
+test("a build with no counter in it counts nothing", () => {
+  run(`window.goatcounter = { count: () => { globalThis.sent = "sent"; } };
+       globalThis.sent = null;
+       const real = document.getElementById;
+       document.getElementById = (id) => (id === "gc" ? null : real(id));
+       try { countVisit(); } finally { document.getElementById = real; }`);
+  assert.equal(json(`sent`), null);
+});
+
 test("a short colour is still readable text on top of it", () => {
   // #000 is black; before it was understood, the label came out black on black.
   assert.equal(json(`readable("#000")`), "#FFFFFF");

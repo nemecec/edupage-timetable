@@ -1086,6 +1086,45 @@ document.getElementById("doprint").addEventListener("click", () => {
   }
 });
 
+/* ----- counting the visit ------------------------------------------------
+   The counter is told what to record rather than left to read the page, because
+   what it would read is the heading, and the heading can hold a child's name.
+   What goes out is the school's own name for this timetable and nothing else:
+   never `titleParts`, which folds in whatever the reader typed.
+
+   It is sent as a path as well as a title. The counter keeps one title per
+   path, so a varying title on a fixed path would collapse every class into one
+   row labelled by whichever visit happened last. The reader's address bar is
+   not involved — this is a string in a beacon.
+
+   Once per load, on the timetable that was open when the page came up: the one
+   restored from last time, or the one a shared link asked for. Switching class
+   afterwards is not another visit. */
+function countVisit() {
+  const tag = document.getElementById("gc");
+  if (!tag) return;                       // built without a counter: nothing to do
+  const school = currentSchool(), cls = currentClass();
+  if (!school || !cls) return;
+  /* One address whichever way it was reached, so /timetable/ and
+     /timetable/index.html do not become two rows. */
+  const here = location.pathname.replace(/\/*(index\.html)?\/*$/, "");
+  const klass = String(cls.n).trim();
+  /* Always Estonian, whatever the reader picked: the title is stored per path
+     and the last visit wins, so a label that follows the interface language
+     would flip between "8. klass" and "class 8" for the same row. */
+  const et = DATA.strings.et || DATA.strings.en;
+  const label = {
+    path: here + "/" + school.n + "/" + klass,
+    title: school.l + ", " + (et.classN || "{0}").split("{0}").join(klass),
+    referrer: "",
+  };
+  const send = () => {
+    try { window.goatcounter.count(label); } catch (e) {}
+  };
+  if (window.goatcounter && typeof window.goatcounter.count === "function") send();
+  else tag.addEventListener("load", send, { once: true });
+}
+
 renderLanguages();
 renderSchools();
 renderClasses();
@@ -1093,3 +1132,4 @@ applyStrings();
 renderDivisions();
 syncPerClassInputs();
 render();
+countVisit();

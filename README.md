@@ -217,10 +217,17 @@ and leaves the rest on screen. Where visits are counted, the page says so.
 What the reader types stays in the reader's browser. Names, group choices,
 colours and personal events live in `localStorage` and in the link's fragment,
 which no browser sends to a server. The one thing that does leave is the visit
-count, and GoatCounter reports the page title along with it — a title this page
-builds out of the child's name. So the title it reports is pinned to a constant
-before the counter loads. Without that one line the footer's promise would be
-false, which is the whole reason it is there.
+count, and left to itself GoatCounter reports the page heading along with it —
+a heading this page builds out of the child's name. So it does not report the
+heading: the count is made by hand once, from the school's own name for the
+timetable on screen and nothing the reader wrote.
+
+The counter keeps one title per path, so the label is sent as a path as well —
+`/timetable/68/8` for ProTERA's class 8 — or every class would collapse into a
+single row showing whichever title arrived last. That is a string in a beacon;
+the address a reader sees and shares stays `/timetable/`. The label is always
+in Estonian, whichever language the interface is in, so the same class does not
+flip between two names in the dashboard.
 
 ## Determinism
 

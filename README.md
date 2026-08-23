@@ -284,6 +284,18 @@ deterministic, just a different deterministic assignment.
   — since an event at 17.15 belongs to no lesson slot. Typing into the box
   stores every keystroke but repaints on a short timer, so a long line is never
   typed against a redraw.
+- **The address bar carries everything** that has been chosen — group picks,
+  colours, personal events, the name, the language, the display switches — so a
+  bookmark keeps it and a link hands it to someone else. Only what differs from
+  the defaults is encoded, which keeps a typical link near 200 characters. The
+  fragment never leaves the browser, so carrying settings sends them nowhere.
+  Opening a link merges its per-class settings rather than replacing them, so a
+  link for one child does not wipe a sibling's.
+- **The printout carries a QR code** of that same link, so a sheet on the fridge
+  can be picked back up on a phone with every choice still on it. It is drawn
+  from a vendored copy of a QR library rather than an image service — see
+  [vendor/](vendor/) — at 36mm, which puts a typical link at about half a
+  millimetre per module.
 - **Back up settings…** shows the whole configuration as JSON: group picks,
   custom colours, personal events, names, and view options, for every class you
   have set up. Copy it to keep a backup, or paste one back and apply it. Older
@@ -328,6 +340,13 @@ make the build hermetic — the API responses are an output, not source, and an
 Actions cache is evicted after a week of quiet, so a fixture that can disappear
 is worse than none. The trade is that `build` also goes red when the school's
 server is down, which is worth being told about.
+
+The QR code was verified by decoding it back, not by eye: the printed page is
+rasterised and read with an independent decoder, and the string that comes back
+is compared to the link character for character. That passes at 200dpi — well
+below what any printer does — and at 300, 400 and 600. The library it uses was
+checked against a second implementation before being adopted; for URL-shaped
+input the two produce identical module grids.
 
 Both print layouts were re-rendered with background graphics disabled to confirm
 the colours still come through, and the timeline's axis was measured to confirm

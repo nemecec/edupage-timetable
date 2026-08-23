@@ -1114,6 +1114,14 @@ PAGE = """<!DOCTYPE html>
     .ptitle { font-size: 17px; font-weight: 700; text-align: center; }
   }
   .foot { margin: 24px 0 10px; font-size: 11.5px; color: var(--muted); line-height: 1.5; }
+  /* Flex, not a float: a floated child adds nothing to its parent's height, so
+     the fitting would size the table as if the code were not there and push it
+     off the sheet. */
+  .foot { display: flex; align-items: flex-start; gap: 16px; }
+  .foot .lines { flex: 1 1 auto; }
+  .qrbox { flex: 0 0 auto; text-align: center; }
+  .qrhint { font-size: 7.5px; max-width: 32mm; line-height: 1.2; margin-top: 2px; }
+  .qr { display: block; }
   .foot a { color: inherit; }
   .foot .warn { font-weight: 600; }
   body.printview .foot { width: 1054px; margin: 8px 0 0; font-size: 9px; }
@@ -1216,6 +1224,7 @@ PAGE = """<!DOCTYPE html>
 <footer class="foot" id="foot"></footer>
 
 __ANALYTICS__
+<script>__QRLIB__</script>
 <script id="data" type="application/json">__DATA__</script>
 <script>
 "use strict";
@@ -1337,7 +1346,14 @@ function renderFooter(school) {
   /* Say so where it is true. A page that counts its readers should admit it,
      and this one only counts when it was built for a public address. */
   if (DATA.counts) bits.push(esc(t("footer.counts")));
-  document.getElementById("foot").innerHTML = bits.join("<br>");
+  /* 36mm keeps a typical link at about half a millimetre per module, which a
+     phone reads without ceremony. A link carrying many custom colours gets
+     denser; it still scans, just less forgivingly. */
+  const code = printing ? qrSvg(shareUrl(), "36mm") : "";
+  document.getElementById("foot").innerHTML =
+    '<div class="lines">' + bits.join("<br>") + "</div>" +
+    (code ? '<div class="qrbox">' + code +
+            '<div class="qrhint">' + esc(t("qrHint")) + "</div></div>" : "");
 }
 
 function displayTitle(school, cls) {
@@ -1638,6 +1654,32 @@ function renderTimeline(school, cls, shown, mine) {
     h += "</div>";
   }
   return h + "</div></div>";
+}
+
+/* The link as a QR code, so a printed sheet can be picked back up on a phone
+   with every choice still on it. Drawn as squares rather than an image: it has
+   to survive a printer at whatever size the sheet allows. */
+function qrSvg(text, side) {
+  let code;
+  try {
+    qrcode.stringToBytes = qrcode.stringToBytesFuncs["UTF-8"];
+    code = qrcode(0, "M");
+    code.addData(text);
+    code.make();
+  } catch (e) {
+    return "";                    // too long to encode: the link still works
+  }
+  const n = code.getModuleCount(), quiet = 4, span = n + quiet * 2;
+  let path = "";
+  for (let r = 0; r < n; r++) {
+    for (let c = 0; c < n; c++) {
+      if (code.isDark(r, c)) path += "M" + (c + quiet) + " " + (r + quiet) + "h1v1h-1z";
+    }
+  }
+  return '<svg class="qr" width="' + side + '" height="' + side + '" viewBox="0 0 ' +
+         span + " " + span + '" shape-rendering="crispEdges" role="img">' +
+         '<rect width="' + span + '" height="' + span + '" fill="#fff"/>' +
+         '<path d="' + path + '" fill="#000"/></svg>';
 }
 
 /* Named CSS colours have to become hex before luminance can be measured. */
@@ -2233,6 +2275,14 @@ GOATCOUNTER = ('<script data-goatcounter="https://{site}.goatcounter.com/count"'
                ' async src="https://gc.zgo.at/count.js"></script>')
 
 
+def vendored(name):
+    """Third-party code copied into the page. Fetching it at run time would hand
+    the reader's settings to whoever served it."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    with open(os.path.join(here, "vendor", name), encoding="utf-8") as fh:
+        return fh.read()
+
+
 def render_html(schools, edupage, year, initial_school, initial_class, lang="en",
                 built="", goatcounter=""):
     entries_data, subject_meta = compact(schools)
@@ -2254,6 +2304,7 @@ def render_html(schools, edupage, year, initial_school, initial_class, lang="en"
     blob = json.dumps(payload, ensure_ascii=False, sort_keys=True).replace("</", "<\\/")
     tag = GOATCOUNTER.format(site=html.escape(goatcounter, quote=True)) if goatcounter else ""
     return (PAGE
+            .replace("__QRLIB__", vendored("qrcode-generator.js"))
             .replace("__TITLE__", html.escape(f"{edupage} timetables {year}"))
             .replace("__ANALYTICS__", tag)
             .replace("__DATA__", blob))

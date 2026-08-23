@@ -74,21 +74,23 @@ STRINGS = {
     "en": {
         "lang": "Language",
         "school": "School", "class": "Class", "classN": "class {0}",
-        "view": "View",
-        "view.timeline": "Timeline (to scale)",
-        "view.table": "Table",
-        "view.periods": "aSc period grid",
-        "transpose": "Days as columns",
-        "schoolColours": "School colours",
+        "display": "Display options",
+        "advanced": "Advanced",
+        "schoolColours": "The school's own colours",
         "shortNames": "Short subject names",
         "showRoom": "Room",
-        "showGroup": "Group",
-        "printView": "Print view (A4 landscape)",
+        "showGroup": "Study group",
         "name": "Name",
         "namePlaceholder": "e.g. Ere",
         "print": "Print…",
-        "backup": "Back up settings…",
+        "backup": "Settings as JSON",
         "reset": "Reset groups & colours",
+        "link": "Link to this timetable",
+        "linkHint": ("Everything you have chosen is in the address bar, so a "
+                     "bookmark or a shared link carries it with them."),
+        "linkCopy": "Copy link",
+        "linkCopied": "Copied",
+        "qrHint": "Scan to reopen with these settings",
         "teachers": "Teachers",
         "teachers.short": "Abbreviation",
         "teachers.full": "Full name",
@@ -97,7 +99,6 @@ STRINGS = {
         "groups": "Groups",
         "noGroups": "This class is not split into groups.",
         "all": "— all —",
-        "mainGroup": "Main group",
         "time": "Time",
         "nothing": "Nothing to show.",
         "paired": "paired (2 periods)",
@@ -111,7 +112,8 @@ STRINGS = {
         "lessonCount": "{0} lessons",
         "mineCount": "{0} of my own",
         "mineCol": "My own",
-        "events.label": "My own events — one per line:",
+        "events.summary": "My own events",
+        "events.label": "One per line:",
         "events.example": "Mon 17:15-18:15 orange Dance training",
         "events.placeholder": ("Mon 17:15-18:15 orange Dance training\n"
                                "Wed 15:25-17:15 #c0392b Piano lesson\n"
@@ -144,21 +146,23 @@ STRINGS = {
     "et": {
         "lang": "Keel",
         "school": "Kool", "class": "Klass", "classN": "{0}. klass",
-        "view": "Vaade",
-        "view.timeline": "Ajatelg (mõõtkavas)",
-        "view.table": "Tabel",
-        "view.periods": "aSc tunnivõrk",
-        "transpose": "Päevad veergudena",
-        "schoolColours": "Kooli värvid",
+        "display": "Kuvamise seaded",
+        "advanced": "Täpsemad seaded",
+        "schoolColours": "Kooli enda värvid",
         "shortNames": "Lühikesed ainenimed",
         "showRoom": "Ruum",
-        "showGroup": "Rühm",
-        "printView": "Prindivaade (A4 rõhtpaigutus)",
+        "showGroup": "Õpperühm",
         "name": "Nimi",
         "namePlaceholder": "nt Ere",
         "print": "Prindi…",
-        "backup": "Varunda seaded…",
+        "backup": "Seaded JSON-ina",
         "reset": "Lähtesta rühmad ja värvid",
+        "link": "Selle tunniplaani link",
+        "linkHint": ("Kõik valikud on aadressiribal, nii et järjehoidja või "
+                     "jagatud link kannab need kaasa."),
+        "linkCopy": "Kopeeri link",
+        "linkCopied": "Kopeeritud",
+        "qrHint": "Skanni, et avada need seaded uuesti",
         "teachers": "Õpetajad",
         "teachers.short": "Lühend",
         "teachers.full": "Täisnimi",
@@ -167,7 +171,6 @@ STRINGS = {
         "groups": "Rühmad",
         "noGroups": "See klass ei ole rühmadeks jaotatud.",
         "all": "— kõik —",
-        "mainGroup": "Põhirühm",
         "time": "Aeg",
         "nothing": "Pole midagi näidata.",
         "paired": "paaristund (2 tundi)",
@@ -181,7 +184,8 @@ STRINGS = {
         "lessonCount": "{0} tundi",
         "mineCount": "{0} minu oma",
         "mineCol": "Minu oma",
-        "events.label": "Minu enda sündmused — üks real:",
+        "events.summary": "Minu enda sündmused",
+        "events.label": "Üks real:",
         "events.example": "E 17:15-18:15 orange Tantsutrenn",
         "events.placeholder": ("E 17:15-18:15 orange Tantsutrenn\n"
                                "K 15:25-17:15 #c0392b Klaveritund\n"
@@ -250,6 +254,45 @@ BELLS = {
         ],
         "defaultGap": 5,
     },
+    # LõunaTERA does not work the way ProTERA does. Its day plan is published as
+    # fixed blocks rather than lesson lengths, the two grade bands run different
+    # days, and the breaks — Puder, Lõuna/Õue, Hea aeg — are lessons in the
+    # timetable rather than gaps between them. So there is no clock to run: each
+    # block says which aSc periods it holds and when it is.
+    #
+    #   (first period, how many periods, start, end)
+    #
+    # A block holding two periods is one box. Sometimes that is a genuine pair —
+    # the same lesson twice over — and sometimes two different subjects taught
+    # back to back, which the school writes as one block and this follows.
+    # Source: tartuerakool.ee/lounatera/koolielu/
+    "LõunaTERA": {
+        "name": "Päevakava",
+        "bands": [
+            {
+                "classes": ["Maarja", "Heliis", "Mari-Liis", "Cathleen", "Silva"],
+                "days": {
+                    (0, 1, 2, 3): [(1, 2, "9:00", "10:50"), (3, 1, "10:50", "11:10"),
+                                   (4, 1, "11:10", "12:10"), (5, 1, "12:20", "13:20"),
+                                   (6, 1, "13:20", "13:50"), (7, 1, "13:50", "14:50"),
+                                   (8, 1, "15:00", "16:00")],
+                    (4,): [(1, 1, "9:00", "10:00"), (2, 1, "10:00", "11:00"),
+                           (3, 1, "11:00", "12:00"), (4, 1, "12:00", "13:00")],
+                },
+            },
+            {
+                "classes": ["Elis", "Kateriine", "Juta", "Katrin", "Joanna", "Sille"],
+                "days": {
+                    (0, 1, 2, 3): [(1, 2, "9:00", "10:20"), (3, 1, "10:20", "10:40"),
+                                   (4, 2, "10:40", "12:00"), (6, 1, "12:00", "12:45"),
+                                   (7, 1, "12:45", "13:25"), (8, 1, "13:25", "14:10"),
+                                   (9, 1, "14:15", "15:00"), (10, 1, "15:00", "15:45")],
+                    (4,): [(1, 2, "9:00", "10:20"), (3, 2, "10:30", "11:50"),
+                           (5, 1, "11:50", "12:15"), (6, 1, "12:15", "13:00")],
+                },
+            },
+        ],
+    },
 }
 
 
@@ -290,6 +333,29 @@ def day_times(slot_kinds, cfg):
                            "start": _fmt_time(clock), "end": _fmt_time(clock + minutes)})
         clock += minutes
     return slots, breaks
+
+
+def _minutes(text):
+    hour, _, minute = text.partition(":")
+    return int(hour) * 60 + int(minute)
+
+
+def band_slots(cfg, class_name, day):
+    """The published blocks for this class on this day, if the school lists them.
+
+    Same shape `day_slots` produces, so everything downstream is none the wiser:
+    a block covering two aSc periods is one box either way.
+    """
+    for band in cfg.get("bands", []):
+        if class_name not in band["classes"]:
+            continue
+        for days, blocks in band["days"].items():
+            if day not in days:
+                continue
+            return [{"period": period, "periods": span, "at": _minutes(start),
+                     "start": _fmt_time(_minutes(start)), "end": _fmt_time(_minutes(end))}
+                    for period, span, start, end in blocks]
+    return None
 
 
 # --------------------------------------------------------------------------
@@ -511,16 +577,27 @@ def extract(result, class_name, n_periods=None, cfg=None):
     n_periods = n_periods or max((e["period"] for e in entries), default=0)
     shape = {}
     for day in {e["day"] for e in entries}:
-        blocks = {(e["startPeriod"], e["duration"]) for e in entries
-                  if e["day"] == day and e["part"] == 0}
-        slots = day_slots(blocks, n_periods, (cfg or {}).get("alwaysPaired", 0))
-        if cfg:
-            kinds = ["P" if s["periods"] > 1 else "L" for s in slots]
-            times, breaks = day_times(kinds, cfg)
-            for slot, time in zip(slots, times):
-                slot.update(time)
-        else:
+        published = band_slots(cfg, cls["name"], day) if cfg else None
+        if published:
+            used = {e["startPeriod"] + k for e in entries if e["day"] == day
+                    for k in range(e["duration"])}
+            slots = [s for s in published
+                     if any(s["period"] + k in used for k in range(s["periods"]))]
             breaks = []
+        else:
+            blocks = {(e["startPeriod"], e["duration"]) for e in entries
+                      if e["day"] == day and e["part"] == 0}
+            slots = day_slots(blocks, n_periods, (cfg or {}).get("alwaysPaired", 0))
+            # A school whose plan is published as blocks has no clock to run, so
+            # a class its bands do not cover — the empty markers standing in for
+            # a grade, say — simply goes without times.
+            if cfg and not cfg.get("bands"):
+                kinds = ["P" if s["periods"] > 1 else "L" for s in slots]
+                times, breaks = day_times(kinds, cfg)
+                for slot, time in zip(slots, times):
+                    slot.update(time)
+            else:
+                breaks = []
         shape[day] = {"slots": slots, "breaks": breaks}
         slot_of_period = {}
         for i, slot in enumerate(slots, start=1):
@@ -533,7 +610,14 @@ def extract(result, class_name, n_periods=None, cfg=None):
             e["time"] = ""
             e["offSlot"] = False
             e["startMin"] = e["endMin"] = None
-            if cfg and e["slot"]:
+            if published and e["slot"]:
+                # The block's own times, whatever the lesson's length: this is
+                # what the school publishes, so nothing has to be inferred.
+                slot = slots[e["slot"] - 1]
+                e["startMin"] = slot["at"]
+                e["endMin"] = _minutes(slot["end"].replace(".", ":"))
+                e["time"] = f"{slot['start']}–{slot['end']}"
+            elif cfg and not cfg.get("bands") and e["slot"]:
                 slot = slots[e["slot"] - 1]
                 if e["startPeriod"] != slot["period"]:
                     # Starts part-way through a slot another group takes whole.
@@ -549,6 +633,9 @@ def extract(result, class_name, n_periods=None, cfg=None):
                     e["endMin"] = slot["at"] + length
                     e["time"] = f"{_fmt_time(slot['at'])}–{_fmt_time(slot['at'] + length)}"
 
+    if cfg and cfg.get("bands") and any(band_slots(cfg, cls["name"], d) for d in shape):
+        entries = merge_blocks(entries)
+
     label_divisions(divisions, entries)
     divisions = [d for d in divisions if d["lessons"]]
 
@@ -563,12 +650,55 @@ def extract(result, class_name, n_periods=None, cfg=None):
     }
 
 
+def merge_blocks(entries):
+    """One box per published block, even when it holds two different subjects.
+
+    The school writes 9.00-10.50 as a single block; inside it may sit Häälestus
+    and then Üldõpetus. Splitting the block in half would invent times nobody
+    published, so the two become one box naming both, in the order they run.
+
+    Only a sequence is merged. Lessons starting in the same period are choices
+    running side by side — Kodundus or Käsitöö or Puutöö — and stay apart, as do
+    any that name a group. The colour goes to whichever subject fills more of
+    the block, and to the later one when they fill it equally: a block that
+    opens with a warm-up should look like what it becomes.
+    """
+    out, merged = [], {}
+    for e in entries:
+        if e["part"]:
+            continue
+        merged.setdefault((e["day"], e["slot"]), []).append(e)
+    for (day, slot), here in sorted(merged.items()):
+        starts = {x["startPeriod"] for x in here}
+        if (len(here) == 1 or len(starts) < len(here)
+                or len({x["subject"] for x in here}) == 1
+                or any(x["groups"] for x in here)):
+            out.extend(here)
+            continue
+        here.sort(key=lambda x: x["startPeriod"])
+        lead = max(here, key=lambda x: (x["duration"], x["startPeriod"]))
+        joined = dict(lead)
+        joined["names"] = [x["subject"] for x in here]
+        joined["duration"] = sum(x["duration"] for x in here)
+        joined["startPeriod"] = here[0]["startPeriod"]
+        for field in ("teachers", "teacherShorts", "rooms"):
+            seen = []
+            for x in here:
+                for v in x[field]:
+                    if v not in seen:
+                        seen.append(v)
+            joined[field] = seen
+        out.append(joined)
+    out.sort(key=lambda e: (e["day"], e["period"], e["subject"], "/".join(e["groups"])))
+    return out
+
+
 def label_divisions(divisions, entries):
     """Name each group picker after what is actually taught in it.
 
     A division that only ever carries one subject is that subject; a couple of
-    subjects are listed; the broad one a class is split into for most of its
-    lessons is the main group.
+    subjects are listed; more than that is shortened, and the page keeps the
+    whole list for the tooltip.
     """
     for div in divisions:
         counts = {}
@@ -580,8 +710,6 @@ def label_divisions(divisions, entries):
         div["lessons"] = sum(counts.values())
         div["subjectCounts"] = counts
 
-    broad = [d for d in divisions if len(d["subjectCounts"]) >= 4]
-    main = max(broad, key=lambda d: (d["lessons"], d["id"]), default=None)
     for div in divisions:
         ranked = sorted(div["subjectCounts"], key=lambda s: (-div["subjectCounts"][s], s))
         # The page shortens long lists in the picker heading and keeps the whole
@@ -595,8 +723,6 @@ def label_divisions(divisions, entries):
             div["label"] = " / ".join(ranked)
         else:
             div["label"] = ", ".join(ranked[:2]) + " …"
-        if div is main:
-            div["main"] = True
 
 
 def typical_times(shape):
@@ -813,7 +939,7 @@ def compact(schools):
             "c": [{
                 "n": cls["name"],
                 "v": [{"id": d["id"], "groups": d["groups"], "l": d["label"],
-                       "sj": d["subjects"], "main": 1 if d.get("main") else 0}
+                       "sj": d["subjects"]}
                       for d in cls["divisions"]],
                 "y": cls["typical"],
                 "m": cls["maxSlots"],
@@ -827,6 +953,7 @@ def compact(schools):
                 } for day, v in cls["shape"].items()},
                 "e": [{
                     "d": e["day"], "p": e["period"], "s": e["subject"],
+                    "S": e.get("names") or 0,
                     "g": e["groups"], "t": e["teacherShorts"],
                     "T": e["teachers"], "r": e["rooms"], "c": e["part"],
                     "k": e["slot"], "u": e["duration"], "w": e.get("time", ""),
@@ -898,8 +1025,18 @@ PAGE = """<!DOCTYPE html>
              padding: 6px 8px; border: 1px solid var(--line); border-radius: 5px;
              resize: vertical; }
   .evwarn { font-size: 12px; color: #a33; margin-top: 5px; white-space: pre-line; }
-  .settings { display: none; width: 100%; margin-top: 10px; }
-  .settings.open { display: block; }
+  details.panel { padding: 0; }
+  details.panel > summary { padding: 12px 16px; cursor: pointer; font-size: 13px;
+                            font-weight: 600; color: var(--muted); list-style: none;
+                            display: flex; align-items: center; gap: 8px; }
+  details.panel > summary::-webkit-details-marker { display: none; }
+  details.panel > summary::before { content: "▸"; font-size: 11px; transition: transform .15s; }
+  details.panel[open] > summary::before { transform: rotate(90deg); }
+  details.panel > summary:hover { color: var(--accent); }
+  details.panel > :not(summary) { padding: 0 16px; }
+  details.panel > :last-child { padding-bottom: 14px; }
+  details.panel[open] > summary { border-bottom: 1px solid var(--line); margin-bottom: 12px; }
+  details.panel .row + .row { margin-top: 12px; }
 
   /* Timeline: a continuous clock down the side and every box drawn at its true
      start and height, so a 45-minute lesson never has to pretend to be 80. */
@@ -994,10 +1131,6 @@ PAGE = """<!DOCTYPE html>
 
 <div class="panel">
   <div class="row">
-    <div class="field">
-      <label for="lang" data-i18n="lang"></label>
-      <select id="lang"></select>
-    </div>
     <div class="field primary">
       <label for="school" data-i18n="school"></label>
       <select id="school"></select>
@@ -1006,17 +1139,20 @@ PAGE = """<!DOCTYPE html>
       <label for="klass" data-i18n="class"></label>
       <select id="klass"></select>
     </div>
+    <div class="field"><label for="who" data-i18n="name"></label>
+      <input type="text" id="who" data-i18n-ph="namePlaceholder" size="12"></div>
+    <div class="field">
+      <label for="lang" data-i18n="lang"></label>
+      <select id="lang"></select>
+    </div>
+    <button id="doprint" data-i18n="print"></button>
   </div>
   <div class="row" id="divisions"></div>
+</div>
+
+<details class="panel" id="displayPanel">
+  <summary data-i18n="display"></summary>
   <div class="row">
-    <div class="field">
-      <label for="view" data-i18n="view"></label>
-      <select id="view">
-        <option value="timeline" data-i18n="view.timeline"></option>
-        <option value="table" data-i18n="view.table"></option>
-        <option value="periods" data-i18n="view.periods"></option>
-      </select>
-    </div>
     <div class="field">
       <label for="teachers" data-i18n="teachers"></label>
       <select id="teachers">
@@ -1026,46 +1162,53 @@ PAGE = """<!DOCTYPE html>
       </select>
     </div>
     <div class="toggles">
-      <label><input type="checkbox" id="transpose"> <span data-i18n="transpose"></span></label>
-      <label><input type="checkbox" id="schoolColors"> <span data-i18n="schoolColours"></span></label>
       <label><input type="checkbox" id="showRoom"> <span data-i18n="showRoom"></span></label>
       <label><input type="checkbox" id="showGroup"> <span data-i18n="showGroup"></span></label>
       <label><input type="checkbox" id="compact"> <span data-i18n="shortNames"></span></label>
-      <label><input type="checkbox" id="print"> <span data-i18n="printView"></span></label>
-    </div>
-    <div class="field"><label for="who" data-i18n="name"></label>
-      <input type="text" id="who" data-i18n-ph="namePlaceholder" size="12"></div>
-    <button id="doprint" data-i18n="print"></button>
-    <button id="settings" data-i18n="backup"></button>
-    <button id="reset" data-i18n="reset"></button>
-  </div>
-  <div class="settings" id="settingsPanel">
-    <div class="field">
-      <label for="settingsText" data-i18n="settings.label"></label>
-      <textarea id="settingsText" rows="6" spellcheck="false"></textarea>
-    </div>
-    <div class="row" style="margin-top:8px;padding-top:0;border-top:none">
-      <button id="copySettings" data-i18n="settings.copy"></button>
-      <button id="applySettings" data-i18n="settings.apply"></button>
-      <span class="evwarn" id="settingsMsg"></span>
+      <label><input type="checkbox" id="schoolColors"> <span data-i18n="schoolColours"></span></label>
     </div>
   </div>
-</div>
+  <div class="row">
+    <div style="width:100%">
+      <div class="legend" id="legend"></div>
+      <div class="divsub" id="colourHint" style="margin-top:8px"></div>
+    </div>
+  </div>
+</details>
 
-<div class="panel">
-  <div class="field" style="width:100%">
+<details class="panel" id="eventsPanel">
+  <summary data-i18n="events.summary"></summary>
+  <div class="field" style="width:100%;margin-top:12px">
     <label for="events"><span data-i18n="events.label"></span>
       <code data-i18n="events.example"></code></label>
     <textarea id="events" rows="3" spellcheck="false"
       data-i18n-ph="events.placeholder"></textarea>
     <div class="evwarn" id="evwarn"></div>
   </div>
-</div>
+</details>
 
-<div class="panel">
-  <div class="legend" id="legend"></div>
-  <div class="divsub" id="colourHint" style="margin-top:8px"></div>
-</div>
+<details class="panel" id="advancedPanel">
+  <summary data-i18n="advanced"></summary>
+  <div class="field" style="width:100%;margin-top:12px">
+    <label for="link" data-i18n="link"></label>
+    <input type="text" id="link" readonly>
+    <div class="divsub" id="linkHint" style="margin-top:5px"></div>
+  </div>
+  <div class="row" style="margin-top:10px;padding-top:0;border-top:none">
+    <button id="copyLink" data-i18n="linkCopy"></button>
+    <button id="reset" data-i18n="reset"></button>
+  </div>
+  <div class="field" style="width:100%;margin-top:14px">
+    <label for="settingsText" data-i18n="backup"></label>
+    <textarea id="settingsText" rows="5" spellcheck="false"></textarea>
+  </div>
+  <div class="row" style="margin-top:8px;padding-top:0;border-top:none">
+    <button id="copySettings" data-i18n="settings.copy"></button>
+    <button id="applySettings" data-i18n="settings.apply"></button>
+    <span class="evwarn" id="settingsMsg"></span>
+  </div>
+</details>
+
 <input type="color" id="pick" class="hiddenpick" tabindex="-1" aria-hidden="true">
 
 <div class="count" id="count"></div>
@@ -1083,7 +1226,6 @@ const KEY = "tt:" + DATA.edupage + ":" + DATA.year;
 const defaults = () => ({
   school: DATA.initialSchool, klass: DATA.initialClass,
   lang: DATA.lang, picks: {}, colors: {}, who: {}, events: {},
-  view: "timeline", transpose: false, print: false,
   schoolColors: false, compact: false, teachers: "short",
   showRoom: true, showGroup: true,
 });
@@ -1099,12 +1241,12 @@ function normalise(saved) {
     if (!out[bag] || typeof out[bag] !== "object" || Array.isArray(out[bag])) out[bag] = {};
   }
   if (legacyWho && was.school && was.klass) out.who[was.school + "/" + was.klass] = legacyWho;
-  /* The period grid used to be a checkbox rather than one of three views. */
-  if (!was.view && was.byPeriod) out.view = "periods";
-  if (!["timeline", "table", "periods"].includes(out.view)) out.view = defaults().view;
   if (!["short", "full", "none"].includes(out.teachers)) out.teachers = defaults().teachers;
   if (!DATA.languages.some(l => l[0] === out.lang)) out.lang = DATA.lang;
-  delete out.byPeriod;
+  /* Settings that no longer exist: the view picker, its transpose companion and
+     the print-preview toggle. Printing is a moment now, and the layout follows
+     from whether the school publishes a day plan. */
+  for (const gone of ["byPeriod", "view", "transpose", "print"]) delete out[gone];
   return out;
 }
 
@@ -1112,9 +1254,72 @@ let state = defaults();
 try {
   state = normalise(JSON.parse(localStorage.getItem(KEY) || "null"));
 } catch (e) { /* corrupt or unavailable storage: fall back to defaults */ }
+/* A link wins over what this browser had, since following one is a request to
+   see that. The per-class bags merge rather than replace, so a link for one
+   class does not wipe the choices made for a sibling's. */
+{
+  const shared = readUrl();
+  if (shared) {
+    const merged = normalise(Object.assign({}, state, shared));
+    for (const bag of ["picks", "colors", "who", "events"]) {
+      if (shared[bag]) merged[bag] = Object.assign({}, state[bag], shared[bag]);
+    }
+    state = merged;
+    /* Keep what the link brought, so closing it and coming back later still
+       shows the same timetable. */
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+  }
+}
+
+/* ----- the address bar carries the settings -------------------------------
+   Everything chosen lives in the fragment, so a bookmark keeps it and a link
+   hands it to someone else. Only what differs from the defaults goes in, which
+   keeps a typical link short — short enough to put in a QR code. The fragment
+   never leaves the browser, so nothing is sent anywhere by carrying it. */
+const b64url = (text) => {
+  const bytes = new TextEncoder().encode(text);
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).split("+").join("-").split("/").join("_").split("=").join("");
+};
+const unb64url = (code) => {
+  const padded = code.split("-").join("+").split("_").join("/");
+  const binary = atob(padded + "===".slice((padded.length + 3) % 4));
+  return new TextDecoder().decode(Uint8Array.from(binary, c => c.charCodeAt(0)));
+};
+
+function changedFromDefaults() {
+  const base = defaults(), out = {};
+  for (const key of Object.keys(base)) {
+    if (JSON.stringify(state[key]) !== JSON.stringify(base[key])) out[key] = state[key];
+  }
+  return out;
+}
+
+function shareUrl() {
+  const changed = changedFromDefaults();
+  const bare = location.href.split("#")[0];
+  return Object.keys(changed).length
+    ? bare + "#s=" + b64url(JSON.stringify(changed)) : bare;
+}
+
+function readUrl() {
+  const hash = location.hash.slice(1);
+  if (!hash.startsWith("s=")) return null;
+  try {
+    const parsed = JSON.parse(unb64url(hash.slice(2)));
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : null;
+  } catch (e) { return null; }
+}
 
 const save = () => {
   try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+  try {
+    const url = shareUrl();
+    if (url !== location.href) history.replaceState(null, "", url);
+    const field = document.getElementById("link");
+    if (field) field.value = url;
+  } catch (e) { /* a browser that will not rewrite the address bar: no matter */ }
 };
 
 /* Whose timetable this is: the name if one has been given, then the school and
@@ -1346,11 +1551,11 @@ function renderTimeline(school, cls, shown, mine) {
   const span = hi - lo;
   /* On paper the whole day has to fit the sheet, footer and all; on screen keep
      it readable. */
-  const ppm = state.print ? Math.min(2.2, (632 - footHeight()) / span) : 1.05;
+  const ppm = printing ? Math.min(2.2, (632 - footHeight()) / span) : 1.05;
   const H = Math.round(span * ppm);
 
   let h = "";
-  if (state.print) {
+  if (printing) {
     h += '<div class="ptitle" style="border:none;padding:0 0 8px">' +
          esc(displayTitle(school, cls)) + "</div>";
   }
@@ -1398,10 +1603,10 @@ function renderTimeline(school, cls, shown, mine) {
       }
       const e = it.lesson, col = colorFor(e.s), info = DATA.subjects[e.s] || {};
       const meta = detailLine(e);
-      const tip = [e.s, e.g.join("/"), e.T.join(" / "), e.r.join(" / "), when,
-                   e.u > 1 ? t("paired") : t("single"),
+      const tip = [subjectName(e, false), e.g.join("/"), e.T.join(" / "),
+                   e.r.join(" / "), when, e.u > 1 ? t("paired") : t("single"),
                    e.o ? t("noExactTime") : ""].filter(Boolean).join("\\n");
-      const name = state.compact ? (info.short || e.s) : e.s;
+      const name = subjectName(e, state.compact);
       let body = '<div class="when">' + esc(when) + (e.o ? " ?" : "") + "</div>" +
                  '<div class="what">' + esc(name) + "</div>";
       if (height >= 54 && !state.compact && meta.length) {
@@ -1449,7 +1654,11 @@ function cssColour(value) {
 /* Slot view is the school's own day plan: one cell per lesson however many
    periods it spans, with the named breaks in fixed columns. Period view is the
    raw aSc grid, where a paired lesson repeats with its continuation dimmed. */
-const slotMode = () => state.view !== "periods" && currentSchool().b;
+/* The timeline is the view. A school with no day plan has no times to draw one
+   from — three of the four here publish none — so those fall back to the aSc
+   period grid rather than rendering nothing. Nothing to choose; the data
+   decides. */
+const onTimeline = () => currentSchool().b;
 /* What goes on a lesson's second line: room, teacher and group are each
    independently switchable, so the box can be as dense or as bare as wanted. */
 function detailLine(e) {
@@ -1459,6 +1668,14 @@ function detailLine(e) {
   if (who3) bits.push(who3);
   if (state.showGroup && e.g.length) bits.push(e.g.join("/"));
   return bits;
+}
+
+/* What to call a lesson. A block the school publishes as one but which holds
+   two subjects in sequence names both, in the order they run; the colour and the
+   legend still follow the one subject the box is keyed to. */
+function subjectName(e, short) {
+  const one = (name) => short ? ((DATA.subjects[name] || {}).short || name) : name;
+  return (e.S && e.S.length ? e.S : [e.s]).map(one).join(" + ");
 }
 
 /* Teacher names: the school's abbreviation, the full name, or neither. */
@@ -1490,10 +1707,9 @@ function mineCell(list) {
 
 function lessonHtml(e, time) {
   const meta = detailLine(e);
-  const info = DATA.subjects[e.s] || {};
-  const label = state.compact ? (info.short || e.s) : e.s;
+  const label = subjectName(e, state.compact);
   const note = e.o ? t("noExactTime") : "";
-  const tip = [e.s, e.g.join("/"), e.T.join(" / "), e.r.join(" / "),
+  const tip = [subjectName(e, false), e.g.join("/"), e.T.join(" / "), e.r.join(" / "),
                time, e.u > 1 ? t("paired") : t("single"), note]
               .filter(Boolean).join("\\n");
   const col = colorFor(e.s);
@@ -1509,7 +1725,7 @@ function lessonHtml(e, time) {
 /* Columns are slots plus the named breaks that sit between them, or aSc
    periods when slot mode is off. */
 function columnModel(school, cls) {
-  if (!slotMode()) return school.p.map(p => ({ kind: "period", p: p }));
+  if (!onTimeline()) return school.p.map(p => ({ kind: "period", p: p }));
   const cols = [];
   for (let n = 1; n <= cls.m; n++) {
     cols.push({ kind: "slot", n: n });
@@ -1620,9 +1836,10 @@ function renderPrint(school, cls, shown, mine) {
       const col = colorFor(here[0].s);
       const body = here.map(e => {
         const room = e.r.length ? " (" + e.r.join("/") + ")" : "";
+        const shown = subjectName(e, false);
         const when = e.o ? "" : (e.w && e.w !== usual
           ? '<br><span class="pwhen">(' + esc(e.w) + ")</span>" : "");
-        return esc(e.s + room) + when;
+        return esc(shown + room) + when;
       }).join("<br>");
       h += '<td class="pcell" data-subject="' + esc(here[0].s) + '" style="background:' +
            col.bg + ";color:" + col.fg + '">' + body + "</td>";
@@ -1663,6 +1880,7 @@ function renderPrint(school, cls, shown, mine) {
    nodes, and replacing one while the native picker is open closes the picker —
    which made the swatches impossible to use. */
 let keepLegend = false;
+let printing = false;
 function paint() {
   keepLegend = true;
   try { render(); } finally { keepLegend = false; }
@@ -1671,10 +1889,6 @@ function paint() {
 function render() {
   const school = currentSchool(), cls = currentClass();
   state.school = school.n; state.klass = cls.n;
-  const printable = school.b && state.view !== "periods";
-  document.getElementById("print").disabled = !printable;
-  document.getElementById("transpose").disabled = state.view === "timeline";
-  document.getElementById("view").value = state.view;
   document.getElementById("teachers").value = state.teachers;
 
   document.getElementById("heading").textContent = displayTitle(school, cls);
@@ -1685,12 +1899,12 @@ function render() {
     [school.t, school.v, DATA.edupage + ".edupage.org"].filter(Boolean).join(" · ");
 
   const mine = picks();
-  const inSlotMode = slotMode();
+  const timeline = onTimeline();
   const shown = cls.e.filter(e => visible(e, mine, cls.v))
-                     .filter(e => !inSlotMode || !e.c);   // one cell per lesson
+                     .filter(e => !timeline || !e.c);   // one box per lesson
   const bucket = new Map();
   for (const e of shown) {
-    const k = inSlotMode ? e.d + ":s" + e.k : e.d + ":p" + e.p;
+    const k = timeline ? e.d + ":s" + e.k : e.d + ":p" + e.p;
     if (!bucket.has(k)) bucket.set(k, []);
     bucket.get(k).push(e);
   }
@@ -1698,22 +1912,12 @@ function render() {
   const parsed = parseEvents(perClass("events"));
   document.getElementById("evwarn").textContent = parsed.errors.join("\\n");
 
-  if (printable && state.print) document.body.classList.add("printview");
+  if (printing && timeline) document.body.classList.add("printview");
   else document.body.classList.remove("printview");
 
-  if (state.view === "timeline" && school.b) {
+  if (timeline) {
     document.getElementById("grid").innerHTML =
       renderTimeline(school, cls, shown, parsed.events);
-    document.getElementById("count").textContent =
-      t("lessonCount", shown.length) + (parsed.events.length ?
-        " · " + t("mineCount", parsed.events.length) : "");
-    if (!keepLegend) renderLegend(shown);
-    return;
-  }
-  if (printable && state.print) {
-    document.getElementById("grid").innerHTML =
-      renderPrint(school, cls, shown, parsed.events);
-    fitPrint();
     document.getElementById("count").textContent =
       t("lessonCount", shown.length) + (parsed.events.length ?
         " · " + t("mineCount", parsed.events.length) : "");
@@ -1725,21 +1929,7 @@ function render() {
   const dayIdx = daysWith(school, parsed.events);
   const anyMine = parsed.events.length > 0;
   let h = "<table><thead><tr><th></th>";
-  if (state.transpose) {
-    for (const i of dayIdx) h += "<th>" + esc(dayLabel(school, i)) + "</th>";
-    h += "</tr></thead><tbody>";
-    for (const col of cols) {
-      const cls2 = col.kind === "break" ? ' class="brk"' : "";
-      h += "<tr><th" + cls2 + ">" + columnLabel(school, cls, col) + "</th>";
-      for (const i of dayIdx) h += bodyCell(cls, i, col, bucket);
-      h += "</tr>";
-    }
-    if (anyMine) {
-      h += "<tr><th>" + esc(t("mineCol")) + "</th>";
-      for (const i of dayIdx) h += mineCell(parsed.events.filter(ev => ev.day === i));
-      h += "</tr>";
-    }
-  } else {
+  {
     for (const col of cols) {
       const cls2 = col.kind === "break" ? ' class="brk"' : "";
       h += "<th" + cls2 + ">" + columnLabel(school, cls, col) + "</th>";
@@ -1755,9 +1945,9 @@ function render() {
   }
   document.getElementById("grid").innerHTML = h + "</tbody></table>";
 
-  const total = cls.e.filter(e => !inSlotMode || !e.c).length;
+  const total = cls.e.filter(e => !timeline || !e.c).length;
   document.getElementById("count").textContent =
-    t(inSlotMode ? "lessonsShown" : "slotsShown", shown.length, total) +
+    t(timeline ? "lessonsShown" : "slotsShown", shown.length, total) +
     (shown.length === total ? " " + t("noFilter") : "") +
     (parsed.events.length ? " · " + t("mineCount", parsed.events.length) : "") +
     (school.b ? "" : " · " + t("noBells"));
@@ -1815,16 +2005,15 @@ function renderDivisions() {
       "<span>" + esc(t("noGroups")) + "</span></div>";
     return;
   }
-  /* The heading says what is taught in the group. Divisions that carry more
-     subjects than fit are shortened with an ellipsis, so the whole list — the
-     main group's included — is the label's tooltip. */
+  /* The heading says what is taught in the group. Divisions carrying more
+     subjects than fit are shortened with an ellipsis, and the whole list is the
+     label's tooltip. */
   host.innerHTML = cls.v.map(d => {
-    const head = d.main ? t("mainGroup") + (d.l ? " — " + d.l : "")
-                        : (d.l || d.groups.join(" / "));
+    const head = d.l || d.groups.join(" / ");
     const full = (d.sj || []).join(", ");
     return '<div class="field"><label' + (full ? ' title="' + esc(full) + '"' : "") + ">" +
     esc(head) +
-    (d.l || d.main ? '<br><span class="divsub">' + esc(d.groups.join(" / ")) + "</span>" : "") +
+    (d.l ? '<br><span class="divsub">' + esc(d.groups.join(" / ")) + "</span>" : "") +
     "</label>" +
     '<select data-div="' + esc(d.id) + '"><option value="">' + esc(t("all")) + "</option>" +
     d.groups.map(g => '<option value="' + esc(g) + '"' +
@@ -1854,8 +2043,6 @@ function bindToggle(id, key) {
   el.checked = !!state[key];
   el.addEventListener("change", () => { state[key] = el.checked; save(); render(); });
 }
-bindToggle("print", "print");
-bindToggle("transpose", "transpose");
 bindToggle("schoolColors", "schoolColors");
 bindToggle("showRoom", "showRoom");
 bindToggle("showGroup", "showGroup");
@@ -1881,9 +2068,6 @@ pick.addEventListener("change", () => pick.blur());
 document.getElementById("teachers").addEventListener("change", (ev) => {
   state.teachers = ev.target.value; save(); render();
 });
-document.getElementById("view").addEventListener("change", (ev) => {
-  state.view = ev.target.value; save(); render();
-});
 document.getElementById("lang").addEventListener("change", (ev) => {
   state.lang = ev.target.value;
   save(); applyStrings(); renderDivisions(); render();
@@ -1894,8 +2078,6 @@ document.getElementById("reset").addEventListener("click", () => {
   const { school, klass, lang } = state;
   state = Object.assign(defaults(), { school, klass, lang });
   save();
-  document.getElementById("print").checked = false;
-  document.getElementById("transpose").checked = false;
   document.getElementById("schoolColors").checked = false;
   document.getElementById("showRoom").checked = true;
   document.getElementById("showGroup").checked = true;
@@ -1904,17 +2086,31 @@ document.getElementById("reset").addEventListener("click", () => {
 });
 
 /* Everything the reader has customised — group picks, colours, personal
-   events, names, view options — is just `state`, so a backup is that object. */
-const settingsPanel = document.getElementById("settingsPanel");
+   events, names, display options — is just `state`, so a backup is that object.
+   It is filled in when the section is opened, not kept in step continuously. */
+const advancedPanel = document.getElementById("advancedPanel");
 const settingsText = document.getElementById("settingsText");
 const settingsMsg = document.getElementById("settingsMsg");
 
-document.getElementById("settings").addEventListener("click", () => {
-  settingsPanel.classList.toggle("open");
-  if (settingsPanel.classList.contains("open")) {
+advancedPanel.addEventListener("toggle", () => {
+  if (advancedPanel.open) {
+    document.getElementById("link").value = shareUrl();
     settingsText.value = JSON.stringify(state, null, 2);
     settingsMsg.textContent = "";
   }
+});
+document.getElementById("linkHint").textContent = t("linkHint");
+document.getElementById("copyLink").addEventListener("click", async () => {
+  const button = document.getElementById("copyLink"), field = document.getElementById("link");
+  field.value = shareUrl();
+  try {
+    await navigator.clipboard.writeText(field.value);
+    button.textContent = t("linkCopied");
+  } catch (e) {
+    field.select();
+    button.textContent = t("settings.selected");
+  }
+  setTimeout(() => { button.textContent = t("linkCopy"); }, 2500);
 });
 document.getElementById("copySettings").addEventListener("click", async () => {
   settingsText.value = JSON.stringify(state, null, 2);
@@ -1973,11 +2169,17 @@ function syncPerClassInputs() {
   if (document.activeElement !== who) who.value = perClass("who");
   if (document.activeElement !== eventsBox) eventsBox.value = perClass("events");
 }
+/* Printing is a moment, not a setting: lay the page out for paper, print it,
+   put it back. Nothing about it is worth remembering between visits. */
 document.getElementById("doprint").addEventListener("click", () => {
-  if (!state.print && !document.getElementById("print").disabled) {
-    state.print = true; document.getElementById("print").checked = true; save(); render();
+  printing = true;
+  try {
+    render();
+    window.print();
+  } finally {
+    printing = false;
+    render();
   }
-  window.print();
 });
 
 renderLanguages();

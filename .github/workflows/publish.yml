@@ -56,9 +56,11 @@ jobs:
       - name: Build and publish
         if: steps.ready.outputs.ready == 'true'
         env:
+          # Unset, deploy/site.conf decides. Set, this wins — the path can move
+          # without a commit, and the root page's link follows it either way.
+          PREFIX: ${{ vars.SITE_PREFIX }}
           BUCKET: ${{ secrets.AWS_BUCKET }}
           DISTRIBUTION: ${{ secrets.AWS_DISTRIBUTION }}
-          PREFIX: tera-timetable
           GOATCOUNTER: ${{ vars.GOATCOUNTER_SITE }}
           EDUPAGE: tera
           YEAR: "2026"

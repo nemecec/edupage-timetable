@@ -160,7 +160,7 @@ pickers still override them.
 ## Hosting it
 
 `deploy/` puts the page on the public internet at
-[little.tools/tera-timetable](https://little.tools/tera-timetable/): a private S3
+[little.tools/timetable](https://little.tools/timetable/): a private S3
 bucket behind CloudFront, with a nightly GitHub Actions run that reruns this
 generator and writes the result back. Nothing sits in the request path, so a
 failed build leaves the previous page serving, and the workflow authenticates

@@ -97,10 +97,17 @@ class PublishedBlocks(unittest.TestCase):
 class MergingABlock(unittest.TestCase):
     """A published block holding two subjects in sequence is one box."""
 
-    def entry(self, subject, period, duration=1, groups=()):
+    def entry(self, subject, period, duration=1, groups=(), who="", room=""):
         return {"subject": subject, "startPeriod": period, "period": period, "day": 0,
                 "duration": duration, "groups": list(groups), "part": 0, "slot": 1,
-                "teachers": [], "teacherShorts": [], "rooms": []}
+                "teachers": [who] if who else [], "teacherShorts": [who[:2]] if who else [],
+                "rooms": [room] if room else []}
+
+    def test_a_merged_box_names_everyone_teaching_in_it(self):
+        got = tt.merge_blocks([self.entry("Häälestus", 1, who="Tamm", room="A1"),
+                               self.entry("Üldõpetus", 2, who="Kask", room="A2")])
+        self.assertEqual(got[0]["teachers"], ["Tamm", "Kask"])
+        self.assertEqual(got[0]["rooms"], ["A1", "A2"])
 
     def test_a_sequence_becomes_one_box_naming_both(self):
         got = tt.merge_blocks([self.entry("Häälestus", 1), self.entry("Üldõpetus", 2)])
@@ -108,8 +115,9 @@ class MergingABlock(unittest.TestCase):
         self.assertEqual(got[0]["names"], ["Häälestus", "Üldõpetus"])
 
     def test_the_longer_half_gives_the_box_its_colour(self):
-        got = tt.merge_blocks([self.entry("Häälestus", 1),
-                               self.entry("Üldõpetus", 2, duration=2)])
+        # Longer *and* earlier, so "the later one wins" cannot also satisfy it.
+        got = tt.merge_blocks([self.entry("Üldõpetus", 1, duration=2),
+                               self.entry("Häälestus", 3)])
         self.assertEqual(got[0]["subject"], "Üldõpetus")
 
     def test_otherwise_the_later_half_does(self):
@@ -144,17 +152,28 @@ class MergingABlock(unittest.TestCase):
 
 
 class Colours(unittest.TestCase):
-    """Every subject must be legible on its own colour, on paper."""
+    """Every subject must be legible on its own colour, on paper, and telling
+    two subjects apart is the whole point of having a palette."""
+
+    WCAG_AA = 4.5        # the standard's number, deliberately not the code's constant
 
     subjects = ["Eesti keel", "Inglise keel", "Matemaatika", "Füüsika", "Keemia",
                 "Bioloogia", "Ajalugu", "Geograafia", "Kunst", "Muusika",
                 "Liikumisõpetus", "Informaatika", "Ajutreening", "Kirjandus"]
 
     def readable(self, pair):
+        """Contrast worked out here rather than imported, so that weakening the
+        generator's own idea of contrast cannot make this pass."""
         def luminance(hexcode):
             n = int(hexcode.lstrip("#"), 16)
-            return tt._relative_luminance(n >> 16 & 255, n >> 8 & 255, n & 255)
-        return tt._contrast(luminance(pair["bg"]), luminance(pair["fg"]))
+            channels = []
+            for shift in (16, 8, 0):
+                c = ((n >> shift) & 255) / 255.0
+                channels.append(c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4)
+            r, g, b = channels
+            return 0.2126 * r + 0.7152 * g + 0.0722 * b
+        lo, hi = sorted((luminance(pair["bg"]), luminance(pair["fg"])))
+        return (hi + 0.05) / (lo + 0.05)
 
     def test_every_subject_gets_one(self):
         self.assertEqual(sorted(tt.palette(self.subjects)), sorted(self.subjects))
@@ -162,17 +181,24 @@ class Colours(unittest.TestCase):
     def test_text_meets_wcag_aa_on_every_one(self):
         for subject, pair in tt.palette(self.subjects).items():
             with self.subTest(subject=subject):
-                self.assertGreaterEqual(self.readable(pair), tt.MIN_CONTRAST)
+                self.assertGreaterEqual(self.readable(pair), self.WCAG_AA)
 
-    def test_the_same_subjects_always_get_the_same_colours(self):
-        self.assertEqual(tt.palette(self.subjects), tt.palette(self.subjects))
+    def test_no_two_subjects_share_a_colour(self):
+        got = tt.palette(self.subjects)
+        self.assertEqual(len({pair["bg"] for pair in got.values()}), len(self.subjects))
+
+    def test_the_colours_do_not_depend_on_the_order_asked_in(self):
+        self.assertEqual(tt.palette(self.subjects),
+                         tt.palette(list(reversed(self.subjects))))
 
     def test_far_more_subjects_than_hues_still_all_resolve(self):
         got = tt.palette([f"Subject {i}" for i in range(200)])
         self.assertEqual(len(got), 200)
+        self.assertGreater(len({pair["bg"] for pair in got.values()}), 150,
+                           "a few collisions at this many subjects, not wholesale")
         for subject, pair in got.items():
             with self.subTest(subject=subject):
-                self.assertGreaterEqual(self.readable(pair), tt.MIN_CONTRAST)
+                self.assertGreaterEqual(self.readable(pair), self.WCAG_AA)
 
 
 class ValidityLine(unittest.TestCase):

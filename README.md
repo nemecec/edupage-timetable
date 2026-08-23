@@ -105,9 +105,11 @@ out rather than being listed. Two details it gets right:
 - A slot can hold a single **and** a pair at once, for different groups — the
   Päevaplaan writes this as `14.30-15.15 L / 14.30-15.50 P`. The slot fixes the
   start; each lesson's own length fixes the end.
-- The end of slot 3 shifts the rest of the day, which is why the break named
-  `Söömine, tiimitund, vaba aeg` falls at 13.35-13.55 on some days and
-  14.10-14.30 on others. Only its first word is shown in the grid.
+- Whether slot 3 was a single or a pair shifts the rest of the day, which is
+  why the 20-minute break named `Amps` falls at 13.35-13.55 on some days and
+  14.10-14.30 on others. The hour before it, `Söömine, tiimitund, vaba aeg`,
+  is fixed at 11.50-12.50 — it comes after slot 2, and the first two slots are
+  always pairs. Only a break's first word is shown in the grid.
 
 **LõunaTERA publishes fixed blocks instead**, so there is no clock to run. Each
 block says which aSc periods it holds and when it is:
@@ -182,18 +184,19 @@ Subjects are coloured by family, so a printed sheet reads as "languages are
 blue, sciences are green" before you read a word of it. `SUBJECT_FAMILIES` in
 `tt.py` maps Estonian keywords onto eight hue bands — literature, language,
 computing, maths, science, sport, humanities, arts — with anything unmatched
-parked on muted greys that cannot be mistaken for a core subject. Within a
+parked on golden-angle hues held to a quarter of the saturation, so they
+read as background beside any core subject. Within a
 family, members are spread across the band and given well-separated lightness
 steps; families larger than the lightness cycle get a second, muted saturation
 tier so the ninth member does not repeat the first.
 
 Every colour is paired with black or white text, whichever contrasts better,
 and any background landing in the mid-luminance band where neither clears
-**WCAG AA** is nudged lighter or darker until one does. All 70 subjects on
+**WCAG AA** is nudged lighter or darker until one does. All 69 subjects on
 `tera` reach at least 4.5:1.
 
-`--json` reports the same colours the page uses, and the per-subject colour
-pickers still override them.
+The per-subject colour pickers override any of them, and the page remembers
+what was picked. `--json` writes the extracted timetable, not the palette.
 
 ## Hosting it
 
@@ -210,6 +213,14 @@ Every page names itself unofficial under its heading, beside a link to the
 school's own timetable page for whichever timetable is on screen and the date the
 data was read. A printed sheet keeps the date and a QR code back to the page,
 and leaves the rest on screen. Where visits are counted, the page says so.
+
+What the reader types stays in the reader's browser. Names, group choices,
+colours and personal events live in `localStorage` and in the link's fragment,
+which no browser sends to a server. The one thing that does leave is the visit
+count, and GoatCounter reports the page title along with it — a title this page
+builds out of the child's name. So the title it reports is pinned to a constant
+before the counter loads. Without that one line the footer's promise would be
+false, which is the whole reason it is there.
 
 ## Determinism
 
@@ -317,7 +328,8 @@ needs no times.
 ## Verification
 
 `python3 -m unittest discover -s tests` and `node --test tests/js/*.test.mjs`,
-both on every push. Neither touches the network: `tests/fixtures` holds the
+both in CI on any push that touches the code, the tests, the vendored library
+or the deployment. Neither touches the network: `tests/fixtures` holds the
 school's own API responses, frozen, so a build takes a moment and CI never
 spends the rate limit that the nightly publish needs.
 
@@ -333,7 +345,9 @@ each had just happened.
 The JavaScript tests run `page.js` itself under a small stand-in for the browser
 and cover the event parser — every weekday token in both languages, every way a
 line can be rejected — the colour splitting, the settings normaliser, the share
-link's round trip, and the calendar packing.
+link's round trip, the calendar packing, the escaping at every sink, and the two
+rules that keep a share link honest: only something that is plainly a colour can
+arrive as one, and merely looking at a class adds nothing to the link.
 
 Beyond the suite, extraction was checked against the official rendering: all 70
 lesson boxes for ProTERA class 8 match the school's own page — the 69 that carry
@@ -342,8 +356,9 @@ by the text the page draws. The bell clock was checked cell by cell against the
 printed Päevaplaan, and LõunaTERA's blocks against the school's published day
 plan. The QR code is verified by decoding: the printed page is rasterised and
 read back with an independent decoder, and the string compared to the link
-character for character. Both print layouts were rendered with background
-graphics disabled to confirm the colours still come through.
+character for character. The printout was rendered to PDF with background
+graphics disabled to confirm the colours still come through, and counted to
+confirm it is one page.
 
 The CloudFormation templates pass `cfn-lint` in CI. `node --check` runs against
 `page.js`, because a backslash typo in it used to ship a blank page with CI

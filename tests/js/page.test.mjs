@@ -52,6 +52,30 @@ test("only something that is plainly a colour can be stored as one", () => {
                    { a: "#fff", b: "#AABBCC", c: "#12345678" });
   // A share link is not a way to write markup into the page.
   assert.deepEqual(json(`onlyColours({a: 'x"><img src=x onerror=alert(1)>', b: "red", c: 5})`), {});
+  // Nor by hiding a real colour inside something longer: the whole value has
+  // to be the colour, not merely contain one.
+  assert.deepEqual(json(`onlyColours({a: '#fff"><img src=x onerror=alert(1)>',
+                                      b: 'url(#abc)', c: '#1234567', d: '#12'})`), {});
+  // Stray spaces around one are just typing, and come off.
+  assert.deepEqual(json(`onlyColours({a: "  #fff  "})`), { a: "#fff" });
+});
+
+test("a short colour is still readable text on top of it", () => {
+  // #000 is black; before it was understood, the label came out black on black.
+  assert.equal(json(`readable("#000")`), "#FFFFFF");
+  assert.equal(json(`readable("#fff")`), json(`readable("#ffffff")`));
+  assert.equal(json(`readable("#000f")`), json(`readable("#000000")`));
+  assert.equal(json(`readable("#000000ff")`), json(`readable("#000000")`));
+  assert.equal(json(`readable("nonsense")`), "#14171A");
+});
+
+test("looking at a class does not add an empty note about it to the link", () => {
+  run(`state.picks = {}; state.who = {}; state.events = {};
+       picks(); perClass("who"); perClass("events");`);
+  assert.deepEqual(json(`[state.picks, state.who, state.events]`), [{}, {}, {}]);
+  // Choosing something does record it.
+  run(`pickable()["7"] = "Alfa";`);
+  assert.equal(json(`Object.keys(state.picks).length`), 1);
 });
 
 test("settings of the wrong shape fall back to their defaults", () => {
@@ -88,4 +112,50 @@ test("a lesson is mine when every division it belongs to matches a pick", () => 
 test("minutes read back as the clock", () => {
   assert.equal(run(`hhmm(540)`), "9.00");
   assert.equal(run(`hhmm(1095)`), "18.15");
+});
+
+test("markup characters in school data cannot escape their attribute", () => {
+  assert.equal(run(`esc('<b>"x"</b>')`), "&lt;b&gt;&quot;x&quot;&lt;/b&gt;");
+  assert.equal(run(`esc("it's \\u0060quoted\\u0060")`), "it&#39;s &#96;quoted&#96;");
+  assert.equal(run(`esc("A & B")`), "A &amp; B");
+});
+
+test("text is black or white, whichever can be read on the colour", () => {
+  assert.equal(run(`readable("#FFFFFF")`), "#14171A");
+  assert.equal(run(`readable("#000000")`), "#FFFFFF");
+  assert.equal(run(`readable("#83EC9B")`), "#14171A", "a light green takes dark text");
+  assert.equal(run(`readable("#12345")`), "#14171A", "and nonsense does not throw");
+});
+
+test("boxes that merely touch do not fight for the column", () => {
+  // 9-10 then 10-11 is not an overlap; giving them separate lanes would halve both.
+  const packed = json(`pack([{a: 540, z: 600}, {a: 600, z: 660}])`);
+  assert.deepEqual(packed.map(x => x._lanes), [1, 1]);
+});
+
+test("a lane is reused once it is free", () => {
+  const packed = json(`pack([{a: 0, z: 60}, {a: 0, z: 120}, {a: 60, z: 90}])`);
+  assert.equal(Math.max(...packed.map(x => x._lanes)), 2,
+               "three boxes, but only two are ever concurrent");
+});
+
+test("the clock reads the way the timetable prints it", () => {
+  assert.equal(run(`hhmm(570)`), "9.30");
+  assert.equal(run(`hhmm(600)`), "10.00");
+  assert.equal(run(`hhmm(0)`), "0.00");
+});
+
+test("a minute out of range is rejected, not rounded", () => {
+  for (const line of ["Mon 9:99-10:00 red X", "Mon 9:00-10:99 red X"]) {
+    assert.equal(json(`parseEvents(${JSON.stringify(line)})`).errors.length, 1, line);
+  }
+});
+
+test("an event with no label is not an event", () => {
+  assert.equal(json(`parseEvents("Mon 9:00-10:00 red")`).errors.length, 1);
+});
+
+test("a settings bag reaches normalise with its colours filtered", () => {
+  const got = json(`normalise({colors: {A: "#fff", B: 'x"><img src=x>'}})`);
+  assert.deepEqual(got.colors, { A: "#fff" });
 });

@@ -3,9 +3,9 @@ name: check
 on:
   push:
     branches: [main]
-    paths: ["tt.py", "page.js", "tests/**", "deploy/**", ".github/workflows/**"]
+    paths: ["tt.py", "page.js", "vendor/**", "tests/**", "deploy/**", ".github/workflows/**"]
   pull_request:
-    paths: ["tt.py", "page.js", "tests/**", "deploy/**", ".github/workflows/**"]
+    paths: ["tt.py", "page.js", "vendor/**", "tests/**", "deploy/**", ".github/workflows/**"]
   workflow_dispatch:
 
 permissions:

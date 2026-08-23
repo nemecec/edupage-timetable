@@ -19,6 +19,7 @@ Standard library only.
 
 import argparse
 import colorsys
+import datetime
 import html
 import json
 import os
@@ -96,7 +97,7 @@ STRINGS = {
         "titleClass": "Class name",
         "print": "Print…",
         "backup": "Settings as JSON",
-        "reset": "Reset groups & colours",
+        "reset": "Reset all settings",
         "share": "Share",
         "shared": "Link copied",
         "shareHint": ("Everything you have chosen is in the address bar, so a "
@@ -179,7 +180,7 @@ STRINGS = {
         "titleClass": "Klassi nimi",
         "print": "Prindi…",
         "backup": "Seaded JSON-ina",
-        "reset": "Lähtesta rühmad ja värvid",
+        "reset": "Lähtesta kõik seaded",
         "share": "Jaga",
         "shared": "Link kopeeritud",
         "shareHint": ("Kõik valikud on aadressiribal, nii et järjehoidja või "
@@ -430,9 +431,15 @@ class EduPage:
         if self.cache_dir and cache_key:
             path = os.path.join(self.cache_dir, f"{self.edupage}-{cache_key}.json")
             if os.path.exists(path) and not self.refresh:
-                self.log(f"cache hit: {path}")
-                with open(path, encoding="utf-8") as fh:
-                    return json.load(fh)
+                try:
+                    with open(path, encoding="utf-8") as fh:
+                        payload = json.load(fh)
+                    self.log(f"cache hit: {path}")
+                    return payload
+                except (json.JSONDecodeError, OSError) as exc:
+                    # A half-written file would otherwise be a permanent cache
+                    # hit that fails the same way on every run.
+                    self.log(f"unreadable cache {path} ({exc}); fetching again")
 
         url = f"{self.base}/timetable/server/{module}.js?__func={func}"
         body = json.dumps({"__args": args, "__gsh": "00000000"}).encode()
@@ -449,16 +456,30 @@ class EduPage:
         )
         self.log(f"POST {func} {json.dumps(args)}")
         with open_url(req, 60) as resp:
-            payload = json.loads(resp.read().decode("utf-8"))
+            raw = resp.read().decode("utf-8", "replace")
+        try:
+            payload = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            # EduPage answers a lapsed session with a login page, HTTP 200 and
+            # all. Say what came back rather than where the parser gave up.
+            raise RuntimeError(f"{func}{tuple(args)}: expected JSON, got "
+                               f"{raw[:120]!r} ({exc})") from None
+        if not isinstance(payload, dict):
+            raise RuntimeError(f"{func}{tuple(args)}: expected an object, got {type(payload).__name__}")
 
         result = payload.get("r")
-        if result is None or "error" in result:
-            err = (result or {}).get("error") or payload.get("e") or "unknown error"
+        if not isinstance(result, dict) or "error" in result:
+            err = (result.get("error") if isinstance(result, dict) else None) \
+                or payload.get("e") or f"no result ({type(result).__name__})"
             raise RuntimeError(f"{func}{tuple(args)}: {err}")
 
         if path:
-            with open(path, "w", encoding="utf-8") as fh:
+            # Written beside and moved into place: a run interrupted here leaves
+            # the previous cache intact instead of a truncated file.
+            tmp = f"{path}.{os.getpid()}.part"
+            with open(tmp, "w", encoding="utf-8") as fh:
                 json.dump(payload, fh, ensure_ascii=False)
+            os.replace(tmp, path)
             self.log(f"cached -> {path}")
         return payload
 
@@ -648,9 +669,11 @@ def extract(result, class_name, n_periods=None, cfg=None):
                 # The block's own times, whatever the lesson's length: this is
                 # what the school publishes, so nothing has to be inferred.
                 slot = slots[e["slot"] - 1]
+                last = slots[min(slot_of_period.get(
+                    e["startPeriod"] + e["duration"] - 1, e["slot"]), len(slots)) - 1]
                 e["startMin"] = slot["at"]
-                e["endMin"] = _minutes(slot["end"].replace(".", ":"))
-                e["time"] = f"{slot['start']}–{slot['end']}"
+                e["endMin"] = _minutes(last["end"].replace(".", ":"))
+                e["time"] = f"{slot['start']}–{last['end']}"
             elif cfg and not cfg.get("bands") and e["slot"]:
                 slot = slots[e["slot"] - 1]
                 if e["startPeriod"] != slot["period"]:
@@ -706,6 +729,11 @@ def merge_blocks(entries):
     for e in entries:
         if e["part"]:
             continue
+        if e["slot"] is None:
+            # On a period the published blocks do not cover: it belongs to no
+            # block, so it merges with nothing.
+            out.append(e)
+            continue
         blocks.setdefault((e["day"], e["slot"]), []).append(e)
 
     for (day, slot), here in sorted(blocks.items()):
@@ -720,7 +748,12 @@ def merge_blocks(entries):
         for x in here:
             by_subject.setdefault(x["subject"], []).append(x)
         for group in by_subject.values():
-            out.append(group[0] if len(group) == 1 else _one_box(group))
+            # Only a subject spread across distinct periods is one lesson; the
+            # same subject twice on one period is two, taught side by side.
+            if len(group) == 1 or len({x["startPeriod"] for x in group}) < len(group):
+                out.extend(group)
+            else:
+                out.append(_one_box(group))
 
     out.sort(key=lambda e: (e["day"], e["period"], e["subject"], "/".join(e["groups"])))
     return out
@@ -888,7 +921,6 @@ def palette(names):
     # Subjects with no family keyword still need hues; give them the gaps left
     # between the named families rather than letting them collide.
     leftovers = families.pop("other", None)
-    used = sorted(h for _, h, _ in SUBJECT_FAMILIES)
     colors = {}
     for family, info in families.items():
         members = info["members"]
@@ -1073,7 +1105,6 @@ PAGE = """<!DOCTYPE html>
   .lesson .time { font-size: 11px; opacity: .85; font-variant-numeric: tabular-nums; }
   .cont { opacity: .62; }
   .brk { background: #f2f3f5; min-width: 60px; }
-  .brk .lbl { font-size: 11px; color: var(--muted); }
   .brk .time { font-size: 11px; color: #3d444d; font-variant-numeric: tabular-nums; }
   thead th.brk, tbody th.brk { font-weight: 500; color: var(--muted); font-size: 11px;
                                white-space: normal; min-width: 80px; }
@@ -1138,30 +1169,12 @@ PAGE = """<!DOCTYPE html>
   .divsub { font-size: 10px; color: #9aa1ab; text-transform: none; letter-spacing: 0; }
   .field label[title] { cursor: help; }
 
-  /* Print view: the layout the school's own printouts use — slots down the
-     side with an Aeg column, days across, breaks as full-width rows. */
-  .ptbl { border-collapse: collapse; width: 100%; background: #fff; }
-  .ptbl th, .ptbl td { border: 1px solid #000; padding: 4px 5px; text-align: center;
-                       vertical-align: middle; font-size: var(--pfont, 12.5px); }
-  .ptbl .ptitle { font-size: 19px; font-weight: 700; padding: 8px; border: 1px solid #000; }
+  /* Print: the same timeline, laid out at the width of the sheet so what is
+     measured on screen is what comes out of the printer. */
   .ptitle.sheet { font-size: 19px; font-weight: 700; text-align: center;
                   padding: 0 0 10px; border: none; }
-  .ptbl thead .phead { font-size: 11px; font-weight: 700; }
-  .ptbl .pnum { font-weight: 700; width: 26px; }
-  .ptbl .ptime { font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums;
-                 width: 104px; }
-  .ptbl .pcell { line-height: 1.25; }
-  .ptbl .pwhen { font-size: calc(var(--pfont, 12.5px) * .84); }
-  .ptbl .pbreak { font-weight: 400; }
-  .ptbl .corner { border: none; }
   body.printview .count, body.printview .topbar { display: none; }
   body.printview #grid { width: 1054px; }          /* 297mm less two 9mm margins */
-  body.printview .ptbl .pcell, body.printview .ptbl .pnum,
-  body.printview .ptbl .ptime, body.printview .ptbl td:empty,
-  .ptbl .pcell, .ptbl .pnum, .ptbl .ptime, .ptbl td:empty {
-    padding: var(--ppad, 15px) 5px; }
-  body.printview .ptbl .pbreak, .ptbl .pbreak {
-    padding: calc(var(--ppad, 15px) * .6) 5px; }
   @page { size: A4 landscape; margin: 9mm; }
   @media print {
     /* Chrome leaves "Background graphics" off by default, which would drop
@@ -1186,7 +1199,6 @@ PAGE = """<!DOCTYPE html>
   .qrhint { font-size: 7.5px; max-width: 32mm; line-height: 1.2; margin-top: 2px; }
   .qr { display: block; }
   .foot a { color: inherit; }
-  .foot .warn { font-weight: 600; }
   body.printview .foot { width: 1054px; margin: 8px 0 0; font-size: 9px; }
   @media print { .foot { width: auto; margin: 7px 0 0; font-size: 9px; } }
   .legend { display: flex; flex-wrap: wrap; gap: 8px 14px; }
@@ -1356,6 +1368,22 @@ __APP__</script>
 """
 
 
+def _same_name(a, b):
+    """Class names as aSc returns them: one of them has a trailing space."""
+    return (a or "").strip().casefold() == (b or "").strip().casefold()
+
+
+def school_year(today=None):
+    """aSc names a school year by the calendar year it starts in.
+
+    Derived rather than pinned: a year written into the source is right until
+    the summer it silently is not, and the nightly rebuild would keep asking
+    for last year's timetable without ever saying so.
+    """
+    today = today or datetime.date.today()
+    return today.year if today.month >= 8 else today.year - 1
+
+
 def pick_initial(schools, want_school, want_class):
     """Resolve --school/--class into the selection the page opens on."""
     school = schools[0]
@@ -1371,11 +1399,13 @@ def pick_initial(schools, want_school, want_class):
         school = hit
     klass = school["classes"][0]["name"]
     if want_class:
-        hit = next((c for c in school["classes"] if c["name"] == want_class), None)
+        hit = next((c for c in school["classes"]
+                    if _same_name(c["name"], want_class)), None)
         if not hit:
             # The class may live in another timetable; find it there instead.
             for other in schools:
-                match = next((c for c in other["classes"] if c["name"] == want_class), None)
+                match = next((c for c in other["classes"]
+                               if _same_name(c["name"], want_class)), None)
                 if match and not want_school:
                     return other["ttNum"], match["name"]
             raise SystemExit(
@@ -1385,10 +1415,16 @@ def pick_initial(schools, want_school, want_class):
     return school["ttNum"], klass
 
 
-# Privacy-respecting page counts: no cookies, nothing personal, and the script
-# is only in the file when a site is named at build time — a local build carries
-# no third-party request at all.
-GOATCOUNTER = ('<script data-goatcounter="https://{site}.goatcounter.com/count"'
+# Page counts with nothing personal in them. The counter reports document.title
+# along with the visit, and this page puts the child's name in the title — so the
+# title it reports is pinned to a constant first. Without that line a name typed
+# into the Title field would be sent to a third party on every visit, which is
+# exactly what the page tells the reader does not happen.
+#
+# The script is only in the file when a site is named at build time, so a local
+# build makes no third-party request at all.
+GOATCOUNTER = ('<script>window.goatcounter = {{title: "timetable", referrer: ""}};</script>'
+               '<script data-goatcounter="https://{site}.goatcounter.com/count"'
                ' async src="https://gc.zgo.at/count.js"></script>')
 
 
@@ -1443,7 +1479,8 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--edupage", default="tera", help="EduPage subdomain (default: tera)")
-    ap.add_argument("--year", type=int, default=2026, help="school year (default: 2026)")
+    ap.add_argument("--year", type=int, default=school_year(),
+                    help=f"school year, by its starting year (default: {school_year()})")
     ap.add_argument("--only", action="append", metavar="TEXT",
                     help="only embed timetables whose title contains TEXT (repeatable)")
     ap.add_argument("--school", help="timetable selected on first open, e.g. ProTERA")

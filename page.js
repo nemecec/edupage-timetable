@@ -62,7 +62,7 @@ try {
   const shared = readUrl();
   if (shared) {
     const merged = normalise(Object.assign({}, state, shared));
-    for (const bag of ["picks", "colors", "who", "events"]) {
+    for (const bag of ["picks", "colors", "who", "events", "titleSchool", "titleClass"]) {
       if (shared[bag]) merged[bag] = Object.assign({}, state[bag], shared[bag]);
     }
     /* The per-bag merge runs after normalise, so the colours it brings in have
@@ -235,9 +235,14 @@ function currentClass() {
    school+class and survive switching back and forth. */
 function picksKey() { return currentSchool().n + "/" + currentClass().n; }
 function picks() { return perClass("picks"); }
+function pickable() { return perClassBag("picks"); }
 
 function readable(bg) {
-  const m = /^#?([0-9a-f]{6})$/i.exec(bg || "");
+  /* Three, four, six or eight digits — a short hex is a colour like any other,
+     and treating it as unreadable put dark text on a dark box. */
+  let hex = String(bg || "").trim().replace("#", "");
+  if (/^[0-9a-f]{3,4}$/i.test(hex)) hex = hex.split("").map(c => c + c).join("");
+  const m = /^([0-9a-f]{6})/i.exec(hex);
   if (!m) return "#14171A";
   const n = parseInt(m[1], 16);
   const ch = (c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
@@ -584,11 +589,22 @@ function teacherText(e) {
   return (names || []).join(" / ");
 }
 
+/* Reading must not write. Creating the entry on read put an empty bag for every
+   class ever looked at into the share link — a few hundred characters of
+   nothing, which makes the printed QR code denser for no reason. */
 const perClass = (bag) => {
   if (!state[bag] || typeof state[bag] !== "object") state[bag] = {};
-  const key = picksKey(), got = state[bag][key];
+  const got = state[bag][picksKey()];
   const ok = bag === "picks" ? (got && typeof got === "object") : typeof got === "string";
-  if (!ok) state[bag][key] = bag === "picks" ? {} : "";
+  return ok ? got : (bag === "picks" ? {} : "");
+};
+
+/* Where a value is about to be written, the entry does have to exist. */
+const perClassBag = (bag) => {
+  const key = picksKey();
+  if (!state[bag] || typeof state[bag] !== "object") state[bag] = {};
+  const got = state[bag][key];
+  if (!got || typeof got !== "object") state[bag][key] = {};
   return state[bag][key];
 };
 
@@ -851,7 +867,7 @@ function renderDivisions() {
   }).join("");
   host.querySelectorAll("select").forEach(sel => {
     sel.addEventListener("change", () => {
-      picks()[sel.dataset.div] = sel.value;
+      pickable()[sel.dataset.div] = sel.value;
       save(); render();
     });
   });
@@ -1032,7 +1048,7 @@ for (const [field, key, shows] of [[titleSchool, "titleSchool", "showSchool"],
     if (!field.value) field.value = field.placeholder;
   });
   field.addEventListener("blur", () => {
-    if (field.value.trim() === field.placeholder) field.value = "";
+    if (field.value.trim() === field.placeholder.trim()) field.value = "";
     if (field.value !== perClass(key)) {
       state[key][picksKey()] = field.value;
       if (field.value.trim()) reveal(shows);

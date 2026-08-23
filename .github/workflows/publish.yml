@@ -28,12 +28,15 @@ jobs:
         id: ready
         env:
           ROLE: ${{ secrets.AWS_PUBLISH_ROLE }}
+          FUNCTION: ${{ secrets.AWS_BUILD_FUNCTION }}
         run: |
-          if [ -n "$ROLE" ]; then
+          # Both, or neither: with only the role set, the invoke below asks for
+          # a function called "" and fails somewhere much less obvious.
+          if [ -n "$ROLE" ] && [ -n "$FUNCTION" ]; then
             echo "ready=true" >> "$GITHUB_OUTPUT"
           else
             echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::AWS_PUBLISH_ROLE is not set — skipping. Run deploy/deploy.sh secrets."
+            echo "::notice::AWS_PUBLISH_ROLE and AWS_BUILD_FUNCTION are not both set — skipping. Run deploy/deploy.sh secrets."
           fi
 
       - name: Where does the site live?

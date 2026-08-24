@@ -1494,14 +1494,17 @@ PAGE = """<!DOCTYPE html>
     <label data-i18n="events.label"></label>
     <div class="scroll">
       <table class="evtable">
+        <!-- When, then what, then how it looks. The subject list has no when,
+             so lining the two up was never going to work past the first column
+             and is not worth bending this order for. -->
         <thead><tr>
+          <th data-i18n="colWeekday"></th>
+          <th data-i18n="colStartTime"></th>
+          <th data-i18n="colEndTime"></th>
           <th data-i18n="colLabel"></th>
           <th data-i18n="colBackground"></th>
           <th data-i18n="colTextColour"></th>
           <th data-i18n="colSample"></th>
-          <th data-i18n="colWeekday"></th>
-          <th data-i18n="colStartTime"></th>
-          <th data-i18n="colEndTime"></th>
           <th></th>
         </tr></thead>
         <tbody id="evrows"></tbody>

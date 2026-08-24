@@ -1514,7 +1514,11 @@ function eventRow(ev, i) {
   const lessons = subjectsOnScreen().map(name =>
     '<option value="' + esc(name) + '"' + (name === from ? " selected" : "") + ">" +
     esc(name) + "</option>").join("");
+  /* Same order as the headings above: when, then what, then how it looks. */
   return '<tr data-i="' + i + '">' +
+    '<td><select class="evday">' + days + "</select></td>" +
+    '<td><input type="time" class="evstart" value="' + esc(ev.startTime) + '"></td>' +
+    '<td><input type="time" class="evend" value="' + esc(ev.endTime) + '"></td>' +
     '<td><input type="text" class="evlabel" value="' + esc(ev.label) + '"></td>' +
     backgroundCell("e" + i, from ? "subject" : "own", ev.backgroundColor,
       [["subject", t("colour.fromSubject"),
@@ -1522,9 +1526,6 @@ function eventRow(ev, i) {
     textColourCell("e" + i, ev.textColor || readable(ev.backgroundColor), !ev.textColor) +
     previewCell(ev.backgroundColor, ev.textColor || readable(ev.backgroundColor),
                 !!ev.textColor, sampleWhen(ev.startTime), ev.label, "") +
-    '<td><select class="evday">' + days + "</select></td>" +
-    '<td><input type="time" class="evstart" value="' + esc(ev.startTime) + '"></td>' +
-    '<td><input type="time" class="evend" value="' + esc(ev.endTime) + '"></td>' +
     '<td><button class="drop" type="button" title="' + esc(t("events.remove")) +
       '">\u00d7</button></td>' +
     "</tr>";

@@ -536,3 +536,30 @@ test("the two swatches in a legend row set different things", () => {
   assert.deepEqual(json(`state.subjectColors.Ajalugu`), { backgroundColor: "#123456" });
   run(`state.subjectColors = {};`);
 });
+
+test("every column has a heading and every heading a column", () => {
+  /* The headings are markup in tt.py and the cells are built here, so the two
+     can drift apart without either file looking wrong on its own. This reads
+     the real headings and counts the cells the renderer actually produces. */
+  const source = readFileSync(join(root, "tt.py"), "utf8");
+  const heads = (id) => {
+    const table = new RegExp("<tbody id=\"" + id + "\"", "");
+    const upto = source.slice(0, source.search(table));
+    const thead = upto.slice(upto.lastIndexOf("<thead>"));
+    return (thead.match(/<th\b/g) || []).length;
+  };
+
+  run(`state.classes = {};
+       myOwn().events = [{day: "Mon", startTime: "09:00", endTime: "10:00",
+                          backgroundColor: "#DDDDDD", textColor: "", label: "x"}];
+       renderEvents(); renderLegend(currentClass().e);`);
+
+  for (const [id, what] of [["evrows", "my own events"], ["legend", "subjects"]]) {
+    /* One row's worth: the stub keeps innerHTML as a string, so this counts
+       from the markup rather than walking a DOM that is not there. */
+    const cells = json(`document.getElementById(${JSON.stringify(id)})`
+                       + `.innerHTML.split("<tr")[1].match(/<td\\b/g).length`);
+    assert.equal(cells, heads(id), `${what}: ${cells} cells under ${heads(id)} headings`);
+  }
+  run(`state.classes = {};`);
+});

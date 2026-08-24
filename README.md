@@ -284,8 +284,9 @@ needs no times.
   pre-filled with what it says, so one word can be changed without retyping the
   rest, and typing into any of them ticks its row. The result appears above the
   timetable as it is typed, which is what will print.
-- **My own events** — a row per thing the school does not know about: a label,
-  its colours, a weekday and a span. There is no syntax to get wrong and no
+- **My own events** — a row per thing the school does not know about: a
+  weekday, a span, a label and its colours, in that order — when first, then
+  what. There is no syntax to get wrong and no
   colour to spell; a row that cannot be drawn says so underneath. An event on a
   day the school week does not cover — a Saturday rehearsal — adds that day.
 
@@ -298,11 +299,12 @@ needs no times.
   better on the background. A box given its own text colour also gains a border
   in it.
 
-  Both colour columns are laid out exactly as the subject list's are, and named
-  the same, so the two tables read as one idea rather than two. Each row ends
-  with **how it looks** — the box drawn as the timetable would draw it, colours,
-  name and all, sized as a 45-minute lesson. Reading a hex code and imagining
-  the result is the part nobody can do.
+  The colour columns are named and laid out as the subject list's are, though
+  the two tables do not line up column for column — the subject list has no
+  *when*, so there was nothing to gain by bending this order to match it. Each
+  row ends with **how it looks**: the box drawn as the timetable would draw it,
+  colours, name and all, sized as a 45-minute lesson. Reading a hex code and
+  imagining the result is the part nobody can do.
 
   For a bulk edit — pasting in a term's worth at once — the whole settings
   object is in **Advanced**, and events are a plain list there.

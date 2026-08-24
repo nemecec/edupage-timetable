@@ -29,8 +29,20 @@ sys.path.insert(0, ROOT)
 import tt
 
 
+FIXTURE_FILES = ("tera-ttlist-2026.json", "tera-tt-68.json", "tera-tt-104.json",
+                 "tera-tt-105.json", "tera-tt-103.json")
+
+
 def build(*args):
-    """Run the generator against the fixtures and return the payload it embedded."""
+    """Run the generator against the fixtures and return the payload it embedded.
+
+    Nothing here may reach the network. The generator treats `--cache` as a
+    read-through cache, so a run that misses writes the answer back — a build
+    that fetched would leave new files in the fixture directory and spend the
+    school's rate limit, with the suite none the wiser. Every call is checked
+    for that afterwards.
+    """
+    before = set(os.listdir(FIXTURES))
     with tempfile.TemporaryDirectory() as tmp:
         out = os.path.join(tmp, "page.html")
         done = subprocess.run(
@@ -43,6 +55,9 @@ def build(*args):
             raise AssertionError(done.stderr)
         with open(out, encoding="utf-8") as fh:
             page = fh.read()
+    fetched = sorted(set(os.listdir(FIXTURES)) - before)
+    assert not fetched, ("the build went to the network and cached %s — the "
+                         "fixtures no longer describe what was tested" % fetched)
     blob = re.search(r'<script id="data" type="application/json">(.*?)</script>', page, re.S)
     return page, json.loads(blob.group(1))
 
@@ -52,8 +67,7 @@ class WholePage(unittest.TestCase):
     def setUpClass(cls):
         # Without the fixtures the generator falls through to the live API, and
         # the suite would quietly pass while spending the school's rate limit.
-        for name in ("tera-ttlist-2026.json", "tera-tt-68.json", "tera-tt-104.json",
-                     "tera-tt-105.json", "tera-tt-103.json"):
+        for name in FIXTURE_FILES:
             assert os.path.exists(os.path.join(FIXTURES, name)), f"missing fixture {name}"
         cls.page, cls.data = build()
 
@@ -61,12 +75,127 @@ class WholePage(unittest.TestCase):
         self.assertEqual([s["l"] for s in self.data["schools"]],
                          ["ProTERA ja TERA gümnaasium", "SädeTERA", "LõunaTERA", "TäheTERA"])
 
+    def test_the_fixtures_actually_produce_a_timetable(self):
+        """The one that stops every invariant below being vacuous.
+
+        All of them loop over the lessons and pass trivially when there are
+        none, so a build that emitted an empty week would have been green.
+        """
+        rows = [e for s in self.data["schools"] for c in s["c"] for e in c["e"]]
+        boxes = [e for e in rows if not e["c"]]
+        self.assertEqual(len(self.data["schools"]), 4)
+        self.assertEqual(sum(len(s["c"]) for s in self.data["schools"]), 41)
+        self.assertEqual((len(rows), len(boxes)), (1935, 1589))
+        self.assertEqual(len(self.data["palette"]), 70)
+        # Every class carries lessons, and the group pickers are populated.
+        self.assertTrue(all(c["e"] for s in self.data["schools"] for c in s["c"]))
+        self.assertEqual(sum(len(c["v"]) for s in self.data["schools"]
+                             for c in s["c"]), 59)
+
+    def test_a_known_day_comes_out_exactly_as_it_should(self):
+        """One day, pinned whole: subject, period, groups and clock time.
+
+        The arithmetic that turns a slot into a printed time had nothing over
+        it — the pieces were tested apart, the thing they add up to was not.
+        """
+        school = next(s for s in self.data["schools"] if s["n"] == "68")
+        klass = next(c for c in school["c"] if c["n"] == "8")
+        monday = sorted(((e["p"], e["s"], e["w"], "/".join(e["g"]))
+                         for e in klass["e"] if e["d"] == 0 and not e["c"]))
+        self.assertEqual(monday, [
+            (1, "Ajutreening", "9.00–10.20", "8.1"),
+            (1, "Ajutreening", "9.00–10.20", "8.2"),
+            (1, "Ajutreening", "9.00–10.20", "8.3"),
+            (1, "Ajutreening", "9.00–10.20", "8.4"),
+            (3, "Inglise keel", "10.30–11.50", "I A"),
+            (3, "Inglise keel", "10.30–11.50", "II A"),
+            (3, "Prantsuse keel", "10.30–11.50", "Pr 1"),
+            (3, "Saksa keel", "10.30–11.50", "Sk 1"),
+            (3, "Vene keel", "10.30–11.50", "Vk 2"),
+            (5, "Inglise keel", "12.50–13.35", "I B"),
+            (5, "Inglise keel", "12.50–13.35", "II B"),
+            (5, "Inglise keel", "12.50–13.35", "III B"),
+            (5, "Prantsuse keel", "12.50–13.35", "Pr 2"),
+            (5, "Vene keel", "12.50–13.35", "Vk 1"),
+            (6, "Ajalugu", "13.55–15.15", "Alfa"),
+            (6, "Geograafia", "13.55–15.15", "Beeta"),
+            (6, "Muusika", "13.55–15.15", "Gamma"),
+            (8, "Eesti keel", "15.20–16.05", "8.j"),
+            (8, "Eesti keel", "15.20–16.05", "8.r"),
+        ])
+        # And the fields the page draws from, on one of them.
+        pair = next(e for e in klass["e"] if e["d"] == 0 and e["p"] == 6
+                    and e["s"] == "Ajalugu")
+        self.assertEqual((pair["u"], pair["a"], pair["z"]), (2, 835, 915))
+        self.assertTrue(pair["t"] and pair["T"] and pair["r"])
+
+    def test_a_lesson_running_past_one_published_block_ends_where_it_ends(self):
+        # LõunaTERA publishes blocks rather than lesson lengths. A lesson
+        # covering two of them used to stop at the end of the first.
+        school = next(s for s in self.data["schools"] if s["n"] == "105")
+        klass = next(c for c in school["c"] if c["n"].strip() == "Elis")
+        box = next(e for e in klass["e"]
+                   if e["d"] == 3 and e["s"] == "Kodundus" and not e["c"])
+        self.assertEqual((box["w"], box["a"], box["z"]), ("13.25–15.00", 805, 900))
+
+    def test_a_merged_box_carries_the_subjects_it_merged(self):
+        merged = [e for s in self.data["schools"] for c in s["c"]
+                  for e in c["e"] if e["S"]]
+        self.assertEqual(len(merged), 28)
+        self.assertIn(["Häälestus", "Üldõpetus"], [e["S"] for e in merged])
+
+    def test_the_two_teacher_spellings_do_not_change_places(self):
+        # One field is the short form the grid uses, the other the full name in
+        # the tooltip. Swapped, both are still populated and still plausible.
+        school = next(s for s in self.data["schools"] if s["n"] == "68")
+        klass = next(c for c in school["c"] if c["n"] == "8")
+        box = next(e for e in klass["e"]
+                   if e["d"] == 0 and e["p"] == 6 and e["s"] == "Ajalugu")
+        self.assertEqual((box["t"], box["T"]), (["RM"], ["Metsik Robert"]))
+
+    def test_the_named_breaks_survive_into_the_page(self):
+        school = next(s for s in self.data["schools"] if s["n"] == "68")
+        klass = next(c for c in school["c"] if c["n"] == "8")
+        breaks = [(b["n"], b["s"], b["e"]) for b in klass["h"]["0"]["b"]]
+        self.assertEqual(breaks, [("Söömine, tiimitund, vaba aeg", "11.50", "12.50"),
+                                  ("Amps", "13.35", "13.55")])
+
+    def test_each_school_abbreviates_and_colours_in_its_own_words(self):
+        """The four timetables are separate aSc documents that spell the same
+        subject differently. One table keyed by name handed whichever school
+        was read first to all of them."""
+        seen = {s["n"]: s["sj"].get("Inglise keel") for s in self.data["schools"]
+                if "Inglise keel" in s["sj"]}
+        self.assertGreater(len(seen), 1)
+        self.assertGreater(len({(f or {}).get("short") for f in seen.values()}), 1)
+        self.assertGreater(len({(f or {}).get("color") for f in seen.values()}), 1)
+        # And every subject a box names can be abbreviated, lead or not.
+        for s in self.data["schools"]:
+            for c in s["c"]:
+                for e in c["e"]:
+                    for name in (e["S"] or [e["s"]]):
+                        with self.subTest(school=s["n"], subject=name):
+                            self.assertIn(name, s["sj"])
+                            self.assertIn(name, self.data["palette"])
+
     def test_the_right_schools_have_a_day_plan(self):
-        """Two of the four publish times. If a bell config stopped matching, the
+        """Three of the four are timed: two from a hand-written day plan, and
+        SädeTERA from the period times it keeps in EduPage. TäheTERA has none
+        anywhere and gets the grid. If a bell config stopped matching, the
         invariants below would pass by examining nothing at all."""
         self.assertEqual({s["l"]: s["b"] for s in self.data["schools"]},
-                         {"ProTERA ja TERA gümnaasium": True, "SädeTERA": False,
+                         {"ProTERA ja TERA gümnaasium": True, "SädeTERA": True,
                           "LõunaTERA": True, "TäheTERA": False})
+
+    def test_a_school_that_keeps_its_own_period_times_uses_them(self):
+        # SädeTERA writes no day plan here, but its periods carry real clock
+        # times; discarding them cost that school its timeline.
+        school = next(s for s in self.data["schools"] if s["l"] == "SädeTERA")
+        boxes = [e for c in school["c"] for e in c["e"] if not e["c"]]
+        self.assertTrue(boxes)
+        self.assertTrue(all(e["a"] is not None and e["z"] > e["a"] for e in boxes))
+        first = min(boxes, key=lambda e: e["a"])
+        self.assertEqual((first["a"], first["w"]), (480, "08:00–08:45"))
 
     def test_every_class_with_a_day_plan_gets_its_times(self):
         """The check that would have caught a class quietly losing them.
@@ -192,6 +321,31 @@ class SchoolYear(unittest.TestCase):
         with open(os.path.join(ROOT, "tt.py"), encoding="utf-8") as fh:
             source = fh.read()
         self.assertNotIn("default=2026", source)
+
+
+class Documentation(unittest.TestCase):
+    """Counts in prose go stale silently. These are the ones worth pinning."""
+
+    def resources(self, name):
+        with open(os.path.join(ROOT, "deploy", name), encoding="utf-8") as fh:
+            body = fh.read().split("\nResources:\n", 1)[1].split("\nOutputs:")[0]
+        return re.findall(r"^  ([A-Za-z0-9]+):\s*$", body, re.M)
+
+    def test_the_deploy_readme_counts_the_resources_correctly(self):
+        counts = {n: len(self.resources(n))
+                  for n in ("site.yaml", "dns.yaml", "cert.yaml")}
+        self.assertEqual(counts, {"site.yaml": 16, "dns.yaml": 2, "cert.yaml": 1})
+        with open(os.path.join(ROOT, "deploy", "README.md"), encoding="utf-8") as fh:
+            readme = fh.read()
+        self.assertIn("Nineteen resources", readme)
+        self.assertIn("sixteen in `site.yaml`", readme)
+
+    def test_the_readme_does_not_write_down_a_school_year(self):
+        # The generator derives it; prose that names one goes wrong in a summer.
+        with open(os.path.join(ROOT, "README.md"), encoding="utf-8") as fh:
+            readme = fh.read()
+        self.assertNotIn("default 2026", readme)
+        self.assertNotIn("default: 2026", readme)
 
 
 class Selection(unittest.TestCase):

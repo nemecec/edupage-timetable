@@ -43,8 +43,10 @@ jobs:
         id: conf
         if: steps.ready.outputs.ready == 'true'
         run: |
-          . deploy/site.conf
-          echo "region=$REGION" >> "$GITHUB_OUTPUT"
+          # Read, not sourced: site.conf is a settings file, and `.` would run
+          # whatever a branch happened to put in it.
+          region=$(grep -m1 '^REGION=' deploy/site.conf | cut -d= -f2)
+          echo "region=$region" >> "$GITHUB_OUTPUT"
 
       - uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708  # v5
         if: steps.ready.outputs.ready == 'true'
@@ -54,8 +56,13 @@ jobs:
 
       - name: Ask for a rebuild
         if: steps.ready.outputs.ready == 'true'
+        env:
+          # Through the environment, not interpolated into the script: a
+          # secret is still a string someone typed, and `${{ }}` pastes it
+          # into the shell before the shell ever sees a quote.
+          FUNCTION: ${{ secrets.AWS_BUILD_FUNCTION }}
         run: |
-          aws lambda invoke --function-name "${{ secrets.AWS_BUILD_FUNCTION }}" \
+          aws lambda invoke --function-name "$FUNCTION" \
             --cli-binary-format raw-in-base64-out --payload '{}' \
             --log-type Tail --query LogResult --output text out.json | base64 -d | tail -6
           echo "---"

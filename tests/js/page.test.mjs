@@ -114,6 +114,154 @@ test("a build with no counter in it counts nothing", () => {
   assert.equal(json(`sent`), null);
 });
 
+test("nothing reaches the page as markup, in either view", () => {
+  /* esc() sits at more than fifty call sites and was only ever tested on its
+     own, so it could be deleted from any one of them unnoticed. This drives
+     every channel that carries text — the school's own data, what the reader
+     typed, and what a link can bring — through both renderers and looks at the
+     result. state.colors is written to directly on purpose: normalise and
+     onlyColours keep it clean in real use, and esc() is what stands behind
+     them if they ever stop. */
+  const bad = 'x"><img src=x onerror=alert(1)>';
+  const q = JSON.stringify(bad);
+  for (const [school, klass] of [["68", "8"], ["99", "3.a"]]) {
+    run(`state.school = ${JSON.stringify(school)}; state.klass = ${JSON.stringify(klass)};
+         state.customColours = true;
+         state.colors = {Matemaatika: ${q}, Kunst: ${q}};
+         state.who = {}; state.who[picksKey()] = ${q};
+         state.titleSchool = {}; state.titleSchool[picksKey()] = ${q};
+         state.titleClass = {}; state.titleClass[picksKey()] = ${q};
+         state.events = {};
+         /* One long, one short: a short box draws its time and label together
+            through a different line than a tall one. */
+         state.events[picksKey()] = "Mon 9:00-10:00 red " + ${q} +
+                                    "\\nMon 11:00-11:10 blue " + ${q};
+         state.showWho = true; state.showSchool = true; state.showClass = true;
+         printing = false; render(); renderLegend(currentClass().e);`);
+    for (const id of ["grid", "foot", "subtitle", "legend"]) {
+      const html = json(`(document.getElementById(${JSON.stringify(id)}).innerHTML || "")`);
+      assert.doesNotMatch(html, /<img/, `${id} in school ${school} took markup`);
+    }
+    /* document.title is not markup — a browser shows it as text — so it is
+       deliberately not escaped and not checked here. */
+  }
+  run(`state.school = "68"; state.klass = "8"; state.colors = {};
+       state.who = {}; state.titleSchool = {}; state.titleClass = {};
+       state.events = {}; state.showWho = false; state.customColours = false;
+       render();`);
+});
+
+test("the school's own words are text too, everywhere they are shown", () => {
+ for (const which of [0, 1]) {
+  /* Day names, period labels, division and group names, the school's name and
+     the line it prints under its timetable — all typed into aSc by someone at
+     the school, all rendered into places the lesson boxes never reach. Made
+     hostile for one pass and put back, so the ordinary fixture stays readable. */
+  const bad = '<img src=x id=school>';
+  const kept = json(`(() => {
+    const s = DATA.schools[${which}], c = s.c[0];
+    globalThis.saved = JSON.stringify([s.l, s.t, s.v, s.d, s.p, c.v, c.h, c.n]);
+    /* The class name is school-typed too — one real class is called "Silva "
+       — and it is put into option values and the picker key. */
+    c.n = ${JSON.stringify(bad)} + "-cls";
+    s.l = s.t = s.v = ${JSON.stringify(bad)};
+    s.d = [{ i: 0, n: ${JSON.stringify(bad)} }];
+    s.p = s.p.map(p => Object.assign({}, p, { l: ${JSON.stringify(bad)} }));
+    s.ts = true; s.p[0].s = ${JSON.stringify(bad)}; s.p[0].e = ${JSON.stringify(bad)};
+    c.v = [{ id: ${JSON.stringify(bad)}, groups: [${JSON.stringify(bad)}],
+             l: ${JSON.stringify(bad)}, sj: [${JSON.stringify(bad)}] }];
+    c.h["0"].b = [{ a: 1, n: ${JSON.stringify(bad)}, s: "10.20", e: "10.30",
+                    m: 620, x: 630 }];
+    state.school = s.n; state.klass = c.n; printing = false;
+    renderSchools(); renderClasses(); renderDivisions(); render();
+    return ["grid", "divisions", "school", "klass", "subtitle", "foot"]
+      .map(id => document.getElementById(id).innerHTML || "").join("|||");
+  })()`);
+  assert.doesNotMatch(kept, /<img/, "the school's own text reached the page as markup");
+  assert.match(kept, /&lt;img/, "and it is there, escaped");
+  run(`(() => {
+    const s = DATA.schools[${which}], saved = JSON.parse(globalThis.saved);
+    [s.l, s.t, s.v, s.d, s.p, s.c[0].v, s.c[0].h, s.c[0].n] = saved;
+    state.klass = s.c[0].n;
+    s.ts = false;
+    renderSchools(); renderClasses(); renderDivisions(); render();
+  })()`);
+ }
+ run(`state.school = "68"; state.klass = "8"; renderClasses(); renderDivisions(); render();`);
+});
+
+test("the fallback grid escapes everything it draws", () => {
+  /* Two of the four real schools have no times and get this view, and none of
+     it had ever been executed by a test — every esc() in it could be deleted
+     unnoticed. Drive it with markup in each thing it renders. */
+  const bad = 'x"><img src=x onerror=alert(1)>';
+  run(`state.school = "99"; state.klass = "3.a";
+       state.customColours = true; state.colors = {Matemaatika: ${JSON.stringify(bad)}};
+       state.events = {}; state.events[picksKey()] = "Mon 9:00-10:00 red " + ${JSON.stringify(bad)};
+       state.who = {}; state.who[picksKey()] = ${JSON.stringify(bad)};
+       state.showWho = true; printing = false; render();`);
+  const html = json(`document.getElementById("grid").innerHTML`);
+  assert.ok(html.includes("<table"), "the grid view really did render");
+  assert.doesNotMatch(html, /<img/, "markup reached the page unescaped");
+  assert.match(html, /&lt;img|&amp;lt;img/, "the payload is there, escaped");
+  run(`state.school = "68"; state.klass = "8"; state.colors = {};
+       state.events = {}; state.who = {}; state.showWho = false;
+       state.customColours = false; render();`);
+});
+
+test("a link is read back exactly as it was written", () => {
+  /* shareUrl and readUrl were never called by any test: renaming the fragment
+     key in one of them broke every shared link with the suite still green. */
+  run(`state.lang = "et"; state.showRoom = false;
+       state.who = {}; state.who[picksKey()] = "Mari";`);
+  const link = json(`shareUrl()`);
+  assert.match(link, /#s=/);
+  const readBack = json(`(() => {
+      // With the "#", as a browser has it: readUrl slices it off.
+      location.hash = "#" + (shareUrl().split("#")[1] || "");
+      return readUrl();
+    })()`);
+  assert.equal(readBack.lang, "et");
+  assert.equal(readBack.showRoom, false);
+  assert.deepEqual(readBack.who, json(`({[picksKey()]: "Mari"})`));
+  run(`state.lang = "en"; state.showRoom = true; state.who = {}; location.hash = "";`);
+});
+
+test("a link carries this class and no other", () => {
+  run(`state.who = {"68/8": "Mari", "68/7": "Jaan", "99/3.a": "Liis"};
+       state.school = "68"; state.klass = "8";`);
+  const carried = json(`JSON.parse(unb64url(shareUrl().split("#s=")[1])).who`);
+  assert.deepEqual(carried, { "68/8": "Mari" });
+  // Emptied fields leave nothing behind at all.
+  run(`state.who = {"68/8": "   "};`);
+  assert.equal(json(`("who" in changedFromDefaults())`), false);
+  run(`state.who = {};`);
+});
+
+test("a hostile colour in a link is dropped before it is stored", () => {
+  /* Through the real ingestion path, not by calling the filter directly: the
+     filter was tested and the call to it was not, so removing the call left
+     markup sitting in localStorage with the suite green. */
+  const hostile = JSON.stringify({ colors: { Matemaatika: 'x"><img src=x>',
+                                             Kunst: "#abc" } });
+  const merged = json(`applyShared(JSON.parse(${JSON.stringify(hostile)}), defaults())`);
+  assert.deepEqual(merged.colors, { Kunst: "#abc" });
+});
+
+test("a link adds to the other classes rather than replacing them", () => {
+  const link = JSON.stringify({ who: { "68/8": "Mari" } });
+  const merged = json(`applyShared(JSON.parse(${JSON.stringify(link)}),
+                                   Object.assign(defaults(), {who: {"68/7": "Jaan"}}))`);
+  assert.deepEqual(merged.who, { "68/7": "Jaan", "68/8": "Mari" });
+});
+
+test("the address the link uses survives a round trip through base64", () => {
+  // The "url" in b64url: + / = have no business in a fragment.
+  const encoded = json(`b64url("~~~\u00fc\u00e4>>>???")`);
+  assert.doesNotMatch(encoded, /[+/=]/);
+  assert.equal(json(`unb64url(${JSON.stringify(encoded)})`), "~~~üä>>>???");
+});
+
 test("a short colour is still readable text on top of it", () => {
   // #000 is black; before it was understood, the label came out black on black.
   assert.equal(json(`readable("#000")`), "#FFFFFF");
@@ -151,6 +299,22 @@ test("a link survives the round trip, accents and all", () => {
 test("overlapping boxes divide the column between them", () => {
   const packed = json(`pack([{a: 0, z: 60}, {a: 30, z: 90}, {a: 120, z: 180}])`);
   assert.deepEqual(packed.map(x => [x._lane, x._lanes]), [[0, 2], [1, 2], [0, 1]]);
+});
+
+test("a box that touches the one before it still gets the full width", () => {
+  /* Ending exactly where the next begins is not an overlap. With a preceding
+     overlap in the same cluster, treating it as one drew a box that clashes
+     with nothing at half width. */
+  const packed = json(`pack([{a: 0, z: 60}, {a: 30, z: 90}, {a: 90, z: 150}])`);
+  assert.deepEqual(packed.map(x => [x._lane, x._lanes]), [[0, 2], [1, 2], [0, 1]]);
+});
+
+test("a whole-class lesson is mine because it says so, not by falling through", () => {
+  /* The guard and the loop's own fallthrough give the same answer for an empty
+     group list, so the test that named the guard did not exercise it. Give it
+     a division whose groups it is not in, and only the guard can save it. */
+  assert.equal(run(`visible({g: []}, {d1: "A"}, [{id: "d1", groups: ["A", "B"]}])`),
+               true);
 });
 
 test("a lesson is mine when every division it belongs to matches a pick", () => {

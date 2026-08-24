@@ -32,6 +32,14 @@ class DayShape(unittest.TestCase):
         self.assertEqual(self.shape([(5, 1)], always_paired=2)[:3],
                          [(1, 2), (3, 2), (5, 1)])
 
+    def test_a_slot_is_kept_when_the_lesson_starts_part_way_through_it(self):
+        # A forced pair covers periods 3-4; a lesson at period 4 begins inside
+        # it. Marking the slot free let the trailing trim delete it, and the
+        # lesson then had no time at all and vanished from the timeline.
+        self.assertEqual(self.shape([(1, 2), (4, 1)], always_paired=2),
+                         [(1, 2), (3, 2)])
+        self.assertEqual(self.shape([(2, 1)], always_paired=2), [(1, 2)])
+
     def test_a_longer_lesson_still_wins(self):
         self.assertEqual(self.shape([(1, 3)], periods=6, always_paired=2)[0], (1, 3))
 
@@ -98,7 +106,11 @@ class MergingABlock(unittest.TestCase):
     """A published block holding two subjects in sequence is one box."""
 
     def entry(self, subject, period, duration=1, groups=(), who="", room=""):
-        return {"subject": subject, "startPeriod": period, "period": period, "day": 0,
+        # The same fields a real extracted entry has, including the school's own
+        # abbreviation: a merged box carries one per member, and a stand-in that
+        # left it out would not notice if that stopped working.
+        return {"subject": subject, "subjectShort": subject[:3],
+                "startPeriod": period, "period": period, "day": 0,
                 "duration": duration, "groups": list(groups), "part": 0, "slot": 1,
                 "teachers": [who] if who else [], "teacherShorts": [who[:2]] if who else [],
                 "rooms": [room] if room else []}
@@ -108,6 +120,31 @@ class MergingABlock(unittest.TestCase):
                                self.entry("Üldõpetus", 2, who="Kask", room="A2")])
         self.assertEqual(got[0]["teachers"], ["Tamm", "Kask"])
         self.assertEqual(got[0]["rooms"], ["A1", "A2"])
+
+    def test_two_groups_of_one_subject_at_once_stay_two_boxes(self):
+        # Two Kunst cards on the same period are parallel groups, not a
+        # sequence. Folding them into one drew a double-width box over a
+        # period nobody is teaching in.
+        # Ungrouped, or the "anything with groups is left alone" guard above
+        # would answer first and this branch would never be reached.
+        got = tt.merge_blocks([self.entry("Kunst", 1), self.entry("Kunst", 1),
+                               self.entry("Käsitöö", 2)])
+        self.assertEqual(sorted((e["subject"], e["startPeriod"]) for e in got),
+                         [("Kunst", 1), ("Kunst", 1), ("Käsitöö", 2)])
+
+    def test_a_merged_box_keeps_every_member_s_abbreviation(self):
+        # Without one per member the box reads "Häälestus + Üld" when short
+        # names are on, and the member has no legend swatch to recolour.
+        got = tt.merge_blocks([self.entry("Häälestus", 1), self.entry("Üldõpetus", 2)])
+        self.assertEqual(got[0]["names"], ["Häälestus", "Üldõpetus"])
+        self.assertEqual(got[0]["nameShorts"], ["Hää", "Üld"])
+
+    def test_a_box_spans_its_parts_rather_than_summing_them(self):
+        # Two cards overlapping on a period must not make a box longer than the
+        # block, which would draw it running past the end of the day.
+        got = tt.merge_blocks([self.entry("A", 1, duration=2), self.entry("B", 2)])
+        self.assertEqual(len(got), 1)
+        self.assertEqual((got[0]["startPeriod"], got[0]["duration"]), (1, 2))
 
     def test_a_sequence_becomes_one_box_naming_both(self):
         got = tt.merge_blocks([self.entry("Häälestus", 1), self.entry("Üldõpetus", 2)])
@@ -186,6 +223,30 @@ class Colours(unittest.TestCase):
     def test_no_two_subjects_share_a_colour(self):
         got = tt.palette(self.subjects)
         self.assertEqual(len({pair["bg"] for pair in got.values()}), len(self.subjects))
+
+    def test_subjects_in_one_family_are_told_apart_and_not_merely_different(self):
+        """Different is not the same as distinguishable.
+
+        Four sciences all rendered as near-identical greens satisfy "no two are
+        equal" perfectly, and are useless on paper — which is the whole reason
+        the family members are spread across lightness steps.
+        """
+        sciences = ["Bioloogia", "Füüsika", "Geograafia", "Keemia"]
+        got = tt.palette(sciences)
+        rgb = [tuple(int(got[s]["bg"][i:i + 2], 16) for i in (1, 3, 5))
+               for s in sciences]
+        gaps = [sum(abs(a - b) for a, b in zip(x, y))
+                for i, x in enumerate(rgb) for y in rgb[i + 1:]]
+        self.assertGreater(min(gaps), 60,
+                           "two subjects of one family are too close to tell apart")
+
+    def test_a_family_is_spread_across_its_band_not_stacked_on_one_hue(self):
+        # Lightness alone would separate them; the hue spread is what keeps a
+        # crowded family from reading as one colour in several strengths.
+        sciences = ["Bioloogia", "Füüsika", "Geograafia", "Keemia"]
+        hues = {tt._hue_of(tt.palette(sciences)[s]["bg"]) for s in sciences}
+        self.assertGreater(max(hues) - min(hues), 6,
+                           "the family sits on a single hue")
 
     def test_the_colours_do_not_depend_on_the_order_asked_in(self):
         self.assertEqual(tt.palette(self.subjects),

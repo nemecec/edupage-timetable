@@ -100,9 +100,11 @@ STRINGS = {
         "reset": "Reset all settings",
         "share": "Share",
         "shared": "Link copied",
+        "shareManual": "Copy it below",
         "shareHint": ("Everything you have chosen is in the address bar, so a "
                       "bookmark or a shared link carries it along."),
         "qrHint": "Edit it here",
+        "qrTooLong": "Too many settings for a code — the link is:",
         "colourHint": ("Type or paste a colour code to set one, or click the "
                        "swatch beside it, or click any lesson in the timetable "
                        "itself. Clicking a code selects it, ready to copy into an "
@@ -183,9 +185,11 @@ STRINGS = {
         "reset": "Lähtesta kõik seaded",
         "share": "Jaga",
         "shared": "Link kopeeritud",
+        "shareManual": "Kopeeri allpool",
         "shareHint": ("Kõik valikud on aadressiribal, nii et järjehoidja või "
                       "jagatud link kannab need kaasa."),
         "qrHint": "Muuda siin",
+        "qrTooLong": "Seadeid on koodi jaoks liiga palju — link on:",
         "colourHint": ("Kirjuta või kleebi värvikood, klõpsa selle kõrval oleval "
                        "värvikastil või klõpsa tunniplaanis tunnil. Koodil "
                        "klõpsamine valib selle, et saaksid oma sündmusele "
@@ -365,8 +369,10 @@ def _minutes(text):
 def band_slots(cfg, class_name, day):
     """The published blocks for this class on this day, if the school lists them.
 
-    Same shape `day_slots` produces, so everything downstream is none the wiser:
-    a block covering two aSc periods is one box either way.
+    A block covering two aSc periods is one box, as a paired slot is. The dicts
+    are not interchangeable though: these carry `at`/`start`/`end` and no
+    `used`, because a published block has no clock to run and nothing to trim.
+    `extract` branches on which of the two it is holding.
     """
     for band in cfg.get("bands", []):
         # aSc hands back what someone typed, trailing space and all: LõunaTERA
@@ -542,6 +548,12 @@ def timetable_meta(result):
         "days": days,
         "periods": periods,
         "showTimes": any(p["start"] not in ("", "00:00") for p in periods),
+        # The school's own clock, when it kept one. aSc leaves every period at
+        # 00:00 unless somebody filled the times in, so a period with real ones
+        # is a deliberate answer and can be used as the day plan.
+        "periodTimes": {p["num"]: (p["start"], p["end"]) for p in periods
+                        if p["start"] not in ("", "00:00")
+                        and p["end"] not in ("", "00:00")} or None,
         "validity": worth_showing(settings.get("m_strDateBellowTimeTable", "")),
         "classNames": [c["name"] for c in T["classes"]],
     }
@@ -565,14 +577,19 @@ def day_slots(blocks, n_periods, always_paired=0):
         # and treating it as 45 minutes would start every later slot early.
         forced = 2 if len(slots) < always_paired else 1
         step = max(longest.get(pos, 1), forced)
-        slots.append({"period": pos, "periods": step, "used": pos in longest})
+        # Used if a lesson starts anywhere inside it, not only on its first
+        # period. A slot widened by `forced` can hold a lesson that begins
+        # half-way through it, and calling that slot free let the trim below
+        # delete it out from under the lesson — which then had no time at all.
+        slots.append({"period": pos, "periods": step,
+                      "used": any(pos + k in longest for k in range(step))})
         pos += step
     while slots and not slots[-1]["used"]:      # trim trailing free slots
         slots.pop()
     return slots
 
 
-def extract(result, class_name, n_periods=None, cfg=None):
+def extract(result, class_name, n_periods=None, cfg=None, period_times=None):
     """Flatten the aSc relational tables into one lesson row per (day, period)."""
     T = tables(result)
     subjects, teachers = index(T["subjects"]), index(T["teachers"])
@@ -651,6 +668,18 @@ def extract(result, class_name, n_periods=None, cfg=None):
                 times, breaks = day_times(kinds, cfg)
                 for slot, time in zip(slots, times):
                     slot.update(time)
+            elif period_times:
+                # The school's own period clock. Each slot runs from the start
+                # of its first period to the end of its last, so a pair is one
+                # box spanning both and the gap between them stays a gap.
+                breaks = []
+                for slot in slots:
+                    first = period_times.get(slot["period"])
+                    last = period_times.get(slot["period"] + slot["periods"] - 1, first)
+                    if not first:
+                        continue
+                    slot.update({"at": _minutes(first[0]),
+                                 "start": first[0], "end": last[1]})
             else:
                 breaks = []
         shape[day] = {"slots": slots, "breaks": breaks}
@@ -674,6 +703,14 @@ def extract(result, class_name, n_periods=None, cfg=None):
                 e["startMin"] = slot["at"]
                 e["endMin"] = _minutes(last["end"].replace(".", ":"))
                 e["time"] = f"{slot['start']}–{last['end']}"
+            elif period_times and e["slot"] and "at" in slots[e["slot"] - 1]:
+                slot = slots[e["slot"] - 1]
+                first = period_times.get(e["startPeriod"])
+                last = period_times.get(e["startPeriod"] + e["duration"] - 1, first)
+                if first:
+                    e["startMin"] = _minutes(first[0])
+                    e["endMin"] = _minutes(last[1])
+                    e["time"] = f"{first[0]}–{last[1]}"
             elif cfg and not cfg.get("bands") and e["slot"]:
                 slot = slots[e["slot"] - 1]
                 if e["startPeriod"] != slot["period"]:
@@ -764,12 +801,18 @@ def _one_box(here):
     here = sorted(here, key=lambda x: x["startPeriod"])
     lead = max(here, key=lambda x: (x["duration"], x["startPeriod"]))
     joined = dict(lead)
-    names = []
+    names, shorts = [], []
     for x in here:
         if x["subject"] not in names:
             names.append(x["subject"])
+            shorts.append(x["subjectShort"])
     joined["names"] = names if len(names) > 1 else None
-    joined["duration"] = sum(x["duration"] for x in here)
+    joined["nameShorts"] = shorts if len(names) > 1 else None
+    # The span the parts cover, not the sum of their lengths: two cards that
+    # overlap on a period would otherwise make a box longer than the block it
+    # sits in, and be drawn running past the end of the day.
+    last = max(x["startPeriod"] + x["duration"] for x in here)
+    joined["duration"] = last - here[0]["startPeriod"]
     joined["startPeriod"] = here[0]["startPeriod"]
     joined["period"] = here[0]["period"]
     for field in ("teachers", "teacherShorts", "rooms"):
@@ -830,17 +873,38 @@ def collect(client, year, only, verbose):
     for entry in visible:
         try:
             result = client.timetable(entry["tt_num"])
-        except RuntimeError as exc:
-            print(f"warning: skipping timetable {entry['tt_num']} ({exc})", file=sys.stderr)
+            meta = timetable_meta(result)
+            label = short_label(entry["text"])
+            cfg = bell_config(label, entry["text"])
+            n_periods = len(meta["periods"])
+            # A school with no hand-written day plan may still publish its own
+            # period times in EduPage. Those are as good as a bell schedule and
+            # better than nothing, which is what the fallback grid is.
+            own_times = None if cfg else meta["periodTimes"]
+            classes = [extract(result, name, n_periods, cfg, own_times)
+                       for name in meta["classNames"]]
+        except (RuntimeError, KeyError, TypeError, IndexError, ValueError) as exc:
+            print(f"warning: skipping timetable {entry['tt_num']} "
+                  f"({type(exc).__name__}: {exc})", file=sys.stderr)
             continue
-        meta = timetable_meta(result)
-        label = short_label(entry["text"])
-        cfg = bell_config(label, entry["text"])
-        n_periods = len(meta["periods"])
-        classes = [extract(result, name, n_periods, cfg) for name in meta["classNames"]]
         classes = [c for c in classes if c["entries"]]
         if not classes:
             continue
+        if bool(cfg) or meta["periodTimes"]:
+            # A timed school draws a timeline, and a timeline can only draw a
+            # lesson it has a time for. Anything left untimed here is a lesson
+            # the day plan does not cover — say the school moved a period, or
+            # added one past the end of a published block — and it would simply
+            # not appear. Say so rather than lose it quietly.
+            for c in classes:
+                lost = [e for e in c["entries"]
+                        if not e["part"] and e.get("startMin") is None]
+                if lost:
+                    where = ", ".join(sorted({f"day {e['day']} period {e['period']}"
+                                              for e in lost})[:4])
+                    print(f"warning: {label} class {c['name'].strip()!r}: "
+                          f"{len(lost)} lesson(s) the day plan has no time for "
+                          f"({where}) — they will not be drawn", file=sys.stderr)
         schools.append({
             "ttNum": entry["tt_num"],
             "label": label,
@@ -849,8 +913,7 @@ def collect(client, year, only, verbose):
             "days": meta["days"],
             "periods": meta["periods"],
             "showTimes": meta["showTimes"],
-            "bells": bool(cfg),
-            "bellName": (cfg or {}).get("name", ""),
+            "bells": bool(cfg) or bool(meta["periodTimes"]),
             "classes": classes,
         })
         if verbose:
@@ -953,6 +1016,12 @@ def _contrast(lum_a, lum_b):
     return (hi + 0.05) / (lo + 0.05)
 
 
+def _hue_of(hex_colour):
+    """The hue of a rendered colour, for checking a family really is spread."""
+    r, g, b = (int(hex_colour[i:i + 2], 16) / 255 for i in (1, 3, 5))
+    return colorsys.rgb_to_hsv(r, g, b)[0] * 360
+
+
 def _hexpair(hue, light, sat):
     """A background plus whichever of the two text colours reads better on it.
 
@@ -983,17 +1052,30 @@ def compact(schools):
     The --json export keeps the verbose shape; this form only has to be read by
     the page's own script, and halves the size of the generated file.
     """
+    # Per school, not per name. The four timetables are separate aSc documents
+    # that reuse subject names and abbreviate and colour them differently —
+    # "Inglise keel" is Eng/#990000 in one and Ik/#00FFCC in another — so one
+    # table keyed by name alone hands whichever school was read first to all of
+    # them. It is still hoisted out of the entries, which is where the size is.
     subject_meta = {}
     for school in schools:
+        here = subject_meta.setdefault(school["ttNum"], {})
         for cls in school["classes"]:
             for e in cls["entries"]:
-                meta = subject_meta.setdefault(e["subject"], {})
-                meta.setdefault("short", e["subjectShort"])
+                # Every subject the box names, not only the one it is filed
+                # under: a merged box leads with one subject and mentions the
+                # others, and those others need an abbreviation and a colour
+                # of their own or they are drawn long and cannot be recoloured.
+                for name, short in zip(e.get("names") or [e["subject"]],
+                                       e.get("nameShorts") or [e["subjectShort"]]):
+                    meta = here.setdefault(name, {})
+                    meta.setdefault("short", short)
                 if HEX_COLOUR.match(e["schoolColor"] or ""):
-                    meta.setdefault("color", e["schoolColor"])
+                    here[e["subject"]].setdefault("color", e["schoolColor"])
     out = []
     for school in schools:
         out.append({
+            "sj": subject_meta.get(school["ttNum"], {}),
             "n": school["ttNum"],
             "l": school["label"],
             "t": school["text"],
@@ -1003,7 +1085,6 @@ def compact(schools):
                   for p in school["periods"]],
             "ts": school["showTimes"],
             "b": school["bells"],
-            "bn": school["bellName"],
             "c": [{
                 "n": cls["name"],
                 "v": [{"id": d["id"], "groups": d["groups"], "l": d["label"],
@@ -1092,17 +1173,32 @@ PAGE = """<!DOCTYPE html>
   .primary select { font-weight: 600; }
   .toggles { display: flex; gap: 16px; align-items: center; }
   .toggles label { display: flex; gap: 6px; align-items: center; font-size: 13px; }
+  .sharebox { width: 100%; margin: 0 0 10px; padding: 7px 9px; font-size: 13px;
+              border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+  .sharebox.off { display: none; }
+  .qrlong { font-size: 9px; color: var(--muted); max-width: 46mm; text-align: right; }
+  .qraddr { word-break: break-all; font-size: 8px; }
   .scroll { overflow-x: auto; }
   table { border-collapse: collapse; width: 100%; min-width: 720px; background: #fff; }
-  th, td { border: 1px solid var(--line); vertical-align: top; padding: 5px 7px; }
-  thead th { background: var(--panel); font-size: 12px; text-align: center; white-space: nowrap; }
-  tbody th { background: var(--panel); font-size: 13px; text-align: left; white-space: nowrap; }
-  td { min-width: 96px; }
-  .lesson { border-radius: 4px; padding: 4px 6px; margin-bottom: 4px; }
+  /* --grid scales the whole table down when a class has too many rows to fit
+     one sheet. It is 1 on screen and solved for when printing, the same
+     measure-and-shrink the timeline gets; a class with no day plan is drawn
+     here and used to print on two or three pages. */
+  th, td { border: 1px solid var(--line); vertical-align: top;
+           padding: calc(5px * var(--grid, 1)) calc(7px * var(--grid, 1)); }
+  #grid table { font-size: calc(14px * var(--grid, 1)); }
+  thead th { background: var(--panel); font-size: calc(12px * var(--grid, 1));
+             text-align: center; white-space: nowrap; }
+  tbody th { background: var(--panel); font-size: calc(13px * var(--grid, 1));
+             text-align: left; white-space: nowrap; }
+  td { min-width: calc(96px * var(--grid, 1)); }
+  .lesson { border-radius: 4px; margin-bottom: calc(4px * var(--grid, 1));
+            padding: calc(4px * var(--grid, 1)) calc(6px * var(--grid, 1)); }
   .lesson:last-child { margin-bottom: 0; }
   .lesson .name { font-weight: 600; }
-  .lesson .meta { font-size: 11px; opacity: .85; }
-  .lesson .time { font-size: 11px; opacity: .85; font-variant-numeric: tabular-nums; }
+  .lesson .meta { font-size: calc(11px * var(--grid, 1)); opacity: .85; }
+  .lesson .time { font-size: calc(11px * var(--grid, 1)); opacity: .85;
+                  font-variant-numeric: tabular-nums; }
   .cont { opacity: .62; }
   .brk { background: #f2f3f5; min-width: 60px; }
   .brk .time { font-size: 11px; color: #3d444d; font-variant-numeric: tabular-nums; }
@@ -1175,6 +1271,7 @@ PAGE = """<!DOCTYPE html>
                   padding: 0 0 10px; border: none; }
   body.printview .count, body.printview .topbar { display: none; }
   body.printview #grid { width: 1054px; }          /* 297mm less two 9mm margins */
+  body.printview #grid table { min-width: 0; }
   @page { size: A4 landscape; margin: 9mm; }
   @media print {
     /* Chrome leaves "Background graphics" off by default, which would drop
@@ -1226,6 +1323,9 @@ PAGE = """<!DOCTYPE html>
     <button id="doprint" class="go" data-i18n="print"></button>
   </div>
 </div>
+<!-- Only ever shown when the clipboard refused: the link has to be somewhere
+     the reader can actually select it. -->
+<input id="shareBox" class="sharebox off" readonly aria-label="Link">
 
 <details class="panel" id="filterPanel" open>
   <summary data-i18n="filter"></summary>
@@ -1403,10 +1503,12 @@ def pick_initial(schools, want_school, want_class):
                     if _same_name(c["name"], want_class)), None)
         if not hit:
             # The class may live in another timetable; find it there instead.
-            for other in schools:
+            # Only when no school was named: --school pins the search, and
+            # wandering off to a different one would ignore what was asked for.
+            for other in schools if not want_school else []:
                 match = next((c for c in other["classes"]
-                               if _same_name(c["name"], want_class)), None)
-                if match and not want_school:
+                              if _same_name(c["name"], want_class)), None)
+                if match:
                     return other["ttNum"], match["name"]
             raise SystemExit(
                 f"Class {want_class!r} not in {school['label']!r}. Available: "
@@ -1452,7 +1554,10 @@ def vendored(name):
 def render_html(schools, edupage, year, initial_school, initial_class, lang="en",
                 built="", goatcounter=""):
     entries_data, subject_meta = compact(schools)
-    all_subjects = sorted(subject_meta)
+    # One palette across all four timetables, so a subject looks the same
+    # whichever school is on screen. Only the school's own abbreviation and its
+    # own colour are per-school; those live on the school, not here.
+    all_subjects = sorted({name for per in subject_meta.values() for name in per})
     payload = {
         "edupage": edupage,
         "year": year,
@@ -1464,7 +1569,6 @@ def render_html(schools, edupage, year, initial_school, initial_class, lang="en"
         "languages": [list(x) for x in LANGUAGES],
         "strings": STRINGS,
         "palette": palette(all_subjects),
-        "subjects": subject_meta,
         "schools": entries_data,
     }
     # "</" would close the block early; "<!--<script" would open a nested one and

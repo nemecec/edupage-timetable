@@ -57,19 +57,26 @@ try {
 } catch (e) { /* corrupt or unavailable storage: fall back to defaults */ }
 /* A link wins over what this browser had, since following one is a request to
    see that. The per-class bags merge rather than replace, so a link for one
-   class does not wipe the choices made for a sibling's. */
+   class does not wipe the choices made for a sibling's.
+
+   A named function rather than a block, so a test can hand it a link and look
+   at what comes out. This is the one place untrusted input reaches the page. */
+function applyShared(shared, current) {
+  const merged = normalise(Object.assign({}, current, shared));
+  for (const bag of ["picks", "colors", "who", "events", "titleSchool", "titleClass"]) {
+    if (shared[bag]) merged[bag] = Object.assign({}, current[bag], shared[bag]);
+  }
+  /* The per-bag merge runs after normalise, so the colours it brings in have
+     not been through it. Nothing hostile survives the escaping at the sinks
+     either way, but a link's junk should not end up saved. */
+  merged.colors = onlyColours(merged.colors);
+  return merged;
+}
+
 {
   const shared = readUrl();
   if (shared) {
-    const merged = normalise(Object.assign({}, state, shared));
-    for (const bag of ["picks", "colors", "who", "events", "titleSchool", "titleClass"]) {
-      if (shared[bag]) merged[bag] = Object.assign({}, state[bag], shared[bag]);
-    }
-    /* The per-bag merge runs after normalise, so the colours it brings in have
-       not been through it. Nothing hostile survives the escaping at the sinks
-       either way, but a link's junk should not end up saved. */
-    merged.colors = onlyColours(merged.colors);
-    state = merged;
+    state = applyShared(shared, state);
     /* Keep what the link brought, so closing it and coming back later still
        shows the same timetable. */
     try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
@@ -95,10 +102,28 @@ function unb64url(code) {
   return new TextDecoder().decode(Uint8Array.from(binary, c => c.charCodeAt(0)));
 }
 
+/* The settings kept per class rather than once for the whole page. `colors` is
+   deliberately not among them: a subject keeps its colour wherever it appears. */
+const PER_CLASS = ["picks", "who", "events", "titleSchool", "titleClass"];
+
+const emptyBag = (v) => v == null ||
+  (typeof v === "string" ? !v.trim() : !Object.keys(v).length);
+
 function changedFromDefaults() {
   const base = defaults(), out = {};
   for (const key of Object.keys(base)) {
     if (JSON.stringify(state[key]) !== JSON.stringify(base[key])) out[key] = state[key];
+  }
+  /* A link is for one class, so it carries that class and no other. It used to
+     carry every class the browser had ever been set up for, which meant sharing
+     one child's timetable handed over a sibling's name — and made the printed
+     QR denser for entries the recipient can never see. Empty entries go too:
+     typing something and deleting it again should leave nothing behind. */
+  const here = picksKey();
+  for (const bag of PER_CLASS) {
+    if (!out[bag]) continue;
+    if (emptyBag(state[bag][here])) delete out[bag];
+    else out[bag] = { [here]: state[bag][here] };
   }
   return out;
 }
@@ -161,12 +186,20 @@ function renderFooter(school) {
   if (DATA.counts && !printing) bits.push(esc(t("footer.counts")));
   /* 36mm keeps a typical link at about half a millimetre per module, which a
      phone reads without ceremony. A link carrying many custom colours gets
-     denser; it still scans, just less forgivingly. */
-  const code = printing ? qrSvg(shareUrl(), "36mm") : "";
+     denser, and past roughly 2 kB there is no code that will hold it — the
+     colours are shared across every class, so a family that has recoloured a
+     lot of subjects can get there. Rather than let the code quietly not be
+     there, print the address instead: longer to type, but it is the same link
+     and it is on the page. */
+  const link = printing ? shareUrl() : "";
+  const code = link ? qrSvg(link, "36mm") : "";
+  const corner = !link ? ""
+    : code ? '<div class="qrbox">' + code +
+             '<div class="qrhint">' + esc(t("qrHint")) + "</div></div>"
+           : '<div class="qrbox"><div class="qrlong">' + esc(t("qrTooLong")) +
+             '<br><span class="qraddr">' + esc(link) + "</span></div></div>";
   document.getElementById("foot").innerHTML =
-    '<div class="lines">' + bits.join("<br>") + "</div>" +
-    (code ? '<div class="qrbox">' + code +
-            '<div class="qrhint">' + esc(t("qrHint")) + "</div></div>" : "");
+    '<div class="lines">' + bits.join("<br>") + "</div>" + corner;
   document.getElementById("foot").classList.toggle("bare", printing && !bits.length);
 }
 
@@ -233,22 +266,36 @@ function currentClass() {
 }
 /* Group choices belong to a class, not to the reader, so they are stored per
    school+class and survive switching back and forth. */
+/* Abbreviations and the school's own colours, as this school writes them. The
+   four timetables are separate documents that spell and colour the same subject
+   differently, so this is per school and not one table for all of them. */
+function subjectFacts() { return currentSchool().sj || {}; }
+
 function picksKey() { return currentSchool().n + "/" + currentClass().n; }
 function picks() { return perClass("picks"); }
 function pickable() { return perClassBag("picks"); }
 
 function readable(bg) {
   /* Three, four, six or eight digits — a short hex is a colour like any other,
-     and treating it as unreadable put dark text on a dark box. */
+     and treating it as unreadable put dark text on a dark box.
+
+     Four and eight carry alpha, and alpha is the whole difference between what
+     the colour says and what the eye sees: #00000010 reads as black, so black
+     would be given white text, and the box is in fact all but transparent —
+     white on white. So the colour is composited over the sheet first, and the
+     text is chosen against what will actually be behind it. */
   let hex = String(bg || "").trim().replace("#", "");
   if (/^[0-9a-f]{3,4}$/i.test(hex)) hex = hex.split("").map(c => c + c).join("");
-  const m = /^([0-9a-f]{6})/i.exec(hex);
+  const m = /^([0-9a-f]{6})([0-9a-f]{2})?$/i.exec(hex);
   if (!m) return "#14171A";
   const n = parseInt(m[1], 16);
+  const a = m[2] === undefined ? 1 : parseInt(m[2], 16) / 255;
+  const over = (c) => c * a + 255 * (1 - a);      // the sheet under it is white
   const ch = (c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
-  const L = 0.2126 * ch(n >> 16 & 255) + 0.7152 * ch(n >> 8 & 255) + 0.0722 * ch(n & 255);
+  const L = 0.2126 * ch(over(n >> 16 & 255)) + 0.7152 * ch(over(n >> 8 & 255)) +
+            0.0722 * ch(over(n & 255));
   const dark = 0.00778;   // luminance of #14171A
-  const cr = (a, b) => (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+  const cr = (x, y) => (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
   return cr(L, dark) >= cr(L, 1) ? "#14171A" : "#FFFFFF";
 }
 function colorFor(subject) {
@@ -257,7 +304,7 @@ function colorFor(subject) {
     return { bg: bg, fg: readable(bg) };
   }
   if (state.schoolColors) {
-    const bg = (DATA.subjects[subject] || {}).color;
+    const bg = (subjectFacts()[subject] || {}).color;
     if (bg) return { bg: bg, fg: readable(bg) };
   }
   return DATA.palette[subject] || { bg: "#EEEEEE", fg: "#14171A" };
@@ -266,7 +313,10 @@ function colorFor(subject) {
 /* A lesson is mine when every division it belongs to matches one of my picks.
    Whole-class lessons carry no groups and are always mine. */
 function visible(entry, mine, divisions) {
-  if (!entry.g.length) return true;
+  /* A lesson in no group is the whole class's, and a lesson is shown until a
+     pick rules it out — both fall out of the loop below reaching its end, so
+     neither needs a guard of its own. One was here, and no test could tell
+     whether it worked, because removing it changed nothing. */
   if (!Object.values(mine).filter(Boolean).length) return true;
   for (const div of divisions) {
     if (!entry.g.some(g => div.groups.includes(g))) continue;
@@ -289,8 +339,6 @@ const WEEKDAYS = {};
  ["sun","sunday","pühapäev","puhapaev","pü","py","p","su"]]
   .forEach((names, i) => names.forEach(n => { WEEKDAYS[n] = i; }));
 
-const DAY_NAMES_ET = ["Esmaspäev","Teisipäev","Kolmapäev","Neljapäev","Reede",
-                      "Laupäev","Pühapäev"];
 const LINE_RE = /^(\S+)\s+(\d{1,2})[:.](\d{2})\s*[-–—]\s*(\d{1,2})[:.](\d{2})\s+(\S+)\s+(.+?)\s*$/;
 
 const isColour = (c) => !!(window.CSS && CSS.supports && CSS.supports("color", c));
@@ -408,9 +456,10 @@ function renderTimeline(school, cls, shown, mine, scale) {
 
   /* Over the timetable rather than at the top of the page, and drawn the same
      way on screen as on paper: whatever is typed into the title fields shows up
-     here at once, which is the only way to see what will print. */
-  const named = displayTitle(school, cls);
-  let h = named ? '<div class="ptitle sheet">' + esc(named) + "</div>" : "";
+     here at once, which is the only way to see what will print. Both views draw
+     it — a printed sheet with no school, class or name on it is of no use to
+     anyone. */
+  let h = sheetTitle(school, cls);
   h += '<div class="tl" style="--ppm:' + ppm + ";--half:" + (30 * ppm) +
           "px;--hour:" + (60 * ppm) + 'px">';
   h += '<div class="tlhead"><div class="cell gut"></div>' +
@@ -456,7 +505,7 @@ function renderTimeline(school, cls, shown, mine, scale) {
              (height >= 30 ? '<div class="when">' + esc(when) + "</div>" : "") + "</div>";
         continue;
       }
-      const e = it.lesson, col = colorFor(e.s), info = DATA.subjects[e.s] || {};
+      const e = it.lesson, col = colorFor(e.s), info = subjectFacts()[e.s] || {};
       const meta = detailLine(e);
       const tip = [subjectName(e, false), e.g.join("/"), e.T.join(" / "),
                    e.r.join(" / "), when, e.u > 1 ? t("paired") : t("single"),
@@ -538,18 +587,20 @@ function cssColour(value) {
   document.body.appendChild(_swatch);
   const rgb = getComputedStyle(_swatch).color;
   document.body.removeChild(_swatch);
-  const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(rgb);
+  const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?/.exec(rgb);
   if (!m) return "#888888";
-  return "#" + [1, 2, 3].map(i => (+m[i]).toString(16).padStart(2, "0")).join("");
+  const hex = "#" + [1, 2, 3].map(i => (+m[i]).toString(16).padStart(2, "0")).join("");
+  /* Keep the alpha. Dropping it turned `transparent` into solid black, which
+     was then given white text and drawn as nothing at all. */
+  const a = m[4] === undefined ? 1 : parseFloat(m[4]);
+  return a >= 1 ? hex
+    : hex + Math.round(a * 255).toString(16).padStart(2, "0");
 }
 
-/* Slot view is the school's own day plan: one cell per lesson however many
-   periods it spans, with the named breaks in fixed columns. Period view is the
-   raw aSc grid, where a paired lesson repeats with its continuation dimmed. */
-/* The timeline is the view. A school with no day plan has no times to draw one
-   from — three of the four here publish none — so those fall back to the aSc
-   period grid rather than rendering nothing. Nothing to choose; the data
-   decides. */
+/* The timeline is the view. A school with no times anywhere — no day plan
+   written here, and none of its own in EduPage — has nothing to draw one from,
+   so it falls back to the raw aSc period grid rather than rendering nothing.
+   Nothing to choose; the data decides. */
 function onTimeline() {
   if (!currentSchool().b) return false;
   /* A day plan the class is not covered by leaves its lessons untimed, and a
@@ -572,7 +623,8 @@ function detailLine(e) {
    two subjects in sequence names both, in the order they run; the colour and the
    legend still follow the one subject the box is keyed to. */
 function subjectName(e, short) {
-  const one = (name) => short ? ((DATA.subjects[name] || {}).short || name) : name;
+  const facts = subjectFacts();
+  const one = (name) => short ? ((facts[name] || {}).short || name) : name;
   return (e.S && e.S.length ? e.S : [e.s]).map(one).join(" + ");
 }
 
@@ -638,12 +690,10 @@ function lessonHtml(e, time) {
     "</div>";
 }
 
-/* Columns are slots plus the named breaks that sit between them, or aSc
-   periods when slot mode is off. */
 /* Columns of the fallback grid. Only a school with no usable day plan gets
    here, so these are always aSc's raw periods. */
-function columnModel(school, cls) {
-  return school.p.map(p => ({ kind: "period", p: p }));
+function columnModel(school) {
+  return school.p.map(p => ({ p: p }));
 }
 
 function columnLabel(school, cls, col) {
@@ -651,41 +701,76 @@ function columnLabel(school, cls, col) {
   return esc(col.p.l) + '<br><span class="slottime">' + esc(col.p.s + "–" + col.p.e) + "</span>";
 }
 
+function sheetTitle(school, cls) {
+  const named = displayTitle(school, cls);
+  return named ? '<div class="ptitle sheet">' + esc(named) + "</div>" : "";
+}
+
 function bodyCell(cls, dayIdx, col, bucket) {
   return "<td>" + (bucket.get(dayIdx + ":p" + col.p.n) || [])
     .map(e => lessonHtml(e, e.c ? "" : e.w)).join("") + "</td>";
 }
 
-/* One landscape sheet is the whole point of this view, and how tall a row
-   wants to be depends on the class — several lessons in one cell, a canteen
-   sitting spelled out inside a break, a row of personal events. So the rows are
-   measured as they lie on screen and the padding that still fits the sheet is
-   solved for, rather than guessed from how many rows there are. */
+/* One landscape sheet is the whole point of the printout, and how tall it
+   wants to be depends on the class: several lessons in one cell, a canteen
+   sitting spelled out inside a break, a row of personal events, a day that runs
+   from seven in the morning to ten at night because someone added an entry
+   there. So it is drawn and measured rather than guessed at from constants —
+   the footer alone changes size with the QR code and the language, and a guess
+   that was right once quietly stops being right. */
 const SHEET_H = 726;              // 210mm less two 9mm margins, at 96dpi
+const SHEET_BUDGET = SHEET_H - 8; /* a few pixels in hand: the print layout
+   rounds differently from the screen one, and landing exactly on the limit
+   means landing just past it. */
 
-/* Keep the printout on one landscape sheet whatever the class throws at it —
-   several lessons in one cell, a canteen sitting spelled out inside a break, a
-   row of personal events. Air goes first: the rows give up their padding down
-   to a floor, and only then does the type step down. The view on screen is laid
-   out at the size of the sheet, so this measures the real thing. */
-/* The largest scale at which the day still fits one sheet, footer and all.
-   Found by drawing it and measuring rather than by arithmetic on constants: the
-   footer changes size with the QR code and the language, and a guess that was
-   right once quietly stops being right. */
-function fitTimeline(school, cls, shown, mine) {
+/* The largest scale at which everything still fits, footer and all.
+   `draw(scale)` puts the page together at that scale; the answer is fed back to
+   whichever renderer asked. Bisection alone is not enough — the smallest scale
+   it will consider has to be measured too, or a day wide enough to defeat even
+   that gets returned as if it fitted. */
+function fitToSheet(draw, small, big) {
   const grid = document.getElementById("grid");
   const keep = grid.innerHTML;
-  let small = 0.4, big = 3.0;
+  const fits = (scale) => {
+    draw(scale);
+    return grid.getBoundingClientRect().height + footHeight() <= SHEET_BUDGET;
+  };
+  let best = null;
   for (let step = 0; step < 9; step++) {
     const mid = (small + big) / 2;
-    grid.innerHTML = renderTimeline(school, cls, shown, mine, mid);
-    const used = grid.getBoundingClientRect().height + footHeight();
-    /* A few pixels in hand: the print layout rounds differently from the screen
-       one, and landing exactly on the limit means landing just past it. */
-    if (used <= SHEET_H - 8) small = mid; else big = mid;
+    if (fits(mid)) { best = small = mid; } else big = mid;
   }
-  grid.innerHTML = keep;
-  return small;
+  /* Nothing in the range fitted. Take the floor anyway — one crowded class
+     spilling onto a second sheet is better than refusing to print — but only
+     after checking, so the floor is never returned untested. */
+  if (best === null) best = small;
+  /* Leave the page drawn at the scale that won, not at whichever one the last
+     probe happened to try, and not at whatever was on screen before. */
+  if (draw(best) === RESTORE_PREVIOUS) grid.innerHTML = keep;
+  return best;
+}
+
+/* A renderer that only measures — its caller redraws afterwards — says so, and
+   gets the previous markup put back instead. */
+const RESTORE_PREVIOUS = "restore";
+
+function fitTimeline(school, cls, shown, mine) {
+  return fitToSheet((scale) => {
+    document.getElementById("grid").innerHTML =
+      renderTimeline(school, cls, shown, mine, scale);
+    return RESTORE_PREVIOUS;      // render() draws the real one with the answer
+  }, 0.25, 3.0);
+}
+
+/* The same for the plain grid, which a school with no day plan gets. It used to
+   print at whatever size it happened to be, which for a class with many rows
+   was two or three sheets. */
+function fitGrid(html) {
+  const grid = document.getElementById("grid");
+  return fitToSheet((s) => {
+    grid.innerHTML = html;
+    grid.style.setProperty("--grid", s);
+  }, 0.4, 1.0);
 }
 
 /* Outer height of the footer, margins included: the sheet has to hold it, and
@@ -722,17 +807,10 @@ function render() {
   const timeline = onTimeline();
   const shown = cls.e.filter(e => visible(e, mine, cls.v))
                      .filter(e => !timeline || !e.c);   // one box per lesson
-  const bucket = new Map();
-  for (const e of shown) {
-    const k = timeline ? e.d + ":s" + e.k : e.d + ":p" + e.p;
-    if (!bucket.has(k)) bucket.set(k, []);
-    bucket.get(k).push(e);
-  }
-
   const parsed = parseEvents(perClass("events"));
   document.getElementById("evwarn").textContent = parsed.errors.join("\n");
 
-  if (printing && timeline) document.body.classList.add("printview");
+  if (printing) document.body.classList.add("printview");
   else document.body.classList.remove("printview");
 
   if (timeline) {
@@ -746,7 +824,15 @@ function render() {
     return;
   }
 
-  const cols = columnModel(school, cls);
+  /* Only the grid reads this, and only the grid gets this far. */
+  const bucket = new Map();
+  for (const e of shown) {
+    const k = e.d + ":p" + e.p;
+    if (!bucket.has(k)) bucket.set(k, []);
+    bucket.get(k).push(e);
+  }
+
+  const cols = columnModel(school);
   const dayIdx = daysWith(school, parsed.events);
   const anyMine = parsed.events.length > 0;
   let h = "<table><thead><tr><th></th>";
@@ -763,7 +849,14 @@ function render() {
       h += "</tr>";
     }
   }
-  document.getElementById("grid").innerHTML = h + "</tbody></table>";
+  const table = sheetTitle(school, cls) + h + "</tbody></table>";
+  const grid = document.getElementById("grid");
+  if (printing) {
+    fitGrid(table);
+  } else {
+    grid.style.removeProperty("--grid");
+    grid.innerHTML = table;
+  }
 
   const total = cls.e.filter(e => !timeline || !e.c).length;
   document.getElementById("count").textContent =
@@ -937,6 +1030,14 @@ pick.addEventListener("input", () => setColour(pick.dataset.subject, pick.value)
    closes, so the next thing typed goes to the page and not into a dead input. */
 pick.addEventListener("change", () => pick.blur());
 
+/* Everything the reader has customised — group picks, colours, personal
+   events, names, display options — is just `state`, so a backup is that object.
+   It is filled in when the section is opened, and again by anything in the
+   panel that changes what it is a backup of. */
+const advancedPanel = document.getElementById("advancedPanel");
+const settingsText = document.getElementById("settingsText");
+const settingsMsg = document.getElementById("settingsMsg");
+
 document.getElementById("lang").addEventListener("change", (ev) => {
   state.lang = ev.target.value;
   save(); applyStrings(); renderDivisions(); render();
@@ -946,15 +1047,14 @@ document.getElementById("reset").addEventListener("click", () => {
   const { school, klass, lang } = state;
   state = Object.assign(defaults(), { school, klass, lang });
   save();
-  renderDivisions(); render();
+  /* The backup box sits in this same panel, a few centimetres from this button,
+     and is only refilled when the panel is opened. Left alone it would still be
+     showing everything that was just cleared — and pressing Apply beside it
+     would put all of it back, the child's name included. */
+  settingsText.value = JSON.stringify(state, null, 2);
+  settingsMsg.textContent = "";
+  renderDivisions(); syncPerClassInputs(); render();
 });
-
-/* Everything the reader has customised — group picks, colours, personal
-   events, names, display options — is just `state`, so a backup is that object.
-   It is filled in when the section is opened, not kept in step continuously. */
-const advancedPanel = document.getElementById("advancedPanel");
-const settingsText = document.getElementById("settingsText");
-const settingsMsg = document.getElementById("settingsMsg");
 
 advancedPanel.addEventListener("toggle", () => {
   if (advancedPanel.open) {
@@ -962,6 +1062,17 @@ advancedPanel.addEventListener("toggle", () => {
     settingsMsg.textContent = "";
   }
 });
+/* When the clipboard is unavailable, put the link on the page so it can be
+   selected and copied by hand. Selecting it for the reader is as far as this
+   can go — nothing but a real gesture may reach the clipboard. */
+function showShareFallback(url) {
+  const box = document.getElementById("shareBox");
+  box.value = url;
+  box.classList.remove("off");
+  box.focus();
+  box.select();
+}
+
 /* Sharing is copying the address, since the address is the whole configuration. */
 document.getElementById("share").addEventListener("click", async () => {
   const button = document.getElementById("share");
@@ -969,7 +1080,11 @@ document.getElementById("share").addEventListener("click", async () => {
     await navigator.clipboard.writeText(shareUrl());
     button.textContent = t("shared");
   } catch (e) {
-    button.textContent = t("settings.selected");
+    /* No clipboard — an insecure context, or a browser that refuses. Telling
+       the reader to press Cmd/Ctrl+C would be telling them to copy nothing, so
+       put the link somewhere it can be read and selected instead. */
+    showShareFallback(shareUrl());
+    button.textContent = t("shareManual");
   }
   button.title = t("shareHint");
   setTimeout(() => { button.textContent = t("share"); }, 2500);
@@ -1021,7 +1136,10 @@ function reveal(key) {
 function typed(el, bag, shows) {
   let timer = 0;
   el.addEventListener("input", () => {
-    state[bag][picksKey()] = el.value;
+    // Emptied means gone, not remembered as "". Kept, they pile up one per
+    // class ever visited and ride along in every link and QR from then on.
+    if (el.value.trim()) state[bag][picksKey()] = el.value;
+    else delete state[bag][picksKey()];
     if (el.value.trim()) reveal(shows);
     save();
     clearTimeout(timer);

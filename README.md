@@ -57,7 +57,7 @@ given without `--school` is looked up across all timetables.
 | flag | meaning |
 | --- | --- |
 | `--edupage NAME` | EduPage subdomain (default `tera`) |
-| `--year YYYY` | school year for the timetable listing (default 2026) |
+| `--year YYYY` | school year for the timetable listing (defaults to the current one, rolling over each August) |
 | `--only TEXT` | only embed timetables whose title contains TEXT (repeatable) |
 | `--school TEXT` | timetable selected on first open |
 | `--class NAME` | class selected on first open |
@@ -343,19 +343,35 @@ spends the rate limit that the nightly publish needs.
 
 The Python tests cover the reasoning the generator does for itself — the bell
 clock against the printed Päevaplaan, LõunaTERA's published blocks and the rules
-about which lessons merge, the colour palette's WCAG contrast (including 200
-subjects forced through it), and the parts of the pipeline where a mistake is
-silent rather than loud. Two are invariants over a whole build rather than
-examples: no class in a school that publishes times may have untimed lessons,
-and no lesson may be drawn twice in the same place. Both were written because
-each had just happened.
+about which lessons merge, the colour palette's contrast against WCAG AA and the
+separation between members of one family, and the parts of the pipeline where a
+mistake is silent rather than loud. One whole day of one class is pinned outright
+— every box, with its period, groups and printed time — because the arithmetic
+that turns a slot into a time had its pieces tested and not the sum of them.
 
-The JavaScript tests run `page.js` itself under a small stand-in for the browser
-and cover the event parser — every weekday token in both languages, every way a
-line can be rejected — the colour splitting, the settings normaliser, the share
-link's round trip, the calendar packing, the escaping at every sink, and the two
-rules that keep a share link honest: only something that is plainly a colour can
-arrive as one, and merely looking at a class adds nothing to the link.
+Several are invariants over a whole build rather than examples: no class in a
+school that publishes times may have untimed lessons, no lesson may be drawn
+twice in the same place, none may be implausibly short, and every subject drawn
+must have a colour and an abbreviation. Each was written because it had just
+happened. One test exists only to keep the rest honest: it asserts the fixtures
+really do produce 1,935 rows across 41 classes, because every invariant above
+loops over the lessons and would pass an empty week without complaint.
+
+The JavaScript tests run `page.js` itself under a small stand-in for the browser,
+with two schools in the fixture — one with a day plan and one without — so both
+the timeline and the fallback grid are actually executed. They cover the event
+parser (every weekday token in both languages, every way a line can be
+rejected), the settings normaliser, the share link written and read back, the
+calendar packing, and the escaping: hostile text is pushed through every channel
+that carries it — the school's own subject, teacher, room, day and class names,
+and everything the reader can type — and the rendered markup is checked in both
+views. That last one is deliberately end-to-end rather than a test of `esc()`
+alone, because `esc()` was well tested and the calls to it were not.
+
+The suite is checked by breaking things on purpose: a change is made to the
+generator or the page, and the tests are expected to fail. Anything that can be
+broken in silence is a gap, and the tests above were written from what such a
+pass turned up rather than from reading the code.
 
 Beyond the suite, extraction was checked against the official rendering: all 70
 lesson boxes for ProTERA class 8 match the school's own page — the 69 that carry

@@ -366,7 +366,9 @@ class Documentation(unittest.TestCase):
         self.assertEqual(counts, {"site.yaml": 16, "dns.yaml": 2, "cert.yaml": 1})
         with open(os.path.join(ROOT, "deploy", "README.md"), encoding="utf-8") as fh:
             readme = fh.read()
-        self.assertIn("Nineteen resources", readme)
+        # The words, not their capitalisation: the sentence around them is
+        # free to be reworded.
+        self.assertIn("nineteen resources", readme.lower())
         self.assertIn("sixteen in `site.yaml`", readme)
 
     def test_the_size_the_readmes_quote_is_the_size_it_is(self):

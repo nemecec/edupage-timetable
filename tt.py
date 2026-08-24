@@ -2,7 +2,7 @@
 """Extract EduPage/aSc timetables and render a personalised, filterable view.
 
 The public timetable page renders its grid client-side into an SVG, but the
-data behind it comes from a plain JSON endpoint that an anonymous session may
+data behind it comes from a plain JSON endpoint that an anonymous session can
 read. This script talks to that endpoint directly, so no browser is involved
 and repeated runs on unchanged data produce byte-identical output.
 
@@ -11,7 +11,7 @@ and repeated runs on unchanged data produce byte-identical output.
     python3 tt.py --school ProTERA --class 8 -o schedule.html
 
 Every visible timetable and every class is embedded in the generated page, so
-the reader picks their school and class there; --school/--class only choose
+the reader picks their school and class there. --school and --class only choose
 what is selected on first open.
 
 Standard library only.
@@ -35,15 +35,15 @@ UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
 
 # The school's server stalls now and then — a connection that opens and then
 # never answers, most reliably when it has just been asked for everything
-# several times over. A nightly job should ride that out rather than skip a day,
-# so every fetch gets a few attempts with a widening gap between them.
+# several times over. A nightly job must ride that out rather than skip a day,
+# so every fetch gets a few attempts, with a wider gap between each one.
 
 ATTEMPTS = 4
-BACKOFF = (5, 20, 60)      # seconds; a nightly job can afford to wait one out
+BACKOFF = (5, 20, 60)      # seconds. A nightly job can wait one out
 
 
 def _transient(exc):
-    """Whether trying again could plausibly help."""
+    """Whether another attempt can help."""
     if isinstance(exc, urllib.error.HTTPError):
         return exc.code == 429 or exc.code >= 500
     return True          # timeout, reset, refused, no route: all worth a retry
@@ -85,24 +85,24 @@ STRINGS = {
         "nameShort": "abbreviated",
         "subjectFull": "full name",
         "subjectShort": "short name",
-        "coloursHeading": "Lesson colours:",
-        "paletteColours": "Automatic colours",
-        "schoolColours": "Colours from the timetable",
-        "customColours": "Colours of my own",
+        "coloursHeading": "Lesson colors:",
+        "paletteColours": "Automatic colors",
+        "schoolColours": "Colors from the timetable",
+        "customColours": "Colors of my own",
         "colLabel": "Label",
-        "colBackground": "Background colour",
-        "colTextColour": "Text colour",
+        "colBackground": "Background color",
+        "colTextColour": "Text color",
         "colSample": "How it looks",
         "colWeekday": "Weekday",
         "colStartTime": "Start time",
         "colEndTime": "End time",
         "events.add": "Add an event",
         "events.remove": "Remove",
-        "colour.own": "own colour",
+        "colour.own": "own color",
         "colour.fromSubject": "copy from subject",
         "colour.fromTimetable": "from the timetable",
         "colour.automatic": "automatic",
-        "subjects.summary": "Colour of each subject",
+        "subjects.summary": "Color of each subject",
         "appName": "School timetable",
         "filter": "Filter",
         "groupsHeading": "Show only these study groups:",
@@ -116,10 +116,10 @@ STRINGS = {
         "share": "Share",
         "shared": "Link copied",
         "shareManual": "Copy it below",
-        "shareHint": ("Everything you have chosen is in the address bar, so a "
-                      "bookmark or a shared link carries it along."),
+        "shareHint": ("The address bar holds everything you chose. A bookmark "
+                      "or a shared link carries it with them."),
         "qrHint": "Edit it here",
-        "qrTooLong": "Too many settings for a code — the link is:",
+        "qrTooLong": "Too many settings for a code. The link is:",
         "groups": "Groups",
         "all": "— all —",
         "time": "Time",
@@ -130,7 +130,7 @@ STRINGS = {
         "noTimeShort": "time not in day plan",
         "slotsShown": "{0} of {1} lesson slots shown",
         "noFilter": "(no group filter active)",
-        "noBells": "no bell schedule for this school, times unknown",
+        "noBells": "this school publishes no times",
         "lessonCount": "{0} lessons",
         "mineCount": "{0} of my own",
         "mineCol": "My own",
@@ -138,24 +138,25 @@ STRINGS = {
         "events.label": "Not on the school's timetable:",
         "events.badRange": "times run 00:00-23:59",
         "events.backwards": "end time must be after the start",
-        "events.badColour": "{0} is not a colour",
+        "events.badColour": "{0} is not a color",
         "events.line": "row {0}: {1}",
-        "settings.label": ("Settings as JSON — copy this to keep a backup, "
-                           "or paste a saved one and apply it"),
+        "settings.label": ("The settings as JSON. Copy this to keep a backup. "
+                           "Or paste a saved one and apply it."),
         "settings.copy": "Copy to clipboard",
         "settings.apply": "Apply pasted settings",
         "settings.copied": "Copied to clipboard.",
-        "settings.selected": "Selected — press Cmd/Ctrl+C.",
+        "settings.selected": "Selected. Press Cmd/Ctrl+C to copy it.",
         "settings.badJson": "That is not valid JSON: {0}",
         "settings.notObject": "Expected a JSON object of settings.",
         "settings.applied": "Applied.",
-        "footer.disclaimer": ("Unofficial. Built from the school's public timetable "
-                              "data; not published or maintained by the school."),
+        "footer.disclaimer": ("Unofficial. Built from the school's public "
+                              "timetable data. The school does not publish or "
+                              "maintain this page."),
         "footer.source": "Source: {0}",
         "sourceLink": "source",
         "footer.built": "data fetched {0}",
-        "footer.counts": ("Visits are counted with GoatCounter: no cookies, "
-                          "nothing personal, nothing shared."),
+        "footer.counts": ("GoatCounter counts the visits. No cookies, nothing "
+                          "personal, nothing shared."),
         "days": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday",
                  "Saturday", "Sunday"],
     },
@@ -204,10 +205,10 @@ STRINGS = {
         "share": "Jaga",
         "shared": "Link kopeeritud",
         "shareManual": "Kopeeri allpool",
-        "shareHint": ("Kõik valikud on aadressiribal, nii et järjehoidja või "
+        "shareHint": ("Aadressiribal on kõik sinu valikud. Järjehoidja või "
                       "jagatud link kannab need kaasa."),
         "qrHint": "Muuda siin",
-        "qrTooLong": "Seadeid on koodi jaoks liiga palju — link on:",
+        "qrTooLong": "Seadeid on koodi jaoks liiga palju. Link on:",
         "groups": "Rühmad",
         "all": "— kõik —",
         "time": "Aeg",
@@ -218,7 +219,7 @@ STRINGS = {
         "noTimeShort": "aeg puudub päevaplaanis",
         "slotsShown": "näidatud {0} tunnipesa {1}-st",
         "noFilter": "(rühmafilter puudub)",
-        "noBells": "sellel koolil pole päevaplaani, ajad teadmata",
+        "noBells": "see kool ei avalda kellaaegu",
         "lessonCount": "{0} tundi",
         "mineCount": "{0} minu oma",
         "mineCol": "Minu oma",
@@ -228,21 +229,21 @@ STRINGS = {
         "events.backwards": "lõpuaeg peab olema pärast algusaega",
         "events.badColour": "{0} ei ole värv",
         "events.line": "rida {0}: {1}",
-        "settings.label": ("Seaded JSON-ina — kopeeri varukoopiaks "
-                           "või kleebi salvestatud seaded ja rakenda"),
+        "settings.label": ("Seaded JSON-ina. Kopeeri varukoopiaks. Või kleebi "
+                           "salvestatud seaded ja rakenda."),
         "settings.copy": "Kopeeri lõikelauale",
         "settings.apply": "Rakenda kleebitud seaded",
         "settings.copied": "Kopeeritud lõikelauale.",
-        "settings.selected": "Valitud — vajuta Cmd/Ctrl+C.",
+        "settings.selected": "Valitud. Vajuta kopeerimiseks Cmd/Ctrl+C.",
         "settings.badJson": "See ei ole korrektne JSON: {0}",
         "settings.notObject": "Ootasin JSON-objekti seadetega.",
         "settings.applied": "Rakendatud.",
         "footer.disclaimer": ("Mitteametlik. Koostatud kooli avalikest tunniplaani "
-                              "andmetest; kool seda lehte ei avalda ega halda."),
+                              "andmetest. Kool seda lehte ei avalda ega halda."),
         "footer.source": "Allikas: {0}",
         "sourceLink": "allikas",
         "footer.built": "andmed laaditud {0}",
-        "footer.counts": ("Külastusi loeb GoatCounter: küpsiseid ei kasutata, "
+        "footer.counts": ("Külastusi loeb GoatCounter. Küpsiseid ei kasutata, "
                           "isikuandmeid ei koguta ega jagata."),
         "days": ["Esmaspäev", "Teisipäev", "Kolmapäev", "Neljapäev", "Reede",
                  "Laupäev", "Pühapäev"],
@@ -449,8 +450,8 @@ class EduPage:
                     self.log(f"cache hit: {path}")
                     return payload
                 except (json.JSONDecodeError, OSError) as exc:
-                    # A half-written file would otherwise be a permanent cache
-                    # hit that fails the same way on every run.
+                    # Otherwise a half-written file stays a permanent cache
+                    # hit, and fails the same way on every run.
                     self.log(f"unreadable cache {path} ({exc}); fetching again")
 
         url = f"{self.base}/timetable/server/{module}.js?__func={func}"
@@ -568,9 +569,9 @@ def timetable_meta(result):
 def day_slots(blocks, n_periods, always_paired=0):
     """Split a day into lesson slots — "the 1st lesson", "the 2nd lesson", ….
 
-    A slot is as long as the longest lesson starting on it, because different
-    groups of the same class can pair the same periods differently: on one
-    ProTERA Tuesday one group has a single at period 7 while another has a pair
+    A slot is as long as the longest lesson that starts on it. Different
+    groups of the same class can pair the same periods differently. On one
+    ProTERA Tuesday, one group has a single at period 7 and another has a pair
     over 7-8. Both are the day's 4th lesson, so both belong to slot 4.
     """
     longest = {}
@@ -580,7 +581,7 @@ def day_slots(blocks, n_periods, always_paired=0):
     while pos <= n_periods:
         # A school that teaches its first slots as doubles does so whatever card
         # happens to sit there: a single in slot 1 is still the first lesson,
-        # and treating it as 45 minutes would start every later slot early.
+        # and 45 minutes for it starts every later slot early.
         forced = 2 if len(slots) < always_paired else 1
         step = max(longest.get(pos, 1), forced)
         # Used if a lesson starts anywhere inside it, not only on its first
@@ -668,7 +669,7 @@ def extract(result, class_name, n_periods=None, cfg=None, period_times=None):
             slots = day_slots(blocks, n_periods, (cfg or {}).get("alwaysPaired", 0))
             # A school whose plan is published as blocks has no clock to run, so
             # a class its bands do not cover — the empty markers standing in for
-            # a grade, say — simply goes without times.
+            # a grade, say — goes without times.
             if cfg and not cfg.get("bands"):
                 kinds = ["P" if s["periods"] > 1 else "L" for s in slots]
                 times, breaks = day_times(kinds, cfg)
@@ -722,7 +723,7 @@ def extract(result, class_name, n_periods=None, cfg=None, period_times=None):
                 if e["startPeriod"] != slot["period"]:
                     # Starts part-way through a slot another group takes whole.
                     # The day plan never splits a pair, so the exact time is
-                    # unknown; span the slot and let the view mark it.
+                    # unknown. Span the slot, and let the view mark it.
                     e["offSlot"] = True
                     e["startMin"] = slot["at"]
                     e["endMin"] = slot["at"] + (cfg["paired"] if slot["periods"] > 1
@@ -750,9 +751,9 @@ def extract(result, class_name, n_periods=None, cfg=None, period_times=None):
 
 
 def merge_blocks(entries):
-    """One box per lesson the school publishes, however aSc happens to record it.
+    """One box per lesson the school publishes, whatever way aSc records it.
 
-    A published block covers one or two aSc periods. Inside it there may be a
+    A published block covers one or two aSc periods. Inside it there can be a
     sequence — Häälestus and then Üldõpetus, which the school writes as a single
     9.00-10.50 — or a set of choices running side by side, Kodundus or Käsitöö
     or Puutöö. Both can also be recorded as one card per period rather than one
@@ -766,7 +767,7 @@ def merge_blocks(entries):
 
     The colour goes to whichever subject fills more of the block, and to the
     later one when they fill it equally: a block that opens with a warm-up
-    should look like what it becomes.
+    must look like what it becomes.
     """
     out, blocks = [], {}
     for e in entries:
@@ -791,7 +792,7 @@ def merge_blocks(entries):
         for x in here:
             by_subject.setdefault(x["subject"], []).append(x)
         for group in by_subject.values():
-            # Only a subject spread across distinct periods is one lesson; the
+            # Only a subject spread across distinct periods is one lesson. The
             # same subject twice on one period is two, taught side by side.
             if len(group) == 1 or len({x["startPeriod"] for x in group}) < len(group):
                 out.extend(group)
@@ -814,9 +815,9 @@ def _one_box(here):
             shorts.append(x["subjectShort"])
     joined["names"] = names if len(names) > 1 else None
     joined["nameShorts"] = shorts if len(names) > 1 else None
-    # The span the parts cover, not the sum of their lengths: two cards that
-    # overlap on a period would otherwise make a box longer than the block it
-    # sits in, and be drawn running past the end of the day.
+    # The span the parts cover, not the sum of their lengths. Otherwise two
+    # cards that overlap on a period make a box longer than the block it sits
+    # in, and the page draws it past the end of the day.
     last = max(x["startPeriod"] + x["duration"] for x in here)
     joined["duration"] = last - here[0]["startPeriod"]
     joined["startPeriod"] = here[0]["startPeriod"]
@@ -834,8 +835,8 @@ def _one_box(here):
 def label_divisions(divisions, entries):
     """Name each group picker after what is actually taught in it.
 
-    A division that only ever carries one subject is that subject; a couple of
-    subjects are listed; more than that is shortened, and the page keeps the
+    A division that only ever carries one subject is that subject. A couple of
+    subjects are listed. More than that is shortened, and the page keeps the
     whole list for the tooltip.
     """
     for div in divisions:
@@ -883,7 +884,7 @@ def collect(client, year, only, verbose):
             label = short_label(entry["text"])
             cfg = bell_config(label, entry["text"])
             n_periods = len(meta["periods"])
-            # A school with no hand-written day plan may still publish its own
+            # A school with no hand-written day plan can still publish its own
             # period times in EduPage. Those are as good as a bell schedule and
             # better than nothing, which is what the fallback grid is.
             own_times = None if cfg else meta["periodTimes"]
@@ -900,8 +901,8 @@ def collect(client, year, only, verbose):
             # A timed school draws a timeline, and a timeline can only draw a
             # lesson it has a time for. Anything left untimed here is a lesson
             # the day plan does not cover — say the school moved a period, or
-            # added one past the end of a published block — and it would simply
-            # not appear. Say so rather than lose it quietly.
+            # added one past the end of a published block. Such a lesson does
+            # not appear at all. Say so rather than lose it in silence.
             for c in classes:
                 lost = [e for e in c["entries"]
                         if not e["part"] and e.get("startMin") is None]
@@ -977,7 +978,7 @@ def _relative_luminance(r, g, b):
 def palette(names):
     """Print-friendly colour per subject, with related subjects kept close.
 
-    Each family owns a hue band; members are spread across it and given
+    Each family owns a hue band. Members are spread across it and given
     well-separated lightness steps, which is what keeps them distinct on paper.
     Text colour is picked from the background's luminance so every label stays
     legible. Deterministic: everything derives from the sorted subject list.
@@ -987,7 +988,7 @@ def palette(names):
         family, hue = subject_family(name)
         families.setdefault(family, {"hue": hue, "members": []})["members"].append(name)
 
-    # Subjects with no family keyword still need hues; give them the gaps left
+    # Subjects with no family keyword still need hues. Give them the gaps left
     # between the named families rather than letting them collide.
     leftovers = families.pop("other", None)
     colors = {}
@@ -1055,23 +1056,23 @@ HEX_COLOUR = re.compile(r"^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
 def compact(schools):
     """Shrink the model for embedding: short keys, subject facts hoisted out.
 
-    The --json export keeps the verbose shape; this form only has to be read by
+    The --json export keeps the verbose shape. This form only has to be read by
     the page's own script, and halves the size of the generated file.
     """
-    # Per school, not per name. The four timetables are separate aSc documents
-    # that reuse subject names and abbreviate and colour them differently —
-    # "Inglise keel" is Eng/#990000 in one and Ik/#00FFCC in another — so one
-    # table keyed by name alone hands whichever school was read first to all of
-    # them. It is still hoisted out of the entries, which is where the size is.
+    # Per school, not per name. The four timetables are separate aSc documents. They reuse subject
+    # names, and abbreviate and colour them differently. "Inglise keel" is
+    # Eng/#990000 in one and Ik/#00FFCC in another. So one table keyed by name
+    # alone hands whichever school was read first to all of them. It is still hoisted out of the entries, which is where the size is.
     subject_meta = {}
     for school in schools:
         here = subject_meta.setdefault(school["ttNum"], {})
         for cls in school["classes"]:
             for e in cls["entries"]:
                 # Every subject the box names, not only the one it is filed
-                # under: a merged box leads with one subject and mentions the
-                # others, and those others need an abbreviation and a colour
-                # of their own or they are drawn long and cannot be recoloured.
+                # under. A merged box leads with one subject and mentions the
+                # others. Those others need an abbreviation and a colour of
+                # their own, or the page draws them long and nobody can
+                # recolour them.
                 for name, short in zip(e.get("names") or [e["subject"]],
                                        e.get("nameShorts") or [e["subjectShort"]]):
                     meta = here.setdefault(name, {})
@@ -1555,7 +1556,7 @@ def school_year(today=None):
     """aSc names a school year by the calendar year it starts in.
 
     Derived rather than pinned: a year written into the source is right until
-    the summer it silently is not, and the nightly rebuild would keep asking
+    the summer it silently is not, and the nightly rebuild keeps asking
     for last year's timetable without ever saying so.
     """
     today = today or datetime.date.today()
@@ -1580,9 +1581,9 @@ def pick_initial(schools, want_school, want_class):
         hit = next((c for c in school["classes"]
                     if _same_name(c["name"], want_class)), None)
         if not hit:
-            # The class may live in another timetable; find it there instead.
-            # Only when no school was named: --school pins the search, and
-            # wandering off to a different one would ignore what was asked for.
+            # The class can live in another timetable. Find it there instead.
+            # Only when no school was named. --school pins the search, and a
+            # search in a different timetable ignores what was asked for.
             for other in schools if not want_school else []:
                 match = next((c for c in other["classes"]
                               if _same_name(c["name"], want_class)), None)
@@ -1598,16 +1599,16 @@ def pick_initial(schools, want_school, want_class):
 # Page counts, with the label decided here rather than taken from the page.
 #
 # Left to itself the counter reports document.title, and this page puts the
-# child's name in the title — that name would then be sent to a third party on
-# every visit, which is exactly what the page tells the reader does not happen.
+# child's name in the title. Such a name then goes to a third party on every
+# visit, which is exactly what the page tells the reader does not happen.
 # So the count is made by hand instead (`no_onload`), once page.js knows which
 # timetable is on screen, out of the school's own names for it. What the reader
 # typed is never part of it.
 #
-# The label is sent as a path as well as a title: the counter keeps one title
-# per path, so a title alone would collapse every class into a single row and
-# show whichever arrived last. The address the reader sees is untouched — this
-# is only what the beacon says.
+# The label goes out as a path as well as a title. The counter keeps one title
+# per path, so a title alone collapses every class into a single row, and shows
+# whichever one arrived last. The address the reader sees is untouched. This is
+# only what the beacon says.
 #
 # The script is only in the file when a site is named at build time, so a local
 # build makes no third-party request at all.
@@ -1624,7 +1625,7 @@ def beside(name, *parts):
 
 
 def vendored(name):
-    """Third-party code copied into the page. Fetching it at run time would hand
+    """Third-party code copied into the page. A fetch at run time hands
     the reader's settings to whoever served it."""
     return beside(name, "vendor")
 
@@ -1634,7 +1635,7 @@ def render_html(schools, edupage, year, initial_school, initial_class, lang="en"
     entries_data, subject_meta = compact(schools)
     # One palette across all four timetables, so a subject looks the same
     # whichever school is on screen. Only the school's own abbreviation and its
-    # own colour are per-school; those live on the school, not here.
+    # own colour are per-school. Those live on the school, not here.
     all_subjects = sorted({name for per in subject_meta.values() for name in per})
     payload = {
         "edupage": edupage,
@@ -1649,8 +1650,8 @@ def render_html(schools, edupage, year, initial_school, initial_class, lang="en"
         "palette": palette(all_subjects),
         "schools": entries_data,
     }
-    # "</" would close the block early; "<!--<script" would open a nested one and
-    # swallow the real close. Neither can survive as a literal "<".
+    # A literal "</" closes the block early. A literal "<!--<script" opens a
+    # nested one, and swallows the real close. So no "<" survives as itself.
     blob = json.dumps(payload, ensure_ascii=False, sort_keys=True).replace("<", "\\u003c")
     tag = GOATCOUNTER.format(site=html.escape(goatcounter, quote=True)) if goatcounter else ""
     return (PAGE

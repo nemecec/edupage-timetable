@@ -25,14 +25,14 @@ const defaults = () => ({
   showSubject: true, subjectNameStyle: "full",
 
   /* What every subject does unless it says otherwise. One question, three
-     answers — it was two checkboxes that quietly layered on each other, which
-     no one could have guessed from looking. */
+     answers. It was two checkboxes that quietly layered on each other. Nobody
+     can guess that by looking. */
   subjectColorStyle: "custom",          // "palette" | "school" | "custom"
 
   /* Per subject, and only where the reader has said something: a colour they
      chose, a style that differs from the one above, or both. This is what lets
      a timetable run on the school's own colours with one subject pulled out in
-     a colour of your own — which the single global switch could not express.
+     a colour of your own. The single global switch cannot express that.
      Not per class: a subject keeps its colour wherever it turns up. */
   subjectColors: {},
 
@@ -88,7 +88,7 @@ function onlySubjectColours(bag) {
 
 /* Three letters, English, in the JSON — short enough to read at a glance and
    the same whatever language the interface is in. The interface shows the
-   reader's own language; only the stored form is fixed. */
+   reader's own language. Only the stored form is fixed. */
 const DAY_KEYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 const clock = (v) => {
@@ -187,7 +187,7 @@ function applyShared(shared, current) {
   if (shared.subjectColors && typeof shared.subjectColors === "object") {
     /* Merged after normalise, so these have not been through it. Nothing
        hostile survives the escaping at the sinks either way, but a link's junk
-       should not end up saved. */
+       must not end up saved. */
     merged.subjectColors = onlySubjectColours(
       Object.assign({}, current.subjectColors, shared.subjectColors));
   }
@@ -210,7 +210,7 @@ function applyShared(shared, current) {
    keeps a typical link short — short enough to put in a QR code. The fragment
    never leaves the browser, so nothing is sent anywhere by carrying it. */
 /* Declarations, not arrow constants: the state is read out of the address bar
-   before this point in the file, and a const would still be in its dead zone. */
+   before this point in the file, and a const is still in its dead zone. */
 function toB64url(bytes) {
   let binary = "";
   for (const byte of bytes) binary += String.fromCharCode(byte);
@@ -231,8 +231,8 @@ function unb64url(code) { return new TextDecoder().decode(fromB64url(code)); }
    4,800 characters to under 1,000. That is the difference between a printed QR
    code and none, since a code tops out around 2 kB.
 
-   The browser has a gzip of its own in CompressionStream, but it is async, and
-   this runs while the page is booting and again on every change. fflate does
+   The browser has a gzip of its own in CompressionStream. But that one is
+   async, and this code runs while the page boots and again on every change. fflate does
    the same job in a function call, which keeps all of that as it was.
 
    Short settings gain nothing — gzip's header can even make them longer — so
@@ -253,7 +253,7 @@ function unpackSettings(hash) {
 }
 
 /* The written-down form. In memory every field is present, so nothing reading
-   the settings has to check first; on the way out the empty ones are dropped,
+   the settings has to check first. On the way out the empty ones are dropped,
    because a file full of "" and {} is harder to read than one without them.
    Coming back in, normalise puts them back. */
 function slim(value) {
@@ -274,14 +274,13 @@ function changedFromDefaults() {
   for (const key of Object.keys(base)) {
     if (JSON.stringify(state[key]) !== JSON.stringify(base[key])) out[key] = state[key];
   }
-  /* A link is for one class, so it carries that class and no other. It used to
-     carry every class the browser had ever been set up for, which meant sharing
-     one child's timetable handed over a sibling's name — and made the printed
-     QR denser for a class the recipient will never look at. */
+  /* A link is for one class, so it carries that class and no other. It used to carry every class the browser had ever been set up for. So
+     sharing one child's timetable handed over a sibling's name. It also made
+     the printed QR denser for a class the recipient never looks at. */
   if (out.classes) {
     const here = classKey(), sub = state.classes[here] || {};
     /* Only what was actually set. The subtree always holds all five fields so
-       the code reading it never has to check; a link carrying three empty
+       the code reading it never has to check. A link that carries three empty
        strings is just a denser QR code for nothing. */
     const base = classDefaults(), trimmed = {};
     for (const key of Object.keys(base)) {
@@ -317,11 +316,11 @@ const save = () => {
   } catch (e) { /* a browser that will not rewrite the address bar: no matter */ }
 };
 
-/* Whose timetable this is: the name if one has been given, then the school and
+/* Whose timetable this is: the name if somebody gave one, then the school and
    class. Shared by the heading, the browser tab and both print layouts so they
    can never drift apart. */
 /* Provenance, and the fact that this is nobody's official page. Printed as well
-   as shown: a sheet handed to someone else should say where it came from. */
+   as shown. A sheet handed to somebody else must say where it came from. */
 function sourceUrl(school) {
   return "https://" + DATA.edupage + ".edupage.org/timetable/view.php?num=" + school.n;
 }
@@ -333,7 +332,7 @@ function renderSubtitle(school) {
   const link = '<a href="' + esc(sourceUrl(school)) + '">' + esc(t("sourceLink")) + "</a>";
   /* school.v is the line the school configured to print under its own
      timetable — "Kehtivus: 24/08/2026-18/12/2026". Their text, so it stays in
-     their language; the build drops it where they set a label and left it
+     their language. The build drops it where they set a label and left it
      blank, so nothing shows a heading with nothing under it. */
   document.getElementById("subtitle").innerHTML =
     [esc(school.t), esc(school.v), link, stamp].filter(Boolean).join(" · ") +
@@ -346,14 +345,13 @@ function renderFooter(school) {
      the code that leads back to the page. On screen both live in the heading and
      the footer says only what the page is. */
   const bits = printing ? (stamp ? [stamp] : []) : [];
-  /* Say so where it is true. A page that counts its readers should admit it,
+  /* Say so where it is true. A page that counts its readers must admit it,
      and this one only counts when it was built for a public address. */
   if (DATA.counts && !printing) bits.push(esc(t("footer.counts")));
   /* 36mm keeps a typical link at about half a millimetre per module, which a
-     phone reads without ceremony. A link carrying many custom colours gets
-     denser, and past roughly 2 kB there is no code that will hold it — the
-     colours are shared across every class, so a family that has recoloured a
-     lot of subjects can get there. Rather than let the code quietly not be
+     phone reads without ceremony. A link with many custom colours gets denser. Past roughly 2 kB no code
+     holds it at all. The colours are shared across every class, so a family
+     that recoloured a lot of subjects can reach that size. Rather than let the code quietly not be
      there, print the address instead: longer to type, but it is the same link
      and it is on the page. */
   const link = printing ? shareUrl() : "";
@@ -388,7 +386,7 @@ function displayTitle(school, cls) {
   return [state.showStudentName ? part.student : "", right].filter(Boolean).join(" — ");
 }
 
-/* Interface strings only; anything from the timetable stays in the language
+/* Interface strings only. Anything from the timetable stays in the language
    the school entered it in. */
 function t(key) {
   const table = DATA.strings[state.lang] || DATA.strings.en;
@@ -400,7 +398,7 @@ function t(key) {
   }
   return out;
 }
-/* Weekday names follow the interface language; the timetable only supplies
+/* Weekday names follow the interface language. The timetable only supplies
    its own, so fall back to those when a translation is missing. */
 function dayLabel(school, idx) {
   const table = DATA.strings[state.lang] || DATA.strings.en;
@@ -455,8 +453,8 @@ function readable(bg) {
      and treating it as unreadable put dark text on a dark box.
 
      Four and eight carry alpha, and alpha is the whole difference between what
-     the colour says and what the eye sees: #00000010 reads as black, so black
-     would be given white text, and the box is in fact all but transparent —
+     the colour says and what the eye sees. #00000010 reads as black, so black
+     gets white text, and the box is in fact all but transparent. That is
      white on white. So the colour is composited over the sheet first, and the
      text is chosen against what will actually be behind it. */
   let hex = String(bg || "").trim().replace("#", "");
@@ -512,8 +510,8 @@ function tidySubjects() {
 function visible(entry, picked, divisions) {
   /* A lesson in no group is the whole class's, and a lesson is shown until a
      pick rules it out — both fall out of the loop below reaching its end, so
-     neither needs a guard of its own. One was here, and no test could tell
-     whether it worked, because removing it changed nothing. */
+     neither needs a guard of its own. One was here, and no test can tell
+     whether it works, because its removal changes nothing. */
   if (!Object.values(picked).filter(Boolean).length) return true;
   for (const div of divisions) {
     if (!entry.g.some(g => div.groups.includes(g))) continue;
@@ -621,14 +619,14 @@ function renderTimeline(school, cls, shown, mine, scale) {
   let lo = Math.min(...all.map(x => x.a)), hi = Math.max(...all.map(x => x.z));
   lo = Math.floor(lo / 30) * 30; hi = Math.ceil(hi / 30) * 30;
   const span = hi - lo;
-  /* Pixels per minute. On screen a fixed, readable scale; on paper whatever
+  /* Pixels per minute. On screen a fixed, readable scale. On paper whatever
      fills the sheet, which the caller finds by measuring. */
   const ppm = scale || 1.05;
   const H = Math.round(span * ppm);
 
   /* Over the timetable rather than at the top of the page, and drawn the same
-     way on screen as on paper: whatever is typed into the title fields shows up
-     here at once, which is the only way to see what will print. Both views draw
+     way on screen as on paper. Whatever is typed into the title fields shows
+     up here at once. That is the only way to see what will print. Both views draw
      it — a printed sheet with no school, class or name on it is of no use to
      anyone. */
   let h = sheetTitle(school, cls);
@@ -649,12 +647,12 @@ function renderTimeline(school, cls, shown, mine, scale) {
   h += "</div>";
 
   /* Where a box sits in its column. Lessons and breaks share the full width
-     between them; a personal event is drawn afterwards, over the top, so it
+     between them. A personal event is drawn afterwards, over the top, so it
      never squeezes the timetable — which is what makes it usable for marking
      something out inside a break.
      It is inset only where there is something underneath worth glimpsing. An
-     event in an empty evening covers nothing, so narrowing it there would look
-     like a mistake rather than a layer. */
+     event in an empty evening covers nothing. An inset there reads as a
+     mistake rather than as a layer. */
   const place = (it, inset) => {
     const lanes = it._lanes || 1, lane = it._lane || 0;
     const each = (100 - inset) / lanes;
@@ -764,7 +762,7 @@ function cssColour(value) {
 /* The timeline is the view. A school with no times anywhere — no day plan
    written here, and none of its own in EduPage — has nothing to draw one from,
    so it falls back to the raw aSc period grid rather than rendering nothing.
-   Nothing to choose; the data decides. */
+   Nothing to choose. The data decides. */
 function onTimeline() {
   if (!currentSchool().b) return false;
   /* A day plan the class is not covered by leaves its lessons untimed, and a
@@ -784,8 +782,8 @@ function detailLine(e) {
 }
 
 /* What to call a lesson. A block the school publishes as one but which holds
-   two subjects in sequence names both, in the order they run; the colour and the
-   legend still follow the one subject the box is keyed to. */
+   two subjects in sequence names both, in the order they run. The colour and
+   the legend still follow the one subject the box is keyed to. */
 function subjectName(e, short) {
   const facts = subjectFacts();
   const one = (name) => short ? ((facts[name] || {}).short || name) : name;
@@ -885,11 +883,11 @@ function bodyCell(cls, dayIdx, col, bucket) {
     .map(e => lessonHtml(e, e.c ? "" : e.w)).join("") + "</td>";
 }
 
-/* One landscape sheet is the whole point of the printout, and how tall it
-   wants to be depends on the class: several lessons in one cell, a canteen
-   sitting spelled out inside a break, a row of personal events, a day that runs
-   from seven in the morning to ten at night because someone added an entry
-   there. So it is drawn and measured rather than guessed at from constants —
+/* One landscape sheet is the whole point of the printout. How tall the sheet
+   wants to be depends on the class. It can hold several lessons in one cell. It can hold a canteen
+   sitting spelled out inside a break, or a row of personal events. A day can
+   run from seven in the morning to ten at night, because somebody added an
+   entry there. So it is drawn and measured rather than guessed at from constants —
    the footer alone changes size with the QR code and the language, and a guess
    that was right once quietly stops being right. */
 const SHEET_H = 726;              // 210mm less two 9mm margins, at 96dpi
@@ -898,10 +896,10 @@ const SHEET_BUDGET = SHEET_H - 8; /* a few pixels in hand: the print layout
    means landing just past it. */
 
 /* The largest scale at which everything still fits, footer and all.
-   `draw(scale)` puts the page together at that scale; the answer is fed back to
-   whichever renderer asked. Bisection alone is not enough — the smallest scale
-   it will consider has to be measured too, or a day wide enough to defeat even
-   that gets returned as if it fitted. */
+   `draw(scale)` puts the page together at that scale. The answer goes back to
+   whichever renderer asked. Bisection alone is not enough. The smallest scale
+   it considers has to be measured too, or a day wide enough to defeat even
+   that comes back as if it fitted. */
 function fitToSheet(draw, small, big) {
   const grid = document.getElementById("grid");
   const keep = grid.innerHTML;
@@ -1047,8 +1045,8 @@ function setTextColour(subject, value, redraw) {
   tidySubjects();
   save();
   /* Only the auto tick rebuilds the legend, because only it changes what the
-     row looks like. Doing it on every colour picked would tear the row out from
-     under the open colour panel, which is what `keepLegend` exists to avoid. */
+     row looks like. A rebuild on every colour picked tears the row out from
+     under the open colour panel. That is what `keepLegend` prevents. */
   if (redraw) render(); else { paint(); refreshSubjectSample(subject); }
 }
 
@@ -1237,7 +1235,7 @@ function bindChoice(name, key) {
       state[key] = radio.value;
       if (key === "subjectColorStyle") {
         /* This one says what every subject does, so it means every subject —
-           a row still quietly doing its own thing would make the switch a lie.
+           a row that quietly does its own thing makes the switch a lie.
            Chosen colours are kept, so turning "my own" back on restores them. */
         for (const entry of Object.values(state.subjectColors)) delete entry.style;
         tidySubjects();
@@ -1307,9 +1305,9 @@ document.getElementById("reset").addEventListener("click", () => {
   state = Object.assign(defaults(), { school, klass, lang });
   save();
   /* The backup box sits in this same panel, a few centimetres from this button,
-     and is only refilled when the panel is opened. Left alone it would still be
-     showing everything that was just cleared — and pressing Apply beside it
-     would put all of it back, the child's name included. */
+     and is only refilled when the panel is opened. Left alone it still shows
+     everything that was just cleared. A press of Apply beside it then puts
+     all of it back, the child's name included. */
   settingsText.value = JSON.stringify(slim(state), null, 2);
   settingsMsg.textContent = "";
   renderDivisions(); syncPerClassInputs(); render();
@@ -1323,7 +1321,7 @@ advancedPanel.addEventListener("toggle", () => {
 });
 /* When the clipboard is unavailable, put the link on the page so it can be
    selected and copied by hand. Selecting it for the reader is as far as this
-   can go — nothing but a real gesture may reach the clipboard. */
+   can go. Nothing but a real gesture can reach the clipboard. */
 function showShareFallback(url) {
   const box = document.getElementById("shareBox");
   box.value = url;
@@ -1340,8 +1338,8 @@ document.getElementById("share").addEventListener("click", async () => {
     button.textContent = t("shared");
   } catch (e) {
     /* No clipboard — an insecure context, or a browser that refuses. Telling
-       the reader to press Cmd/Ctrl+C would be telling them to copy nothing, so
-       put the link somewhere it can be read and selected instead. */
+       the reader to press Cmd/Ctrl+C tells them to copy nothing. So put the
+       link somewhere it can be read and selected instead. */
     showShareFallback(shareUrl());
     button.textContent = t("shareManual");
   }
@@ -1381,10 +1379,10 @@ document.getElementById("applySettings").addEventListener("click", () => {
 
 /* Text fields keep the state up to date on every keystroke but only repaint on
    a short timer, so a long line is never typed against a redraw. The redraw
-   leaves the legend alone as well: rebuilding it would close an open picker. */
-/* Typing into a field whose line is switched off would do nothing visible, so
-   writing something turns it back on. Clearing it does not turn it off again:
-   emptying a box is not the same as asking for the line to go away. */
+   leaves the legend alone as well, because a rebuild closes an open picker. */
+/* Text in a field whose line is switched off shows nothing, so anything
+   written there turns the line back on. An empty field does not turn it off
+   again. An empty box is not a request for the line to go away. */
 function reveal(key) {
   if (!key || state[key]) return;
   state[key] = true;
@@ -1413,10 +1411,10 @@ typed(schoolName, "schoolName", "showSchoolName");
 typed(className, "className", "showClassName");
 
 /* These two show what the timetable calls itself until someone types over it.
-   An empty box would mean retyping the whole name to change one word, so
-   entering the field fills in what is currently shown; leaving it having
-   changed nothing empties it again, so the setting stays unset and the shared
-   link stays short. */
+   An empty box means you retype the whole name to change one word. So the
+   field fills in what it shows now when you enter it. If you leave it
+   unchanged, it empties again, the setting stays unset, and the shared link
+   stays short. */
 for (const [field, key, shows] of [[schoolName, "schoolName", "showSchoolName"],
                                    [className, "className", "showClassName"]]) {
   field.addEventListener("focus", () => {
@@ -1464,8 +1462,8 @@ function subjectsOnScreen() {
 
 /* One radio per way of arriving at a colour, and the control that goes with it
    beside the radio it belongs to. This was a dropdown with "own colour" as its
-   first entry, which said nothing about what the other entries would do, and a
-   disabled swatch that swallowed clicks. */
+   first entry. That entry said nothing about what the others do. The swatch
+   beside it was disabled, and swallowed clicks. */
 function pickOne(group, row, chosen, choices) {
   return choices.map(([value, label, control]) =>
     '<div class="pickrow"><label class="pick"><input type="radio" name="' +
@@ -1479,7 +1477,7 @@ const swatch = (cls, value) =>
 
 /* What the choices in this row add up to, drawn the way the timetable draws
    it — same classes, same three lines. Reading a hex code and imagining the
-   result is the part nobody can do; this shows it. Sized as a 45-minute lesson,
+   result is the part nobody can do. This shows it. Sized as a 45-minute lesson,
    which is the common case and tall enough for all three lines. */
 function sampleBox(bg, fg, when, label, meta) {
   const style = "background:" + esc(bg) + ";color:" + esc(fg);
@@ -1494,7 +1492,7 @@ function previewCell(bg, fg, when, label, meta) {
 }
 
 /* Just the one cell, redrawn where it stands.
-   Neither table can be re-rendered while it is being used: the events table
+   Neither table can be re-rendered while somebody uses it. The events table
    leaves itself alone while the focus is inside it, so typing is not
    interrupted, and the legend is skipped by `paint` so an open colour panel is
    not torn away. Both of those are right, and both meant the sample sat there
@@ -1661,13 +1659,13 @@ document.getElementById("doprint").addEventListener("click", () => {
 
 /* ----- counting the visit ------------------------------------------------
    The counter is told what to record rather than left to read the page, because
-   what it would read is the heading, and the heading can hold a child's name.
+   what it reads is the heading, and the heading can hold a child's name.
    What goes out is the school's own name for this timetable and nothing else:
    never `titleParts`, which folds in whatever the reader typed.
 
    It is sent as a path as well as a title. The counter keeps one title per
-   path, so a varying title on a fixed path would collapse every class into one
-   row labelled by whichever visit happened last. The reader's address bar is
+   path. A title that varies on a fixed path collapses every class into one
+   row, labelled by whichever visit happened last. The reader's address bar is
    not involved — this is a string in a beacon.
 
    Once per load, on the timetable that was open when the page came up: the one
@@ -1683,8 +1681,8 @@ function countVisit() {
   const here = location.pathname.replace(/\/*(index\.html)?\/*$/, "");
   const klass = String(cls.n).trim();
   /* Always English, whatever the reader picked: the title is stored per path
-     and the last visit wins, so a label that followed the interface language
-     would flip between "class 8" and "8. klass" for the same row. The school's
+     and the last visit wins. A label that followed the interface language
+     flips between "class 8" and "8. klass" for the same row. The school's
      own name is left as the school writes it. */
   const fixed = DATA.strings.en || {};
   const label = {

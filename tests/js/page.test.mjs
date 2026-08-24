@@ -563,3 +563,35 @@ test("every column has a heading and every heading a column", () => {
   }
   run(`state.classes = {};`);
 });
+
+test("changing a colour redraws the sample beside it", () => {
+  /* Neither table may be re-rendered while it is in use — the events table
+     leaves itself alone while focus is inside it, the legend is skipped by
+     paint() so an open colour panel survives — so the sample has to be redrawn
+     on its own. It was not, and sat showing the colour before last. */
+  const cell = `(() => {
+    const host = {innerHTML: ""};
+    globalThis.host = host;
+    return {dataset: {i: "0"},
+            querySelector: (s) => (s === ".sample" ? host : null)};
+  })()`;
+
+  run(`state.classes = {};
+       myOwn().events = [{day: "Mon", startTime: "09:00", endTime: "10:00",
+                          backgroundColor: "#DDDDDD", textColor: "", label: "x"}];
+       globalThis.tr = ${cell};`);
+
+  run(`rowChanged(tr, (ev) => { ev.backgroundColor = "#102030"; });`);
+  assert.match(json(`host.innerHTML`), /#102030/, "the background did not reach the sample");
+
+  run(`rowChanged(tr, (ev) => { ev.textColor = "#00ff00"; });`);
+  const withText = json(`host.innerHTML`);
+  assert.match(withText, /#00ff00/, "the text colour did not reach the sample");
+  assert.match(withText, /outlined/, "a chosen text colour also draws a border");
+
+  run(`rowChanged(tr, (ev) => { ev.label = "Trenn"; ev.startTime = "07:30"; });`);
+  const now = json(`host.innerHTML`);
+  assert.match(now, /Trenn/, "the label did not reach the sample");
+  assert.match(now, /7\.30/, "the time did not reach the sample");
+  run(`state.classes = {};`);
+});

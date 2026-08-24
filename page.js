@@ -1050,7 +1050,7 @@ function setTextColour(subject, value, redraw) {
   /* Only the auto tick rebuilds the legend, because only it changes what the
      row looks like. Doing it on every colour picked would tear the row out from
      under the open colour panel, which is what `keepLegend` exists to avoid. */
-  if (redraw) render(); else paint();
+  if (redraw) render(); else { paint(); refreshSubjectSample(subject); }
 }
 
 function setColour(subject, value) {
@@ -1067,6 +1067,7 @@ function setColour(subject, value) {
                                      cssQuote(subject) + '"]');
   const swatch = row && row.querySelector(".bgpick");
   if (swatch && swatch.value !== value) swatch.value = value;
+  refreshSubjectSample(subject);
 }
 
 /* A subject name goes into a selector, and aSc's names contain quotes and
@@ -1080,7 +1081,7 @@ function renderLegend(shown) {
   const used = [...new Set(shown.map(e => e.s))].sort();
   /* One real lesson per subject, so the sample carries the room and teacher the
      boxes actually show rather than an empty shape. */
-  const example = {};
+  example = {};
   for (const e of shown) if (!example[e.s]) example[e.s] = e;
   /* A row per subject, in the same columns an event uses, so the two lists read
      the same way. The three ways a subject can get its background are the three
@@ -1111,6 +1112,18 @@ function subjectMode(name) {
   if (style === "school") return "school";
   if (style === "custom" && own.backgroundColor) return "own";
   return "palette";
+}
+
+let example = {};
+
+/* The subject's sample, redrawn from whatever its colours are now. */
+function refreshSubjectSample(name) {
+  const row = document.querySelector('#legend tr[data-subject="' +
+                                     cssQuote(name) + '"]');
+  const col = colorFor(name), lesson = example[name];
+  refreshSample(row, col.bg, col.fg, false, sampleWhen("9:00"),
+                lessonTitle(lesson || { s: name, S: 0 }),
+                (lesson ? detailLine(lesson) : []).join(" · "));
 }
 
 function subjectOf(target) {
@@ -1469,15 +1482,29 @@ const swatch = (cls, value) =>
    it — same classes, same three lines. Reading a hex code and imagining the
    result is the part nobody can do; this shows it. Sized as a 45-minute lesson,
    which is the common case and tall enough for all three lines. */
-function previewCell(bg, fg, outlined, when, label, meta) {
+function sampleBox(bg, fg, outlined, when, label, meta) {
   const style = "background:" + esc(bg) + ";color:" + esc(fg) +
                 (outlined ? ";border-color:" + esc(fg) : "");
-  return '<td><div class="sample"><div class="ev' + (outlined ? " outlined" : "") +
-    '" style="' + style + '">' +
+  return '<div class="ev' + (outlined ? " outlined" : "") + '" style="' + style + '">' +
     '<div class="when">' + esc(when) + "</div>" +
     '<div class="what">' + esc(label) + "</div>" +
-    (meta ? '<div class="who2">' + esc(meta) + "</div>" : "") +
-    "</div></div></td>";
+    (meta ? '<div class="who2">' + esc(meta) + "</div>" : "") + "</div>";
+}
+
+function previewCell(bg, fg, outlined, when, label, meta) {
+  return '<td><div class="sample">' +
+    sampleBox(bg, fg, outlined, when, label, meta) + "</div></td>";
+}
+
+/* Just the one cell, redrawn where it stands.
+   Neither table can be re-rendered while it is being used: the events table
+   leaves itself alone while the focus is inside it, so typing is not
+   interrupted, and the legend is skipped by `paint` so an open colour panel is
+   not torn away. Both of those are right, and both meant the sample sat there
+   showing the colour before last. */
+function refreshSample(tr, bg, fg, outlined, when, label, meta) {
+  const host = tr && tr.querySelector(".sample");
+  if (host) host.innerHTML = sampleBox(bg, fg, outlined, when, label, meta);
 }
 
 /* The colour cells, shared by both tables so the two read the same way. */
@@ -1542,6 +1569,9 @@ function rowChanged(tr, change) {
   const ev = list[+tr.dataset.i];
   if (!ev) return;
   change(ev);
+  const fg = ev.textColor || readable(ev.backgroundColor);
+  refreshSample(tr, ev.backgroundColor, fg, !!ev.textColor,
+                sampleWhen(ev.startTime), ev.label, "");
   tidy(); save(); paint();
 }
 

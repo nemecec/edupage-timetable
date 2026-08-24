@@ -299,7 +299,10 @@ needs no times.
   in it.
 
   Both colour columns are laid out exactly as the subject list's are, and named
-  the same, so the two tables read as one idea rather than two.
+  the same, so the two tables read as one idea rather than two. Each row ends
+  with **how it looks** — the box drawn as the timetable would draw it, colours,
+  name and all, sized as a 45-minute lesson. Reading a hex code and imagining
+  the result is the part nobody can do.
 
   For a bulk edit — pasting in a term's worth at once — the whole settings
   object is in **Advanced**, and events are a plain list there.
@@ -407,7 +410,9 @@ A few of the choices, since they are not all obvious:
   subjects and most people never touch it. Each row says what that subject is
   really doing — **own colour**, **from the timetable**, or **automatic** — and
   a subject set to "own colour" with no colour behind it reads as automatic,
-  because that is what gets drawn.
+  because that is what gets drawn. The sample at the end of the row carries the
+  room and teacher from a real lesson of that subject, so it is the box as it
+  will actually appear rather than an empty shape.
 - **The three radio buttons above it set every subject**, clearing any per-subject style
   as they go; chosen colours survive, so switching back to "my own" restores
   them. Otherwise a row would sit there ignoring the switch that claims to

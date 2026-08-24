@@ -1078,6 +1078,10 @@ function cssQuote(text) {
 function renderLegend(shown) {
   document.getElementById("share").title = t("shareHint");
   const used = [...new Set(shown.map(e => e.s))].sort();
+  /* One real lesson per subject, so the sample carries the room and teacher the
+     boxes actually show rather than an empty shape. */
+  const example = {};
+  for (const e of shown) if (!example[e.s]) example[e.s] = e;
   /* A row per subject, in the same columns an event uses, so the two lists read
      the same way. The three ways a subject can get its background are the three
      the switch above offers, said per subject rather than through a dropdown
@@ -1091,6 +1095,9 @@ function renderLegend(shown) {
         [["school", t("colour.fromTimetable"), ""],
          ["palette", t("colour.automatic"), ""]]) +
       textColourCell(row, col.fg, !own.textColor) +
+      previewCell(col.bg, col.fg, false, sampleWhen("9:00"),
+                  lessonTitle(example[name] || { s: name, S: 0 }),
+                  (example[name] ? detailLine(example[name]) : []).join(" · ")) +
       "</tr>";
   }).join("");
 }
@@ -1458,18 +1465,40 @@ function pickOne(group, row, chosen, choices) {
 const swatch = (cls, value) =>
   '<input type="color" class="' + cls + '" value="' + esc(value) + '">';
 
+/* What the choices in this row add up to, drawn the way the timetable draws
+   it — same classes, same three lines. Reading a hex code and imagining the
+   result is the part nobody can do; this shows it. Sized as a 45-minute lesson,
+   which is the common case and tall enough for all three lines. */
+function previewCell(bg, fg, outlined, when, label, meta) {
+  const style = "background:" + esc(bg) + ";color:" + esc(fg) +
+                (outlined ? ";border-color:" + esc(fg) : "");
+  return '<td><div class="sample"><div class="ev' + (outlined ? " outlined" : "") +
+    '" style="' + style + '">' +
+    '<div class="when">' + esc(when) + "</div>" +
+    '<div class="what">' + esc(label) + "</div>" +
+    (meta ? '<div class="who2">' + esc(meta) + "</div>" : "") +
+    "</div></div></td>";
+}
+
 /* The colour cells, shared by both tables so the two read the same way. */
 function backgroundCell(row, mode, colour, extra) {
-  return '<td><div class="colcell">' +
+  return '<td class="colours"><div class="colcell">' +
     pickOne("bg", row, mode, [["own", t("colour.own"), swatch("bgpick", colour)]]
               .concat(extra)) + "</div></td>";
 }
 
 function textColourCell(row, colour, auto) {
-  return '<td><div class="colcell">' +
+  return '<td class="colours"><div class="colcell">' +
     pickOne("fg", row, auto ? "auto" : "own",
             [["own", t("colour.own"), swatch("fgpick", colour)],
              ["auto", t("colour.automatic"), ""]]) + "</div></td>";
+}
+
+/* 45 minutes from wherever the row starts, so the sample reads as a real span
+   without pretending to be the row's own. */
+function sampleWhen(from) {
+  const a = clock(from);
+  return a === null ? "" : hhmm(a) + "–" + hhmm(a + 45);
 }
 
 function eventRow(ev, i) {
@@ -1491,6 +1520,8 @@ function eventRow(ev, i) {
       [["subject", t("colour.fromSubject"),
         '<select class="evlike"><option value=""></option>' + lessons + "</select>"]]) +
     textColourCell("e" + i, ev.textColor || readable(ev.backgroundColor), !ev.textColor) +
+    previewCell(ev.backgroundColor, ev.textColor || readable(ev.backgroundColor),
+                !!ev.textColor, sampleWhen(ev.startTime), ev.label, "") +
     '<td><select class="evday">' + days + "</select></td>" +
     '<td><input type="time" class="evstart" value="' + esc(ev.startTime) + '"></td>' +
     '<td><input type="time" class="evend" value="' + esc(ev.endTime) + '"></td>' +

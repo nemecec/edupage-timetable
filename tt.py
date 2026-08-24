@@ -92,6 +92,7 @@ STRINGS = {
         "colLabel": "Label",
         "colBackground": "Background colour",
         "colTextColour": "Text colour",
+        "colSample": "How it looks",
         "colWeekday": "Weekday",
         "colStartTime": "Start time",
         "colEndTime": "End time",
@@ -179,6 +180,7 @@ STRINGS = {
         "colLabel": "Nimetus",
         "colBackground": "Taustavärv",
         "colTextColour": "Teksti värv",
+        "colSample": "Kuidas välja näeb",
         "colWeekday": "Nädalapäev",
         "colStartTime": "Algusaeg",
         "colEndTime": "Lõpuaeg",
@@ -1184,7 +1186,8 @@ PAGE = """<!DOCTYPE html>
   .sharebox.off { display: none; }
   /* Both lists — subjects and my own events — are this table, so the columns
      they share sit in the same places and line up down the page. */
-  .evtable { width: auto; border-collapse: collapse; margin: 6px 0 10px; }
+  .evtable { width: auto; max-width: 100%; border-collapse: collapse;
+             margin: 6px 0 10px; }
   .evtable th { font-size: 11px; font-weight: 600; color: var(--muted);
                 text-align: left; padding: 0 14px 5px 0; border: none;
                 background: none; white-space: nowrap; }
@@ -1194,15 +1197,22 @@ PAGE = """<!DOCTYPE html>
   .evtable .rowlabel { font-size: 13px; padding-right: 18px; }
   /* One colour, however it is arrived at: the radio and the control that goes
      with it stay together, and the alternatives line up underneath. */
-  .colcell { display: flex; flex-direction: column; gap: 3px; }
-  .pickrow { display: flex; gap: 7px; align-items: center; }
+  /* Side by side while they fit, stacking only once they do not — hence wrap
+     rather than a column, and a cell that is allowed to break. */
+  .colours { white-space: normal; }
+  /* A real lesson box, minus the timeline's absolute placement. 46px is what
+     45 minutes comes to at the on-screen scale. */
+  .sample { width: 150px; }
+  .sample .ev { position: static; width: auto; height: 46px; }
+  .colcell { display: flex; flex-wrap: wrap; gap: 3px 14px; align-items: center; }
+  .pickrow { display: flex; gap: 6px; align-items: center; }
   /* Not the uppercase treatment .field label gets: these are choices to read,
      not a heading over them. */
   /* `label.pick`, not `.pick`: these sit inside a .field, whose labels are
      styled as small-caps headings, and a heading is not what a choice is. */
   .field label.pick { display: flex; gap: 4px; align-items: center;
           font-size: 12px; text-transform: none; letter-spacing: 0;
-          color: inherit; white-space: nowrap; min-width: 8.5em; }
+          color: inherit; white-space: nowrap; }
   .evtable input[type=time], .evtable input[type=text], .evtable select {
     padding: 4px 6px; font-size: 13px; border: 1px solid var(--line);
     border-radius: 5px; background: #fff; }
@@ -1450,14 +1460,17 @@ PAGE = """<!DOCTYPE html>
       </div>
       <details id="subjectPanel">
         <summary data-i18n="subjects.summary"></summary>
-        <table class="evtable">
-          <thead><tr>
-            <th data-i18n="colLabel"></th>
-            <th data-i18n="colBackground"></th>
-            <th data-i18n="colTextColour"></th>
-          </tr></thead>
-          <tbody id="legend"></tbody>
-        </table>
+        <div class="scroll">
+          <table class="evtable">
+            <thead><tr>
+              <th data-i18n="colLabel"></th>
+              <th data-i18n="colBackground"></th>
+              <th data-i18n="colTextColour"></th>
+              <th data-i18n="colSample"></th>
+            </tr></thead>
+            <tbody id="legend"></tbody>
+          </table>
+        </div>
       </details>
     </div>
   </div>
@@ -1467,18 +1480,21 @@ PAGE = """<!DOCTYPE html>
   <summary data-i18n="events.summary"></summary>
   <div class="field" style="width:100%;margin-top:12px">
     <label data-i18n="events.label"></label>
-    <table class="evtable">
-      <thead><tr>
-        <th data-i18n="colLabel"></th>
-        <th data-i18n="colBackground"></th>
-        <th data-i18n="colTextColour"></th>
-        <th data-i18n="colWeekday"></th>
-        <th data-i18n="colStartTime"></th>
-        <th data-i18n="colEndTime"></th>
-        <th></th>
-      </tr></thead>
-      <tbody id="evrows"></tbody>
-    </table>
+    <div class="scroll">
+      <table class="evtable">
+        <thead><tr>
+          <th data-i18n="colLabel"></th>
+          <th data-i18n="colBackground"></th>
+          <th data-i18n="colTextColour"></th>
+          <th data-i18n="colSample"></th>
+          <th data-i18n="colWeekday"></th>
+          <th data-i18n="colStartTime"></th>
+          <th data-i18n="colEndTime"></th>
+          <th></th>
+        </tr></thead>
+        <tbody id="evrows"></tbody>
+      </table>
+    </div>
     <button id="evadd" class="addrow" data-i18n="events.add"></button>
     <div class="evwarn" id="evwarn"></div>
   </div>

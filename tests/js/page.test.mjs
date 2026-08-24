@@ -513,3 +513,26 @@ test("nothing empty is written down", () => {
   assert.equal(back.classes["68/8"].schoolName, "", "the default is put back");
   assert.deepEqual(back.classes["68/8"].studyGroups, {});
 });
+
+test("the two swatches in a legend row set different things", () => {
+  /* Both are input[type=color] in the same row, and a handler bound by that
+     alone caught the text one as well — picking a text colour rewrote the
+     background. They are told apart by class, and this is why. */
+  run(`state.subjectColors = {}; state.subjectColorStyle = "custom";
+       renderLegend(currentClass().e);`);
+  const html = json(`document.getElementById("legend").innerHTML`);
+  const swatches = (html.match(/type="color"/g) || []).length;
+  const named = (html.match(/class="bg"|class="fg"/g) || []).length;
+  assert.ok(swatches > 0, "the legend drew no swatches");
+  assert.equal(named, swatches, "a colour input in the legend with no class on it");
+
+  // And each writes only its own field.
+  run(`setColour("Ajalugu", "#123456");`);
+  assert.deepEqual(json(`state.subjectColors.Ajalugu`), { backgroundColor: "#123456" });
+  run(`setTextColour("Ajalugu", "#ff00ff");`);
+  assert.deepEqual(json(`state.subjectColors.Ajalugu`),
+                   { backgroundColor: "#123456", textColor: "#ff00ff" });
+  run(`setTextColour("Ajalugu", "");`);
+  assert.deepEqual(json(`state.subjectColors.Ajalugu`), { backgroundColor: "#123456" });
+  run(`state.subjectColors = {};`);
+});

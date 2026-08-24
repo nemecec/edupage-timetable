@@ -1049,12 +1049,15 @@ function render() {
   if (!keepLegend) renderLegend(shown);
 }
 
-function setTextColour(subject, value) {
+function setTextColour(subject, value, redraw) {
   const entry = state.subjectColors[subject] || (state.subjectColors[subject] = {});
   if (value) entry.textColor = value; else delete entry.textColor;
   tidySubjects();
   save();
-  render();          // the whole legend, so the swatch enables and disables
+  /* Only the auto tick rebuilds the legend, because only it changes what the
+     row looks like. Doing it on every colour picked would tear the row out from
+     under the open colour panel, which is what `keepLegend` exists to avoid. */
+  if (redraw) render(); else paint();
 }
 
 function setColour(subject, value) {
@@ -1067,7 +1070,7 @@ function setColour(subject, value) {
   syncDisplayControls();
   save();
   paint();
-  const swatch = [...document.querySelectorAll("#legend input[type=color]")]
+  const swatch = [...document.querySelectorAll("#legend input.bg")]
                    .find(x => x.dataset.subject === subject);
   if (swatch && swatch.value !== value) swatch.value = value;
   const code = [...document.querySelectorAll("#legend .hex")]
@@ -1091,8 +1094,8 @@ function renderLegend(shown) {
     const col = colorFor(s);
     const own = (state.subjectColors || {})[s] || {};
     const auto = !own.textColor;
-    return '<span class="item"><input type="color" data-subject="' + esc(s) + '" value="' +
-      esc(col.bg) + '">' + esc(s) +
+    return '<span class="item"><input type="color" class="bg" data-subject="' +
+      esc(s) + '" value="' + esc(col.bg) + '">' + esc(s) +
       '<input type="text" class="hex" spellcheck="false" data-subject="' + esc(s) +
       '" value="' + esc(col.bg) + '" size="8" title="' +
       esc(t("colourCode")) + '">' +
@@ -1107,7 +1110,7 @@ function renderLegend(shown) {
   document.querySelectorAll("#legend .fgauto").forEach(box => {
     box.addEventListener("change", () => {
       setTextColour(box.dataset.subject,
-                    box.checked ? "" : colorFor(box.dataset.subject).fg);
+                    box.checked ? "" : colorFor(box.dataset.subject).fg, true);
     });
   });
   document.querySelectorAll("#legend input.fg").forEach(inp => {
@@ -1123,7 +1126,7 @@ function renderLegend(shown) {
       paint();
     });
   });
-  document.querySelectorAll("#legend input[type=color]").forEach(inp => {
+  document.querySelectorAll("#legend input.bg").forEach(inp => {
     inp.addEventListener("input", () => {
       setColour(inp.dataset.subject, inp.value);
     });

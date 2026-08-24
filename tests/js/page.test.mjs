@@ -522,7 +522,7 @@ test("the two swatches in a legend row set different things", () => {
        renderLegend(currentClass().e);`);
   const html = json(`document.getElementById("legend").innerHTML`);
   const swatches = (html.match(/type="color"/g) || []).length;
-  const named = (html.match(/class="bg"|class="fg"/g) || []).length;
+  const named = (html.match(/class="bgpick"|class="fgpick"/g) || []).length;
   assert.ok(swatches > 0, "the legend drew no swatches");
   assert.equal(named, swatches, "a colour input in the legend with no class on it");
 

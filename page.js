@@ -743,13 +743,6 @@ function qrSvg(text, side) {
          '<path d="' + path + '" fill="#000"/></svg>';
 }
 
-/* A typed colour, as hex, or nothing if it is not one yet. Anything CSS knows
-   is allowed — "orange" and "#f80" both land on a colour the picker can show. */
-function asHex(text) {
-  const want = (text || "").trim();
-  if (!want || !(window.CSS && CSS.supports && CSS.supports("color", want))) return "";
-  return cssColour(want).toUpperCase();
-}
 
 /* Named CSS colours have to become hex before luminance can be measured. */
 const _swatch = document.createElement("span");
@@ -1070,82 +1063,86 @@ function setColour(subject, value) {
   syncDisplayControls();
   save();
   paint();
-  const swatch = [...document.querySelectorAll("#legend input.bg")]
-                   .find(x => x.dataset.subject === subject);
+  const row = document.querySelector('#legend tr[data-subject="' +
+                                     cssQuote(subject) + '"]');
+  const swatch = row && row.querySelector(".bgpick");
   if (swatch && swatch.value !== value) swatch.value = value;
-  const code = [...document.querySelectorAll("#legend .hex")]
-                 .find(x => x.dataset.subject === subject);
-  if (code && code !== document.activeElement) code.value = value;
+}
+
+/* A subject name goes into a selector, and aSc's names contain quotes and
+   backslashes as readily as anything else. */
+function cssQuote(text) {
+  return String(text).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
 function renderLegend(shown) {
-  document.getElementById("colourHint").textContent = t("colourHint");
   document.getElementById("share").title = t("shareHint");
   const used = [...new Set(shown.map(e => e.s))].sort();
-  /* The code beside each swatch is the one the events box takes, so a colour
-     seen here can be reused there without going hunting for it. */
-  document.getElementById("legend").innerHTML = used.map(s => {
-    /* Each subject can differ from what the rest are doing — the school's own
-       colours throughout, say, with one subject pulled out in a colour of your
-       own. The select is that, per subject; the radios above set them all. */
-    const here = styleFor(s);
-    const choose = STYLES.map(v => '<option value="' + v + '"' +
-      (v === here ? " selected" : "") + ">" + esc(t("style." + v)) + "</option>").join("");
-    const col = colorFor(s);
-    const own = (state.subjectColors || {})[s] || {};
-    const auto = !own.textColor;
-    return '<span class="item"><input type="color" class="bg" data-subject="' +
-      esc(s) + '" value="' + esc(col.bg) + '">' + esc(s) +
-      '<input type="text" class="hex" spellcheck="false" data-subject="' + esc(s) +
-      '" value="' + esc(col.bg) + '" size="8" title="' +
-      esc(t("colourCode")) + '">' +
-      '<select class="style" data-subject="' + esc(s) + '">' + choose + "</select>" +
-      /* The text colour, exactly as an event has one: automatic unless asked. */
-      '<label class="auto" title="' + esc(t("textColourHint")) + '">' +
-      '<input type="checkbox" class="fgauto" data-subject="' + esc(s) + '"' +
-      (auto ? " checked" : "") + ">" + esc(t("events.auto")) + "</label>" +
-      '<input type="color" class="fg" data-subject="' + esc(s) + '" value="' +
-      esc(col.fg) + '"' + (auto ? " disabled" : "") + "></span>";
+  /* A row per subject, in the same columns an event uses, so the two lists read
+     the same way. The three ways a subject can get its background are the three
+     the switch above offers, said per subject rather than through a dropdown
+     whose entries meant nothing on their own. */
+  document.getElementById("legend").innerHTML = used.map((name, i) => {
+    const col = colorFor(name), own = (state.subjectColors || {})[name] || {};
+    const row = "s" + i;
+    return '<tr data-subject="' + esc(name) + '">' +
+      '<td class="rowlabel">' + esc(name) + "</td>" +
+      backgroundCell(row, subjectMode(name), col.bg,
+        [["school", t("colour.fromTimetable"), ""],
+         ["palette", t("colour.automatic"), ""]]) +
+      textColourCell(row, col.fg, !own.textColor) +
+      "</tr>";
   }).join("");
-  document.querySelectorAll("#legend .fgauto").forEach(box => {
-    box.addEventListener("change", () => {
-      setTextColour(box.dataset.subject,
-                    box.checked ? "" : colorFor(box.dataset.subject).fg, true);
-    });
-  });
-  document.querySelectorAll("#legend input.fg").forEach(inp => {
-    inp.addEventListener("input", () => setTextColour(inp.dataset.subject, inp.value));
-  });
-  document.querySelectorAll("#legend select.style").forEach(sel => {
-    sel.addEventListener("change", () => {
-      const entry = state.subjectColors[sel.dataset.subject] ||
-                    (state.subjectColors[sel.dataset.subject] = {});
-      entry.style = sel.value;
-      tidySubjects();
-      save();
-      paint();
-    });
-  });
-  document.querySelectorAll("#legend input.bg").forEach(inp => {
-    inp.addEventListener("input", () => {
-      setColour(inp.dataset.subject, inp.value);
-    });
-  });
-  /* The code is the control, not a caption: focusing it selects the whole
-     value so it can be copied straight into an event, and typing or pasting a
-     new one sets the colour. The system colour panel behind the swatch is a
-     different program's window and cannot be given a field like this. */
-  document.querySelectorAll("#legend .hex").forEach(field => {
-    field.addEventListener("focus", () => field.select());
-    field.addEventListener("input", () => {
-      const hex = asHex(field.value);
-      if (hex) setColour(field.dataset.subject, hex);
-    });
-    field.addEventListener("blur", () => {
-      field.value = colorFor(field.dataset.subject).bg;
-    });
-  });
 }
+
+/* Both lists behave the same, so both are driven from here. */
+/* Which of the three a subject is really on. A style of "custom" with no
+   colour behind it draws from the palette, so that is what it says. */
+function subjectMode(name) {
+  const own = (state.subjectColors || {})[name] || {};
+  const style = styleFor(name);
+  if (style === "school") return "school";
+  if (style === "custom" && own.backgroundColor) return "own";
+  return "palette";
+}
+
+function subjectOf(target) {
+  const tr = target.closest("tr");
+  return tr && tr.dataset.subject;
+}
+
+document.getElementById("legend").addEventListener("input", (e) => {
+  const name = subjectOf(e.target);
+  if (!name) return;
+  const tr = e.target.closest("tr");
+  if (e.target.classList.contains("bgpick")) {
+    choose(tr, "bg", "own");
+    setColour(name, e.target.value);
+  } else if (e.target.classList.contains("fgpick")) {
+    choose(tr, "fg", "own");
+    setTextColour(name, e.target.value);
+  }
+});
+
+document.getElementById("legend").addEventListener("change", (e) => {
+  const name = subjectOf(e.target);
+  if (!name || e.target.type !== "radio") return;
+  const tr = e.target.closest("tr");
+  if (e.target.name.startsWith("fg")) {
+    setTextColour(name, e.target.value === "auto" ? "" : colorFor(name).fg, true);
+    return;
+  }
+  if (e.target.value === "own") {
+    const swatch = tr.querySelector(".bgpick");
+    setColour(name, swatch ? swatch.value : colorFor(name).bg);
+  } else {
+    const entry = state.subjectColors[name] || (state.subjectColors[name] = {});
+    entry.style = e.target.value;
+    tidySubjects();
+    save();
+    paint();
+  }
+});
 
 function renderLanguages() {
   const sel = document.getElementById("lang");
@@ -1446,34 +1443,57 @@ function subjectsOnScreen() {
   return [...new Set(cls.e.filter(e => !e.c).map(e => e.s))].sort();
 }
 
+/* One radio per way of arriving at a colour, and the control that goes with it
+   beside the radio it belongs to. This was a dropdown with "own colour" as its
+   first entry, which said nothing about what the other entries would do, and a
+   disabled swatch that swallowed clicks. */
+function pickOne(group, row, chosen, choices) {
+  return choices.map(([value, label, control]) =>
+    '<div class="pickrow"><label class="pick"><input type="radio" name="' +
+    group + row + '" value="' + value + '" data-pick="' + value + '"' +
+    (value === chosen ? " checked" : "") + ">" + esc(label) + "</label>" +
+    (control || "") + "</div>").join("");
+}
+
+const swatch = (cls, value) =>
+  '<input type="color" class="' + cls + '" value="' + esc(value) + '">';
+
+/* The colour cells, shared by both tables so the two read the same way. */
+function backgroundCell(row, mode, colour, extra) {
+  return '<td><div class="colcell">' +
+    pickOne("bg", row, mode, [["own", t("colour.own"), swatch("bgpick", colour)]]
+              .concat(extra)) + "</div></td>";
+}
+
+function textColourCell(row, colour, auto) {
+  return '<td><div class="colcell">' +
+    pickOne("fg", row, auto ? "auto" : "own",
+            [["own", t("colour.own"), swatch("fgpick", colour)],
+             ["auto", t("colour.automatic"), ""]]) + "</div></td>";
+}
+
 function eventRow(ev, i) {
   const days = DAY_KEYS.map((d, n) =>
     '<option value="' + d + '"' + (ev.day === d ? " selected" : "") + ">" +
     esc(dayName(n)) + "</option>").join("");
-  const lessons = subjectsOnScreen().map(name => {
-    const col = colorFor(name);
-    const same = col.bg.toLowerCase() === ev.backgroundColor.toLowerCase();
-    return '<option value="' + esc(name) + '"' + (same ? " selected" : "") + ">" +
-           esc(name) + "</option>";
-  }).join("");
-  const auto = !ev.textColor;
+  /* Which subject this colour came from, if it came from one. Read back off
+     the colour rather than remembered: one fewer thing to store, and it stays
+     right if the subject is recoloured afterwards. */
+  const from = subjectsOnScreen().find(name =>
+    colorFor(name).bg.toLowerCase() === ev.backgroundColor.toLowerCase());
+  /* No "own colour" entry in here: that is the radio above it now. */
+  const lessons = subjectsOnScreen().map(name =>
+    '<option value="' + esc(name) + '"' + (name === from ? " selected" : "") + ">" +
+    esc(name) + "</option>").join("");
   return '<tr data-i="' + i + '">' +
+    '<td><input type="text" class="evlabel" value="' + esc(ev.label) + '"></td>' +
+    backgroundCell("e" + i, from ? "subject" : "own", ev.backgroundColor,
+      [["subject", t("colour.fromSubject"),
+        '<select class="evlike"><option value=""></option>' + lessons + "</select>"]]) +
+    textColourCell("e" + i, ev.textColor || readable(ev.backgroundColor), !ev.textColor) +
     '<td><select class="evday">' + days + "</select></td>" +
     '<td><input type="time" class="evstart" value="' + esc(ev.startTime) + '"></td>' +
     '<td><input type="time" class="evend" value="' + esc(ev.endTime) + '"></td>' +
-    '<td><div class="swatch">' +
-      '<input type="color" class="evbg" value="' + esc(ev.backgroundColor) + '">' +
-      '<select class="evlike"><option value="">' + esc(t("events.ownColour")) +
-        "</option>" + lessons + "</select>" +
-    "</div></td>" +
-    '<td><div class="swatch">' +
-      '<label class="auto"><input type="checkbox" class="evauto"' +
-        (auto ? " checked" : "") + ">" + esc(t("events.auto")) + "</label>" +
-      '<input type="color" class="evfg" value="' +
-        esc(ev.textColor || readable(ev.backgroundColor)) + '"' +
-        (auto ? " disabled" : "") + ">" +
-    "</div></td>" +
-    '<td><input type="text" class="evlabel" value="' + esc(ev.label) + '"></td>' +
     '<td><button class="drop" type="button" title="' + esc(t("events.remove")) +
       '">\u00d7</button></td>' +
     "</tr>";
@@ -1493,6 +1513,14 @@ function rowChanged(tr, change) {
   tidy(); save(); paint();
 }
 
+/* Touching a control picks the radio it sits beside. Otherwise the swatch under
+   "automatic" is a thing you can click that does nothing, which is what the
+   disabled one was. */
+function choose(tr, group, value) {
+  const radio = tr.querySelector('input[name^="' + group + '"][data-pick="' + value + '"]');
+  if (radio) radio.checked = true;
+}
+
 evRows.addEventListener("input", (e) => {
   const tr = e.target.closest("tr");
   if (!tr) return;
@@ -1500,25 +1528,45 @@ evRows.addEventListener("input", (e) => {
   if (cls.contains("evstart")) rowChanged(tr, ev => { ev.startTime = e.target.value; });
   else if (cls.contains("evend")) rowChanged(tr, ev => { ev.endTime = e.target.value; });
   else if (cls.contains("evlabel")) rowChanged(tr, ev => { ev.label = e.target.value; });
-  else if (cls.contains("evbg")) rowChanged(tr, ev => { ev.backgroundColor = e.target.value; });
-  else if (cls.contains("evfg")) rowChanged(tr, ev => { ev.textColor = e.target.value; });
+  else if (cls.contains("bgpick")) {
+    choose(tr, "bg", "own");
+    rowChanged(tr, ev => { ev.backgroundColor = e.target.value; });
+  } else if (cls.contains("fgpick")) {
+    choose(tr, "fg", "own");
+    rowChanged(tr, ev => { ev.textColor = e.target.value; });
+  }
 });
 
 evRows.addEventListener("change", (e) => {
   const tr = e.target.closest("tr");
   if (!tr) return;
-  const cls = e.target.classList;
-  if (cls.contains("evday")) rowChanged(tr, ev => { ev.day = e.target.value; });
-  else if (cls.contains("evauto")) {
-    rowChanged(tr, ev => {
-      ev.textColor = e.target.checked ? "" : readable(ev.backgroundColor);
-    });
-    renderEventsSoon();
-  } else if (cls.contains("evlike") && e.target.value) {
+  const cls = e.target.classList, target = e.target;
+  if (cls.contains("evday")) { rowChanged(tr, ev => { ev.day = target.value; }); return; }
+
+  if (cls.contains("evlike")) {
+    choose(tr, "bg", "subject");
+    if (!target.value) return;
     /* The whole scheme, both colours, exactly as that lesson is drawn. */
-    const col = colorFor(e.target.value);
+    const col = colorFor(target.value);
     rowChanged(tr, ev => { ev.backgroundColor = col.bg; ev.textColor = col.fg; });
     renderEventsSoon();
+    return;
+  }
+
+  if (target.type !== "radio") return;
+  const group = target.name.startsWith("bg") ? "bg" : "fg";
+  if (group === "fg") {
+    rowChanged(tr, ev => {
+      ev.textColor = target.value === "auto" ? "" : readable(ev.backgroundColor);
+    });
+    renderEventsSoon();
+  } else if (target.value === "subject") {
+    /* Nothing chosen from the list yet — wait for it rather than guessing. */
+    const list = tr.querySelector(".evlike");
+    if (list && list.value) list.dispatchEvent(new Event("change", { bubbles: true }));
+  } else {
+    const own = tr.querySelector(".bgpick");
+    if (own) rowChanged(tr, ev => { ev.backgroundColor = own.value; });
   }
 });
 

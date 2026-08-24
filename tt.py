@@ -87,22 +87,21 @@ STRINGS = {
         "subjectShort": "short name",
         "coloursHeading": "Lesson colours:",
         "paletteColours": "Automatic colours",
-        "style.palette": "automatic",
-        "style.school": "timetable",
-        "style.custom": "my own",
-        "textColourHint": "Text colour: automatic unless you choose one",
         "schoolColours": "Colours from the timetable",
         "customColours": "Colours of my own",
-        "events.day": "Day",
-        "events.from": "From",
-        "events.to": "To",
-        "events.colour": "Colour",
-        "events.textColour": "Text",
-        "events.colLabel": "Label",
+        "colLabel": "Label",
+        "colBackground": "Background colour",
+        "colTextColour": "Text colour",
+        "colWeekday": "Weekday",
+        "colStartTime": "Start time",
+        "colEndTime": "End time",
         "events.add": "Add an event",
         "events.remove": "Remove",
-        "events.auto": "auto",
-        "events.ownColour": "own colour",
+        "colour.own": "own colour",
+        "colour.fromSubject": "copy from subject",
+        "colour.fromTimetable": "from the timetable",
+        "colour.automatic": "automatic",
+        "subjects.summary": "Colour of each subject",
         "appName": "School timetable",
         "filter": "Filter",
         "groupsHeading": "Show only these study groups:",
@@ -120,11 +119,6 @@ STRINGS = {
                       "bookmark or a shared link carries it along."),
         "qrHint": "Edit it here",
         "qrTooLong": "Too many settings for a code — the link is:",
-        "colourHint": ("Type or paste a colour code to set one, or click the "
-                       "swatch beside it, or click any lesson in the timetable "
-                       "itself. Clicking a code selects it, ready to copy into an "
-                       "event of your own."),
-        "colourCode": "Colour code — type, paste, or copy",
         "groups": "Groups",
         "all": "— all —",
         "time": "Time",
@@ -180,22 +174,21 @@ STRINGS = {
         "subjectShort": "lühinimi",
         "coloursHeading": "Tundide värvid:",
         "paletteColours": "Automaatsed värvid",
-        "style.palette": "automaatne",
-        "style.school": "tunniplaanist",
-        "style.custom": "minu oma",
-        "textColourHint": "Teksti värv: automaatne, kui sa ise ei vali",
         "schoolColours": "Tunniplaani värvid",
         "customColours": "Minu omad värvid",
-        "events.day": "Päev",
-        "events.from": "Algus",
-        "events.to": "Lõpp",
-        "events.colour": "Värv",
-        "events.textColour": "Tekst",
-        "events.colLabel": "Nimetus",
+        "colLabel": "Nimetus",
+        "colBackground": "Taustavärv",
+        "colTextColour": "Teksti värv",
+        "colWeekday": "Nädalapäev",
+        "colStartTime": "Algusaeg",
+        "colEndTime": "Lõpuaeg",
         "events.add": "Lisa sündmus",
         "events.remove": "Eemalda",
-        "events.auto": "automaatne",
-        "events.ownColour": "oma värv",
+        "colour.own": "oma värv",
+        "colour.fromSubject": "kopeeri õppeainelt",
+        "colour.fromTimetable": "tunniplaanist",
+        "colour.automatic": "automaatne",
+        "subjects.summary": "Iga õppeaine värv",
         "appName": "Kooli tunniplaan",
         "filter": "Filter",
         "groupsHeading": "Näita ainult neid õpperühmi:",
@@ -213,11 +206,6 @@ STRINGS = {
                       "jagatud link kannab need kaasa."),
         "qrHint": "Muuda siin",
         "qrTooLong": "Seadeid on koodi jaoks liiga palju — link on:",
-        "colourHint": ("Kirjuta või kleebi värvikood, klõpsa selle kõrval oleval "
-                       "värvikastil või klõpsa tunniplaanis tunnil. Koodil "
-                       "klõpsamine valib selle, et saaksid oma sündmusele "
-                       "kopeerida."),
-        "colourCode": "Värvikood — kirjuta, kleebi või kopeeri",
         "groups": "Rühmad",
         "all": "— kõik —",
         "time": "Aeg",
@@ -1172,7 +1160,10 @@ PAGE = """<!DOCTYPE html>
   .checklist .line > label.inline:first-child { min-width: 9.5rem; }
   .choice { display: flex; gap: 14px; }
   .choice.off { opacity: .4; pointer-events: none; }
-  #colourPicker { margin-top: 10px; }
+  #subjectPanel { margin-top: 10px; }
+  #subjectPanel > summary { cursor: pointer; font-size: 13px; color: var(--accent);
+                            padding: 4px 0; }
+  #subjectPanel[open] > summary { margin-bottom: 4px; }
   .panel {
     background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
     padding: 14px 16px; margin-bottom: 18px;
@@ -1191,20 +1182,34 @@ PAGE = """<!DOCTYPE html>
   .sharebox { width: 100%; margin: 0 0 10px; padding: 7px 9px; font-size: 13px;
               border: 1px solid var(--line); border-radius: 6px; background: #fff; }
   .sharebox.off { display: none; }
-  .evtable { width: 100%; border-collapse: collapse; margin: 6px 0 10px; }
+  /* Both lists — subjects and my own events — are this table, so the columns
+     they share sit in the same places and line up down the page. */
+  .evtable { width: auto; border-collapse: collapse; margin: 6px 0 10px; }
   .evtable th { font-size: 11px; font-weight: 600; color: var(--muted);
-                text-align: left; padding: 0 6px 4px 0; border: none; background: none; }
-  .evtable td { padding: 2px 6px 2px 0; border: none; vertical-align: middle; }
+                text-align: left; padding: 0 14px 5px 0; border: none;
+                background: none; white-space: nowrap; }
+  .evtable td { padding: 3px 14px 3px 0; border: none; vertical-align: middle;
+                white-space: nowrap; }
+  .evtable tbody tr:nth-child(even) td { background: var(--panel); }
+  .evtable .rowlabel { font-size: 13px; padding-right: 18px; }
+  /* One colour, however it is arrived at: the radio and the control that goes
+     with it stay together, and the alternatives line up underneath. */
+  .colcell { display: flex; flex-direction: column; gap: 3px; }
+  .pickrow { display: flex; gap: 7px; align-items: center; }
+  /* Not the uppercase treatment .field label gets: these are choices to read,
+     not a heading over them. */
+  /* `label.pick`, not `.pick`: these sit inside a .field, whose labels are
+     styled as small-caps headings, and a heading is not what a choice is. */
+  .field label.pick { display: flex; gap: 4px; align-items: center;
+          font-size: 12px; text-transform: none; letter-spacing: 0;
+          color: inherit; white-space: nowrap; min-width: 8.5em; }
   .evtable input[type=time], .evtable input[type=text], .evtable select {
     padding: 4px 6px; font-size: 13px; border: 1px solid var(--line);
     border-radius: 5px; background: #fff; }
   .evtable input[type=text] { width: 100%; }
   .evtable .evlabel { width: 99%; }
-  .evtable input[type=color] { width: 30px; height: 26px; padding: 0;
+  .evtable input[type=color] { width: 34px; height: 24px; padding: 0;
     border: 1px solid var(--line); border-radius: 5px; background: #fff; }
-  .evtable .swatch { display: flex; gap: 4px; align-items: center; }
-  .evtable .auto { font-size: 11px; color: var(--muted); display: flex;
-                   gap: 3px; align-items: center; }
   .evtable .drop { border: none; background: none; color: var(--muted);
                    cursor: pointer; font-size: 15px; line-height: 1; padding: 2px 4px; }
   .evtable .drop:hover { color: #b3261e; }
@@ -1331,19 +1336,6 @@ PAGE = """<!DOCTYPE html>
   .foot a { color: inherit; }
   body.printview .foot { width: 1054px; margin: 8px 0 0; font-size: 9px; }
   @media print { .foot { width: auto; margin: 7px 0 0; font-size: 9px; } }
-  .legend { display: flex; flex-wrap: wrap; gap: 8px 14px; }
-  .legend .item { display: flex; align-items: center; gap: 6px; font-size: 12px; }
-  .legend .auto { font-size: 11px; color: var(--muted); display: flex;
-                  gap: 3px; align-items: center; }
-  .legend select.style { font-size: 11px; padding: 1px 3px; color: var(--muted);
-                         border: 1px solid var(--line); border-radius: 4px; background: #fff; }
-  .legend input[type=color] { width: 26px; height: 20px; padding: 0; border: 1px solid var(--line); }
-  .legend .hex { font: 11px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
-                 width: 7.5em; padding: 3px 5px; border: 1px solid transparent;
-                 border-radius: 4px; background: none; color: var(--muted); }
-  .legend .hex:hover { border-color: var(--line); background: #fff; }
-  .legend .hex:focus { border-color: var(--accent); background: #fff; color: inherit;
-                       outline: none; }
   .count { color: var(--muted); font-size: 12px; margin: 10px 0; }
   @media print { body { padding: 0; } .panel, .count { display: none; } }
 </style>
@@ -1456,10 +1448,17 @@ PAGE = """<!DOCTYPE html>
             value="custom"><span data-i18n="customColours"></span></label>
         </div>
       </div>
-      <div id="colourPicker">
-        <div class="divsub" id="colourHint"></div>
-        <div class="legend" id="legend"></div>
-      </div>
+      <details id="subjectPanel">
+        <summary data-i18n="subjects.summary"></summary>
+        <table class="evtable">
+          <thead><tr>
+            <th data-i18n="colLabel"></th>
+            <th data-i18n="colBackground"></th>
+            <th data-i18n="colTextColour"></th>
+          </tr></thead>
+          <tbody id="legend"></tbody>
+        </table>
+      </details>
     </div>
   </div>
 </details>
@@ -1470,12 +1469,12 @@ PAGE = """<!DOCTYPE html>
     <label data-i18n="events.label"></label>
     <table class="evtable">
       <thead><tr>
-        <th data-i18n="events.day"></th>
-        <th data-i18n="events.from"></th>
-        <th data-i18n="events.to"></th>
-        <th data-i18n="events.colour"></th>
-        <th data-i18n="events.textColour"></th>
-        <th data-i18n="events.colLabel"></th>
+        <th data-i18n="colLabel"></th>
+        <th data-i18n="colBackground"></th>
+        <th data-i18n="colTextColour"></th>
+        <th data-i18n="colWeekday"></th>
+        <th data-i18n="colStartTime"></th>
+        <th data-i18n="colEndTime"></th>
         <th></th>
       </tr></thead>
       <tbody id="evrows"></tbody>

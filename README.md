@@ -284,18 +284,22 @@ needs no times.
   pre-filled with what it says, so one word can be changed without retyping the
   rest, and typing into any of them ticks its row. The result appears above the
   timetable as it is typed, which is what will print.
-- **My own events** — a row per thing the school does not know about: a day, a
-  start and an end, a colour, and a name. There is no syntax to get wrong and
-  no colour to spell; a row that cannot be drawn says so underneath. An event on
-  a day the school week does not cover — a Saturday rehearsal — adds that day.
+- **My own events** — a row per thing the school does not know about: a label,
+  its colours, a weekday and a span. There is no syntax to get wrong and no
+  colour to spell; a row that cannot be drawn says so underneath. An event on a
+  day the school week does not cover — a Saturday rehearsal — adds that day.
 
-  The colour can be arrived at three ways, because all three come up. Pick a
-  **lesson from the list** and the event is drawn exactly as that lesson is,
-  both colours copied — the quickest way to make a training session look like
-  the subject it belongs with. Or set the **background** and leave *auto*
-  ticked, and the text comes out black or white, whichever reads better on it.
-  Or untick *auto* and set the text colour too; the box then gains a border in
-  it.
+  Each colour is a small set of radio buttons with the control beside the option
+  it belongs to, so nothing is a dead click. For the background: **own colour**
+  with a picker, or **copy from subject** with a list of the lessons on screen —
+  that one takes both of the lesson's colours, which is the quickest way to make
+  a training session look like the subject it belongs with. For the text: **own
+  colour**, or **automatic**, which is black or white depending on what reads
+  better on the background. A box given its own text colour also gains a border
+  in it.
+
+  Both colour columns are laid out exactly as the subject list's are, and named
+  the same, so the two tables read as one idea rather than two.
 
   For a bulk edit — pasting in a term's worth at once — the whole settings
   object is in **Advanced**, and events are a plain list there.
@@ -398,7 +402,13 @@ A few of the choices, since they are not all obvious:
   its own and art left on the generated palette — which a single global switch
   could not express. Not per class: a subject keeps its colour wherever it
   turns up, which is rather the point of colouring it.
-- **The three radio buttons set every subject**, clearing any per-subject style
+- **The subject list is the same table**, one subject to a row, under *Lesson
+  colours*. It is collapsed to begin with, since a class has twenty-odd
+  subjects and most people never touch it. Each row says what that subject is
+  really doing — **own colour**, **from the timetable**, or **automatic** — and
+  a subject set to "own colour" with no colour behind it reads as automatic,
+  because that is what gets drawn.
+- **The three radio buttons above it set every subject**, clearing any per-subject style
   as they go; chosen colours survive, so switching back to "my own" restores
   them. Otherwise a row would sit there ignoring the switch that claims to
   govern it.

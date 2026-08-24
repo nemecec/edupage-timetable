@@ -258,10 +258,13 @@ test("a hostile colour in a link is dropped before it is stored", () => {
   /* Through the real ingestion path, not by calling the filter directly: the
      filter was tested and the call to it was not, so removing the call left
      markup sitting in localStorage with the suite green. */
-  const hostile = JSON.stringify({ subjectColors: { Matemaatika: 'x"><img src=x>',
-                                                   Kunst: "#abc" } });
+  const hostile = JSON.stringify({ subjects: {
+    Matemaatika: { style: "custom", color: 'x"><img src=x>' },
+    Bioloogia: { style: 'x"><img src=x>' },
+    Kunst: { style: "school", color: "#abc" } } });
   const merged = json(`applyShared(JSON.parse(${JSON.stringify(hostile)}), defaults())`);
-  assert.deepEqual(merged.subjectColors, { Kunst: "#abc" });
+  assert.deepEqual(merged.subjects, { Matemaatika: { style: "custom" },
+                                      Kunst: { style: "school", color: "#abc" } });
 });
 
 test("a link adds to the other classes rather than replacing them", () => {
@@ -403,8 +406,29 @@ test("an event with no name is still an event", () => {
 });
 
 test("a settings bag reaches normalise with its colours filtered", () => {
-  const got = json(`normalise({subjectColors: {A: "#fff", B: 'x"><img src=x>'}})`);
-  assert.deepEqual(got.subjectColors, { A: "#fff" });
+  const got = json(`normalise({subjects: {A: {color: "#fff"},
+                                          B: {color: 'x"><img src=x>'},
+                                          C: {style: "school"},
+                                          D: {style: "nonsense"},
+                                          E: "not an object"}})`);
+  assert.deepEqual(got.subjects, { A: { color: "#fff" }, C: { style: "school" } });
+});
+
+test("a subject can differ from what every other subject is doing", () => {
+  /* The gap the per-subject entry exists to close: the school's own colours
+     throughout, with one subject pulled out. */
+  run(`state.subjectColorStyle = "school";
+       state.subjects = {Matemaatika: {style: "custom", color: "#123456"}};`);
+  assert.equal(json(`colorFor("Matemaatika").bg`), "#123456");
+  assert.equal(json(`styleFor("Ajalugu")`), "school");
+  // And the radios mean every subject, so they clear the exception.
+  run(`(() => { state.subjectColorStyle = "palette";
+       for (const e of Object.values(state.subjects)) delete e.style;
+       tidySubjects(); })()`);
+  assert.equal(json(`styleFor("Matemaatika")`), "palette");
+  assert.deepEqual(json(`state.subjects`), { Matemaatika: { color: "#123456" } },
+                   "the colour survives so switching back restores it");
+  run(`state.subjects = {}; state.subjectColorStyle = "custom";`);
 });
 
 test("the README describes the settings that actually exist", () => {
@@ -421,8 +445,9 @@ test("the README describes the settings that actually exist", () => {
                    json(`Object.keys(classDefaults())`).sort());
   // And it survives being read back in as settings.
   const back = json(`normalise(${JSON.stringify(shown)})`);
-  assert.equal(back.subjectColorStyle, "custom");
-  assert.equal(back.classes["68/8"].studentName, "Ere");
+  assert.equal(back.subjectColorStyle, shown.subjectColorStyle);
+  assert.deepEqual(back.subjects, shown.subjects);
+  assert.equal(back.classes["68/8"].studentName, "Eva");
   assert.equal(back.classes["68/8"].events.length, 1);
   assert.deepEqual(back.classes["68/8"].studyGroups,
                    { "Alfa/Beeta/Gamma": "Beeta", "8.1/8.2/8.3/8.4": "8.1" });

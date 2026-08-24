@@ -353,8 +353,11 @@ its own map of classes.
   "showSubject": true,
   "subjectNameStyle": "full",
 
-  "subjectColorStyle": "custom",
-  "subjectColors": { "Matemaatika": "#83EC9B" },
+  "subjectColorStyle": "school",
+  "subjects": {
+    "Matemaatika": { "style": "custom", "color": "#83EC9B" },
+    "Kunst": { "style": "palette" }
+  },
 
   "classes": {
     "68/8": {
@@ -362,7 +365,7 @@ its own map of classes.
         "Alfa/Beeta/Gamma": "Beeta",
         "8.1/8.2/8.3/8.4": "8.1"
       },
-      "studentName": "Ere",
+      "studentName": "Eva",
       "events": [
         { "day": "Mon", "start": "16:15", "end": "17:10",
           "color": "#F6F2C1", "textColor": "", "label": "Tantsutrenn" }
@@ -379,11 +382,20 @@ A few of the choices, since they are not all obvious:
 - **`studyGroups` is keyed by the choice on offer**, `"Alfa/Beeta/Gamma"`, not by
   aSc's own identifier for that division, which is `"*5:1"` and means nothing
   outside the feed.
-- **`subjectColors` is not per class.** A subject keeps its colour wherever it
+- **`subjectColorStyle` says what every subject does** — `palette` (the
+  generated one), `school` (the timetable's own), or `custom` (yours). It was
+  two checkboxes that quietly layered on each other, which nobody could have
+  guessed by looking.
+- **`subjects` is where one subject differs from that**, and holds only the
+  subjects somebody actually touched. A `style` of its own, a `color`, or both.
+  So the example above runs on the school's colours, with maths in a colour of
+  its own and art left on the generated palette — which a single global switch
+  could not express. Not per class: a subject keeps its colour wherever it
   turns up, which is rather the point of colouring it.
-- **`subjectColorStyle` is one question with three answers** — `palette`,
-  `school`, `custom` — because it was two checkboxes that quietly layered on
-  each other, which nobody could have guessed by looking.
+- **The three radio buttons set every subject**, clearing any per-subject style
+  as they go; chosen colours survive, so switching back to "my own" restores
+  them. Otherwise a row would sit there ignoring the switch that claims to
+  govern it.
 - **Weekdays are stored as `Mon`…`Sun`**, in English whatever the interface
   language is, so the file reads the same for everyone. The interface shows them
   in the reader's own language.

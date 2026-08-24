@@ -24,12 +24,17 @@ const defaults = () => ({
   showRoom: true, showGroup: true,
   showSubject: true, subjectNameStyle: "full",
 
-  /* One question, three answers — they were two checkboxes that quietly
-     layered on each other, which no one could have guessed from looking. */
+  /* What every subject does unless it says otherwise. One question, three
+     answers — it was two checkboxes that quietly layered on each other, which
+     no one could have guessed from looking. */
   subjectColorStyle: "custom",          // "palette" | "school" | "custom"
-  /* Subject -> colour. Not per class: a subject keeps its colour wherever it
-     turns up, which is the point of colouring it. */
-  subjectColors: {},
+
+  /* Per subject, and only where the reader has said something: a colour they
+     chose, a style that differs from the one above, or both. This is what lets
+     a timetable run on the school's own colours with one subject pulled out in
+     a colour of your own — which the single global switch could not express.
+     Not per class: a subject keeps its colour wherever it turns up. */
+  subjects: {},
 
   classes: {},
 });
@@ -56,6 +61,25 @@ function onlyColours(bag) {
   const out = {};
   for (const [subject, value] of Object.entries(bag)) {
     if (typeof value === "string" && HEX.test(value.trim())) out[subject] = value.trim();
+  }
+  return out;
+}
+
+const STYLES = ["palette", "school", "custom"];
+
+/* What one subject is allowed to say about itself: a colour, a style, or both.
+   An entry saying neither is nothing at all and is dropped, which is what keeps
+   the map to the handful of subjects somebody actually touched. */
+function onlySubjects(bag) {
+  const out = {};
+  for (const [subject, value] of Object.entries(bag || {})) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) continue;
+    const kept = {};
+    if (STYLES.includes(value.style)) kept.style = value.style;
+    if (typeof value.color === "string" && HEX.test(value.color.trim())) {
+      kept.color = value.color.trim();
+    }
+    if (Object.keys(kept).length) out[subject] = kept;
   }
   return out;
 }
@@ -130,7 +154,7 @@ function normalise(saved) {
     if (!allowed.includes(out[key])) out[key] = base[key];
   }
   if (!DATA.languages.some(l => l[0] === out.lang)) out.lang = DATA.lang;
-  out.subjectColors = onlyColours(out.subjectColors);
+  out.subjects = onlySubjects(out.subjects);
   const classes = {};
   for (const [key, value] of Object.entries(out.classes)) classes[key] = oneClass(value);
   out.classes = classes;
@@ -158,12 +182,12 @@ function applyShared(shared, current) {
       merged.classes[key] = oneClass(Object.assign({}, current.classes[key], sub));
     }
   }
-  if (shared.subjectColors && typeof shared.subjectColors === "object") {
+  if (shared.subjects && typeof shared.subjects === "object") {
     /* Merged after normalise, so these have not been through it. Nothing
        hostile survives the escaping at the sinks either way, but a link's junk
        should not end up saved. */
-    merged.subjectColors = onlyColours(
-      Object.assign({}, current.subjectColors, shared.subjectColors));
+    merged.subjects = onlySubjects(
+      Object.assign({}, current.subjects, shared.subjects));
   }
   return merged;
 }
@@ -400,16 +424,31 @@ function readable(bg) {
   const cr = (x, y) => (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
   return cr(L, dark) >= cr(L, 1) ? "#14171A" : "#FFFFFF";
 }
+/* What this subject is set to do — its own answer if it gave one, otherwise
+   the one every subject follows. */
+function styleFor(subject) {
+  return ((state.subjects || {})[subject] || {}).style || state.subjectColorStyle;
+}
+
 function colorFor(subject) {
-  if (state.subjectColorStyle === "custom" && state.subjectColors[subject]) {
-    const bg = state.subjectColors[subject];
-    return { bg: bg, fg: readable(bg) };
-  }
-  if (state.subjectColorStyle === "school") {
+  const own = (state.subjects || {})[subject] || {};
+  const style = own.style || state.subjectColorStyle;
+  if (style === "custom" && own.color) return { bg: own.color, fg: readable(own.color) };
+  if (style === "school") {
+    /* Only where the school set one. A subject it never coloured falls through
+       to the palette rather than coming out blank. */
     const bg = (subjectFacts()[subject] || {}).color;
     if (bg) return { bg: bg, fg: readable(bg) };
   }
   return DATA.palette[subject] || { bg: "#EEEEEE", fg: "#14171A" };
+}
+
+/* An entry that says nothing is not worth keeping, in storage or in a link. */
+function tidySubjects() {
+  for (const [subject, entry] of Object.entries(state.subjects || {})) {
+    if (entry.style === state.subjectColorStyle) delete entry.style;
+    if (!entry.style && !entry.color) delete state.subjects[subject];
+  }
 }
 
 /* A lesson is mine when every division it belongs to matches one of my picks.
@@ -954,8 +993,12 @@ function render() {
 }
 
 function setColour(subject, value) {
-  state.subjectColors[subject] = value;
-  state.subjectColorStyle = "custom";   // choosing one is asking for them
+  const entry = state.subjects[subject] || (state.subjects[subject] = {});
+  entry.color = value;
+  /* Choosing a colour is asking for it — for this subject, not for every one.
+     If everything is already on its own colours there is nothing to say. */
+  if (state.subjectColorStyle !== "custom") entry.style = "custom";
+  tidySubjects();
   syncDisplayControls();
   save();
   paint();
@@ -973,12 +1016,30 @@ function renderLegend(shown) {
   const used = [...new Set(shown.map(e => e.s))].sort();
   /* The code beside each swatch is the one the events box takes, so a colour
      seen here can be reused there without going hunting for it. */
-  document.getElementById("legend").innerHTML = used.map(s =>
-    '<span class="item"><input type="color" data-subject="' + esc(s) + '" value="' +
-    esc(colorFor(s).bg) + '">' + esc(s) +
-    '<input type="text" class="hex" spellcheck="false" data-subject="' + esc(s) +
-    '" value="' + esc(colorFor(s).bg) + '" size="8" title="' +
-    esc(t("colourCode")) + '"></span>').join("");
+  document.getElementById("legend").innerHTML = used.map(s => {
+    /* Each subject can differ from what the rest are doing — the school's own
+       colours throughout, say, with one subject pulled out in a colour of your
+       own. The select is that, per subject; the radios above set them all. */
+    const here = styleFor(s);
+    const choose = STYLES.map(v => '<option value="' + v + '"' +
+      (v === here ? " selected" : "") + ">" + esc(t("style." + v)) + "</option>").join("");
+    return '<span class="item"><input type="color" data-subject="' + esc(s) + '" value="' +
+      esc(colorFor(s).bg) + '">' + esc(s) +
+      '<input type="text" class="hex" spellcheck="false" data-subject="' + esc(s) +
+      '" value="' + esc(colorFor(s).bg) + '" size="8" title="' +
+      esc(t("colourCode")) + '">' +
+      '<select class="style" data-subject="' + esc(s) + '">' + choose + "</select></span>";
+  }).join("");
+  document.querySelectorAll("#legend select.style").forEach(sel => {
+    sel.addEventListener("change", () => {
+      const entry = state.subjects[sel.dataset.subject] ||
+                    (state.subjects[sel.dataset.subject] = {});
+      entry.style = sel.value;
+      tidySubjects();
+      save();
+      paint();
+    });
+  });
   document.querySelectorAll("#legend input[type=color]").forEach(inp => {
     inp.addEventListener("input", () => {
       setColour(inp.dataset.subject, inp.value);
@@ -1070,7 +1131,16 @@ function bindToggle(id, key) {
 function bindChoice(name, key) {
   document.querySelectorAll('input[name="' + name + '"]').forEach(radio => {
     radio.addEventListener("change", () => {
-      if (radio.checked) { state[key] = radio.value; save(); render(); }
+      if (!radio.checked) return;
+      state[key] = radio.value;
+      if (key === "subjectColorStyle") {
+        /* This one says what every subject does, so it means every subject —
+           a row still quietly doing its own thing would make the switch a lie.
+           Chosen colours are kept, so turning "my own" back on restores them. */
+        for (const entry of Object.values(state.subjects)) delete entry.style;
+        tidySubjects();
+      }
+      save(); render();
     });
   });
 }
@@ -1096,8 +1166,7 @@ function syncDisplayControls() {
   }
   document.getElementById("teacherChoice").classList.toggle("off", !state.showTeacher);
   document.getElementById("subjectChoice").classList.toggle("off", !state.showSubject);
-  document.getElementById("colourPicker")
-          .classList.toggle("off", state.subjectColorStyle !== "custom");
+
 }
 /* Clicking a lesson opens a colour picker anchored under it. The input is a
    permanent hidden node, so nothing rebuilds it while the picker is open. */

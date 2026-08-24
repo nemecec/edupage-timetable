@@ -87,6 +87,9 @@ STRINGS = {
         "subjectShort": "short name",
         "coloursHeading": "Lesson colours:",
         "paletteColours": "Automatic colours",
+        "style.palette": "automatic",
+        "style.school": "timetable",
+        "style.custom": "my own",
         "schoolColours": "Colours from the timetable",
         "customColours": "Colours of my own",
         "events.day": "Day",
@@ -176,6 +179,9 @@ STRINGS = {
         "subjectShort": "lühinimi",
         "coloursHeading": "Tundide värvid:",
         "paletteColours": "Automaatsed värvid",
+        "style.palette": "automaatne",
+        "style.school": "tunniplaanist",
+        "style.custom": "minu oma",
         "schoolColours": "Tunniplaani värvid",
         "customColours": "Minu omad värvid",
         "events.day": "Päev",
@@ -1165,7 +1171,6 @@ PAGE = """<!DOCTYPE html>
   .choice { display: flex; gap: 14px; }
   .choice.off { opacity: .4; pointer-events: none; }
   #colourPicker { margin-top: 10px; }
-  #colourPicker.off { display: none; }
   .panel {
     background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
     padding: 14px 16px; margin-bottom: 18px;
@@ -1326,6 +1331,8 @@ PAGE = """<!DOCTYPE html>
   @media print { .foot { width: auto; margin: 7px 0 0; font-size: 9px; } }
   .legend { display: flex; flex-wrap: wrap; gap: 8px 14px; }
   .legend .item { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+  .legend select.style { font-size: 11px; padding: 1px 3px; color: var(--muted);
+                         border: 1px solid var(--line); border-radius: 4px; background: #fff; }
   .legend input[type=color] { width: 26px; height: 20px; padding: 0; border: 1px solid var(--line); }
   .legend .hex { font: 11px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
                  width: 7.5em; padding: 3px 5px; border: 1px solid transparent;

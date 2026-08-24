@@ -284,26 +284,21 @@ needs no times.
   pre-filled with what it says, so one word can be changed without retyping the
   rest, and typing into any of them ticks its row. The result appears above the
   timetable as it is typed, which is what will print.
-- **My own events** — a text box, one event per line, for everything the school
-  does not know about:
+- **My own events** — a row per thing the school does not know about: a day, a
+  start and an end, a colour, and a name. There is no syntax to get wrong and
+  no colour to spell; a row that cannot be drawn says so underneath. An event on
+  a day the school week does not cover — a Saturday rehearsal — adds that day.
 
-      Mon 17:15-18:15 orange Dance training
-      reede 8.00-8.45 #2e86de Early swim
-      L 10:30-12:00 mediumseagreen Choir practice
-      K 12:10-12:30 #333333/#dddddd Söömine
+  The colour can be arrived at three ways, because all three come up. Pick a
+  **lesson from the list** and the event is drawn exactly as that lesson is,
+  both colours copied — the quickest way to make a training session look like
+  the subject it belongs with. Or set the **background** and leave *auto*
+  ticked, and the text comes out black or white, whichever reads better on it.
+  Or untick *auto* and set the text colour too; the box then gains a border in
+  it.
 
-  Weekdays accept English or Estonian, long or short (`Mon`, `Tue`, `esmaspäev`,
-  `Re`, `L`); times take `:` or `.`; the label is the rest of the line and may
-  contain spaces. Blank lines and lines starting with `#` are ignored, and
-  anything unparseable is reported underneath with its line number rather than
-  silently dropped. An event on a day the school week does not cover — a Saturday
-  rehearsal — adds that day.
-
-  The colour column is any CSS colour and sets the background; the text then
-  comes out black or white, whichever reads better. Write it as
-  `<text>/<background>` to set both, and the box gains a border in the text
-  colour. Only a slash between whole colours counts, so `rgb(0,0,0/50%)` still
-  parses as one.
+  For a bulk edit — pasting in a term's worth at once — the whole settings
+  object is in **Advanced**, and events are a plain list there.
 
   Events are drawn **on top of** the timetable rather than beside it: the lessons
   keep their full width. An event is inset a little where something is underneath,
@@ -313,10 +308,11 @@ needs no times.
   no geometry to draw over, events get a **My own** column instead.
 - **Share** copies the address, because the address is the whole configuration:
   group picks, colours, events, names, language and every display switch, encoded
-  in the fragment. Only what differs from the defaults goes in, which keeps a
-  typical link near 200 characters. The fragment never leaves the browser.
-  Opening a link merges its per-class settings rather than replacing them, so a
-  link for one child does not wipe a sibling's.
+  in the fragment. Only what differs from the defaults goes in, and only the
+  class on screen, which keeps a typical link near 200 characters and means
+  sharing one child's timetable does not hand over a sibling's name. The
+  fragment never leaves the browser. Opening a link merges what it carries into
+  what this browser already had, rather than replacing it.
 - **Print…** lays the page out for A4 landscape and prints it. It is a moment,
   not a setting: the page returns to normal afterwards. The timeline scales
   itself to fill exactly one sheet, measured rather than guessed. Colours survive
@@ -332,6 +328,72 @@ needs no times.
   the school entered — subject names, group codes, rooms, teacher names, the line
   it prints under its own timetable — stays in the language it was entered in.
 - All state lives in `localStorage`, so each reader sets theirs once.
+
+## The settings, as they are stored
+
+`localStorage`, the link's fragment and the **Advanced** box all hold the same
+object. Two rules shape it: the field names are what the interface calls things,
+so a reader can tell which control each one belongs to; and everything belonging
+to one class sits in that class's own subtree rather than each setting keeping
+its own map of classes.
+
+```json
+{
+  "lang": "et",
+  "school": "68",
+  "class": "8",
+
+  "showName": true,
+  "showSchool": true,
+  "showClass": true,
+  "showTeacher": true,
+  "teacherNameStyle": "short",
+  "showRoom": true,
+  "showGroup": true,
+  "showSubject": true,
+  "subjectNameStyle": "full",
+
+  "subjectColorStyle": "custom",
+  "subjectColors": { "Matemaatika": "#83EC9B" },
+
+  "classes": {
+    "68/8": {
+      "studyGroups": {
+        "Alfa/Beeta/Gamma": "Beeta",
+        "8.1/8.2/8.3/8.4": "8.1"
+      },
+      "studentName": "Ere",
+      "events": [
+        { "day": "Mon", "start": "16:15", "end": "17:10",
+          "color": "#F6F2C1", "textColor": "", "label": "Tantsutrenn" }
+      ],
+      "titleSchool": "",
+      "titleClass": ""
+    }
+  }
+}
+```
+
+A few of the choices, since they are not all obvious:
+
+- **`studyGroups` is keyed by the choice on offer**, `"Alfa/Beeta/Gamma"`, not by
+  aSc's own identifier for that division, which is `"*5:1"` and means nothing
+  outside the feed.
+- **`subjectColors` is not per class.** A subject keeps its colour wherever it
+  turns up, which is rather the point of colouring it.
+- **`subjectColorStyle` is one question with three answers** — `palette`,
+  `school`, `custom` — because it was two checkboxes that quietly layered on
+  each other, which nobody could have guessed by looking.
+- **Weekdays are stored as `Mon`…`Sun`**, in English whatever the interface
+  language is, so the file reads the same for everyone. The interface shows them
+  in the reader's own language.
+- **`textColor` empty means "work it out"** — black or white, whichever reads
+  better on the background.
+- **`classes` is a map rather than the class keys sitting at the top level**, so
+  a class named `lang` cannot collide with the setting called that.
+
+Only what differs from the defaults is written to a link, so most of this is
+absent from a typical one.
 
 ## Verification
 

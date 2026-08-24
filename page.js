@@ -3,15 +3,46 @@ const DATA = JSON.parse(document.getElementById("data").textContent);
 const SCHOOLS = DATA.schools;
 const KEY = "tt:" + DATA.edupage + ":" + DATA.year;
 
+/* The saved settings, and the names they go by.
+ *
+ * Two rules the shape follows. Names match what the interface calls things, so
+ * a reader looking at the JSON in the Advanced panel can tell which control
+ * each field belongs to. And everything that belongs to one class lives in that
+ * class's own subtree under `classes`, rather than each setting holding its own
+ * map of classes — one place to look, one place to copy.
+ *
+ * `classes` is a map rather than the class keys sitting at the top level, so a
+ * class named "lang" cannot collide with a setting called that.
+ */
 const defaults = () => ({
-  school: DATA.initialSchool, klass: DATA.initialClass,
-  lang: DATA.lang, picks: {}, colors: {}, who: {}, events: {},
-  titleSchool: {}, titleClass: {},
-  showWho: false, showSchool: true, showClass: true,
-  showTeacher: true, teacherName: "short",
+  lang: DATA.lang,
+  school: DATA.initialSchool,
+  class: DATA.initialClass,
+
+  showName: false, showSchool: true, showClass: true,
+  showTeacher: true, teacherNameStyle: "short",
   showRoom: true, showGroup: true,
-  showSubject: true, subjectName: "full",
-  schoolColors: false, customColours: true,
+  showSubject: true, subjectNameStyle: "full",
+
+  /* One question, three answers — they were two checkboxes that quietly
+     layered on each other, which no one could have guessed from looking. */
+  subjectColorStyle: "custom",          // "palette" | "school" | "custom"
+  /* Subject -> colour. Not per class: a subject keeps its colour wherever it
+     turns up, which is the point of colouring it. */
+  subjectColors: {},
+
+  classes: {},
+});
+
+/* What one class remembers. `studyGroups` is keyed by the choice on offer —
+   "Alfa/Beeta/Gamma" — rather than by aSc's internal division id ("*5:1"),
+   which is unreadable and means nothing outside the feed. */
+const classDefaults = () => ({
+  studyGroups: {},
+  studentName: "",
+  events: [],
+  titleSchool: "",
+  titleClass: "",
 });
 /* Settings arrive from localStorage, from a link, or from a pasted backup — all
    of them outside this page's control. Anything of the wrong shape is replaced
@@ -29,6 +60,57 @@ function onlyColours(bag) {
   return out;
 }
 
+/* Three letters, English, in the JSON — short enough to read at a glance and
+   the same whatever language the interface is in. The interface shows the
+   reader's own language; only the stored form is fixed. */
+const DAY_KEYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+const clock = (v) => {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(String(v || "").trim());
+  if (!m) return null;
+  const h = +m[1], min = +m[2];
+  return h < 24 && min < 60 ? h * 60 + min : null;
+};
+
+const asClock = (mins) =>
+  String(Math.floor(mins / 60)).padStart(2, "0") + ":" + String(mins % 60).padStart(2, "0");
+
+/* One saved event, or null if it is not one. Everything here comes from a file
+   someone edited or a link someone sent, so nothing is assumed. */
+function oneEvent(raw) {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const day = DAY_KEYS.indexOf(String(raw.day));
+  const a = clock(raw.start), z = clock(raw.end);
+  if (day < 0 || a === null || z === null || z <= a) return null;
+  const colour = (v) => (typeof v === "string" && HEX.test(v.trim())) ? v.trim() : "";
+  return {
+    day: DAY_KEYS[day],
+    start: asClock(a),
+    end: asClock(z),
+    color: colour(raw.color) || "#DDDDDD",
+    textColor: colour(raw.textColor),      // empty means: work it out
+    label: typeof raw.label === "string" ? raw.label : "",
+  };
+}
+
+function oneClass(raw) {
+  const base = classDefaults();
+  const was = (raw && typeof raw === "object" && !Array.isArray(raw)) ? raw : {};
+  const out = Object.assign({}, base);
+  if (was.studyGroups && typeof was.studyGroups === "object" &&
+      !Array.isArray(was.studyGroups)) {
+    for (const [choice, picked] of Object.entries(was.studyGroups)) {
+      if (typeof picked === "string") out.studyGroups[choice] = picked;
+    }
+  }
+  for (const key of ["studentName", "titleSchool", "titleClass"]) {
+    if (typeof was[key] === "string") out[key] = was[key];
+  }
+  out.events = Array.isArray(was.events)
+    ? was.events.map(oneEvent).filter(Boolean) : [];
+  return out;
+}
+
 function normalise(saved) {
   const base = defaults();
   const out = Object.assign({}, base);
@@ -42,12 +124,16 @@ function normalise(saved) {
       out[key] = value;
     }
   }
-  for (const [key, allowed] of [["teacherName", ["short", "full"]],
-                                ["subjectName", ["short", "full"]]]) {
+  for (const [key, allowed] of [["teacherNameStyle", ["short", "full"]],
+                                ["subjectNameStyle", ["short", "full"]],
+                                ["subjectColorStyle", ["palette", "school", "custom"]]]) {
     if (!allowed.includes(out[key])) out[key] = base[key];
   }
   if (!DATA.languages.some(l => l[0] === out.lang)) out.lang = DATA.lang;
-  out.colors = onlyColours(out.colors);
+  out.subjectColors = onlyColours(out.subjectColors);
+  const classes = {};
+  for (const [key, value] of Object.entries(out.classes)) classes[key] = oneClass(value);
+  out.classes = classes;
   return out;
 }
 
@@ -63,13 +149,22 @@ try {
    at what comes out. This is the one place untrusted input reaches the page. */
 function applyShared(shared, current) {
   const merged = normalise(Object.assign({}, current, shared));
-  for (const bag of ["picks", "colors", "who", "events", "titleSchool", "titleClass"]) {
-    if (shared[bag]) merged[bag] = Object.assign({}, current[bag], shared[bag]);
+  /* Classes merge rather than replace: a link for one class must not wipe what
+     was set up for a sibling's. The link only ever carries one, and only the
+     fields that were set, so the rest of that class's own settings survive. */
+  if (shared.classes && typeof shared.classes === "object") {
+    merged.classes = Object.assign({}, current.classes);
+    for (const [key, sub] of Object.entries(shared.classes)) {
+      merged.classes[key] = oneClass(Object.assign({}, current.classes[key], sub));
+    }
   }
-  /* The per-bag merge runs after normalise, so the colours it brings in have
-     not been through it. Nothing hostile survives the escaping at the sinks
-     either way, but a link's junk should not end up saved. */
-  merged.colors = onlyColours(merged.colors);
+  if (shared.subjectColors && typeof shared.subjectColors === "object") {
+    /* Merged after normalise, so these have not been through it. Nothing
+       hostile survives the escaping at the sinks either way, but a link's junk
+       should not end up saved. */
+    merged.subjectColors = onlyColours(
+      Object.assign({}, current.subjectColors, shared.subjectColors));
+  }
   return merged;
 }
 
@@ -102,13 +197,6 @@ function unb64url(code) {
   return new TextDecoder().decode(Uint8Array.from(binary, c => c.charCodeAt(0)));
 }
 
-/* The settings kept per class rather than once for the whole page. `colors` is
-   deliberately not among them: a subject keeps its colour wherever it appears. */
-const PER_CLASS = ["picks", "who", "events", "titleSchool", "titleClass"];
-
-const emptyBag = (v) => v == null ||
-  (typeof v === "string" ? !v.trim() : !Object.keys(v).length);
-
 function changedFromDefaults() {
   const base = defaults(), out = {};
   for (const key of Object.keys(base)) {
@@ -117,13 +205,18 @@ function changedFromDefaults() {
   /* A link is for one class, so it carries that class and no other. It used to
      carry every class the browser had ever been set up for, which meant sharing
      one child's timetable handed over a sibling's name — and made the printed
-     QR denser for entries the recipient can never see. Empty entries go too:
-     typing something and deleting it again should leave nothing behind. */
-  const here = picksKey();
-  for (const bag of PER_CLASS) {
-    if (!out[bag]) continue;
-    if (emptyBag(state[bag][here])) delete out[bag];
-    else out[bag] = { [here]: state[bag][here] };
+     QR denser for a class the recipient will never look at. */
+  if (out.classes) {
+    const here = classKey(), sub = state.classes[here] || {};
+    /* Only what was actually set. The subtree always holds all five fields so
+       the code reading it never has to check; a link carrying three empty
+       strings is just a denser QR code for nothing. */
+    const base = classDefaults(), trimmed = {};
+    for (const key of Object.keys(base)) {
+      if (JSON.stringify(sub[key]) !== JSON.stringify(base[key])) trimmed[key] = sub[key];
+    }
+    if (Object.keys(trimmed).length) out.classes = { [here]: trimmed };
+    else delete out.classes;
   }
   return out;
 }
@@ -209,9 +302,9 @@ function renderFooter(school) {
    is visible before anything is printed. */
 function titleParts(school, cls) {
   return {
-    who: (perClass("who") || "").trim(),
-    school: (perClass("titleSchool") || "").trim() || school.l,
-    klass: (perClass("titleClass") || "").trim() || t("classN", cls.n),
+    who: mine().studentName.trim(),
+    school: mine().titleSchool.trim() || school.l,
+    klass: mine().titleClass.trim() || t("classN", cls.n),
   };
 }
 
@@ -219,7 +312,7 @@ function displayTitle(school, cls) {
   const part = titleParts(school, cls);
   const right = [state.showSchool ? part.school : "", state.showClass ? part.klass : ""]
                   .filter(Boolean).join(", ");
-  return [state.showWho ? part.who : "", right].filter(Boolean).join(" — ");
+  return [state.showName ? part.who : "", right].filter(Boolean).join(" — ");
 }
 
 /* Interface strings only; anything from the timetable stays in the language
@@ -243,6 +336,13 @@ function dayLabel(school, idx) {
   return (table.days || [])[idx] || own || String(idx);
 }
 
+/* A weekday in the reader's language, without a school to take it from — the
+   events table is the reader's own, not the timetable's. */
+function dayName(idx) {
+  const table = DATA.strings[state.lang] || DATA.strings.en;
+  return (table.days || [])[idx] || DAY_KEYS[idx];
+}
+
 function applyStrings() {
   document.documentElement.lang = state.lang;
   document.querySelectorAll("[data-i18n]").forEach(el => {
@@ -262,7 +362,7 @@ function currentSchool() {
 }
 function currentClass() {
   const school = currentSchool();
-  return school.c.find(c => c.n === state.klass) || school.c[0];
+  return school.c.find(c => c.n === state.class) || school.c[0];
 }
 /* Group choices belong to a class, not to the reader, so they are stored per
    school+class and survive switching back and forth. */
@@ -271,9 +371,11 @@ function currentClass() {
    differently, so this is per school and not one table for all of them. */
 function subjectFacts() { return currentSchool().sj || {}; }
 
-function picksKey() { return currentSchool().n + "/" + currentClass().n; }
-function picks() { return perClass("picks"); }
-function pickable() { return perClassBag("picks"); }
+function classKey() { return currentSchool().n + "/" + currentClass().n; }
+
+/* Which of a division's groups this reader is in, keyed by the choice on offer.
+   The division's own id is aSc's ("*5:1") and means nothing to anyone. */
+const choiceKey = (division) => division.groups.join("/");
 
 function readable(bg) {
   /* Three, four, six or eight digits — a short hex is a colour like any other,
@@ -299,11 +401,11 @@ function readable(bg) {
   return cr(L, dark) >= cr(L, 1) ? "#14171A" : "#FFFFFF";
 }
 function colorFor(subject) {
-  if (state.customColours && state.colors[subject]) {
-    const bg = state.colors[subject];
+  if (state.subjectColorStyle === "custom" && state.subjectColors[subject]) {
+    const bg = state.subjectColors[subject];
     return { bg: bg, fg: readable(bg) };
   }
-  if (state.schoolColors) {
+  if (state.subjectColorStyle === "school") {
     const bg = (subjectFacts()[subject] || {}).color;
     if (bg) return { bg: bg, fg: readable(bg) };
   }
@@ -312,80 +414,54 @@ function colorFor(subject) {
 
 /* A lesson is mine when every division it belongs to matches one of my picks.
    Whole-class lessons carry no groups and are always mine. */
-function visible(entry, mine, divisions) {
+function visible(entry, picked, divisions) {
   /* A lesson in no group is the whole class's, and a lesson is shown until a
      pick rules it out — both fall out of the loop below reaching its end, so
      neither needs a guard of its own. One was here, and no test could tell
      whether it worked, because removing it changed nothing. */
-  if (!Object.values(mine).filter(Boolean).length) return true;
+  if (!Object.values(picked).filter(Boolean).length) return true;
   for (const div of divisions) {
     if (!entry.g.some(g => div.groups.includes(g))) continue;
-    const pick = mine[div.id];
+    const pick = picked[choiceKey(div)];
     if (pick && !entry.g.includes(pick)) return false;
   }
   return true;
 }
 
 /* ----- my own events -------------------------------------------------------
-   One per line: <weekday> <start>-<end> <colour> <label>
-       Mon 17:15-18:15 orange Dance training                                  */
-const WEEKDAYS = {};
-[["mon","monday","esmaspäev","esmaspaev","es","e","m","mo"],
- ["tue","tues","tuesday","teisipäev","teisipaev","te","t","tu"],
- ["wed","wednesday","kolmapäev","kolmapaev","ko","k","w","we"],
- ["thu","thur","thurs","thursday","neljapäev","neljapaev","ne","n","th"],
- ["fri","friday","reede","re","r","f","fr"],
- ["sat","saturday","laupäev","laupaev","la","l","sa"],
- ["sun","sunday","pühapäev","puhapaev","pü","py","p","su"]]
-  .forEach((names, i) => names.forEach(n => { WEEKDAYS[n] = i; }));
-
-const LINE_RE = /^(\S+)\s+(\d{1,2})[:.](\d{2})\s*[-–—]\s*(\d{1,2})[:.](\d{2})\s+(\S+)\s+(.+?)\s*$/;
+   Filled in a row at a time in the panel, and stored as they are shown:
+       { day: "Mon", start: "17:15", end: "18:15",
+         color: "#F6F2C1", textColor: "", label: "Dance training" }
+   There was a line-by-line syntax here once. A table needs no syntax, cannot
+   be mistyped, and gives the colours a picker instead of a spelling.        */
 
 const isColour = (c) => !!(window.CSS && CSS.supports && CSS.supports("color", c));
 
-/* The colour column is either a background on its own, or a foreground and a
-   background split by a slash: "#333333/#dddddd". Only a slash between whole
-   colours counts, so the one inside "rgb(0,0,0/50%)" is left alone. */
-function splitColours(token) {
-  let depth = 0;
-  for (let i = 0; i < token.length; i++) {
-    const ch = token[i];
-    if (ch === "(") depth++;
-    else if (ch === ")") depth--;
-    else if (ch === "/" && depth === 0) return [token.slice(0, i), token.slice(i + 1)];
-  }
-  return [null, token];
-}
-
-/* What an event writes with: its own foreground if it named one, otherwise
+/* What an event writes with: its own text colour if one was chosen, otherwise
    whichever of black or white reads better on its background. */
 function eventFg(ev) { return ev.fg || readable(cssColour(ev.bg)); }
 
-function parseEvents(text) {
+/* Saved events into the shape the timeline draws, complaining about any that
+   cannot be drawn. The table keeps most nonsense out, but the same list can
+   arrive from a pasted backup or a link, where nothing was validated. */
+function readEvents(list) {
   const out = [], errors = [];
-  String(text == null ? "" : text).split("\n").forEach((raw, i) => {
-    const line = raw.trim();
-    if (!line || line.startsWith("#")) return;
-    const m = LINE_RE.exec(line);
-    if (!m) { errors.push(t("events.line", i + 1, t("events.syntax"))); return; }
-    const day = WEEKDAYS[m[1].toLowerCase()];
-    if (day === undefined) {
-      errors.push(t("events.line", i + 1, t("events.badDay", JSON.stringify(m[1])))); return;
+  (Array.isArray(list) ? list : []).forEach((ev, i) => {
+    const row = i + 1;
+    const a = clock(ev && ev.start), z = clock(ev && ev.end);
+    const day = DAY_KEYS.indexOf(String(ev && ev.day));
+    if (day < 0 || a === null || z === null) {
+      errors.push(t("events.line", row, t("events.badRange"))); return;
     }
-    const h1 = +m[2], n1 = +m[3], h2 = +m[4], n2 = +m[5];
-    if (h1 > 23 || h2 > 23 || n1 > 59 || n2 > 59) {
-      errors.push(t("events.line", i + 1, t("events.badRange"))); return;
+    if (!(z > a)) { errors.push(t("events.line", row, t("events.backwards"))); return; }
+    for (const c of [ev.color, ev.textColor]) {
+      if (c && !isColour(c)) {
+        errors.push(t("events.line", row, t("events.badColour", JSON.stringify(c))));
+        return;
+      }
     }
-    const start = h1 * 60 + n1, end = h2 * 60 + n2;
-    if (!(end > start)) { errors.push(t("events.line", i + 1, t("events.backwards"))); return; }
-    const pair = splitColours(m[6]);
-    const bad = pair.filter(c => c !== null).find(c => !isColour(c));
-    if (bad !== undefined) {
-      errors.push(t("events.line", i + 1, t("events.badColour", JSON.stringify(bad))));
-      return;
-    }
-    out.push({ day: day, a: start, z: end, fg: pair[0], bg: pair[1],
-               label: m[7], mine: true });
+    out.push({ day: day, a: a, z: z, fg: ev.textColor || null,
+               bg: ev.color || "#DDDDDD", label: String(ev.label || ""), mine: true });
   });
   return { events: out, errors: errors };
 }
@@ -631,34 +707,44 @@ function subjectName(e, short) {
 /* The subject as the reader asked to see it, or nothing at all. */
 function lessonTitle(e) {
   if (!state.showSubject) return "";
-  return subjectName(e, state.subjectName === "short");
+  return subjectName(e, state.subjectNameStyle === "short");
 }
 
 /* Teacher names: the school's abbreviation, the full name, or neither. */
 function teacherText(e) {
   if (!state.showTeacher) return "";
-  const names = state.teacherName === "full" ? e.T : e.t;
+  const names = state.teacherNameStyle === "full" ? e.T : e.t;
   return (names || []).join(" / ");
 }
 
-/* Reading must not write. Creating the entry on read put an empty bag for every
-   class ever looked at into the share link — a few hundred characters of
-   nothing, which makes the printed QR code denser for no reason. */
-const perClass = (bag) => {
-  if (!state[bag] || typeof state[bag] !== "object") state[bag] = {};
-  const got = state[bag][picksKey()];
-  const ok = bag === "picks" ? (got && typeof got === "object") : typeof got === "string";
-  return ok ? got : (bag === "picks" ? {} : "");
-};
+/* What this class remembers, read-only. Reading must not write: creating the
+   subtree on read put an empty one for every class ever looked at into the
+   share link, which makes the printed QR code denser for no reason. */
+function mine() {
+  const got = (state.classes || {})[classKey()];
+  return (got && typeof got === "object") ? got : classDefaults();
+}
 
-/* Where a value is about to be written, the entry does have to exist. */
-const perClassBag = (bag) => {
-  const key = picksKey();
-  if (!state[bag] || typeof state[bag] !== "object") state[bag] = {};
-  const got = state[bag][key];
-  if (!got || typeof got !== "object") state[bag][key] = {};
-  return state[bag][key];
-};
+/* The same subtree, to write into — so it has to exist. */
+function myOwn() {
+  const key = classKey();
+  if (!state.classes || typeof state.classes !== "object") state.classes = {};
+  if (!state.classes[key] || typeof state.classes[key] !== "object") {
+    state.classes[key] = classDefaults();
+  }
+  return state.classes[key];
+}
+
+/* A class subtree with nothing in it is not worth keeping — in storage, in a
+   link, or in the QR code that link is printed as. */
+function tidy() {
+  for (const [key, sub] of Object.entries(state.classes || {})) {
+    const empty = !sub.studentName.trim() && !sub.titleSchool.trim() &&
+                  !sub.titleClass.trim() && !sub.events.length &&
+                  !Object.keys(sub.studyGroups).length;
+    if (empty) delete state.classes[key];
+  }
+}
 
 /* A personal event belongs to no slot, so the table gives it a column of its
    own rather than pretending it is a lesson. */
@@ -795,7 +881,7 @@ function paint() {
 
 function render() {
   const school = currentSchool(), cls = currentClass();
-  state.school = school.n; state.klass = cls.n;
+  state.school = school.n; state.class = cls.n;
   syncDisplayControls();
   syncPerClassInputs();
 
@@ -803,11 +889,11 @@ function render() {
   document.title = displayTitle(school, cls) || t("classN", cls.n);
   renderSubtitle(school);
 
-  const mine = picks();
+  const picked = mine().studyGroups;
   const timeline = onTimeline();
-  const shown = cls.e.filter(e => visible(e, mine, cls.v))
+  const shown = cls.e.filter(e => visible(e, picked, cls.v))
                      .filter(e => !timeline || !e.c);   // one box per lesson
-  const parsed = parseEvents(perClass("events"));
+  const parsed = readEvents(mine().events);
   document.getElementById("evwarn").textContent = parsed.errors.join("\n");
 
   if (printing) document.body.classList.add("printview");
@@ -868,9 +954,9 @@ function render() {
 }
 
 function setColour(subject, value) {
-  state.colors[subject] = value;
-  state.customColours = true;      // choosing one is asking for them
-  document.getElementById("customColours").checked = true;
+  state.subjectColors[subject] = value;
+  state.subjectColorStyle = "custom";   // choosing one is asking for them
+  syncDisplayControls();
   save();
   paint();
   const swatch = [...document.querySelectorAll("#legend input[type=color]")]
@@ -937,7 +1023,7 @@ function renderClasses() {
 
 function renderDivisions() {
   const host = document.getElementById("divisions");
-  const cls = currentClass(), mine = picks();
+  const cls = currentClass(), picked = mine().studyGroups;
   document.getElementById("groupsRow").hidden = !cls.v.length;
   if (!cls.v.length) {
     host.innerHTML = "";
@@ -953,26 +1039,27 @@ function renderDivisions() {
     esc(head) +
     (d.l ? '<br><span class="divsub">' + esc(d.groups.join(" / ")) + "</span>" : "") +
     "</label>" +
-    '<select data-div="' + esc(d.id) + '"><option value="">' + esc(t("all")) + "</option>" +
+    '<select data-div="' + esc(choiceKey(d)) + '"><option value="">' + esc(t("all")) + "</option>" +
     d.groups.map(g => '<option value="' + esc(g) + '"' +
-      (mine[d.id] === g ? " selected" : "") + ">" + esc(g) + "</option>").join("") +
+      (picked[choiceKey(d)] === g ? " selected" : "") + ">" + esc(g) + "</option>").join("") +
     "</select></div>";
   }).join("");
   host.querySelectorAll("select").forEach(sel => {
     sel.addEventListener("change", () => {
-      pickable()[sel.dataset.div] = sel.value;
-      save(); render();
+      if (sel.value) myOwn().studyGroups[sel.dataset.div] = sel.value;
+      else delete mine().studyGroups[sel.dataset.div];
+      tidy(); save(); render();
     });
   });
 }
 
 document.getElementById("school").addEventListener("change", (ev) => {
   state.school = ev.target.value;
-  state.klass = currentSchool().c[0].n;   // class lists differ between schools
+  state.class = currentSchool().c[0].n;   // class lists differ between schools
   save(); renderClasses(); renderDivisions(); syncPerClassInputs(); render();
 });
 document.getElementById("klass").addEventListener("change", (ev) => {
-  state.klass = ev.target.value;
+  state.class = ev.target.value;
   save(); renderDivisions(); syncPerClassInputs(); render();
 });
 
@@ -987,29 +1074,30 @@ function bindChoice(name, key) {
     });
   });
 }
-["showWho", "showSchool", "showClass",
- "showTeacher", "showRoom", "showGroup", "showSubject",
- "schoolColors", "customColours"].forEach(key => bindToggle(key, key));
-bindChoice("teacherName", "teacherName");
-bindChoice("subjectName", "subjectName");
+["showName", "showSchool", "showClass",
+ "showTeacher", "showRoom", "showGroup", "showSubject"].forEach(key => bindToggle(key, key));
+bindChoice("teacherNameStyle", "teacherNameStyle");
+bindChoice("subjectNameStyle", "subjectNameStyle");
+bindChoice("subjectColorStyle", "subjectColorStyle");
 
 /* The controls follow the state, and the two that only make sense alongside
    something else — how to write a name, which colours to pick — dim or vanish
    when that something is switched off. */
 function syncDisplayControls() {
-  for (const key of ["showWho", "showSchool", "showClass",
-                     "showTeacher", "showRoom", "showGroup", "showSubject",
-                     "schoolColors", "customColours"]) {
+  for (const key of ["showName", "showSchool", "showClass",
+                     "showTeacher", "showRoom", "showGroup", "showSubject"]) {
     document.getElementById(key).checked = !!state[key];
   }
-  for (const [name, key] of [["teacherName", "teacherName"], ["subjectName", "subjectName"]]) {
+  for (const name of ["teacherNameStyle", "subjectNameStyle", "subjectColorStyle"]) {
+    const key = name;
     document.querySelectorAll('input[name="' + name + '"]').forEach(radio => {
       radio.checked = radio.value === state[key];
     });
   }
   document.getElementById("teacherChoice").classList.toggle("off", !state.showTeacher);
   document.getElementById("subjectChoice").classList.toggle("off", !state.showSubject);
-  document.getElementById("colourPicker").classList.toggle("off", !state.customColours);
+  document.getElementById("colourPicker")
+          .classList.toggle("off", state.subjectColorStyle !== "custom");
 }
 /* Clicking a lesson opens a colour picker anchored under it. The input is a
    permanent hidden node, so nothing rebuilds it while the picker is open. */
@@ -1113,7 +1201,7 @@ document.getElementById("applySettings").addEventListener("click", () => {
   }
   state = normalise(incoming);
   if (!SCHOOLS.some(x => x.n === state.school)) state.school = DATA.initialSchool;
-  if (!currentSchool().c.some(c => c.n === state.klass)) state.klass = currentSchool().c[0].n;
+  if (!currentSchool().c.some(c => c.n === state.class)) state.class = currentSchool().c[0].n;
   save();
   renderLanguages(); renderSchools(); renderClasses();
   applyStrings(); renderDivisions(); syncPerClassInputs(); render();
@@ -1133,13 +1221,13 @@ function reveal(key) {
   if (box) box.checked = true;
 }
 
-function typed(el, bag, shows) {
+function typed(el, field, shows) {
   let timer = 0;
   el.addEventListener("input", () => {
-    // Emptied means gone, not remembered as "". Kept, they pile up one per
-    // class ever visited and ride along in every link and QR from then on.
-    if (el.value.trim()) state[bag][picksKey()] = el.value;
-    else delete state[bag][picksKey()];
+    myOwn()[field] = el.value;
+    // Emptied means gone, not remembered as "": kept, empty subtrees pile up
+    // one per class ever visited and ride along in every link and QR.
+    tidy();
     if (el.value.trim()) reveal(shows);
     save();
     clearTimeout(timer);
@@ -1147,11 +1235,9 @@ function typed(el, bag, shows) {
   });
 }
 const who = document.getElementById("who");
-const eventsBox = document.getElementById("events");
 const titleSchool = document.getElementById("titleSchool");
 const titleClass = document.getElementById("titleClass");
-typed(who, "who", "showWho");
-typed(eventsBox, "events");
+typed(who, "studentName", "showName");
 typed(titleSchool, "titleSchool", "showSchool");
 typed(titleClass, "titleClass", "showClass");
 
@@ -1167,8 +1253,9 @@ for (const [field, key, shows] of [[titleSchool, "titleSchool", "showSchool"],
   });
   field.addEventListener("blur", () => {
     if (field.value.trim() === field.placeholder.trim()) field.value = "";
-    if (field.value !== perClass(key)) {
-      state[key][picksKey()] = field.value;
+    if (field.value !== mine()[key]) {
+      myOwn()[key] = field.value;
+      tidy();
       if (field.value.trim()) reveal(shows);
       save();
       paint();
@@ -1179,18 +1266,122 @@ for (const [field, key, shows] of [[titleSchool, "titleSchool", "showSchool"],
    title fields show what the timetable calls itself until someone types over
    it, so an empty box and the school's own wording look the same. */
 function syncPerClassInputs() {
-  const school = currentSchool(), cls = currentClass();
-  if (document.activeElement !== who) who.value = perClass("who");
-  if (document.activeElement !== eventsBox) eventsBox.value = perClass("events");
+  const school = currentSchool(), cls = currentClass(), here = mine();
+  if (document.activeElement !== who) who.value = here.studentName;
   if (document.activeElement !== titleSchool) {
-    titleSchool.value = perClass("titleSchool");
+    titleSchool.value = here.titleSchool;
     titleSchool.placeholder = school.l;
   }
   if (document.activeElement !== titleClass) {
-    titleClass.value = perClass("titleClass");
+    titleClass.value = here.titleClass;
     titleClass.placeholder = t("classN", cls.n);
   }
+  renderEvents();
 }
+/* ----- the events table ---------------------------------------------------
+   A row per event, and a colour that can be arrived at three ways: copied
+   whole from a lesson already on the timetable, chosen as a background with
+   the text colour worked out, or chosen as both. The "copy a lesson" control
+   is a plain list of the subjects on screen — matching a lesson by eye and
+   then hunting for its hex code is exactly the fiddly part. */
+const evRows = document.getElementById("evrows");
+
+function subjectsOnScreen() {
+  const cls = currentClass();
+  return [...new Set(cls.e.filter(e => !e.c).map(e => e.s))].sort();
+}
+
+function eventRow(ev, i) {
+  const days = DAY_KEYS.map((d, n) =>
+    '<option value="' + d + '"' + (ev.day === d ? " selected" : "") + ">" +
+    esc(dayName(n)) + "</option>").join("");
+  const lessons = subjectsOnScreen().map(name => {
+    const col = colorFor(name);
+    const same = col.bg.toLowerCase() === ev.color.toLowerCase();
+    return '<option value="' + esc(name) + '"' + (same ? " selected" : "") + ">" +
+           esc(name) + "</option>";
+  }).join("");
+  const auto = !ev.textColor;
+  return '<tr data-i="' + i + '">' +
+    '<td><select class="evday">' + days + "</select></td>" +
+    '<td><input type="time" class="evstart" value="' + esc(ev.start) + '"></td>' +
+    '<td><input type="time" class="evend" value="' + esc(ev.end) + '"></td>' +
+    '<td><div class="swatch">' +
+      '<input type="color" class="evbg" value="' + esc(ev.color) + '">' +
+      '<select class="evlike"><option value="">' + esc(t("events.ownColour")) +
+        "</option>" + lessons + "</select>" +
+    "</div></td>" +
+    '<td><div class="swatch">' +
+      '<label class="auto"><input type="checkbox" class="evauto"' +
+        (auto ? " checked" : "") + ">" + esc(t("events.auto")) + "</label>" +
+      '<input type="color" class="evfg" value="' +
+        esc(ev.textColor || readable(ev.color)) + '"' + (auto ? " disabled" : "") + ">" +
+    "</div></td>" +
+    '<td><input type="text" class="evname" value="' + esc(ev.label) + '"></td>' +
+    '<td><button class="drop" type="button" title="' + esc(t("events.remove")) +
+      '">\u00d7</button></td>' +
+    "</tr>";
+}
+
+function renderEvents() {
+  if (evRows.contains(document.activeElement)) return;   // mid-edit: leave it
+  evRows.innerHTML = mine().events.map(eventRow).join("");
+}
+
+/* One place where a row writes back, so every control behaves the same. */
+function rowChanged(tr, change) {
+  const list = myOwn().events;
+  const ev = list[+tr.dataset.i];
+  if (!ev) return;
+  change(ev);
+  tidy(); save(); paint();
+}
+
+evRows.addEventListener("input", (e) => {
+  const tr = e.target.closest("tr");
+  if (!tr) return;
+  const cls = e.target.classList;
+  if (cls.contains("evstart")) rowChanged(tr, ev => { ev.start = e.target.value; });
+  else if (cls.contains("evend")) rowChanged(tr, ev => { ev.end = e.target.value; });
+  else if (cls.contains("evname")) rowChanged(tr, ev => { ev.label = e.target.value; });
+  else if (cls.contains("evbg")) rowChanged(tr, ev => { ev.color = e.target.value; });
+  else if (cls.contains("evfg")) rowChanged(tr, ev => { ev.textColor = e.target.value; });
+});
+
+evRows.addEventListener("change", (e) => {
+  const tr = e.target.closest("tr");
+  if (!tr) return;
+  const cls = e.target.classList;
+  if (cls.contains("evday")) rowChanged(tr, ev => { ev.day = e.target.value; });
+  else if (cls.contains("evauto")) {
+    rowChanged(tr, ev => { ev.textColor = e.target.checked ? "" : readable(ev.color); });
+    renderEventsSoon();
+  } else if (cls.contains("evlike") && e.target.value) {
+    /* The whole scheme, both colours, exactly as that lesson is drawn. */
+    const col = colorFor(e.target.value);
+    rowChanged(tr, ev => { ev.color = col.bg; ev.textColor = col.fg; });
+    renderEventsSoon();
+  }
+});
+
+evRows.addEventListener("click", (e) => {
+  const button = e.target.closest("button.drop");
+  if (!button) return;
+  const tr = button.closest("tr");
+  myOwn().events.splice(+tr.dataset.i, 1);
+  tidy(); save(); renderEventsSoon(); paint();
+});
+
+/* Redrawing while the pointer is still inside the row that caused it loses
+   focus mid-click, so it waits for the current event to finish. */
+function renderEventsSoon() { setTimeout(() => { evRows.innerHTML = ""; renderEvents(); }, 0); }
+
+document.getElementById("evadd").addEventListener("click", () => {
+  myOwn().events.push({ day: "Mon", start: "16:00", end: "17:00",
+                        color: "#F6F2C1", textColor: "", label: "" });
+  save(); renderEventsSoon(); paint();
+});
+
 /* Printing is a moment, not a setting: lay the page out for paper, print it,
    put it back. Nothing about it is worth remembering between visits. */
 document.getElementById("doprint").addEventListener("click", () => {

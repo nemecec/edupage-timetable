@@ -242,7 +242,8 @@ class WholePage(unittest.TestCase):
                         self.assertGreaterEqual(e["z"] - e["a"], 20)
 
     def test_the_page_carries_the_code_that_makes_it_work(self):
-        for marker in ("function parseEvents", "function renderTimeline", "qrcode"):
+        for marker in ("function readEvents", "function renderTimeline",
+                       "function renderEvents", "qrcode"):
             self.assertIn(marker, self.page, "page.js or the QR library is not inlined")
 
     # The counter's script tag is there only when a site was named at build

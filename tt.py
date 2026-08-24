@@ -86,8 +86,19 @@ STRINGS = {
         "subjectFull": "full name",
         "subjectShort": "short name",
         "coloursHeading": "Lesson colours:",
+        "paletteColours": "Automatic colours",
         "schoolColours": "Colours from the timetable",
         "customColours": "Colours of my own",
+        "events.day": "Day",
+        "events.from": "From",
+        "events.to": "To",
+        "events.colour": "Colour",
+        "events.textColour": "Text",
+        "events.name": "Name",
+        "events.add": "Add an event",
+        "events.remove": "Remove",
+        "events.auto": "auto",
+        "events.ownColour": "own colour",
         "appName": "School timetable",
         "filter": "Filter",
         "groupsHeading": "Show only these study groups:",
@@ -125,18 +136,11 @@ STRINGS = {
         "mineCount": "{0} of my own",
         "mineCol": "My own",
         "events.summary": "My own events",
-        "events.label": "One per line:",
-        "events.example": "Mon 17:15-18:15 orange Dance training",
-        "events.placeholder": ("Mon 17:15-18:15 orange Dance training\n"
-                               "Wed 15:25-17:15 #c0392b Piano lesson\n"
-                               "Fri 12:10-12:50 #333333/#dddddd Lunch sitting"),
-        "events.syntax": ("expected  <day> <hh:mm>-<hh:mm> "
-                          "<background> or <text>/<background> <label>"),
-        "events.badDay": "unknown weekday {0}",
+        "events.label": "Not on the school's timetable:",
         "events.badRange": "times run 00:00-23:59",
         "events.backwards": "end time must be after the start",
         "events.badColour": "{0} is not a colour",
-        "events.line": "line {0}: {1}",
+        "events.line": "row {0}: {1}",
         "settings.label": ("Settings as JSON — copy this to keep a backup, "
                            "or paste a saved one and apply it"),
         "settings.copy": "Copy to clipboard",
@@ -171,8 +175,19 @@ STRINGS = {
         "subjectFull": "täisnimi",
         "subjectShort": "lühinimi",
         "coloursHeading": "Tundide värvid:",
+        "paletteColours": "Automaatsed värvid",
         "schoolColours": "Tunniplaani värvid",
         "customColours": "Minu omad värvid",
+        "events.day": "Päev",
+        "events.from": "Algus",
+        "events.to": "Lõpp",
+        "events.colour": "Värv",
+        "events.textColour": "Tekst",
+        "events.name": "Nimi",
+        "events.add": "Lisa sündmus",
+        "events.remove": "Eemalda",
+        "events.auto": "automaatne",
+        "events.ownColour": "oma värv",
         "appName": "Kooli tunniplaan",
         "filter": "Filter",
         "groupsHeading": "Näita ainult neid õpperühmi:",
@@ -210,14 +225,7 @@ STRINGS = {
         "mineCount": "{0} minu oma",
         "mineCol": "Minu oma",
         "events.summary": "Minu enda sündmused",
-        "events.label": "Üks real:",
-        "events.example": "E 17:15-18:15 orange Tantsutrenn",
-        "events.placeholder": ("E 17:15-18:15 orange Tantsutrenn\n"
-                               "K 15:25-17:15 #c0392b Klaveritund\n"
-                               "R 12:10-12:50 #333333/#dddddd Söömine"),
-        "events.syntax": ("ootasin kujul  <päev> <hh:mm>-<hh:mm> "
-                          "<taust> või <tekst>/<taust> <nimetus>"),
-        "events.badDay": "tundmatu nädalapäev {0}",
+        "events.label": "Väljaspool kooli tunniplaani:",
         "events.badRange": "kellaajad on vahemikus 00:00-23:59",
         "events.backwards": "lõpuaeg peab olema pärast algusaega",
         "events.badColour": "{0} ei ole värv",
@@ -1176,6 +1184,24 @@ PAGE = """<!DOCTYPE html>
   .sharebox { width: 100%; margin: 0 0 10px; padding: 7px 9px; font-size: 13px;
               border: 1px solid var(--line); border-radius: 6px; background: #fff; }
   .sharebox.off { display: none; }
+  .evtable { width: 100%; border-collapse: collapse; margin: 6px 0 10px; }
+  .evtable th { font-size: 11px; font-weight: 600; color: var(--muted);
+                text-align: left; padding: 0 6px 4px 0; border: none; background: none; }
+  .evtable td { padding: 2px 6px 2px 0; border: none; vertical-align: middle; }
+  .evtable input[type=time], .evtable input[type=text], .evtable select {
+    padding: 4px 6px; font-size: 13px; border: 1px solid var(--line);
+    border-radius: 5px; background: #fff; }
+  .evtable input[type=text] { width: 100%; }
+  .evtable .evname { width: 99%; }
+  .evtable input[type=color] { width: 30px; height: 26px; padding: 0;
+    border: 1px solid var(--line); border-radius: 5px; background: #fff; }
+  .evtable .swatch { display: flex; gap: 4px; align-items: center; }
+  .evtable .auto { font-size: 11px; color: var(--muted); display: flex;
+                   gap: 3px; align-items: center; }
+  .evtable .drop { border: none; background: none; color: var(--muted);
+                   cursor: pointer; font-size: 15px; line-height: 1; padding: 2px 4px; }
+  .evtable .drop:hover { color: #b3261e; }
+  .addrow { width: auto; }
   .qrlong { font-size: 9px; color: var(--muted); max-width: 46mm; text-align: right; }
   .qraddr { word-break: break-all; font-size: 8px; }
   .scroll { overflow-x: auto; }
@@ -1354,7 +1380,7 @@ PAGE = """<!DOCTYPE html>
       <label data-i18n="titleHeading"></label>
       <div class="checklist">
         <div class="line">
-          <label class="inline"><input type="checkbox" id="showWho">
+          <label class="inline"><input type="checkbox" id="showName">
             <span data-i18n="titleWho"></span></label>
           <input type="text" id="who" size="18">
         </div>
@@ -1379,9 +1405,9 @@ PAGE = """<!DOCTYPE html>
           <label class="inline"><input type="checkbox" id="showTeacher">
             <span data-i18n="showTeacher"></span></label>
           <span class="choice" id="teacherChoice">
-            <label class="inline"><input type="radio" name="teacherName" value="full">
+            <label class="inline"><input type="radio" name="teacherNameStyle" value="full">
               <span data-i18n="nameFull"></span></label>
-            <label class="inline"><input type="radio" name="teacherName" value="short">
+            <label class="inline"><input type="radio" name="teacherNameStyle" value="short">
               <span data-i18n="nameShort"></span></label>
           </span>
         </div>
@@ -1397,9 +1423,9 @@ PAGE = """<!DOCTYPE html>
           <label class="inline"><input type="checkbox" id="showSubject">
             <span data-i18n="showSubject"></span></label>
           <span class="choice" id="subjectChoice">
-            <label class="inline"><input type="radio" name="subjectName" value="full">
+            <label class="inline"><input type="radio" name="subjectNameStyle" value="full">
               <span data-i18n="subjectFull"></span></label>
-            <label class="inline"><input type="radio" name="subjectName" value="short">
+            <label class="inline"><input type="radio" name="subjectNameStyle" value="short">
               <span data-i18n="subjectShort"></span></label>
           </span>
         </div>
@@ -1411,12 +1437,12 @@ PAGE = """<!DOCTYPE html>
       <label data-i18n="coloursHeading"></label>
       <div class="checklist">
         <div class="line">
-          <label class="inline"><input type="checkbox" id="schoolColors">
-            <span data-i18n="schoolColours"></span></label>
-        </div>
-        <div class="line">
-          <label class="inline"><input type="checkbox" id="customColours">
-            <span data-i18n="customColours"></span></label>
+          <label class="inline"><input type="radio" name="subjectColorStyle"
+            value="palette"><span data-i18n="paletteColours"></span></label>
+          <label class="inline"><input type="radio" name="subjectColorStyle"
+            value="school"><span data-i18n="schoolColours"></span></label>
+          <label class="inline"><input type="radio" name="subjectColorStyle"
+            value="custom"><span data-i18n="customColours"></span></label>
         </div>
       </div>
       <div id="colourPicker">
@@ -1430,10 +1456,20 @@ PAGE = """<!DOCTYPE html>
 <details class="panel" id="eventsPanel">
   <summary data-i18n="events.summary"></summary>
   <div class="field" style="width:100%;margin-top:12px">
-    <label for="events"><span data-i18n="events.label"></span>
-      <code data-i18n="events.example"></code></label>
-    <textarea id="events" rows="3" spellcheck="false"
-      data-i18n-ph="events.placeholder"></textarea>
+    <label data-i18n="events.label"></label>
+    <table class="evtable">
+      <thead><tr>
+        <th data-i18n="events.day"></th>
+        <th data-i18n="events.from"></th>
+        <th data-i18n="events.to"></th>
+        <th data-i18n="events.colour"></th>
+        <th data-i18n="events.textColour"></th>
+        <th data-i18n="events.name"></th>
+        <th></th>
+      </tr></thead>
+      <tbody id="evrows"></tbody>
+    </table>
+    <button id="evadd" class="addrow" data-i18n="events.add"></button>
     <div class="evwarn" id="evwarn"></div>
   </div>
 </details>

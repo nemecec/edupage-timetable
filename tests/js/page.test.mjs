@@ -2,49 +2,60 @@
    browser provides and what is stubbed in its place. */
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 import { load } from "./harness.mjs";
+
+const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 const run = load();
 const json = (expression) => JSON.parse(run(`JSON.stringify(${expression})`));
 
-test("a colour token splits into text and background", () => {
-  assert.deepEqual(json(`splitColours("#333/#ddd")`), ["#333", "#ddd"]);
-  assert.deepEqual(json(`splitColours("orange")`), [null, "orange"]);
-  // The slash inside a colour function is part of the colour, not a separator.
-  assert.deepEqual(json(`splitColours("rgb(0,0,0/50%)")`), [null, "rgb(0,0,0/50%)"]);
-});
-
-test("an event line is read into a day, a span, a colour and a label", () => {
-  const parsed = json(`parseEvents("Mon 17:15-18:15 orange Dance training")`);
+test("a saved event is read into a day, a span, a colour and a label", () => {
+  const parsed = json(`readEvents([{day: "Mon", start: "17:15", end: "18:15",
+                                    color: "#F6F2C1", textColor: "",
+                                    label: "Dance training"}])`);
   assert.equal(parsed.errors.length, 0);
-  assert.deepEqual(parsed.events[0],
-    { day: 0, a: 1035, z: 1095, fg: null, bg: "orange", label: "Dance training", mine: true });
+  assert.deepEqual(parsed.events[0], { day: 0, a: 1035, z: 1095, fg: null,
+                                       bg: "#F6F2C1", label: "Dance training", mine: true });
 });
 
-test("weekdays are accepted in either language, long or short", () => {
-  for (const [token, day] of [["Mon", 0], ["esmaspäev", 0], ["E", 0], ["T", 1],
-                              ["teisipäev", 1], ["K", 2], ["wed", 2], ["N", 3],
-                              ["R", 4], ["reede", 4], ["L", 5], ["P", 6]]) {
-    const parsed = json(`parseEvents(${JSON.stringify(token + " 9:00-10:00 red X")})`);
-    assert.equal(parsed.errors.length, 0, `${token} was not understood`);
-    assert.equal(parsed.events[0].day, day, `${token} landed on the wrong day`);
+test("every weekday key lands on the right day", () => {
+  ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].forEach((key, i) => {
+    const parsed = json(`readEvents([{day: ${JSON.stringify(key)},
+                                      start: "9:00", end: "10:00", color: "#ff0000"}])`);
+    assert.equal(parsed.errors.length, 0, key);
+    assert.equal(parsed.events[0].day, i, key);
+  });
+});
+
+test("an event that cannot be drawn is reported, not dropped in silence", () => {
+  const bad = [{ day: "Xxx", start: "9:00", end: "10:00" },
+               { day: "Mon", start: "25:00", end: "26:00" },
+               { day: "Mon", start: "18:00", end: "17:00" },
+               { day: "Mon", start: "9:00", end: "9:00" },
+               { day: "Mon", start: "9:00", end: "10:00", color: "notacolour" }];
+  for (const ev of bad) {
+    const parsed = json(`readEvents([${JSON.stringify(ev)}])`);
+    assert.equal(parsed.events.length, 0, JSON.stringify(ev));
+    assert.equal(parsed.errors.length, 1, JSON.stringify(ev));
   }
 });
 
-test("a line that cannot be read is reported, not dropped in silence", () => {
-  for (const line of ["xxx 9:00-10:00 red X", "Mon 25:00-26:00 red X",
-                      "Mon 18:00-17:00 red X", "Mon 9:00-10:00 notacolour X",
-                      "gibberish"]) {
-    const parsed = json(`parseEvents(${JSON.stringify(line)})`);
-    assert.equal(parsed.events.length, 0, line);
-    assert.equal(parsed.errors.length, 1, line);
+test("a saved event of the wrong shape is dropped on the way in", () => {
+  /* readEvents complains about what the table could have produced; oneEvent
+     throws out what could only come from a hand-edited file or a link. */
+  for (const raw of [null, "Mon 9:00", 42, [], { day: "Mon" },
+                     { day: "Mon", start: "9:00" }]) {
+    assert.equal(json(`oneEvent(${JSON.stringify(raw)})`), null, JSON.stringify(raw));
   }
-});
-
-test("blank lines and comments are ignored", () => {
-  const parsed = json(`parseEvents("\\n# a note\\nMon 9:00-10:00 red X\\n")`);
-  assert.equal(parsed.errors.length, 0);
-  assert.equal(parsed.events.length, 1);
+  assert.deepEqual(json(`oneEvent({day: "Fri", start: "9:0", end: "10:00"})`), null);
+  assert.deepEqual(
+    json(`oneEvent({day: "Fri", start: "9:00", end: "10:00", color: "nonsense",
+                    textColor: "#123", label: 7})`),
+    { day: "Fri", start: "09:00", end: "10:00", color: "#DDDDDD",
+      textColor: "#123", label: "" });
 });
 
 test("only something that is plainly a colour can be stored as one", () => {
@@ -62,11 +73,11 @@ test("only something that is plainly a colour can be stored as one", () => {
 
 test("the counter is told the school's own name, never the reader's", () => {
   // What a parent types is exactly what must not go out.
-  run(`state.who = {}; state.titleSchool = {}; state.titleClass = {};
-       state.who[picksKey()] = "Mari Maasikas";
-       state.titleSchool[picksKey()] = "Mari's school";
-       state.titleClass[picksKey()] = "Mari's class";
-       state.showWho = true;
+  run(`state.classes = {};
+       myOwn().studentName = "Mari Maasikas";
+       myOwn().titleSchool = "Mari's school";
+       myOwn().titleClass = "Mari's class";
+       state.showName = true;
        window.goatcounter = { count: (label) => { globalThis.sent = label; } };
        globalThis.sent = null;
        countVisit();`);
@@ -119,24 +130,25 @@ test("nothing reaches the page as markup, in either view", () => {
      own, so it could be deleted from any one of them unnoticed. This drives
      every channel that carries text — the school's own data, what the reader
      typed, and what a link can bring — through both renderers and looks at the
-     result. state.colors is written to directly on purpose: normalise and
+     result. state.subjectColors is written to directly on purpose: normalise and
      onlyColours keep it clean in real use, and esc() is what stands behind
      them if they ever stop. */
   const bad = 'x"><img src=x onerror=alert(1)>';
   const q = JSON.stringify(bad);
   for (const [school, klass] of [["68", "8"], ["99", "3.a"]]) {
-    run(`state.school = ${JSON.stringify(school)}; state.klass = ${JSON.stringify(klass)};
-         state.customColours = true;
-         state.colors = {Matemaatika: ${q}, Kunst: ${q}};
-         state.who = {}; state.who[picksKey()] = ${q};
-         state.titleSchool = {}; state.titleSchool[picksKey()] = ${q};
-         state.titleClass = {}; state.titleClass[picksKey()] = ${q};
-         state.events = {};
+    run(`state.school = ${JSON.stringify(school)}; state.class = ${JSON.stringify(klass)};
+         state.subjectColorStyle = "custom";
+         state.subjectColors = {Matemaatika: ${q}, Kunst: ${q}};
+         state.classes = {};
+         myOwn().studentName = ${q};
+         myOwn().titleSchool = ${q};
+         myOwn().titleClass = ${q};
          /* One long, one short: a short box draws its time and label together
             through a different line than a tall one. */
-         state.events[picksKey()] = "Mon 9:00-10:00 red " + ${q} +
-                                    "\\nMon 11:00-11:10 blue " + ${q};
-         state.showWho = true; state.showSchool = true; state.showClass = true;
+         myOwn().events = [
+           {day: "Mon", start: "09:00", end: "10:00", color: "#ff0000", textColor: "", label: ${q}},
+           {day: "Mon", start: "11:00", end: "11:10", color: "#0000ff", textColor: "", label: ${q}}];
+         state.showName = true; state.showSchool = true; state.showClass = true;
          printing = false; render(); renderLegend(currentClass().e);`);
     for (const id of ["grid", "foot", "subtitle", "legend"]) {
       const html = json(`(document.getElementById(${JSON.stringify(id)}).innerHTML || "")`);
@@ -145,10 +157,9 @@ test("nothing reaches the page as markup, in either view", () => {
     /* document.title is not markup — a browser shows it as text — so it is
        deliberately not escaped and not checked here. */
   }
-  run(`state.school = "68"; state.klass = "8"; state.colors = {};
-       state.who = {}; state.titleSchool = {}; state.titleClass = {};
-       state.events = {}; state.showWho = false; state.customColours = false;
-       render();`);
+  run(`state.school = "68"; state.class = "8"; state.subjectColors = {};
+       state.classes = {}; state.showName = false;
+       state.subjectColorStyle = "custom"; render();`);
 });
 
 test("the school's own words are text too, everywhere they are shown", () => {
@@ -172,7 +183,7 @@ test("the school's own words are text too, everywhere they are shown", () => {
              l: ${JSON.stringify(bad)}, sj: [${JSON.stringify(bad)}] }];
     c.h["0"].b = [{ a: 1, n: ${JSON.stringify(bad)}, s: "10.20", e: "10.30",
                     m: 620, x: 630 }];
-    state.school = s.n; state.klass = c.n; printing = false;
+    state.school = s.n; state.class = c.n; printing = false;
     renderSchools(); renderClasses(); renderDivisions(); render();
     return ["grid", "divisions", "school", "klass", "subtitle", "foot"]
       .map(id => document.getElementById(id).innerHTML || "").join("|||");
@@ -182,12 +193,12 @@ test("the school's own words are text too, everywhere they are shown", () => {
   run(`(() => {
     const s = DATA.schools[${which}], saved = JSON.parse(globalThis.saved);
     [s.l, s.t, s.v, s.d, s.p, s.c[0].v, s.c[0].h, s.c[0].n] = saved;
-    state.klass = s.c[0].n;
+    state.class = s.c[0].n;
     s.ts = false;
     renderSchools(); renderClasses(); renderDivisions(); render();
   })()`);
  }
- run(`state.school = "68"; state.klass = "8"; renderClasses(); renderDivisions(); render();`);
+ run(`state.school = "68"; state.class = "8"; renderClasses(); renderDivisions(); render();`);
 });
 
 test("the fallback grid escapes everything it draws", () => {
@@ -195,25 +206,27 @@ test("the fallback grid escapes everything it draws", () => {
      it had ever been executed by a test — every esc() in it could be deleted
      unnoticed. Drive it with markup in each thing it renders. */
   const bad = 'x"><img src=x onerror=alert(1)>';
-  run(`state.school = "99"; state.klass = "3.a";
-       state.customColours = true; state.colors = {Matemaatika: ${JSON.stringify(bad)}};
-       state.events = {}; state.events[picksKey()] = "Mon 9:00-10:00 red " + ${JSON.stringify(bad)};
-       state.who = {}; state.who[picksKey()] = ${JSON.stringify(bad)};
-       state.showWho = true; printing = false; render();`);
+  run(`state.school = "99"; state.class = "3.a";
+       state.subjectColorStyle = "custom"; state.subjectColors = {Matemaatika: ${JSON.stringify(bad)}};
+       state.classes = {};
+       myOwn().events = [{day: "Mon", start: "09:00", end: "10:00",
+                          color: "#ff0000", textColor: "", label: ${JSON.stringify(bad)}}];
+       myOwn().studentName = ${JSON.stringify(bad)};
+       state.showName = true; printing = false; render();`);
   const html = json(`document.getElementById("grid").innerHTML`);
   assert.ok(html.includes("<table"), "the grid view really did render");
   assert.doesNotMatch(html, /<img/, "markup reached the page unescaped");
   assert.match(html, /&lt;img|&amp;lt;img/, "the payload is there, escaped");
-  run(`state.school = "68"; state.klass = "8"; state.colors = {};
-       state.events = {}; state.who = {}; state.showWho = false;
-       state.customColours = false; render();`);
+  run(`state.school = "68"; state.class = "8"; state.subjectColors = {};
+       state.classes = {}; state.showName = false;
+       state.subjectColorStyle = "custom"; render();`);
 });
 
 test("a link is read back exactly as it was written", () => {
   /* shareUrl and readUrl were never called by any test: renaming the fragment
      key in one of them broke every shared link with the suite still green. */
   run(`state.lang = "et"; state.showRoom = false;
-       state.who = {}; state.who[picksKey()] = "Mari";`);
+       state.classes = {}; myOwn().studentName = "Mari";`);
   const link = json(`shareUrl()`);
   assert.match(link, /#s=/);
   const readBack = json(`(() => {
@@ -223,36 +236,41 @@ test("a link is read back exactly as it was written", () => {
     })()`);
   assert.equal(readBack.lang, "et");
   assert.equal(readBack.showRoom, false);
-  assert.deepEqual(readBack.who, json(`({[picksKey()]: "Mari"})`));
-  run(`state.lang = "en"; state.showRoom = true; state.who = {}; location.hash = "";`);
+  assert.deepEqual(readBack.classes, json(`({[classKey()]: {studentName: "Mari"}})`));
+  run(`state.lang = "en"; state.showRoom = true; state.classes = {}; location.hash = "";`);
 });
 
 test("a link carries this class and no other", () => {
-  run(`state.who = {"68/8": "Mari", "68/7": "Jaan", "99/3.a": "Liis"};
-       state.school = "68"; state.klass = "8";`);
-  const carried = json(`JSON.parse(unb64url(shareUrl().split("#s=")[1])).who`);
-  assert.deepEqual(carried, { "68/8": "Mari" });
+  run(`state.classes = {};
+       for (const [key, name] of [["68/8", "Mari"], ["68/7", "Jaan"], ["99/3.a", "Liis"]]) {
+         state.classes[key] = Object.assign(classDefaults(), {studentName: name});
+       }
+       state.school = "68"; state.class = "8";`);
+  const carried = json(`JSON.parse(unb64url(shareUrl().split("#s=")[1])).classes`);
+  assert.deepEqual(carried, { "68/8": { studentName: "Mari" } });
   // Emptied fields leave nothing behind at all.
-  run(`state.who = {"68/8": "   "};`);
-  assert.equal(json(`("who" in changedFromDefaults())`), false);
-  run(`state.who = {};`);
+  run(`state.classes = {}; myOwn().studentName = "   "; tidy();`);
+  assert.equal(json(`("classes" in changedFromDefaults())`), false);
+  run(`state.classes = {};`);
 });
 
 test("a hostile colour in a link is dropped before it is stored", () => {
   /* Through the real ingestion path, not by calling the filter directly: the
      filter was tested and the call to it was not, so removing the call left
      markup sitting in localStorage with the suite green. */
-  const hostile = JSON.stringify({ colors: { Matemaatika: 'x"><img src=x>',
-                                             Kunst: "#abc" } });
+  const hostile = JSON.stringify({ subjectColors: { Matemaatika: 'x"><img src=x>',
+                                                   Kunst: "#abc" } });
   const merged = json(`applyShared(JSON.parse(${JSON.stringify(hostile)}), defaults())`);
-  assert.deepEqual(merged.colors, { Kunst: "#abc" });
+  assert.deepEqual(merged.subjectColors, { Kunst: "#abc" });
 });
 
 test("a link adds to the other classes rather than replacing them", () => {
-  const link = JSON.stringify({ who: { "68/8": "Mari" } });
+  const link = JSON.stringify({ classes: { "68/8": { studentName: "Mari" } } });
   const merged = json(`applyShared(JSON.parse(${JSON.stringify(link)}),
-                                   Object.assign(defaults(), {who: {"68/7": "Jaan"}}))`);
-  assert.deepEqual(merged.who, { "68/7": "Jaan", "68/8": "Mari" });
+      Object.assign(defaults(),
+        {classes: {"68/7": Object.assign(classDefaults(), {studentName: "Jaan"})}}))`);
+  assert.equal(merged.classes["68/7"].studentName, "Jaan");
+  assert.equal(merged.classes["68/8"].studentName, "Mari");
 });
 
 test("the address the link uses survives a round trip through base64", () => {
@@ -272,22 +290,24 @@ test("a short colour is still readable text on top of it", () => {
 });
 
 test("looking at a class does not add an empty note about it to the link", () => {
-  run(`state.picks = {}; state.who = {}; state.events = {};
-       picks(); perClass("who"); perClass("events");`);
-  assert.deepEqual(json(`[state.picks, state.who, state.events]`), [{}, {}, {}]);
-  // Choosing something does record it.
-  run(`pickable()["7"] = "Alfa";`);
-  assert.equal(json(`Object.keys(state.picks).length`), 1);
+  run(`state.classes = {}; mine(); mine().studentName; mine().events;`);
+  assert.deepEqual(json(`state.classes`), {});
+  // Choosing something does record it, under this class and no other.
+  run(`myOwn().studyGroups["Alfa/Beeta"] = "Alfa";`);
+  assert.deepEqual(json(`Object.keys(state.classes)`), [json(`classKey()`)]);
+  run(`state.classes = {};`);
 });
 
 test("settings of the wrong shape fall back to their defaults", () => {
-  const got = json(`normalise({lang: "zz", showRoom: "yes", picks: [1, 2],
-                               teacherName: "LOUD", subjectName: "short", showGroup: false})`);
+  const got = json(`normalise({lang: "zz", showRoom: "yes", classes: [1, 2],
+                               teacherNameStyle: "LOUD", subjectNameStyle: "short",
+                               subjectColorStyle: "rainbow", showGroup: false})`);
   assert.equal(got.lang, "en");
   assert.equal(got.showRoom, true, "a string is not a checkbox");
-  assert.deepEqual(got.picks, {}, "an array is not a bag of picks");
-  assert.equal(got.teacherName, "short");
-  assert.equal(got.subjectName, "short", "a valid value is kept");
+  assert.deepEqual(got.classes, {}, "an array is not a map of classes");
+  assert.equal(got.teacherNameStyle, "short");
+  assert.equal(got.subjectColorStyle, "custom", "an unknown style is not a style");
+  assert.equal(got.subjectNameStyle, "short", "a valid value is kept");
   assert.equal(got.showGroup, false, "and so is a valid false");
 });
 
@@ -313,16 +333,18 @@ test("a whole-class lesson is mine because it says so, not by falling through", 
   /* The guard and the loop's own fallthrough give the same answer for an empty
      group list, so the test that named the guard did not exercise it. Give it
      a division whose groups it is not in, and only the guard can save it. */
-  assert.equal(run(`visible({g: []}, {d1: "A"}, [{id: "d1", groups: ["A", "B"]}])`),
+  assert.equal(run(`visible({g: []}, {"A/B": "A"}, [{id: "d1", groups: ["A", "B"]}])`),
                true);
 });
 
 test("a lesson is mine when every division it belongs to matches a pick", () => {
+  /* Keyed by the choice as the reader sees it — "A/B" — not by aSc's own
+     division id, which means nothing to anyone reading the saved settings. */
   const divisions = `[{id: "d1", groups: ["A", "B"]}, {id: "d2", groups: ["X", "Y"]}]`;
-  assert.equal(run(`visible({g: []}, {d1: "A"}, ${divisions})`), true,
+  assert.equal(run(`visible({g: []}, {"A/B": "A"}, ${divisions})`), true,
                "a whole-class lesson is always mine");
-  assert.equal(run(`visible({g: ["A"]}, {d1: "A"}, ${divisions})`), true);
-  assert.equal(run(`visible({g: ["B"]}, {d1: "A"}, ${divisions})`), false);
+  assert.equal(run(`visible({g: ["A"]}, {"A/B": "A"}, ${divisions})`), true);
+  assert.equal(run(`visible({g: ["B"]}, {"A/B": "A"}, ${divisions})`), false);
   assert.equal(run(`visible({g: ["B"]}, {}, ${divisions})`), true,
                "with nothing picked, everything shows");
 });
@@ -364,16 +386,44 @@ test("the clock reads the way the timetable prints it", () => {
 });
 
 test("a minute out of range is rejected, not rounded", () => {
-  for (const line of ["Mon 9:99-10:00 red X", "Mon 9:00-10:99 red X"]) {
-    assert.equal(json(`parseEvents(${JSON.stringify(line)})`).errors.length, 1, line);
+  for (const ev of [{ day: "Mon", start: "9:99", end: "10:00" },
+                    { day: "Mon", start: "9:00", end: "10:99" }]) {
+    assert.equal(json(`readEvents([${JSON.stringify(ev)}])`).errors.length, 1,
+                 JSON.stringify(ev));
   }
 });
 
-test("an event with no label is not an event", () => {
-  assert.equal(json(`parseEvents("Mon 9:00-10:00 red")`).errors.length, 1);
+test("an event with no name is still an event", () => {
+  /* Unlike the old typed lines, a row with an empty name is a perfectly good
+     block of time — someone marking out a gap does not have to name it. */
+  const parsed = json(`readEvents([{day: "Mon", start: "9:00", end: "10:00",
+                                    color: "#DDDDDD", label: ""}])`);
+  assert.equal(parsed.errors.length, 0);
+  assert.equal(parsed.events.length, 1);
 });
 
 test("a settings bag reaches normalise with its colours filtered", () => {
-  const got = json(`normalise({colors: {A: "#fff", B: 'x"><img src=x>'}})`);
-  assert.deepEqual(got.colors, { A: "#fff" });
+  const got = json(`normalise({subjectColors: {A: "#fff", B: 'x"><img src=x>'}})`);
+  assert.deepEqual(got.subjectColors, { A: "#fff" });
+});
+
+test("the README describes the settings that actually exist", () => {
+  /* The shape is what a reader sees in the Advanced box, so the documented
+     version has to be the real one — a renamed field with the old name still
+     written down is worse than no documentation. */
+  const readme = readFileSync(join(root, "README.md"), "utf8");
+  const block = /## The settings, as they are stored[\s\S]*?```json\n([\s\S]*?)```/
+                  .exec(readme);
+  assert.ok(block, "the settings section has gone");
+  const shown = JSON.parse(block[1]);
+  assert.deepEqual(Object.keys(shown).sort(), json(`Object.keys(defaults())`).sort());
+  assert.deepEqual(Object.keys(shown.classes["68/8"]).sort(),
+                   json(`Object.keys(classDefaults())`).sort());
+  // And it survives being read back in as settings.
+  const back = json(`normalise(${JSON.stringify(shown)})`);
+  assert.equal(back.subjectColorStyle, "custom");
+  assert.equal(back.classes["68/8"].studentName, "Ere");
+  assert.equal(back.classes["68/8"].events.length, 1);
+  assert.deepEqual(back.classes["68/8"].studyGroups,
+                   { "Alfa/Beeta/Gamma": "Beeta", "8.1/8.2/8.3/8.4": "8.1" });
 });

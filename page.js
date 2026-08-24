@@ -706,10 +706,9 @@ function renderTimeline(school, cls, shown, mine, scale) {
         ? '<div class="when">' + esc(when) + "</div>" +
           '<div class="what">' + esc(it.label) + "</div>"
         : '<div class="what">' + esc(when + " " + it.label) + "</div>";
-      h += '<div class="ev mine' + (it.fg ? " outlined" : "") +
-           (height < 40 ? " tight" : "") + '" style="' + place(it, over ? 16 : 0) +
-           "background:" + esc(it.bg) + ";color:" + esc(fg) +
-           (it.fg ? ";border-color:" + esc(fg) : "") + '" title="' +
+      h += '<div class="ev mine' + (height < 40 ? " tight" : "") +
+           '" style="' + place(it, over ? 16 : 0) +
+           "background:" + esc(it.bg) + ";color:" + esc(fg) + '" title="' +
            esc(it.label + "\n" + when) + '">' + body + "</div>";
     }
     h += "</div>";
@@ -1096,7 +1095,7 @@ function renderLegend(shown) {
         [["school", t("colour.fromTimetable"), ""],
          ["palette", t("colour.automatic"), ""]]) +
       textColourCell(row, col.fg, !own.textColor) +
-      previewCell(col.bg, col.fg, false, sampleWhen("9:00"),
+      previewCell(col.bg, col.fg, sampleWhen("9:00"),
                   lessonTitle(example[name] || { s: name, S: 0 }),
                   (example[name] ? detailLine(example[name]) : []).join(" · ")) +
       "</tr>";
@@ -1121,7 +1120,7 @@ function refreshSubjectSample(name) {
   const row = document.querySelector('#legend tr[data-subject="' +
                                      cssQuote(name) + '"]');
   const col = colorFor(name), lesson = example[name];
-  refreshSample(row, col.bg, col.fg, false, sampleWhen("9:00"),
+  refreshSample(row, col.bg, col.fg, sampleWhen("9:00"),
                 lessonTitle(lesson || { s: name, S: 0 }),
                 (lesson ? detailLine(lesson) : []).join(" · "));
 }
@@ -1482,18 +1481,16 @@ const swatch = (cls, value) =>
    it — same classes, same three lines. Reading a hex code and imagining the
    result is the part nobody can do; this shows it. Sized as a 45-minute lesson,
    which is the common case and tall enough for all three lines. */
-function sampleBox(bg, fg, outlined, when, label, meta) {
-  const style = "background:" + esc(bg) + ";color:" + esc(fg) +
-                (outlined ? ";border-color:" + esc(fg) : "");
-  return '<div class="ev' + (outlined ? " outlined" : "") + '" style="' + style + '">' +
+function sampleBox(bg, fg, when, label, meta) {
+  const style = "background:" + esc(bg) + ";color:" + esc(fg);
+  return '<div class="ev" style="' + style + '">' +
     '<div class="when">' + esc(when) + "</div>" +
     '<div class="what">' + esc(label) + "</div>" +
     (meta ? '<div class="who2">' + esc(meta) + "</div>" : "") + "</div>";
 }
 
-function previewCell(bg, fg, outlined, when, label, meta) {
-  return '<td><div class="sample">' +
-    sampleBox(bg, fg, outlined, when, label, meta) + "</div></td>";
+function previewCell(bg, fg, when, label, meta) {
+  return '<td><div class="sample">' + sampleBox(bg, fg, when, label, meta) + "</div></td>";
 }
 
 /* Just the one cell, redrawn where it stands.
@@ -1502,9 +1499,9 @@ function previewCell(bg, fg, outlined, when, label, meta) {
    interrupted, and the legend is skipped by `paint` so an open colour panel is
    not torn away. Both of those are right, and both meant the sample sat there
    showing the colour before last. */
-function refreshSample(tr, bg, fg, outlined, when, label, meta) {
+function refreshSample(tr, bg, fg, when, label, meta) {
   const host = tr && tr.querySelector(".sample");
-  if (host) host.innerHTML = sampleBox(bg, fg, outlined, when, label, meta);
+  if (host) host.innerHTML = sampleBox(bg, fg, when, label, meta);
 }
 
 /* The colour cells, shared by both tables so the two read the same way. */
@@ -1552,7 +1549,7 @@ function eventRow(ev, i) {
         '<select class="evlike"><option value=""></option>' + lessons + "</select>"]]) +
     textColourCell("e" + i, ev.textColor || readable(ev.backgroundColor), !ev.textColor) +
     previewCell(ev.backgroundColor, ev.textColor || readable(ev.backgroundColor),
-                !!ev.textColor, sampleWhen(ev.startTime), ev.label, "") +
+                sampleWhen(ev.startTime), ev.label, "") +
     '<td><button class="drop" type="button" title="' + esc(t("events.remove")) +
       '">\u00d7</button></td>' +
     "</tr>";
@@ -1570,8 +1567,7 @@ function rowChanged(tr, change) {
   if (!ev) return;
   change(ev);
   const fg = ev.textColor || readable(ev.backgroundColor);
-  refreshSample(tr, ev.backgroundColor, fg, !!ev.textColor,
-                sampleWhen(ev.startTime), ev.label, "");
+  refreshSample(tr, ev.backgroundColor, fg, sampleWhen(ev.startTime), ev.label, "");
   tidy(); save(); paint();
 }
 

@@ -1312,11 +1312,11 @@ PAGE = """<!DOCTYPE html>
             color: #6b7280; border-color: #e2e5ea; }
   .ev.brk .what { font-weight: 500; font-size: 11px; }
   /* A personal event is drawn over the timetable, so it needs to be above it —
-     but it should not look like a different kind of thing. Given one colour it
-     is a lesson in every visible respect; the heavier border is for an event
-     that asked for its own text colour, where the border follows it. */
+     but it should not look like a different kind of thing. It is a lesson in
+     every visible respect, whichever way its text colour was arrived at: the
+     same event used to grow a heavier border for choosing its own, which made
+     one choice about text look like a choice about borders. */
   .ev.mine { z-index: 2; }
-  .ev.mine.outlined { border-width: 2px; box-shadow: 0 1px 4px rgba(0,0,0,.28); }
   input[type=text] { font: inherit; padding: 5px 8px; border: 1px solid var(--line);
                      border-radius: 5px; background: #fff; color: inherit; }
   .hiddenpick { position: absolute; width: 1px; height: 1px; padding: 0; border: none;

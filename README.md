@@ -296,8 +296,9 @@ needs no times.
   that one takes both of the lesson's colours, which is the quickest way to make
   a training session look like the subject it belongs with. For the text: **own
   colour**, or **automatic**, which is black or white depending on what reads
-  better on the background. A box given its own text colour also gains a border
-  in it.
+  better on the background. Nothing else about the box changes either way: a
+  choice about text is not a choice about borders, and the same event used to
+  change shape depending on which of the two it was on.
 
   The colour columns are named and laid out as the subject list's are, though
   the two tables do not line up column for column — the subject list has no
@@ -312,9 +313,9 @@ needs no times.
   Events are drawn **on top of** the timetable rather than beside it: the lessons
   keep their full width. An event is inset a little where something is underneath,
   so what it covers still shows at the edge, and drawn full width where the hour
-  is empty. Given one colour it looks exactly like a lesson; the border only
-  appears where a text colour was asked for. In the period grid, where there is
-  no geometry to draw over, events get a **My own** column instead.
+  is empty. It looks exactly like a lesson, whatever its colours are. In the
+  period grid, where there is no geometry to draw over, events get a **My own**
+  column instead.
 - **Share** copies the address, because the address is the whole configuration:
   group picks, colours, events, names, language and every display switch, encoded
   in the fragment. Only what differs from the defaults goes in, and only the

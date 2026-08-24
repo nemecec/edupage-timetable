@@ -587,11 +587,22 @@ test("changing a colour redraws the sample beside it", () => {
   run(`rowChanged(tr, (ev) => { ev.textColor = "#00ff00"; });`);
   const withText = json(`host.innerHTML`);
   assert.match(withText, /#00ff00/, "the text colour did not reach the sample");
-  assert.match(withText, /outlined/, "a chosen text colour also draws a border");
 
   run(`rowChanged(tr, (ev) => { ev.label = "Trenn"; ev.startTime = "07:30"; });`);
   const now = json(`host.innerHTML`);
   assert.match(now, /Trenn/, "the label did not reach the sample");
   assert.match(now, /7\.30/, "the time did not reach the sample");
   run(`state.classes = {};`);
+});
+
+test("a box looks the same however its text colour was arrived at", () => {
+  /* Choosing a text colour is a choice about text. It used to draw a heavier
+     border as well, so the same event changed shape depending on whether its
+     colour was picked or worked out. */
+  const chosen = json(`sampleBox("#DDDDDD", "#333333", "9.00–9.45", "x", "")`);
+  const worked = json(`sampleBox("#DDDDDD", readable("#DDDDDD"), "9.00–9.45", "x", "")`);
+  const shape = (html) => html.replace(/color:#[0-9a-f]{3,8}/gi, "color:X");
+  assert.equal(shape(chosen), shape(worked),
+               "the two differ by more than the text colour");
+  assert.doesNotMatch(chosen, /border|outlined/);
 });

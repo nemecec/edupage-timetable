@@ -12,7 +12,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const run = load();
 const json = (expression) => JSON.parse(run(`JSON.stringify(${expression})`));
 
-test("a saved event is read into a day, a span, a colour and a label", () => {
+test("a saved event is read into a day, a span, a color and a label", () => {
   const parsed = json(`readEvents([{day: "Mon", startTime: "17:15", endTime: "18:15",
                                     backgroundColor: "#F6F2C1", textColor: "",
                                     label: "Dance training"}])`);
@@ -35,7 +35,7 @@ test("an event that cannot be drawn is reported, not dropped in silence", () => 
                { day: "Mon", startTime: "25:00", endTime: "26:00" },
                { day: "Mon", startTime: "18:00", endTime: "17:00" },
                { day: "Mon", startTime: "9:00", endTime: "9:00" },
-               { day: "Mon", startTime: "9:00", endTime: "10:00", backgroundColor: "notacolour" }];
+               { day: "Mon", startTime: "9:00", endTime: "10:00", backgroundColor: "notacolor" }];
   for (const ev of bad) {
     const parsed = json(`readEvents([${JSON.stringify(ev)}])`);
     assert.equal(parsed.events.length, 0, JSON.stringify(ev));
@@ -58,17 +58,17 @@ test("a saved event of the wrong shape is dropped on the way in", () => {
       textColor: "#123", label: "" });
 });
 
-test("only something that is plainly a colour can be stored as one", () => {
-  assert.deepEqual(json(`onlyColours({a: "#fff", b: "#AABBCC", c: "#12345678"})`),
+test("only something that is plainly a color can be stored as one", () => {
+  assert.deepEqual(json(`onlyColors({a: "#fff", b: "#AABBCC", c: "#12345678"})`),
                    { a: "#fff", b: "#AABBCC", c: "#12345678" });
   // A share link is not a way to write markup into the page.
-  assert.deepEqual(json(`onlyColours({a: 'x"><img src=x onerror=alert(1)>', b: "red", c: 5})`), {});
-  // Nor by hiding a real colour inside something longer: the whole value has
-  // to be the colour, not merely contain one.
-  assert.deepEqual(json(`onlyColours({a: '#fff"><img src=x onerror=alert(1)>',
+  assert.deepEqual(json(`onlyColors({a: 'x"><img src=x onerror=alert(1)>', b: "red", c: 5})`), {});
+  // Nor by hiding a real color inside something longer: the whole value has
+  // to be the color, not merely contain one.
+  assert.deepEqual(json(`onlyColors({a: '#fff"><img src=x onerror=alert(1)>',
                                       b: 'url(#abc)', c: '#1234567', d: '#12'})`), {});
   // Stray spaces around one are just typing, and come off.
-  assert.deepEqual(json(`onlyColours({a: "  #fff  "})`), { a: "#fff" });
+  assert.deepEqual(json(`onlyColors({a: "  #fff  "})`), { a: "#fff" });
 });
 
 test("the counter is told the school's own name, never the reader's", () => {
@@ -131,7 +131,7 @@ test("nothing reaches the page as markup, in either view", () => {
      every channel that carries text — the school's own data, what the reader
      typed, and what a link can bring — through both renderers and looks at the
      result. state.subjectColors is written to directly on purpose: normalise and
-     onlyColours keep it clean in real use, and esc() is what stands behind
+     onlyColors keep it clean in real use, and esc() is what stands behind
      them if they ever stop. */
   const bad = 'x"><img src=x onerror=alert(1)>';
   const q = JSON.stringify(bad);
@@ -254,7 +254,7 @@ test("a link carries this class and no other", () => {
   run(`state.classes = {};`);
 });
 
-test("a hostile colour in a link is dropped before it is stored", () => {
+test("a hostile color in a link is dropped before it is stored", () => {
   /* Through the real ingestion path, not by calling the filter directly: the
      filter was tested and the call to it was not, so removing the call left
      markup sitting in localStorage with the suite green. */
@@ -278,7 +278,7 @@ test("a link adds to the other classes rather than replacing them", () => {
 
 test("a big link is compressed, a small one is left alone", () => {
   /* Not compression for its own sake: past about 2 kB there is no QR code that
-     will hold the link, and a family that recolours a lot of subjects gets
+     will hold the link, and a family that recolors a lot of subjects gets
      there. Small links gain nothing and are left plain, because gzip's header
      would make them longer. */
   const small = json(`packSettings(JSON.stringify({lang: "et"}))`);
@@ -321,7 +321,7 @@ test("the address the link uses survives a round trip through base64", () => {
   assert.equal(json(`unb64url(${JSON.stringify(encoded)})`), "~~~üä>>>???");
 });
 
-test("a short colour is still readable text on top of it", () => {
+test("a short color is still readable text on top of it", () => {
   // #000 is black; before it was understood, the label came out black on black.
   assert.equal(json(`readable("#000")`), "#FFFFFF");
   assert.equal(json(`readable("#fff")`), json(`readable("#ffffff")`));
@@ -401,7 +401,7 @@ test("markup characters in school data cannot escape their attribute", () => {
   assert.equal(run(`esc("A & B")`), "A &amp; B");
 });
 
-test("text is black or white, whichever can be read on the colour", () => {
+test("text is black or white, whichever can be read on the color", () => {
   assert.equal(run(`readable("#FFFFFF")`), "#14171A");
   assert.equal(run(`readable("#000000")`), "#FFFFFF");
   assert.equal(run(`readable("#83EC9B")`), "#14171A", "a light green takes dark text");
@@ -443,7 +443,7 @@ test("an event with no name is still an event", () => {
   assert.equal(parsed.events.length, 1);
 });
 
-test("a settings bag reaches normalise with its colours filtered", () => {
+test("a settings bag reaches normalise with its colors filtered", () => {
   const got = json(`normalise({subjectColors: {A: {backgroundColor: "#fff"},
                                           B: {backgroundColor: 'x"><img src=x>'},
                                           C: {style: "school"},
@@ -453,7 +453,7 @@ test("a settings bag reaches normalise with its colours filtered", () => {
 });
 
 test("a subject can differ from what every other subject is doing", () => {
-  /* The gap the per-subject entry exists to close: the school's own colours
+  /* The gap the per-subject entry exists to close: the school's own colors
      throughout, with one subject pulled out. */
   run(`state.subjectColorStyle = "school";
        state.subjectColors = {Matemaatika: {style: "custom", backgroundColor: "#123456"}};`);
@@ -465,7 +465,7 @@ test("a subject can differ from what every other subject is doing", () => {
        tidySubjects(); })()`);
   assert.equal(json(`styleFor("Matemaatika")`), "palette");
   assert.deepEqual(json(`state.subjectColors`), { Matemaatika: { backgroundColor: "#123456" } },
-                   "the colour survives so switching back restores it");
+                   "the color survives so switching back restores it");
   run(`state.subjectColors = {}; state.subjectColorStyle = "custom";`);
 });
 
@@ -516,7 +516,7 @@ test("nothing empty is written down", () => {
 
 test("the two swatches in a legend row set different things", () => {
   /* Both are input[type=color] in the same row, and a handler bound by that
-     alone caught the text one as well — picking a text colour rewrote the
+     alone caught the text one as well — picking a text color rewrote the
      background. They are told apart by class, and this is why. */
   run(`state.subjectColors = {}; state.subjectColorStyle = "custom";
        renderLegend(currentClass().e);`);
@@ -524,15 +524,15 @@ test("the two swatches in a legend row set different things", () => {
   const swatches = (html.match(/type="color"/g) || []).length;
   const named = (html.match(/class="bgpick"|class="fgpick"/g) || []).length;
   assert.ok(swatches > 0, "the legend drew no swatches");
-  assert.equal(named, swatches, "a colour input in the legend with no class on it");
+  assert.equal(named, swatches, "a color input in the legend with no class on it");
 
   // And each writes only its own field.
-  run(`setColour("Ajalugu", "#123456");`);
+  run(`setColor("Ajalugu", "#123456");`);
   assert.deepEqual(json(`state.subjectColors.Ajalugu`), { backgroundColor: "#123456" });
-  run(`setTextColour("Ajalugu", "#ff00ff");`);
+  run(`setTextColor("Ajalugu", "#ff00ff");`);
   assert.deepEqual(json(`state.subjectColors.Ajalugu`),
                    { backgroundColor: "#123456", textColor: "#ff00ff" });
-  run(`setTextColour("Ajalugu", "");`);
+  run(`setTextColor("Ajalugu", "");`);
   assert.deepEqual(json(`state.subjectColors.Ajalugu`), { backgroundColor: "#123456" });
   run(`state.subjectColors = {};`);
 });
@@ -564,11 +564,11 @@ test("every column has a heading and every heading a column", () => {
   run(`state.classes = {};`);
 });
 
-test("changing a colour redraws the sample beside it", () => {
+test("changing a color redraws the sample beside it", () => {
   /* Neither table may be re-rendered while it is in use — the events table
      leaves itself alone while focus is inside it, the legend is skipped by
-     paint() so an open colour panel survives — so the sample has to be redrawn
-     on its own. It was not, and sat showing the colour before last. */
+     paint() so an open color panel survives — so the sample has to be redrawn
+     on its own. It was not, and sat showing the color before last. */
   const cell = `(() => {
     const host = {innerHTML: ""};
     globalThis.host = host;
@@ -586,7 +586,7 @@ test("changing a colour redraws the sample beside it", () => {
 
   run(`rowChanged(tr, (ev) => { ev.textColor = "#00ff00"; });`);
   const withText = json(`host.innerHTML`);
-  assert.match(withText, /#00ff00/, "the text colour did not reach the sample");
+  assert.match(withText, /#00ff00/, "the text color did not reach the sample");
 
   run(`rowChanged(tr, (ev) => { ev.label = "Trenn"; ev.startTime = "07:30"; });`);
   const now = json(`host.innerHTML`);
@@ -595,14 +595,14 @@ test("changing a colour redraws the sample beside it", () => {
   run(`state.classes = {};`);
 });
 
-test("a box looks the same however its text colour was arrived at", () => {
-  /* Choosing a text colour is a choice about text. It used to draw a heavier
+test("a box looks the same however its text color was arrived at", () => {
+  /* Choosing a text color is a choice about text. It used to draw a heavier
      border as well, so the same event changed shape depending on whether its
-     colour was picked or worked out. */
+     color was picked or worked out. */
   const chosen = json(`sampleBox("#DDDDDD", "#333333", "9.00–9.45", "x", "")`);
   const worked = json(`sampleBox("#DDDDDD", readable("#DDDDDD"), "9.00–9.45", "x", "")`);
   const shape = (html) => html.replace(/color:#[0-9a-f]{3,8}/gi, "color:X");
   assert.equal(shape(chosen), shape(worked),
-               "the two differ by more than the text colour");
+               "the two differ by more than the text color");
   assert.doesNotMatch(chosen, /border|outlined/);
 });

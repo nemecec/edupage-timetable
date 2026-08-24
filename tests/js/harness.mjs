@@ -19,7 +19,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
  *
  * page.js renders at load, so simply loading it exercises the whole render path
  * — but only if there is something to render. With an empty class the timeline,
- * the lesson boxes, the colour lookup and the packing never run at all, and a
+ * the lesson boxes, the color lookup and the packing never run at all, and a
  * fault in any of them goes unnoticed. Hence a lesson, its continuation row, a
  * division to filter by and a break to draw.
  *
@@ -139,7 +139,7 @@ export function load() {
     localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
     navigator: { clipboard: { writeText: () => Promise.resolve() } },
     getComputedStyle: () => ({ color: "rgb(0, 0, 0)", marginTop: "0", marginBottom: "0" }),
-    /* Colour validity: the real one is the browser's CSS parser. This accepts
+    /* Color validity: the real one is the browser's CSS parser. This accepts
        hex and a few names, which is all the tests exercise. */
     CSS: { supports: (_prop, value) =>
       /^#[0-9a-fA-F]{3,8}$/.test(value) ||

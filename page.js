@@ -29,11 +29,11 @@ const defaults = () => ({
      can guess that by looking. */
   subjectColorStyle: "custom",          // "palette" | "school" | "custom"
 
-  /* Per subject, and only where the reader has said something: a colour they
+  /* Per subject, and only where the reader has said something: a color they
      chose, a style that differs from the one above, or both. This is what lets
-     a timetable run on the school's own colours with one subject pulled out in
-     a colour of your own. The single global switch cannot express that.
-     Not per class: a subject keeps its colour wherever it turns up. */
+     a timetable run on the school's own colors with one subject pulled out in
+     a color of your own. The single global switch cannot express that.
+     Not per class: a subject keeps its color wherever it turns up. */
   subjectColors: {},
 
   classes: {},
@@ -52,12 +52,12 @@ const classDefaults = () => ({
 /* Settings arrive from localStorage, from a link, or from a pasted backup — all
    of them outside this page's control. Anything of the wrong shape is replaced
    by its default rather than allowed to break the render. */
-/* A colour and nothing else. Everything that sets one writes a hex code, and
+/* A color and nothing else. Everything that sets one writes a hex code, and
    these values are concatenated into style attributes — so a link carrying
-   anything else is a link trying to write markup, not to pick a colour. */
+   anything else is a link trying to write markup, not to pick a color. */
 const HEX = /^#([0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
 
-function onlyColours(bag) {
+function onlyColors(bag) {
   const out = {};
   for (const [subject, value] of Object.entries(bag)) {
     if (typeof value === "string" && HEX.test(value.trim())) out[subject] = value.trim();
@@ -67,10 +67,10 @@ function onlyColours(bag) {
 
 const STYLES = ["palette", "school", "custom"];
 
-/* What one subject is allowed to say about itself: a colour, a style, or both.
+/* What one subject is allowed to say about itself: a color, a style, or both.
    An entry saying neither is nothing at all and is dropped, which is what keeps
    the map to the handful of subjects somebody actually touched. */
-function onlySubjectColours(bag) {
+function onlySubjectColors(bag) {
   const out = {};
   for (const [subject, value] of Object.entries(bag || {})) {
     if (!value || typeof value !== "object" || Array.isArray(value)) continue;
@@ -108,13 +108,13 @@ function oneEvent(raw) {
   const day = DAY_KEYS.indexOf(String(raw.day));
   const a = clock(raw.startTime), z = clock(raw.endTime);
   if (day < 0 || a === null || z === null || z <= a) return null;
-  const colour = (v) => (typeof v === "string" && HEX.test(v.trim())) ? v.trim() : "";
+  const color = (v) => (typeof v === "string" && HEX.test(v.trim())) ? v.trim() : "";
   return {
     day: DAY_KEYS[day],
     startTime: asClock(a),
     endTime: asClock(z),
-    backgroundColor: colour(raw.backgroundColor) || "#DDDDDD",
-    textColor: colour(raw.textColor),      // empty means: work it out
+    backgroundColor: color(raw.backgroundColor) || "#DDDDDD",
+    textColor: color(raw.textColor),      // empty means: work it out
     label: typeof raw.label === "string" ? raw.label : "",
   };
 }
@@ -156,7 +156,7 @@ function normalise(saved) {
     if (!allowed.includes(out[key])) out[key] = base[key];
   }
   if (!DATA.languages.some(l => l[0] === out.lang)) out.lang = DATA.lang;
-  out.subjectColors = onlySubjectColours(out.subjectColors);
+  out.subjectColors = onlySubjectColors(out.subjectColors);
   const classes = {};
   for (const [key, value] of Object.entries(out.classes)) classes[key] = oneClass(value);
   out.classes = classes;
@@ -188,7 +188,7 @@ function applyShared(shared, current) {
     /* Merged after normalise, so these have not been through it. Nothing
        hostile survives the escaping at the sinks either way, but a link's junk
        must not end up saved. */
-    merged.subjectColors = onlySubjectColours(
+    merged.subjectColors = onlySubjectColors(
       Object.assign({}, current.subjectColors, shared.subjectColors));
   }
   return merged;
@@ -227,7 +227,7 @@ function unb64url(code) { return new TextDecoder().decode(fromB64url(code)); }
 
 /* ----- squeezing the settings into the fragment ---------------------------
    Settings are mostly repeated words — field names, class keys, hex codes — so
-   they compress hard: a link carrying every subject recoloured goes from about
+   they compress hard: a link carrying every subject recolored goes from about
    4,800 characters to under 1,000. That is the difference between a printed QR
    code and none, since a code tops out around 2 kB.
 
@@ -349,9 +349,9 @@ function renderFooter(school) {
      and this one only counts when it was built for a public address. */
   if (DATA.counts && !printing) bits.push(esc(t("footer.counts")));
   /* 36mm keeps a typical link at about half a millimetre per module, which a
-     phone reads without ceremony. A link with many custom colours gets denser. Past roughly 2 kB no code
-     holds it at all. The colours are shared across every class, so a family
-     that recoloured a lot of subjects can reach that size. Rather than let the code quietly not be
+     phone reads without ceremony. A link with many custom colors gets denser. Past roughly 2 kB no code
+     holds it at all. The colors are shared across every class, so a family
+     that recolored a lot of subjects can reach that size. Rather than let the code quietly not be
      there, print the address instead: longer to type, but it is the same link
      and it is on the page. */
   const link = printing ? shareUrl() : "";
@@ -437,8 +437,8 @@ function currentClass() {
 }
 /* Group choices belong to a class, not to the reader, so they are stored per
    school+class and survive switching back and forth. */
-/* Abbreviations and the school's own colours, as this school writes them. The
-   four timetables are separate documents that spell and colour the same subject
+/* Abbreviations and the school's own colors, as this school writes them. The
+   four timetables are separate documents that spell and color the same subject
    differently, so this is per school and not one table for all of them. */
 function subjectFacts() { return currentSchool().sj || {}; }
 
@@ -449,13 +449,13 @@ function classKey() { return currentSchool().n + "/" + currentClass().n; }
 const choiceKey = (division) => division.groups.join("/");
 
 function readable(bg) {
-  /* Three, four, six or eight digits — a short hex is a colour like any other,
+  /* Three, four, six or eight digits — a short hex is a color like any other,
      and treating it as unreadable put dark text on a dark box.
 
      Four and eight carry alpha, and alpha is the whole difference between what
-     the colour says and what the eye sees. #00000010 reads as black, so black
+     the color says and what the eye sees. #00000010 reads as black, so black
      gets white text, and the box is in fact all but transparent. That is
-     white on white. So the colour is composited over the sheet first, and the
+     white on white. So the color is composited over the sheet first, and the
      text is chosen against what will actually be behind it. */
   let hex = String(bg || "").trim().replace("#", "");
   if (/^[0-9a-f]{3,4}$/i.test(hex)) hex = hex.split("").map(c => c + c).join("");
@@ -480,13 +480,13 @@ function styleFor(subject) {
 function colorFor(subject) {
   const own = (state.subjectColors || {})[subject] || {};
   const style = own.style || state.subjectColorStyle;
-  /* A chosen text colour holds whatever the background came from — the same
+  /* A chosen text color holds whatever the background came from — the same
      rule the events table follows, and there is no reason for a subject to
      work differently from an event. Empty means: work it out. */
   const paint = (bg) => ({ bg: bg, fg: own.textColor || readable(bg) });
   if (style === "custom" && own.backgroundColor) return paint(own.backgroundColor);
   if (style === "school") {
-    /* Only where the school set one. A subject it never coloured falls through
+    /* Only where the school set one. A subject it never colored falls through
        to the palette rather than coming out blank. */
     const bg = (subjectFacts()[subject] || {}).color;
     if (bg) return paint(bg);
@@ -526,13 +526,13 @@ function visible(entry, picked, divisions) {
        { day: "Mon", startTime: "17:15", endTime: "18:15",
          backgroundColor: "#F6F2C1", textColor: "", label: "Dance training" }
    There was a line-by-line syntax here once. A table needs no syntax, cannot
-   be mistyped, and gives the colours a picker instead of a spelling.        */
+   be mistyped, and gives the colors a picker instead of a spelling.        */
 
-const isColour = (c) => !!(window.CSS && CSS.supports && CSS.supports("color", c));
+const isColor = (c) => !!(window.CSS && CSS.supports && CSS.supports("color", c));
 
-/* What an event writes with: its own text colour if one was chosen, otherwise
+/* What an event writes with: its own text color if one was chosen, otherwise
    whichever of black or white reads better on its background. */
-function eventFg(ev) { return ev.fg || readable(cssColour(ev.bg)); }
+function eventFg(ev) { return ev.fg || readable(cssColor(ev.bg)); }
 
 /* Saved events into the shape the timeline draws, complaining about any that
    cannot be drawn. The table keeps most nonsense out, but the same list can
@@ -548,8 +548,8 @@ function readEvents(list) {
     }
     if (!(z > a)) { errors.push(t("events.line", row, t("events.backwards"))); return; }
     for (const c of [ev.backgroundColor, ev.textColor]) {
-      if (c && !isColour(c)) {
-        errors.push(t("events.line", row, t("events.badColour", JSON.stringify(c))));
+      if (c && !isColor(c)) {
+        errors.push(t("events.line", row, t("events.badColor", JSON.stringify(c))));
         return;
       }
     }
@@ -741,9 +741,9 @@ function qrSvg(text, side) {
 }
 
 
-/* Named CSS colours have to become hex before luminance can be measured. */
+/* Named CSS colors have to become hex before luminance can be measured. */
 const _swatch = document.createElement("span");
-function cssColour(value) {
+function cssColor(value) {
   _swatch.style.color = "";
   _swatch.style.color = value;
   document.body.appendChild(_swatch);
@@ -782,7 +782,7 @@ function detailLine(e) {
 }
 
 /* What to call a lesson. A block the school publishes as one but which holds
-   two subjects in sequence names both, in the order they run. The colour and
+   two subjects in sequence names both, in the order they run. The color and
    the legend still follow the one subject the box is keyed to. */
 function subjectName(e, short) {
   const facts = subjectFacts();
@@ -955,7 +955,7 @@ function footHeight() {
          (parseFloat(s.marginTop) || 0) + (parseFloat(s.marginBottom) || 0);
 }
 
-/* Repaint the grid but leave the legend alone. Its colour inputs are live DOM
+/* Repaint the grid but leave the legend alone. Its color inputs are live DOM
    nodes, and replacing one while the native picker is open closes the picker —
    which made the swatches impossible to use. */
 let keepLegend = false;
@@ -1039,22 +1039,22 @@ function render() {
   if (!keepLegend) renderLegend(shown);
 }
 
-function setTextColour(subject, value, redraw) {
+function setTextColor(subject, value, redraw) {
   const entry = state.subjectColors[subject] || (state.subjectColors[subject] = {});
   if (value) entry.textColor = value; else delete entry.textColor;
   tidySubjects();
   save();
   /* Only the auto tick rebuilds the legend, because only it changes what the
-     row looks like. A rebuild on every colour picked tears the row out from
-     under the open colour panel. That is what `keepLegend` prevents. */
+     row looks like. A rebuild on every color picked tears the row out from
+     under the open color panel. That is what `keepLegend` prevents. */
   if (redraw) render(); else { paint(); refreshSubjectSample(subject); }
 }
 
-function setColour(subject, value) {
+function setColor(subject, value) {
   const entry = state.subjectColors[subject] || (state.subjectColors[subject] = {});
   entry.backgroundColor = value;
-  /* Choosing a colour is asking for it — for this subject, not for every one.
-     If everything is already on its own colours there is nothing to say. */
+  /* Choosing a color is asking for it — for this subject, not for every one.
+     If everything is already on its own colors there is nothing to say. */
   if (state.subjectColorStyle !== "custom") entry.style = "custom";
   tidySubjects();
   syncDisplayControls();
@@ -1090,9 +1090,9 @@ function renderLegend(shown) {
     return '<tr data-subject="' + esc(name) + '">' +
       '<td class="rowlabel">' + esc(name) + "</td>" +
       backgroundCell(row, subjectMode(name), col.bg,
-        [["school", t("colour.fromTimetable"), ""],
-         ["palette", t("colour.automatic"), ""]]) +
-      textColourCell(row, col.fg, !own.textColor) +
+        [["school", t("color.fromTimetable"), ""],
+         ["palette", t("color.automatic"), ""]]) +
+      textColorCell(row, col.fg, !own.textColor) +
       previewCell(col.bg, col.fg, sampleWhen("9:00"),
                   lessonTitle(example[name] || { s: name, S: 0 }),
                   (example[name] ? detailLine(example[name]) : []).join(" · ")) +
@@ -1102,7 +1102,7 @@ function renderLegend(shown) {
 
 /* Both lists behave the same, so both are driven from here. */
 /* Which of the three a subject is really on. A style of "custom" with no
-   colour behind it draws from the palette, so that is what it says. */
+   color behind it draws from the palette, so that is what it says. */
 function subjectMode(name) {
   const own = (state.subjectColors || {})[name] || {};
   const style = styleFor(name);
@@ -1113,7 +1113,7 @@ function subjectMode(name) {
 
 let example = {};
 
-/* The subject's sample, redrawn from whatever its colours are now. */
+/* The subject's sample, redrawn from whatever its colors are now. */
 function refreshSubjectSample(name) {
   const row = document.querySelector('#legend tr[data-subject="' +
                                      cssQuote(name) + '"]');
@@ -1134,10 +1134,10 @@ document.getElementById("legend").addEventListener("input", (e) => {
   const tr = e.target.closest("tr");
   if (e.target.classList.contains("bgpick")) {
     choose(tr, "bg", "own");
-    setColour(name, e.target.value);
+    setColor(name, e.target.value);
   } else if (e.target.classList.contains("fgpick")) {
     choose(tr, "fg", "own");
-    setTextColour(name, e.target.value);
+    setTextColor(name, e.target.value);
   }
 });
 
@@ -1146,12 +1146,12 @@ document.getElementById("legend").addEventListener("change", (e) => {
   if (!name || e.target.type !== "radio") return;
   const tr = e.target.closest("tr");
   if (e.target.name.startsWith("fg")) {
-    setTextColour(name, e.target.value === "auto" ? "" : colorFor(name).fg, true);
+    setTextColor(name, e.target.value === "auto" ? "" : colorFor(name).fg, true);
     return;
   }
   if (e.target.value === "own") {
     const swatch = tr.querySelector(".bgpick");
-    setColour(name, swatch ? swatch.value : colorFor(name).bg);
+    setColor(name, swatch ? swatch.value : colorFor(name).bg);
   } else {
     const entry = state.subjectColors[name] || (state.subjectColors[name] = {});
     entry.style = e.target.value;
@@ -1236,7 +1236,7 @@ function bindChoice(name, key) {
       if (key === "subjectColorStyle") {
         /* This one says what every subject does, so it means every subject —
            a row that quietly does its own thing makes the switch a lie.
-           Chosen colours are kept, so turning "my own" back on restores them. */
+           Chosen colors are kept, so turning "my own" back on restores them. */
         for (const entry of Object.values(state.subjectColors)) delete entry.style;
         tidySubjects();
       }
@@ -1251,7 +1251,7 @@ bindChoice("subjectNameStyle", "subjectNameStyle");
 bindChoice("subjectColorStyle", "subjectColorStyle");
 
 /* The controls follow the state, and the two that only make sense alongside
-   something else — how to write a name, which colours to pick — dim or vanish
+   something else — how to write a name, which colors to pick — dim or vanish
    when that something is switched off. */
 function syncDisplayControls() {
   for (const key of ["showStudentName", "showSchoolName", "showClassName",
@@ -1268,7 +1268,7 @@ function syncDisplayControls() {
   document.getElementById("subjectChoice").classList.toggle("off", !state.showSubject);
 
 }
-/* Clicking a lesson opens a colour picker anchored under it. The input is a
+/* Clicking a lesson opens a color picker anchored under it. The input is a
    permanent hidden node, so nothing rebuilds it while the picker is open. */
 const pick = document.getElementById("pick");
 document.getElementById("grid").addEventListener("click", (ev) => {
@@ -1282,12 +1282,12 @@ document.getElementById("grid").addEventListener("click", (ev) => {
   pick.value = colorFor(subject).bg;
   pick.click();
 });
-pick.addEventListener("input", () => setColour(pick.dataset.subject, pick.value));
-/* The colour panel keeps the keyboard while it is open. Hand focus back when it
+pick.addEventListener("input", () => setColor(pick.dataset.subject, pick.value));
+/* The color panel keeps the keyboard while it is open. Hand focus back when it
    closes, so the next thing typed goes to the page and not into a dead input. */
 pick.addEventListener("change", () => pick.blur());
 
-/* Everything the reader has customised — group picks, colours, personal
+/* Everything the reader has customised — group picks, colors, personal
    events, names, display options — is just `state`, so a backup is that object.
    It is filled in when the section is opened, and again by anything in the
    panel that changes what it is a backup of. */
@@ -1448,9 +1448,9 @@ function syncPerClassInputs() {
   renderEvents();
 }
 /* ----- the events table ---------------------------------------------------
-   A row per event, and a colour that can be arrived at three ways: copied
+   A row per event, and a color that can be arrived at three ways: copied
    whole from a lesson already on the timetable, chosen as a background with
-   the text colour worked out, or chosen as both. The "copy a lesson" control
+   the text color worked out, or chosen as both. The "copy a lesson" control
    is a plain list of the subjects on screen — matching a lesson by eye and
    then hunting for its hex code is exactly the fiddly part. */
 const evRows = document.getElementById("evrows");
@@ -1460,8 +1460,8 @@ function subjectsOnScreen() {
   return [...new Set(cls.e.filter(e => !e.c).map(e => e.s))].sort();
 }
 
-/* One radio per way of arriving at a colour, and the control that goes with it
-   beside the radio it belongs to. This was a dropdown with "own colour" as its
+/* One radio per way of arriving at a color, and the control that goes with it
+   beside the radio it belongs to. This was a dropdown with "own color" as its
    first entry. That entry said nothing about what the others do. The swatch
    beside it was disabled, and swallowed clicks. */
 function pickOne(group, row, chosen, choices) {
@@ -1494,26 +1494,26 @@ function previewCell(bg, fg, when, label, meta) {
 /* Just the one cell, redrawn where it stands.
    Neither table can be re-rendered while somebody uses it. The events table
    leaves itself alone while the focus is inside it, so typing is not
-   interrupted, and the legend is skipped by `paint` so an open colour panel is
+   interrupted, and the legend is skipped by `paint` so an open color panel is
    not torn away. Both of those are right, and both meant the sample sat there
-   showing the colour before last. */
+   showing the color before last. */
 function refreshSample(tr, bg, fg, when, label, meta) {
   const host = tr && tr.querySelector(".sample");
   if (host) host.innerHTML = sampleBox(bg, fg, when, label, meta);
 }
 
-/* The colour cells, shared by both tables so the two read the same way. */
-function backgroundCell(row, mode, colour, extra) {
-  return '<td class="colours"><div class="colcell">' +
-    pickOne("bg", row, mode, [["own", t("colour.own"), swatch("bgpick", colour)]]
+/* The color cells, shared by both tables so the two read the same way. */
+function backgroundCell(row, mode, color, extra) {
+  return '<td class="colors"><div class="colcell">' +
+    pickOne("bg", row, mode, [["own", t("color.own"), swatch("bgpick", color)]]
               .concat(extra)) + "</div></td>";
 }
 
-function textColourCell(row, colour, auto) {
-  return '<td class="colours"><div class="colcell">' +
+function textColorCell(row, color, auto) {
+  return '<td class="colors"><div class="colcell">' +
     pickOne("fg", row, auto ? "auto" : "own",
-            [["own", t("colour.own"), swatch("fgpick", colour)],
-             ["auto", t("colour.automatic"), ""]]) + "</div></td>";
+            [["own", t("color.own"), swatch("fgpick", color)],
+             ["auto", t("color.automatic"), ""]]) + "</div></td>";
 }
 
 /* 45 minutes from wherever the row starts, so the sample reads as a real span
@@ -1527,12 +1527,12 @@ function eventRow(ev, i) {
   const days = DAY_KEYS.map((d, n) =>
     '<option value="' + d + '"' + (ev.day === d ? " selected" : "") + ">" +
     esc(dayName(n)) + "</option>").join("");
-  /* Which subject this colour came from, if it came from one. Read back off
-     the colour rather than remembered: one fewer thing to store, and it stays
-     right if the subject is recoloured afterwards. */
+  /* Which subject this color came from, if it came from one. Read back off
+     the color rather than remembered: one fewer thing to store, and it stays
+     right if the subject is recolored afterwards. */
   const from = subjectsOnScreen().find(name =>
     colorFor(name).bg.toLowerCase() === ev.backgroundColor.toLowerCase());
-  /* No "own colour" entry in here: that is the radio above it now. */
+  /* No "own color" entry in here: that is the radio above it now. */
   const lessons = subjectsOnScreen().map(name =>
     '<option value="' + esc(name) + '"' + (name === from ? " selected" : "") + ">" +
     esc(name) + "</option>").join("");
@@ -1543,9 +1543,9 @@ function eventRow(ev, i) {
     '<td><input type="time" class="evend" value="' + esc(ev.endTime) + '"></td>' +
     '<td><input type="text" class="evlabel" value="' + esc(ev.label) + '"></td>' +
     backgroundCell("e" + i, from ? "subject" : "own", ev.backgroundColor,
-      [["subject", t("colour.fromSubject"),
+      [["subject", t("color.fromSubject"),
         '<select class="evlike"><option value=""></option>' + lessons + "</select>"]]) +
-    textColourCell("e" + i, ev.textColor || readable(ev.backgroundColor), !ev.textColor) +
+    textColorCell("e" + i, ev.textColor || readable(ev.backgroundColor), !ev.textColor) +
     previewCell(ev.backgroundColor, ev.textColor || readable(ev.backgroundColor),
                 sampleWhen(ev.startTime), ev.label, "") +
     '<td><button class="drop" type="button" title="' + esc(t("events.remove")) +
@@ -1602,7 +1602,7 @@ evRows.addEventListener("change", (e) => {
   if (cls.contains("evlike")) {
     choose(tr, "bg", "subject");
     if (!target.value) return;
-    /* The whole scheme, both colours, exactly as that lesson is drawn. */
+    /* The whole scheme, both colors, exactly as that lesson is drawn. */
     const col = colorFor(target.value);
     rowChanged(tr, ev => { ev.backgroundColor = col.bg; ev.textColor = col.fg; });
     renderEventsSoon();

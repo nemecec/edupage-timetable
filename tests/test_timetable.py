@@ -134,7 +134,7 @@ class MergingABlock(unittest.TestCase):
 
     def test_a_merged_box_keeps_every_member_s_abbreviation(self):
         # Without one per member the box reads "Häälestus + Üld" when short
-        # names are on, and the member has no legend swatch to recolour.
+        # names are on, and the member has no legend swatch to recolor.
         got = tt.merge_blocks([self.entry("Häälestus", 1), self.entry("Üldõpetus", 2)])
         self.assertEqual(got[0]["names"], ["Häälestus", "Üldõpetus"])
         self.assertEqual(got[0]["nameShorts"], ["Hää", "Üld"])
@@ -151,7 +151,7 @@ class MergingABlock(unittest.TestCase):
         self.assertEqual(len(got), 1)
         self.assertEqual(got[0]["names"], ["Häälestus", "Üldõpetus"])
 
-    def test_the_longer_half_gives_the_box_its_colour(self):
+    def test_the_longer_half_gives_the_box_its_color(self):
         # Longer *and* earlier, so "the later one wins" cannot also satisfy it.
         got = tt.merge_blocks([self.entry("Üldõpetus", 1, duration=2),
                                self.entry("Häälestus", 3)])
@@ -188,8 +188,8 @@ class MergingABlock(unittest.TestCase):
                          ["Hispaania keel", "Prantsuse keel"])
 
 
-class Colours(unittest.TestCase):
-    """Every subject must be legible on its own colour, on paper, and telling
+class Colors(unittest.TestCase):
+    """Every subject must be legible on its own color, on paper, and telling
     two subjects apart is the whole point of having a palette."""
 
     WCAG_AA = 4.5        # the standard's number, deliberately not the code's constant
@@ -220,7 +220,7 @@ class Colours(unittest.TestCase):
             with self.subTest(subject=subject):
                 self.assertGreaterEqual(self.readable(pair), self.WCAG_AA)
 
-    def test_no_two_subjects_share_a_colour(self):
+    def test_no_two_subjects_share_a_color(self):
         got = tt.palette(self.subjects)
         self.assertEqual(len({pair["bg"] for pair in got.values()}), len(self.subjects))
 
@@ -242,13 +242,13 @@ class Colours(unittest.TestCase):
 
     def test_a_family_is_spread_across_its_band_not_stacked_on_one_hue(self):
         # Lightness alone would separate them; the hue spread is what keeps a
-        # crowded family from reading as one colour in several strengths.
+        # crowded family from reading as one color in several strengths.
         sciences = ["Bioloogia", "Füüsika", "Geograafia", "Keemia"]
         hues = {tt._hue_of(tt.palette(sciences)[s]["bg"]) for s in sciences}
         self.assertGreater(max(hues) - min(hues), 6,
                            "the family sits on a single hue")
 
-    def test_the_colours_do_not_depend_on_the_order_asked_in(self):
+    def test_the_colors_do_not_depend_on_the_order_asked_in(self):
         self.assertEqual(tt.palette(self.subjects),
                          tt.palette(list(reversed(self.subjects))))
 
@@ -292,14 +292,14 @@ class Strings(unittest.TestCase):
                                  {m for m in ("{0}", "{1}") if m in tt.STRINGS["et"][key]})
 
 
-class ColourSafety(unittest.TestCase):
-    """A colour from the school's database ends up in a style attribute."""
+class ColorSafety(unittest.TestCase):
+    """A color from the school's database ends up in a style attribute."""
 
-    def test_only_something_that_looks_like_a_colour_is_kept(self):
+    def test_only_something_that_looks_like_a_color_is_kept(self):
         for good in ("#fff", "#FFFFFF", "#12345678"):
-            self.assertTrue(tt.HEX_COLOUR.match(good), good)
+            self.assertTrue(tt.HEX_COLOR.match(good), good)
         for bad in ('x"><img src=x onerror=alert(1)>', "red", "", "#12345", "url(x)"):
-            self.assertFalse(tt.HEX_COLOUR.match(bad), bad)
+            self.assertFalse(tt.HEX_COLOR.match(bad), bad)
 
 
 if __name__ == "__main__":

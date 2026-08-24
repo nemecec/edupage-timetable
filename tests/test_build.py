@@ -160,7 +160,7 @@ class WholePage(unittest.TestCase):
         self.assertEqual(breaks, [("Söömine, tiimitund, vaba aeg", "11.50", "12.50"),
                                   ("Amps", "13.35", "13.55")])
 
-    def test_each_school_abbreviates_and_colours_in_its_own_words(self):
+    def test_each_school_abbreviates_and_colors_in_its_own_words(self):
         """The four timetables are separate aSc documents that spell the same
         subject differently. One table keyed by name handed whichever school
         was read first to all of them."""
@@ -269,7 +269,7 @@ class WholePage(unittest.TestCase):
                     with self.subTest(school=school["l"], klass=klass["n"], at=e["w"]):
                         self.assertLess(e["a"], e["z"])
 
-    def test_every_subject_shown_has_a_colour_to_show_it_in(self):
+    def test_every_subject_shown_has_a_color_to_show_it_in(self):
         used = {e["s"] for s in self.data["schools"] for c in s["c"] for e in c["e"]}
         self.assertTrue(used <= set(self.data["palette"]),
                         "a subject with no palette entry falls back to grey")
@@ -381,6 +381,31 @@ class Documentation(unittest.TestCase):
         for name in ("README.md", os.path.join("deploy", "README.md")):
             with open(os.path.join(ROOT, name), encoding="utf-8") as fh:
                 self.assertIn("75 KB", fh.read(), name)
+
+    def test_the_interface_is_british_and_the_code_is_american(self):
+        """Two spellings, each in its own place.
+
+        The reader sees "colour". The source and the documents say "color",
+        which is also what the stored settings have always called the field.
+        """
+        _, data = build()
+        english = data["strings"]["en"]
+        for key, value in english.items():
+            if isinstance(value, str) and "olor" in value:
+                self.fail("the interface string %s says %r" % (key, value))
+        shown = {v for v in english.values()
+                 if isinstance(v, str) and "olour" in v}
+        for name in ("tt.py", "page.js", "README.md",
+                     os.path.join("deploy", "README.md")):
+            with open(os.path.join(ROOT, name), encoding="utf-8") as fh:
+                source = fh.read()
+            for i, line in enumerate(source.splitlines(), 1):
+                if "olour" not in line.lower():
+                    continue
+                if any(v in line for v in shown):
+                    continue        # the interface strings themselves
+                self.fail("%s:%d uses British spelling outside the interface: %s"
+                          % (name, i, line.strip()[:70]))
 
     def test_the_readme_does_not_write_down_a_school_year(self):
         # The generator derives it; prose that names one goes wrong in a summer.

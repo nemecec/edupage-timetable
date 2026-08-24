@@ -85,24 +85,24 @@ STRINGS = {
         "nameShort": "abbreviated",
         "subjectFull": "full name",
         "subjectShort": "short name",
-        "coloursHeading": "Lesson colors:",
-        "paletteColours": "Automatic colors",
-        "schoolColours": "Colors from the timetable",
-        "customColours": "Colors of my own",
+        "colorsHeading": "Lesson colours:",
+        "paletteColors": "Automatic colours",
+        "schoolColors": "Colours from the timetable",
+        "customColors": "Colours of my own",
         "colLabel": "Label",
-        "colBackground": "Background color",
-        "colTextColour": "Text color",
+        "colBackground": "Background colour",
+        "colTextColor": "Text colour",
         "colSample": "How it looks",
         "colWeekday": "Weekday",
         "colStartTime": "Start time",
         "colEndTime": "End time",
         "events.add": "Add an event",
         "events.remove": "Remove",
-        "colour.own": "own color",
-        "colour.fromSubject": "copy from subject",
-        "colour.fromTimetable": "from the timetable",
-        "colour.automatic": "automatic",
-        "subjects.summary": "Color of each subject",
+        "color.own": "own colour",
+        "color.fromSubject": "copy from subject",
+        "color.fromTimetable": "from the timetable",
+        "color.automatic": "automatic",
+        "subjects.summary": "Colour of each subject",
         "appName": "School timetable",
         "filter": "Filter",
         "groupsHeading": "Show only these study groups:",
@@ -138,7 +138,7 @@ STRINGS = {
         "events.label": "Not on the school's timetable:",
         "events.badRange": "times run 00:00-23:59",
         "events.backwards": "end time must be after the start",
-        "events.badColour": "{0} is not a color",
+        "events.badColor": "{0} is not a colour",
         "events.line": "row {0}: {1}",
         "settings.label": ("The settings as JSON. Copy this to keep a backup. "
                            "Or paste a saved one and apply it."),
@@ -174,23 +174,23 @@ STRINGS = {
         "nameShort": "lühend",
         "subjectFull": "täisnimi",
         "subjectShort": "lühinimi",
-        "coloursHeading": "Tundide värvid:",
-        "paletteColours": "Automaatsed värvid",
-        "schoolColours": "Tunniplaani värvid",
-        "customColours": "Minu omad värvid",
+        "colorsHeading": "Tundide värvid:",
+        "paletteColors": "Automaatsed värvid",
+        "schoolColors": "Tunniplaani värvid",
+        "customColors": "Minu omad värvid",
         "colLabel": "Nimetus",
         "colBackground": "Taustavärv",
-        "colTextColour": "Teksti värv",
+        "colTextColor": "Teksti värv",
         "colSample": "Kuidas välja näeb",
         "colWeekday": "Nädalapäev",
         "colStartTime": "Algusaeg",
         "colEndTime": "Lõpuaeg",
         "events.add": "Lisa sündmus",
         "events.remove": "Eemalda",
-        "colour.own": "oma värv",
-        "colour.fromSubject": "kopeeri õppeainelt",
-        "colour.fromTimetable": "tunniplaanist",
-        "colour.automatic": "automaatne",
+        "color.own": "oma värv",
+        "color.fromSubject": "kopeeri õppeainelt",
+        "color.fromTimetable": "tunniplaanist",
+        "color.automatic": "automaatne",
         "subjects.summary": "Iga õppeaine värv",
         "appName": "Kooli tunniplaan",
         "filter": "Filter",
@@ -227,7 +227,7 @@ STRINGS = {
         "events.label": "Väljaspool kooli tunniplaani:",
         "events.badRange": "kellaajad on vahemikus 00:00-23:59",
         "events.backwards": "lõpuaeg peab olema pärast algusaega",
-        "events.badColour": "{0} ei ole värv",
+        "events.badColor": "{0} ei ole värv",
         "events.line": "rida {0}: {1}",
         "settings.label": ("Seaded JSON-ina. Kopeeri varukoopiaks. Või kleebi "
                            "salvestatud seaded ja rakenda."),
@@ -765,7 +765,7 @@ def merge_blocks(entries):
     turn. If any two share a period, the block holds choices, and each subject's
     entries merge among themselves so the choices stay side by side.
 
-    The colour goes to whichever subject fills more of the block, and to the
+    The color goes to whichever subject fills more of the block, and to the
     later one when they fill it equally: a block that opens with a warm-up
     must look like what it becomes.
     """
@@ -976,11 +976,11 @@ def _relative_luminance(r, g, b):
 
 
 def palette(names):
-    """Print-friendly colour per subject, with related subjects kept close.
+    """Print-friendly color per subject, with related subjects kept close.
 
     Each family owns a hue band. Members are spread across it and given
     well-separated lightness steps, which is what keeps them distinct on paper.
-    Text colour is picked from the background's luminance so every label stays
+    Text color is picked from the background's luminance so every label stays
     legible. Deterministic: everything derives from the sorted subject list.
     """
     families = {}
@@ -1023,18 +1023,18 @@ def _contrast(lum_a, lum_b):
     return (hi + 0.05) / (lo + 0.05)
 
 
-def _hue_of(hex_colour):
-    """The hue of a rendered colour, for checking a family really is spread."""
-    r, g, b = (int(hex_colour[i:i + 2], 16) / 255 for i in (1, 3, 5))
+def _hue_of(hex_color):
+    """The hue of a rendered color, for checking a family really is spread."""
+    r, g, b = (int(hex_color[i:i + 2], 16) / 255 for i in (1, 3, 5))
     return colorsys.rgb_to_hsv(r, g, b)[0] * 360
 
 
 def _hexpair(hue, light, sat):
-    """A background plus whichever of the two text colours reads better on it.
+    """A background plus whichever of the two text colors reads better on it.
 
     Mid-luminance backgrounds are the awkward ones: there is a band where
-    neither text colour clears AA, so step the lightness away from it until one
-    does. Deterministic, and it only moves the colours that need moving.
+    neither text color clears AA, so step the lightness away from it until one
+    does. Deterministic, and it only moves the colors that need moving.
     """
     for step in range(30):
         adjusted = min(1.0, light + step * 0.02) if light >= 0.5 else max(0.0, light - step * 0.02)
@@ -1049,8 +1049,8 @@ def _hexpair(hue, light, sat):
 
 
 # What the school typed into aSc ends up inside a style attribute on a public
-# page. Anything that is not plainly a colour is dropped rather than trusted.
-HEX_COLOUR = re.compile(r"^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$")
+# page. Anything that is not plainly a color is dropped rather than trusted.
+HEX_COLOR = re.compile(r"^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$")
 
 
 def compact(schools):
@@ -1060,7 +1060,7 @@ def compact(schools):
     the page's own script, and halves the size of the generated file.
     """
     # Per school, not per name. The four timetables are separate aSc documents. They reuse subject
-    # names, and abbreviate and colour them differently. "Inglise keel" is
+    # names, and abbreviate and color them differently. "Inglise keel" is
     # Eng/#990000 in one and Ik/#00FFCC in another. So one table keyed by name
     # alone hands whichever school was read first to all of them. It is still hoisted out of the entries, which is where the size is.
     subject_meta = {}
@@ -1070,14 +1070,14 @@ def compact(schools):
             for e in cls["entries"]:
                 # Every subject the box names, not only the one it is filed
                 # under. A merged box leads with one subject and mentions the
-                # others. Those others need an abbreviation and a colour of
+                # others. Those others need an abbreviation and a color of
                 # their own, or the page draws them long and nobody can
-                # recolour them.
+                # recolor them.
                 for name, short in zip(e.get("names") or [e["subject"]],
                                        e.get("nameShorts") or [e["subjectShort"]]):
                     meta = here.setdefault(name, {})
                     meta.setdefault("short", short)
-                if HEX_COLOUR.match(e["schoolColor"] or ""):
+                if HEX_COLOR.match(e["schoolColor"] or ""):
                     here[e["subject"]].setdefault("color", e["schoolColor"])
     out = []
     for school in schools:
@@ -1208,11 +1208,11 @@ PAGE = """<!DOCTYPE html>
   .evtable td { vertical-align: middle; }
   .evtable tbody tr:nth-child(even) td { background: var(--panel); }
   .evtable .rowlabel { font-size: 13px; padding-right: 18px; }
-  /* One colour, however it is arrived at: the radio and the control that goes
+  /* One color, however it is arrived at: the radio and the control that goes
      with it stay together, and the alternatives line up underneath. */
   /* Side by side while they fit, stacking only once they do not — hence wrap
      rather than a column, and a cell that is allowed to break. */
-  .colours { white-space: normal; }
+  .colors { white-space: normal; }
   /* A real lesson box, minus the timeline's absolute placement. 46px is what
      45 minutes comes to at the on-screen scale. */
   .sample { width: 150px; }
@@ -1314,7 +1314,7 @@ PAGE = """<!DOCTYPE html>
   .ev.brk .what { font-weight: 500; font-size: 11px; }
   /* A personal event is drawn over the timetable, so it needs to be above it —
      but it should not look like a different kind of thing. It is a lesson in
-     every visible respect, whichever way its text colour was arrived at: the
+     every visible respect, whichever way its text color was arrived at: the
      same event used to grow a heavier border for choosing its own, which made
      one choice about text look like a choice about borders. */
   .ev.mine { z-index: 2; }
@@ -1336,7 +1336,7 @@ PAGE = """<!DOCTYPE html>
   @page { size: A4 landscape; margin: 9mm; }
   @media print {
     /* Chrome leaves "Background graphics" off by default, which would drop
-       every lesson colour — and white-on-white text with it. */
+       every lesson color — and white-on-white text with it. */
     *, *::before, *::after {
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
@@ -1460,15 +1460,15 @@ PAGE = """<!DOCTYPE html>
   </div>
   <div class="row">
     <div class="field" style="width:100%">
-      <label data-i18n="coloursHeading"></label>
+      <label data-i18n="colorsHeading"></label>
       <div class="checklist">
         <div class="line">
           <label class="inline"><input type="radio" name="subjectColorStyle"
-            value="palette"><span data-i18n="paletteColours"></span></label>
+            value="palette"><span data-i18n="paletteColors"></span></label>
           <label class="inline"><input type="radio" name="subjectColorStyle"
-            value="school"><span data-i18n="schoolColours"></span></label>
+            value="school"><span data-i18n="schoolColors"></span></label>
           <label class="inline"><input type="radio" name="subjectColorStyle"
-            value="custom"><span data-i18n="customColours"></span></label>
+            value="custom"><span data-i18n="customColors"></span></label>
         </div>
       </div>
       <details id="subjectPanel">
@@ -1478,7 +1478,7 @@ PAGE = """<!DOCTYPE html>
             <thead><tr>
               <th data-i18n="colLabel"></th>
               <th data-i18n="colBackground"></th>
-              <th data-i18n="colTextColour"></th>
+              <th data-i18n="colTextColor"></th>
               <th data-i18n="colSample"></th>
             </tr></thead>
             <tbody id="legend"></tbody>
@@ -1504,7 +1504,7 @@ PAGE = """<!DOCTYPE html>
           <th data-i18n="colEndTime"></th>
           <th data-i18n="colLabel"></th>
           <th data-i18n="colBackground"></th>
-          <th data-i18n="colTextColour"></th>
+          <th data-i18n="colTextColor"></th>
           <th data-i18n="colSample"></th>
           <th></th>
         </tr></thead>
@@ -1635,7 +1635,7 @@ def render_html(schools, edupage, year, initial_school, initial_class, lang="en"
     entries_data, subject_meta = compact(schools)
     # One palette across all four timetables, so a subject looks the same
     # whichever school is on screen. Only the school's own abbreviation and its
-    # own colour are per-school. Those live on the school, not here.
+    # own color are per-school. Those live on the school, not here.
     all_subjects = sorted({name for per in subject_meta.values() for name in per})
     payload = {
         "edupage": edupage,

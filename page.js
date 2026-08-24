@@ -19,7 +19,7 @@ const defaults = () => ({
   school: DATA.initialSchool,
   class: DATA.initialClass,
 
-  showName: false, showSchool: true, showClass: true,
+  showStudentName: false, showSchoolName: true, showClassName: true,
   showTeacher: true, teacherNameStyle: "short",
   showRoom: true, showGroup: true,
   showSubject: true, subjectNameStyle: "full",
@@ -34,7 +34,7 @@ const defaults = () => ({
      a timetable run on the school's own colours with one subject pulled out in
      a colour of your own — which the single global switch could not express.
      Not per class: a subject keeps its colour wherever it turns up. */
-  subjects: {},
+  subjectColors: {},
 
   classes: {},
 });
@@ -46,8 +46,8 @@ const classDefaults = () => ({
   studyGroups: {},
   studentName: "",
   events: [],
-  titleSchool: "",
-  titleClass: "",
+  schoolName: "",
+  className: "",
 });
 /* Settings arrive from localStorage, from a link, or from a pasted backup — all
    of them outside this page's control. Anything of the wrong shape is replaced
@@ -70,14 +70,16 @@ const STYLES = ["palette", "school", "custom"];
 /* What one subject is allowed to say about itself: a colour, a style, or both.
    An entry saying neither is nothing at all and is dropped, which is what keeps
    the map to the handful of subjects somebody actually touched. */
-function onlySubjects(bag) {
+function onlySubjectColours(bag) {
   const out = {};
   for (const [subject, value] of Object.entries(bag || {})) {
     if (!value || typeof value !== "object" || Array.isArray(value)) continue;
     const kept = {};
     if (STYLES.includes(value.style)) kept.style = value.style;
-    if (typeof value.color === "string" && HEX.test(value.color.trim())) {
-      kept.color = value.color.trim();
+    for (const field of ["backgroundColor", "textColor"]) {
+      if (typeof value[field] === "string" && HEX.test(value[field].trim())) {
+        kept[field] = value[field].trim();
+      }
     }
     if (Object.keys(kept).length) out[subject] = kept;
   }
@@ -104,14 +106,14 @@ const asClock = (mins) =>
 function oneEvent(raw) {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
   const day = DAY_KEYS.indexOf(String(raw.day));
-  const a = clock(raw.start), z = clock(raw.end);
+  const a = clock(raw.startTime), z = clock(raw.endTime);
   if (day < 0 || a === null || z === null || z <= a) return null;
   const colour = (v) => (typeof v === "string" && HEX.test(v.trim())) ? v.trim() : "";
   return {
     day: DAY_KEYS[day],
-    start: asClock(a),
-    end: asClock(z),
-    color: colour(raw.color) || "#DDDDDD",
+    startTime: asClock(a),
+    endTime: asClock(z),
+    backgroundColor: colour(raw.backgroundColor) || "#DDDDDD",
     textColor: colour(raw.textColor),      // empty means: work it out
     label: typeof raw.label === "string" ? raw.label : "",
   };
@@ -127,7 +129,7 @@ function oneClass(raw) {
       if (typeof picked === "string") out.studyGroups[choice] = picked;
     }
   }
-  for (const key of ["studentName", "titleSchool", "titleClass"]) {
+  for (const key of ["studentName", "schoolName", "className"]) {
     if (typeof was[key] === "string") out[key] = was[key];
   }
   out.events = Array.isArray(was.events)
@@ -154,7 +156,7 @@ function normalise(saved) {
     if (!allowed.includes(out[key])) out[key] = base[key];
   }
   if (!DATA.languages.some(l => l[0] === out.lang)) out.lang = DATA.lang;
-  out.subjects = onlySubjects(out.subjects);
+  out.subjectColors = onlySubjectColours(out.subjectColors);
   const classes = {};
   for (const [key, value] of Object.entries(out.classes)) classes[key] = oneClass(value);
   out.classes = classes;
@@ -182,12 +184,12 @@ function applyShared(shared, current) {
       merged.classes[key] = oneClass(Object.assign({}, current.classes[key], sub));
     }
   }
-  if (shared.subjects && typeof shared.subjects === "object") {
+  if (shared.subjectColors && typeof shared.subjectColors === "object") {
     /* Merged after normalise, so these have not been through it. Nothing
        hostile survives the escaping at the sinks either way, but a link's junk
        should not end up saved. */
-    merged.subjects = onlySubjects(
-      Object.assign({}, current.subjects, shared.subjects));
+    merged.subjectColors = onlySubjectColours(
+      Object.assign({}, current.subjectColors, shared.subjectColors));
   }
   return merged;
 }
@@ -198,7 +200,7 @@ function applyShared(shared, current) {
     state = applyShared(shared, state);
     /* Keep what the link brought, so closing it and coming back later still
        shows the same timetable. */
-    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+    try { localStorage.setItem(KEY, JSON.stringify(slim(state))); } catch (e) {}
   }
 }
 
@@ -209,16 +211,62 @@ function applyShared(shared, current) {
    never leaves the browser, so nothing is sent anywhere by carrying it. */
 /* Declarations, not arrow constants: the state is read out of the address bar
    before this point in the file, and a const would still be in its dead zone. */
-function b64url(text) {
-  const bytes = new TextEncoder().encode(text);
+function toB64url(bytes) {
   let binary = "";
   for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary).split("+").join("-").split("/").join("_").split("=").join("");
+  return btoa(binary).split("+").join("-").split("_").join("_")
+                     .split("/").join("_").split("=").join("");
 }
-function unb64url(code) {
+function b64url(text) { return toB64url(new TextEncoder().encode(text)); }
+function fromB64url(code) {
   const padded = code.split("-").join("+").split("_").join("/");
   const binary = atob(padded + "===".slice((padded.length + 3) % 4));
-  return new TextDecoder().decode(Uint8Array.from(binary, c => c.charCodeAt(0)));
+  return Uint8Array.from(binary, c => c.charCodeAt(0));
+}
+function unb64url(code) { return new TextDecoder().decode(fromB64url(code)); }
+
+/* ----- squeezing the settings into the fragment ---------------------------
+   Settings are mostly repeated words — field names, class keys, hex codes — so
+   they compress hard: a link carrying every subject recoloured goes from about
+   4,800 characters to under 1,000. That is the difference between a printed QR
+   code and none, since a code tops out around 2 kB.
+
+   The browser has a gzip of its own in CompressionStream, but it is async, and
+   this runs while the page is booting and again on every change. fflate does
+   the same job in a function call, which keeps all of that as it was.
+
+   Short settings gain nothing — gzip's header can even make them longer — so
+   both forms are produced and the shorter wins. The prefix says which: `s=` is
+   plain, `z=` is gzipped.                                                   */
+function packSettings(text) {
+  const plain = "s=" + b64url(text);
+  try {
+    const squeezed = "z=" + toB64url(fflate.gzipSync(fflate.strToU8(text), { level: 9 }));
+    return squeezed.length < plain.length ? squeezed : plain;
+  } catch (e) { return plain; }
+}
+
+function unpackSettings(hash) {
+  if (hash.startsWith("s=")) return unb64url(hash.slice(2));
+  if (hash.startsWith("z=")) return fflate.strFromU8(fflate.gunzipSync(fromB64url(hash.slice(2))));
+  return null;
+}
+
+/* The written-down form. In memory every field is present, so nothing reading
+   the settings has to check first; on the way out the empty ones are dropped,
+   because a file full of "" and {} is harder to read than one without them.
+   Coming back in, normalise puts them back. */
+function slim(value) {
+  if (Array.isArray(value)) return value.map(slim);
+  if (!value || typeof value !== "object") return value;
+  const out = {};
+  for (const [key, raw] of Object.entries(value)) {
+    const kept = slim(raw);
+    const empty = kept === "" || kept == null ||
+      (typeof kept === "object" && !Object.keys(kept).length);
+    if (!empty) out[key] = kept;
+  }
+  return out;
 }
 
 function changedFromDefaults() {
@@ -249,20 +297,20 @@ function shareUrl() {
   const changed = changedFromDefaults();
   const bare = location.href.split("#")[0];
   return Object.keys(changed).length
-    ? bare + "#s=" + b64url(JSON.stringify(changed)) : bare;
+    ? bare + "#" + packSettings(JSON.stringify(slim(changed))) : bare;
 }
 
 function readUrl() {
-  const hash = location.hash.slice(1);
-  if (!hash.startsWith("s=")) return null;
   try {
-    const parsed = JSON.parse(unb64url(hash.slice(2)));
+    const text = unpackSettings(location.hash.slice(1));
+    if (text === null) return null;
+    const parsed = JSON.parse(text);
     return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : null;
   } catch (e) { return null; }
 }
 
 const save = () => {
-  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+  try { localStorage.setItem(KEY, JSON.stringify(slim(state))); } catch (e) {}
   try {
     const url = shareUrl();
     if (url !== location.href) history.replaceState(null, "", url);
@@ -326,17 +374,18 @@ function renderFooter(school) {
    is visible before anything is printed. */
 function titleParts(school, cls) {
   return {
-    who: mine().studentName.trim(),
-    school: mine().titleSchool.trim() || school.l,
-    klass: mine().titleClass.trim() || t("classN", cls.n),
+    student: mine().studentName.trim(),
+    school: mine().schoolName.trim() || school.l,
+    klass: mine().className.trim() || t("classN", cls.n),
   };
 }
 
 function displayTitle(school, cls) {
   const part = titleParts(school, cls);
-  const right = [state.showSchool ? part.school : "", state.showClass ? part.klass : ""]
+  const right = [state.showSchoolName ? part.school : "",
+                 state.showClassName ? part.klass : ""]
                   .filter(Boolean).join(", ");
-  return [state.showName ? part.who : "", right].filter(Boolean).join(" — ");
+  return [state.showStudentName ? part.student : "", right].filter(Boolean).join(" — ");
 }
 
 /* Interface strings only; anything from the timetable stays in the language
@@ -427,27 +476,34 @@ function readable(bg) {
 /* What this subject is set to do — its own answer if it gave one, otherwise
    the one every subject follows. */
 function styleFor(subject) {
-  return ((state.subjects || {})[subject] || {}).style || state.subjectColorStyle;
+  return ((state.subjectColors || {})[subject] || {}).style || state.subjectColorStyle;
 }
 
 function colorFor(subject) {
-  const own = (state.subjects || {})[subject] || {};
+  const own = (state.subjectColors || {})[subject] || {};
   const style = own.style || state.subjectColorStyle;
-  if (style === "custom" && own.color) return { bg: own.color, fg: readable(own.color) };
+  /* A chosen text colour holds whatever the background came from — the same
+     rule the events table follows, and there is no reason for a subject to
+     work differently from an event. Empty means: work it out. */
+  const paint = (bg) => ({ bg: bg, fg: own.textColor || readable(bg) });
+  if (style === "custom" && own.backgroundColor) return paint(own.backgroundColor);
   if (style === "school") {
     /* Only where the school set one. A subject it never coloured falls through
        to the palette rather than coming out blank. */
     const bg = (subjectFacts()[subject] || {}).color;
-    if (bg) return { bg: bg, fg: readable(bg) };
+    if (bg) return paint(bg);
   }
-  return DATA.palette[subject] || { bg: "#EEEEEE", fg: "#14171A" };
+  const base = DATA.palette[subject] || { bg: "#EEEEEE", fg: "#14171A" };
+  return own.textColor ? paint(base.bg) : base;
 }
 
 /* An entry that says nothing is not worth keeping, in storage or in a link. */
 function tidySubjects() {
-  for (const [subject, entry] of Object.entries(state.subjects || {})) {
+  for (const [subject, entry] of Object.entries(state.subjectColors || {})) {
     if (entry.style === state.subjectColorStyle) delete entry.style;
-    if (!entry.style && !entry.color) delete state.subjects[subject];
+    if (!entry.style && !entry.backgroundColor && !entry.textColor) {
+      delete state.subjectColors[subject];
+    }
   }
 }
 
@@ -469,8 +525,8 @@ function visible(entry, picked, divisions) {
 
 /* ----- my own events -------------------------------------------------------
    Filled in a row at a time in the panel, and stored as they are shown:
-       { day: "Mon", start: "17:15", end: "18:15",
-         color: "#F6F2C1", textColor: "", label: "Dance training" }
+       { day: "Mon", startTime: "17:15", endTime: "18:15",
+         backgroundColor: "#F6F2C1", textColor: "", label: "Dance training" }
    There was a line-by-line syntax here once. A table needs no syntax, cannot
    be mistyped, and gives the colours a picker instead of a spelling.        */
 
@@ -487,20 +543,21 @@ function readEvents(list) {
   const out = [], errors = [];
   (Array.isArray(list) ? list : []).forEach((ev, i) => {
     const row = i + 1;
-    const a = clock(ev && ev.start), z = clock(ev && ev.end);
+    const a = clock(ev && ev.startTime), z = clock(ev && ev.endTime);
     const day = DAY_KEYS.indexOf(String(ev && ev.day));
     if (day < 0 || a === null || z === null) {
       errors.push(t("events.line", row, t("events.badRange"))); return;
     }
     if (!(z > a)) { errors.push(t("events.line", row, t("events.backwards"))); return; }
-    for (const c of [ev.color, ev.textColor]) {
+    for (const c of [ev.backgroundColor, ev.textColor]) {
       if (c && !isColour(c)) {
         errors.push(t("events.line", row, t("events.badColour", JSON.stringify(c))));
         return;
       }
     }
     out.push({ day: day, a: a, z: z, fg: ev.textColor || null,
-               bg: ev.color || "#DDDDDD", label: String(ev.label || ""), mine: true });
+               bg: ev.backgroundColor || "#DDDDDD",
+               label: String(ev.label || ""), mine: true });
   });
   return { events: out, errors: errors };
 }
@@ -778,8 +835,8 @@ function myOwn() {
    link, or in the QR code that link is printed as. */
 function tidy() {
   for (const [key, sub] of Object.entries(state.classes || {})) {
-    const empty = !sub.studentName.trim() && !sub.titleSchool.trim() &&
-                  !sub.titleClass.trim() && !sub.events.length &&
+    const empty = !sub.studentName.trim() && !sub.schoolName.trim() &&
+                  !sub.className.trim() && !sub.events.length &&
                   !Object.keys(sub.studyGroups).length;
     if (empty) delete state.classes[key];
   }
@@ -992,9 +1049,17 @@ function render() {
   if (!keepLegend) renderLegend(shown);
 }
 
+function setTextColour(subject, value) {
+  const entry = state.subjectColors[subject] || (state.subjectColors[subject] = {});
+  if (value) entry.textColor = value; else delete entry.textColor;
+  tidySubjects();
+  save();
+  render();          // the whole legend, so the swatch enables and disables
+}
+
 function setColour(subject, value) {
-  const entry = state.subjects[subject] || (state.subjects[subject] = {});
-  entry.color = value;
+  const entry = state.subjectColors[subject] || (state.subjectColors[subject] = {});
+  entry.backgroundColor = value;
   /* Choosing a colour is asking for it — for this subject, not for every one.
      If everything is already on its own colours there is nothing to say. */
   if (state.subjectColorStyle !== "custom") entry.style = "custom";
@@ -1023,17 +1088,35 @@ function renderLegend(shown) {
     const here = styleFor(s);
     const choose = STYLES.map(v => '<option value="' + v + '"' +
       (v === here ? " selected" : "") + ">" + esc(t("style." + v)) + "</option>").join("");
+    const col = colorFor(s);
+    const own = (state.subjectColors || {})[s] || {};
+    const auto = !own.textColor;
     return '<span class="item"><input type="color" data-subject="' + esc(s) + '" value="' +
-      esc(colorFor(s).bg) + '">' + esc(s) +
+      esc(col.bg) + '">' + esc(s) +
       '<input type="text" class="hex" spellcheck="false" data-subject="' + esc(s) +
-      '" value="' + esc(colorFor(s).bg) + '" size="8" title="' +
+      '" value="' + esc(col.bg) + '" size="8" title="' +
       esc(t("colourCode")) + '">' +
-      '<select class="style" data-subject="' + esc(s) + '">' + choose + "</select></span>";
+      '<select class="style" data-subject="' + esc(s) + '">' + choose + "</select>" +
+      /* The text colour, exactly as an event has one: automatic unless asked. */
+      '<label class="auto" title="' + esc(t("textColourHint")) + '">' +
+      '<input type="checkbox" class="fgauto" data-subject="' + esc(s) + '"' +
+      (auto ? " checked" : "") + ">" + esc(t("events.auto")) + "</label>" +
+      '<input type="color" class="fg" data-subject="' + esc(s) + '" value="' +
+      esc(col.fg) + '"' + (auto ? " disabled" : "") + "></span>";
   }).join("");
+  document.querySelectorAll("#legend .fgauto").forEach(box => {
+    box.addEventListener("change", () => {
+      setTextColour(box.dataset.subject,
+                    box.checked ? "" : colorFor(box.dataset.subject).fg);
+    });
+  });
+  document.querySelectorAll("#legend input.fg").forEach(inp => {
+    inp.addEventListener("input", () => setTextColour(inp.dataset.subject, inp.value));
+  });
   document.querySelectorAll("#legend select.style").forEach(sel => {
     sel.addEventListener("change", () => {
-      const entry = state.subjects[sel.dataset.subject] ||
-                    (state.subjects[sel.dataset.subject] = {});
+      const entry = state.subjectColors[sel.dataset.subject] ||
+                    (state.subjectColors[sel.dataset.subject] = {});
       entry.style = sel.value;
       tidySubjects();
       save();
@@ -1137,14 +1220,14 @@ function bindChoice(name, key) {
         /* This one says what every subject does, so it means every subject —
            a row still quietly doing its own thing would make the switch a lie.
            Chosen colours are kept, so turning "my own" back on restores them. */
-        for (const entry of Object.values(state.subjects)) delete entry.style;
+        for (const entry of Object.values(state.subjectColors)) delete entry.style;
         tidySubjects();
       }
       save(); render();
     });
   });
 }
-["showName", "showSchool", "showClass",
+["showStudentName", "showSchoolName", "showClassName",
  "showTeacher", "showRoom", "showGroup", "showSubject"].forEach(key => bindToggle(key, key));
 bindChoice("teacherNameStyle", "teacherNameStyle");
 bindChoice("subjectNameStyle", "subjectNameStyle");
@@ -1154,7 +1237,7 @@ bindChoice("subjectColorStyle", "subjectColorStyle");
    something else — how to write a name, which colours to pick — dim or vanish
    when that something is switched off. */
 function syncDisplayControls() {
-  for (const key of ["showName", "showSchool", "showClass",
+  for (const key of ["showStudentName", "showSchoolName", "showClassName",
                      "showTeacher", "showRoom", "showGroup", "showSubject"]) {
     document.getElementById(key).checked = !!state[key];
   }
@@ -1208,14 +1291,14 @@ document.getElementById("reset").addEventListener("click", () => {
      and is only refilled when the panel is opened. Left alone it would still be
      showing everything that was just cleared — and pressing Apply beside it
      would put all of it back, the child's name included. */
-  settingsText.value = JSON.stringify(state, null, 2);
+  settingsText.value = JSON.stringify(slim(state), null, 2);
   settingsMsg.textContent = "";
   renderDivisions(); syncPerClassInputs(); render();
 });
 
 advancedPanel.addEventListener("toggle", () => {
   if (advancedPanel.open) {
-    settingsText.value = JSON.stringify(state, null, 2);
+    settingsText.value = JSON.stringify(slim(state), null, 2);
     settingsMsg.textContent = "";
   }
 });
@@ -1247,7 +1330,7 @@ document.getElementById("share").addEventListener("click", async () => {
   setTimeout(() => { button.textContent = t("share"); }, 2500);
 });
 document.getElementById("copySettings").addEventListener("click", async () => {
-  settingsText.value = JSON.stringify(state, null, 2);
+  settingsText.value = JSON.stringify(slim(state), null, 2);
   try {
     await navigator.clipboard.writeText(settingsText.value);
     settingsMsg.textContent = t("settings.copied");
@@ -1303,20 +1386,20 @@ function typed(el, field, shows) {
     timer = setTimeout(paint, 150);
   });
 }
-const who = document.getElementById("who");
-const titleSchool = document.getElementById("titleSchool");
-const titleClass = document.getElementById("titleClass");
-typed(who, "studentName", "showName");
-typed(titleSchool, "titleSchool", "showSchool");
-typed(titleClass, "titleClass", "showClass");
+const studentName = document.getElementById("studentName");
+const schoolName = document.getElementById("schoolName");
+const className = document.getElementById("className");
+typed(studentName, "studentName", "showStudentName");
+typed(schoolName, "schoolName", "showSchoolName");
+typed(className, "className", "showClassName");
 
 /* These two show what the timetable calls itself until someone types over it.
    An empty box would mean retyping the whole name to change one word, so
    entering the field fills in what is currently shown; leaving it having
    changed nothing empties it again, so the setting stays unset and the shared
    link stays short. */
-for (const [field, key, shows] of [[titleSchool, "titleSchool", "showSchool"],
-                                   [titleClass, "titleClass", "showClass"]]) {
+for (const [field, key, shows] of [[schoolName, "schoolName", "showSchoolName"],
+                                   [className, "className", "showClassName"]]) {
   field.addEventListener("focus", () => {
     if (!field.value) field.value = field.placeholder;
   });
@@ -1336,14 +1419,14 @@ for (const [field, key, shows] of [[titleSchool, "titleSchool", "showSchool"],
    it, so an empty box and the school's own wording look the same. */
 function syncPerClassInputs() {
   const school = currentSchool(), cls = currentClass(), here = mine();
-  if (document.activeElement !== who) who.value = here.studentName;
-  if (document.activeElement !== titleSchool) {
-    titleSchool.value = here.titleSchool;
-    titleSchool.placeholder = school.l;
+  if (document.activeElement !== studentName) studentName.value = here.studentName;
+  if (document.activeElement !== schoolName) {
+    schoolName.value = here.schoolName;
+    schoolName.placeholder = school.l;
   }
-  if (document.activeElement !== titleClass) {
-    titleClass.value = here.titleClass;
-    titleClass.placeholder = t("classN", cls.n);
+  if (document.activeElement !== className) {
+    className.value = here.className;
+    className.placeholder = t("classN", cls.n);
   }
   renderEvents();
 }
@@ -1366,17 +1449,17 @@ function eventRow(ev, i) {
     esc(dayName(n)) + "</option>").join("");
   const lessons = subjectsOnScreen().map(name => {
     const col = colorFor(name);
-    const same = col.bg.toLowerCase() === ev.color.toLowerCase();
+    const same = col.bg.toLowerCase() === ev.backgroundColor.toLowerCase();
     return '<option value="' + esc(name) + '"' + (same ? " selected" : "") + ">" +
            esc(name) + "</option>";
   }).join("");
   const auto = !ev.textColor;
   return '<tr data-i="' + i + '">' +
     '<td><select class="evday">' + days + "</select></td>" +
-    '<td><input type="time" class="evstart" value="' + esc(ev.start) + '"></td>' +
-    '<td><input type="time" class="evend" value="' + esc(ev.end) + '"></td>' +
+    '<td><input type="time" class="evstart" value="' + esc(ev.startTime) + '"></td>' +
+    '<td><input type="time" class="evend" value="' + esc(ev.endTime) + '"></td>' +
     '<td><div class="swatch">' +
-      '<input type="color" class="evbg" value="' + esc(ev.color) + '">' +
+      '<input type="color" class="evbg" value="' + esc(ev.backgroundColor) + '">' +
       '<select class="evlike"><option value="">' + esc(t("events.ownColour")) +
         "</option>" + lessons + "</select>" +
     "</div></td>" +
@@ -1384,9 +1467,10 @@ function eventRow(ev, i) {
       '<label class="auto"><input type="checkbox" class="evauto"' +
         (auto ? " checked" : "") + ">" + esc(t("events.auto")) + "</label>" +
       '<input type="color" class="evfg" value="' +
-        esc(ev.textColor || readable(ev.color)) + '"' + (auto ? " disabled" : "") + ">" +
+        esc(ev.textColor || readable(ev.backgroundColor)) + '"' +
+        (auto ? " disabled" : "") + ">" +
     "</div></td>" +
-    '<td><input type="text" class="evname" value="' + esc(ev.label) + '"></td>' +
+    '<td><input type="text" class="evlabel" value="' + esc(ev.label) + '"></td>' +
     '<td><button class="drop" type="button" title="' + esc(t("events.remove")) +
       '">\u00d7</button></td>' +
     "</tr>";
@@ -1410,10 +1494,10 @@ evRows.addEventListener("input", (e) => {
   const tr = e.target.closest("tr");
   if (!tr) return;
   const cls = e.target.classList;
-  if (cls.contains("evstart")) rowChanged(tr, ev => { ev.start = e.target.value; });
-  else if (cls.contains("evend")) rowChanged(tr, ev => { ev.end = e.target.value; });
-  else if (cls.contains("evname")) rowChanged(tr, ev => { ev.label = e.target.value; });
-  else if (cls.contains("evbg")) rowChanged(tr, ev => { ev.color = e.target.value; });
+  if (cls.contains("evstart")) rowChanged(tr, ev => { ev.startTime = e.target.value; });
+  else if (cls.contains("evend")) rowChanged(tr, ev => { ev.endTime = e.target.value; });
+  else if (cls.contains("evlabel")) rowChanged(tr, ev => { ev.label = e.target.value; });
+  else if (cls.contains("evbg")) rowChanged(tr, ev => { ev.backgroundColor = e.target.value; });
   else if (cls.contains("evfg")) rowChanged(tr, ev => { ev.textColor = e.target.value; });
 });
 
@@ -1423,12 +1507,14 @@ evRows.addEventListener("change", (e) => {
   const cls = e.target.classList;
   if (cls.contains("evday")) rowChanged(tr, ev => { ev.day = e.target.value; });
   else if (cls.contains("evauto")) {
-    rowChanged(tr, ev => { ev.textColor = e.target.checked ? "" : readable(ev.color); });
+    rowChanged(tr, ev => {
+      ev.textColor = e.target.checked ? "" : readable(ev.backgroundColor);
+    });
     renderEventsSoon();
   } else if (cls.contains("evlike") && e.target.value) {
     /* The whole scheme, both colours, exactly as that lesson is drawn. */
     const col = colorFor(e.target.value);
-    rowChanged(tr, ev => { ev.color = col.bg; ev.textColor = col.fg; });
+    rowChanged(tr, ev => { ev.backgroundColor = col.bg; ev.textColor = col.fg; });
     renderEventsSoon();
   }
 });
@@ -1446,8 +1532,8 @@ evRows.addEventListener("click", (e) => {
 function renderEventsSoon() { setTimeout(() => { evRows.innerHTML = ""; renderEvents(); }, 0); }
 
 document.getElementById("evadd").addEventListener("click", () => {
-  myOwn().events.push({ day: "Mon", start: "16:00", end: "17:00",
-                        color: "#F6F2C1", textColor: "", label: "" });
+  myOwn().events.push({ day: "Mon", startTime: "16:00", endTime: "17:00",
+                        backgroundColor: "#F6F2C1", textColor: "", label: "" });
   save(); renderEventsSoon(); paint();
 });
 

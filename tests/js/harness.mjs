@@ -146,9 +146,14 @@ export function load() {
       /^(orange|red|green|blue|white|black|rebeccapurple|mediumseagreen)$/.test(value) ||
       /^rgba?\(/.test(value) },
     qrcode: () => ({ addData() {}, make() {}, getModuleCount: () => 21, isDark: () => false }),
+    /* The real one, not a stub: the compressed form of a link has to be the
+       compressed form the page will actually write and read. */
+    Uint8Array, Uint16Array, Uint32Array, Int32Array, ArrayBuffer, DataView,
   };
   context.window = context;
   createContext(context);
+  runInContext(readFileSync(join(root, "vendor", "fflate.js"), "utf8"), context,
+               { filename: "fflate.js" });
   runInContext(readFileSync(join(root, "page.js"), "utf8"), context, { filename: "page.js" });
   /* Top-level const and function declarations stay in the context's lexical
      scope, so a second script in the same context can reach them. */

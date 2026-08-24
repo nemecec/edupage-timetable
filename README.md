@@ -70,7 +70,7 @@ given without `--school` is looked up across all timetables.
 Python 3 standard library only — no pip installs, no browser.
 
 For `tera` in 2026 the result is 4 schools, 41 classes and about 1,900 lesson
-slots in a ~550 KB file — 57 KB over the wire, since it compresses well.
+slots in a ~600 KB file — 75 KB over the wire, since it compresses well.
 
     python3 -m unittest discover -s tests     # the generator
     node --test tests/js/*.test.mjs           # the page's own logic
@@ -309,10 +309,18 @@ needs no times.
 - **Share** copies the address, because the address is the whole configuration:
   group picks, colours, events, names, language and every display switch, encoded
   in the fragment. Only what differs from the defaults goes in, and only the
-  class on screen, which keeps a typical link near 200 characters and means
+  class on screen, which keeps a typical link near 140 characters and means
   sharing one child's timetable does not hand over a sibling's name. The
   fragment never leaves the browser. Opening a link merges what it carries into
   what this browser already had, rather than replacing it.
+
+  Settings are JSON, UTF-8, base64url. Above a certain size they are gzipped
+  first — `#z=` rather than `#s=` — which takes a link carrying every subject
+  recoloured from about 4,800 characters to under 1,600. That is not tidiness:
+  a QR code holds around 2 kB, so it is the difference between a printed sheet
+  you can scan and one that has to fall back to printing the address. Small
+  links are left uncompressed, since gzip's header would only make them longer,
+  and both forms are read.
 - **Print…** lays the page out for A4 landscape and prints it. It is a moment,
   not a setting: the page returns to normal afterwards. The timeline scales
   itself to fill exactly one sheet, measured rather than guessed. Colours survive
@@ -343,9 +351,9 @@ its own map of classes.
   "school": "68",
   "class": "8",
 
-  "showName": true,
-  "showSchool": true,
-  "showClass": true,
+  "showStudentName": true,
+  "showSchoolName": true,
+  "showClassName": true,
   "showTeacher": true,
   "teacherNameStyle": "short",
   "showRoom": true,
@@ -354,8 +362,8 @@ its own map of classes.
   "subjectNameStyle": "full",
 
   "subjectColorStyle": "school",
-  "subjects": {
-    "Matemaatika": { "style": "custom", "color": "#83EC9B" },
+  "subjectColors": {
+    "Matemaatika": { "style": "custom", "backgroundColor": "#83EC9B" },
     "Kunst": { "style": "palette" }
   },
 
@@ -367,11 +375,9 @@ its own map of classes.
       },
       "studentName": "Eva",
       "events": [
-        { "day": "Mon", "start": "16:15", "end": "17:10",
-          "color": "#F6F2C1", "textColor": "", "label": "Tantsutrenn" }
-      ],
-      "titleSchool": "",
-      "titleClass": ""
+        { "day": "Mon", "startTime": "16:15", "endTime": "17:10",
+          "backgroundColor": "#F6F2C1", "label": "Tantsutrenn" }
+      ]
     }
   }
 }
@@ -386,7 +392,7 @@ A few of the choices, since they are not all obvious:
   generated one), `school` (the timetable's own), or `custom` (yours). It was
   two checkboxes that quietly layered on each other, which nobody could have
   guessed by looking.
-- **`subjects` is where one subject differs from that**, and holds only the
+- **`subjectColors` is where one subject differs from that**, and holds only the
   subjects somebody actually touched. A `style` of its own, a `color`, or both.
   So the example above runs on the school's colours, with maths in a colour of
   its own and art left on the generated palette — which a single global switch
@@ -399,13 +405,21 @@ A few of the choices, since they are not all obvious:
 - **Weekdays are stored as `Mon`…`Sun`**, in English whatever the interface
   language is, so the file reads the same for everyone. The interface shows them
   in the reader's own language.
-- **`textColor` empty means "work it out"** — black or white, whichever reads
-  better on the background.
+- **An absent field means "nothing set"** — no `""`, no `{}`, no `[]` in the
+  written form. Reading puts the defaults back, so the code using the settings
+  always sees every field; only the file is spared them. An event with no
+  `textColor` therefore gets black or white, whichever reads better on its
+  background.
+- **A subject can carry a `textColor` too**, and it holds whatever the
+  background came from — the same rule an event follows, because there is no
+  reason for the two to differ.
 - **`classes` is a map rather than the class keys sitting at the top level**, so
   a class named `lang` cannot collide with the setting called that.
 
-Only what differs from the defaults is written to a link, so most of this is
-absent from a typical one.
+Only what differs from the defaults is written to a link, and only the class
+on screen, so most of this is absent from a typical one. Above about a kilobyte
+the link is gzipped as well — `#z=` rather than `#s=` — which is what keeps a
+heavily customised one inside what a QR code can hold.
 
 ## Verification
 

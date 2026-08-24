@@ -332,6 +332,34 @@ class Documentation(unittest.TestCase):
             body = fh.read().split("\nResources:\n", 1)[1].split("\nOutputs:")[0]
         return re.findall(r"^  ([A-Za-z0-9]+):\s*$", body, re.M)
 
+    def test_no_two_strings_share_a_key(self):
+        """A duplicate key is silent — the later value simply wins, and some
+        label somewhere shows text meant for something else."""
+        import ast
+        with open(os.path.join(ROOT, "tt.py"), encoding="utf-8") as fh:
+            tree = ast.parse(fh.read())
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Dict):
+                continue
+            keys = [k.value for k in node.keys
+                    if isinstance(k, ast.Constant) and isinstance(k.value, str)]
+            twice = [k for k in set(keys) if keys.count(k) > 1]
+            self.assertFalse(twice, "duplicate keys near line %d: %s"
+                                    % (node.lineno, twice))
+
+    def test_every_string_the_page_asks_for_exists(self):
+        """A data-i18n naming a string that is not there renders as its key."""
+        with open(os.path.join(ROOT, "tt.py"), encoding="utf-8") as fh:
+            source = fh.read()
+        wanted = set(re.findall(r'data-i18n(?:-ph)?="([^"]+)"', source))
+        self.assertGreater(len(wanted), 20, "the scan found suspiciously few")
+        _, data = build()
+        for lang in ("en", "et"):
+            have = set(data["strings"][lang])
+            for key in sorted(wanted - have):
+                with self.subTest(lang=lang, key=key):
+                    self.fail("no %s string for %s" % (lang, key))
+
     def test_the_deploy_readme_counts_the_resources_correctly(self):
         counts = {n: len(self.resources(n))
                   for n in ("site.yaml", "dns.yaml", "cert.yaml")}
@@ -340,6 +368,17 @@ class Documentation(unittest.TestCase):
             readme = fh.read()
         self.assertIn("Nineteen resources", readme)
         self.assertIn("sixteen in `site.yaml`", readme)
+
+    def test_the_size_the_readmes_quote_is_the_size_it_is(self):
+        import gzip
+        page, _ = build()
+        raw, wire = len(page.encode("utf-8")), len(gzip.compress(page.encode("utf-8"), 9))
+        # Within a tolerance, since the school's own data moves it about.
+        self.assertLess(abs(raw / 1024 - 600), 60, "%.0f KB raw" % (raw / 1024))
+        self.assertLess(abs(wire / 1024 - 75), 12, "%.0f KB over the wire" % (wire / 1024))
+        for name in ("README.md", os.path.join("deploy", "README.md")):
+            with open(os.path.join(ROOT, name), encoding="utf-8") as fh:
+                self.assertIn("75 KB", fh.read(), name)
 
     def test_the_readme_does_not_write_down_a_school_year(self):
         # The generator derives it; prose that names one goes wrong in a summer.

@@ -90,6 +90,7 @@ STRINGS = {
         "style.palette": "automatic",
         "style.school": "timetable",
         "style.custom": "my own",
+        "textColourHint": "Text colour: automatic unless you choose one",
         "schoolColours": "Colours from the timetable",
         "customColours": "Colours of my own",
         "events.day": "Day",
@@ -97,7 +98,7 @@ STRINGS = {
         "events.to": "To",
         "events.colour": "Colour",
         "events.textColour": "Text",
-        "events.name": "Name",
+        "events.colLabel": "Label",
         "events.add": "Add an event",
         "events.remove": "Remove",
         "events.auto": "auto",
@@ -106,9 +107,9 @@ STRINGS = {
         "filter": "Filter",
         "groupsHeading": "Show only these study groups:",
         "titleHeading": "Title:",
-        "titleWho": "Student name",
-        "titleSchool": "School name",
-        "titleClass": "Class name",
+        "studentName": "Student name",
+        "schoolName": "School name",
+        "className": "Class name",
         "print": "Print…",
         "backup": "Settings as JSON",
         "reset": "Reset all settings",
@@ -182,6 +183,7 @@ STRINGS = {
         "style.palette": "automaatne",
         "style.school": "tunniplaanist",
         "style.custom": "minu oma",
+        "textColourHint": "Teksti värv: automaatne, kui sa ise ei vali",
         "schoolColours": "Tunniplaani värvid",
         "customColours": "Minu omad värvid",
         "events.day": "Päev",
@@ -189,7 +191,7 @@ STRINGS = {
         "events.to": "Lõpp",
         "events.colour": "Värv",
         "events.textColour": "Tekst",
-        "events.name": "Nimi",
+        "events.colLabel": "Nimetus",
         "events.add": "Lisa sündmus",
         "events.remove": "Eemalda",
         "events.auto": "automaatne",
@@ -198,9 +200,9 @@ STRINGS = {
         "filter": "Filter",
         "groupsHeading": "Näita ainult neid õpperühmi:",
         "titleHeading": "Pealkiri:",
-        "titleWho": "Õpilase nimi",
-        "titleSchool": "Kooli nimi",
-        "titleClass": "Klassi nimi",
+        "studentName": "Õpilase nimi",
+        "schoolName": "Kooli nimi",
+        "className": "Klassi nimi",
         "print": "Prindi…",
         "backup": "Seaded JSON-ina",
         "reset": "Lähtesta kõik seaded",
@@ -1197,7 +1199,7 @@ PAGE = """<!DOCTYPE html>
     padding: 4px 6px; font-size: 13px; border: 1px solid var(--line);
     border-radius: 5px; background: #fff; }
   .evtable input[type=text] { width: 100%; }
-  .evtable .evname { width: 99%; }
+  .evtable .evlabel { width: 99%; }
   .evtable input[type=color] { width: 30px; height: 26px; padding: 0;
     border: 1px solid var(--line); border-radius: 5px; background: #fff; }
   .evtable .swatch { display: flex; gap: 4px; align-items: center; }
@@ -1331,6 +1333,8 @@ PAGE = """<!DOCTYPE html>
   @media print { .foot { width: auto; margin: 7px 0 0; font-size: 9px; } }
   .legend { display: flex; flex-wrap: wrap; gap: 8px 14px; }
   .legend .item { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+  .legend .auto { font-size: 11px; color: var(--muted); display: flex;
+                  gap: 3px; align-items: center; }
   .legend select.style { font-size: 11px; padding: 1px 3px; color: var(--muted);
                          border: 1px solid var(--line); border-radius: 4px; background: #fff; }
   .legend input[type=color] { width: 26px; height: 20px; padding: 0; border: 1px solid var(--line); }
@@ -1387,19 +1391,19 @@ PAGE = """<!DOCTYPE html>
       <label data-i18n="titleHeading"></label>
       <div class="checklist">
         <div class="line">
-          <label class="inline"><input type="checkbox" id="showName">
-            <span data-i18n="titleWho"></span></label>
-          <input type="text" id="who" size="18">
+          <label class="inline"><input type="checkbox" id="showStudentName">
+            <span data-i18n="studentName"></span></label>
+          <input type="text" id="studentName" size="18">
         </div>
         <div class="line">
-          <label class="inline"><input type="checkbox" id="showSchool">
-            <span data-i18n="titleSchool"></span></label>
-          <input type="text" id="titleSchool" size="30">
+          <label class="inline"><input type="checkbox" id="showSchoolName">
+            <span data-i18n="schoolName"></span></label>
+          <input type="text" id="schoolName" size="30">
         </div>
         <div class="line">
-          <label class="inline"><input type="checkbox" id="showClass">
-            <span data-i18n="titleClass"></span></label>
-          <input type="text" id="titleClass" size="18">
+          <label class="inline"><input type="checkbox" id="showClassName">
+            <span data-i18n="className"></span></label>
+          <input type="text" id="className" size="18">
         </div>
       </div>
     </div>
@@ -1471,7 +1475,7 @@ PAGE = """<!DOCTYPE html>
         <th data-i18n="events.to"></th>
         <th data-i18n="events.colour"></th>
         <th data-i18n="events.textColour"></th>
-        <th data-i18n="events.name"></th>
+        <th data-i18n="events.colLabel"></th>
         <th></th>
       </tr></thead>
       <tbody id="evrows"></tbody>
@@ -1503,6 +1507,7 @@ PAGE = """<!DOCTYPE html>
 
 __ANALYTICS__
 <script>__QRLIB__</script>
+<script>__ZIPLIB__</script>
 <script id="data" type="application/json">__DATA__</script>
 <script>
 __APP__</script>
@@ -1621,6 +1626,7 @@ def render_html(schools, edupage, year, initial_school, initial_class, lang="en"
     return (PAGE
             .replace("__APP__", beside("page.js"))
             .replace("__QRLIB__", vendored("qrcode-generator.js"))
+            .replace("__ZIPLIB__", vendored("fflate.js"))
             .replace("__TITLE__", html.escape(f"{edupage} timetables {year}"))
             .replace("__ANALYTICS__", tag)
             .replace("__DATA__", blob))

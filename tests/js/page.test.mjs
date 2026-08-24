@@ -13,8 +13,8 @@ const run = load();
 const json = (expression) => JSON.parse(run(`JSON.stringify(${expression})`));
 
 test("a saved event is read into a day, a span, a colour and a label", () => {
-  const parsed = json(`readEvents([{day: "Mon", start: "17:15", end: "18:15",
-                                    color: "#F6F2C1", textColor: "",
+  const parsed = json(`readEvents([{day: "Mon", startTime: "17:15", endTime: "18:15",
+                                    backgroundColor: "#F6F2C1", textColor: "",
                                     label: "Dance training"}])`);
   assert.equal(parsed.errors.length, 0);
   assert.deepEqual(parsed.events[0], { day: 0, a: 1035, z: 1095, fg: null,
@@ -24,18 +24,18 @@ test("a saved event is read into a day, a span, a colour and a label", () => {
 test("every weekday key lands on the right day", () => {
   ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].forEach((key, i) => {
     const parsed = json(`readEvents([{day: ${JSON.stringify(key)},
-                                      start: "9:00", end: "10:00", color: "#ff0000"}])`);
+                                      startTime: "9:00", endTime: "10:00", backgroundColor: "#ff0000"}])`);
     assert.equal(parsed.errors.length, 0, key);
     assert.equal(parsed.events[0].day, i, key);
   });
 });
 
 test("an event that cannot be drawn is reported, not dropped in silence", () => {
-  const bad = [{ day: "Xxx", start: "9:00", end: "10:00" },
-               { day: "Mon", start: "25:00", end: "26:00" },
-               { day: "Mon", start: "18:00", end: "17:00" },
-               { day: "Mon", start: "9:00", end: "9:00" },
-               { day: "Mon", start: "9:00", end: "10:00", color: "notacolour" }];
+  const bad = [{ day: "Xxx", startTime: "9:00", endTime: "10:00" },
+               { day: "Mon", startTime: "25:00", endTime: "26:00" },
+               { day: "Mon", startTime: "18:00", endTime: "17:00" },
+               { day: "Mon", startTime: "9:00", endTime: "9:00" },
+               { day: "Mon", startTime: "9:00", endTime: "10:00", backgroundColor: "notacolour" }];
   for (const ev of bad) {
     const parsed = json(`readEvents([${JSON.stringify(ev)}])`);
     assert.equal(parsed.events.length, 0, JSON.stringify(ev));
@@ -47,14 +47,14 @@ test("a saved event of the wrong shape is dropped on the way in", () => {
   /* readEvents complains about what the table could have produced; oneEvent
      throws out what could only come from a hand-edited file or a link. */
   for (const raw of [null, "Mon 9:00", 42, [], { day: "Mon" },
-                     { day: "Mon", start: "9:00" }]) {
+                     { day: "Mon", startTime: "9:00" }]) {
     assert.equal(json(`oneEvent(${JSON.stringify(raw)})`), null, JSON.stringify(raw));
   }
-  assert.deepEqual(json(`oneEvent({day: "Fri", start: "9:0", end: "10:00"})`), null);
+  assert.deepEqual(json(`oneEvent({day: "Fri", startTime: "9:0", endTime: "10:00"})`), null);
   assert.deepEqual(
-    json(`oneEvent({day: "Fri", start: "9:00", end: "10:00", color: "nonsense",
+    json(`oneEvent({day: "Fri", startTime: "9:00", endTime: "10:00", backgroundColor: "nonsense",
                     textColor: "#123", label: 7})`),
-    { day: "Fri", start: "09:00", end: "10:00", color: "#DDDDDD",
+    { day: "Fri", startTime: "09:00", endTime: "10:00", backgroundColor: "#DDDDDD",
       textColor: "#123", label: "" });
 });
 
@@ -75,9 +75,9 @@ test("the counter is told the school's own name, never the reader's", () => {
   // What a parent types is exactly what must not go out.
   run(`state.classes = {};
        myOwn().studentName = "Mari Maasikas";
-       myOwn().titleSchool = "Mari's school";
-       myOwn().titleClass = "Mari's class";
-       state.showName = true;
+       myOwn().schoolName = "Mari's school";
+       myOwn().className = "Mari's class";
+       state.showStudentName = true;
        window.goatcounter = { count: (label) => { globalThis.sent = label; } };
        globalThis.sent = null;
        countVisit();`);
@@ -141,14 +141,14 @@ test("nothing reaches the page as markup, in either view", () => {
          state.subjectColors = {Matemaatika: ${q}, Kunst: ${q}};
          state.classes = {};
          myOwn().studentName = ${q};
-         myOwn().titleSchool = ${q};
-         myOwn().titleClass = ${q};
+         myOwn().schoolName = ${q};
+         myOwn().className = ${q};
          /* One long, one short: a short box draws its time and label together
             through a different line than a tall one. */
          myOwn().events = [
-           {day: "Mon", start: "09:00", end: "10:00", color: "#ff0000", textColor: "", label: ${q}},
-           {day: "Mon", start: "11:00", end: "11:10", color: "#0000ff", textColor: "", label: ${q}}];
-         state.showName = true; state.showSchool = true; state.showClass = true;
+           {day: "Mon", startTime: "09:00", endTime: "10:00", backgroundColor: "#ff0000", textColor: "", label: ${q}},
+           {day: "Mon", startTime: "11:00", endTime: "11:10", backgroundColor: "#0000ff", textColor: "", label: ${q}}];
+         state.showStudentName = true; state.showSchool = true; state.showClass = true;
          printing = false; render(); renderLegend(currentClass().e);`);
     for (const id of ["grid", "foot", "subtitle", "legend"]) {
       const html = json(`(document.getElementById(${JSON.stringify(id)}).innerHTML || "")`);
@@ -158,7 +158,7 @@ test("nothing reaches the page as markup, in either view", () => {
        deliberately not escaped and not checked here. */
   }
   run(`state.school = "68"; state.class = "8"; state.subjectColors = {};
-       state.classes = {}; state.showName = false;
+       state.classes = {}; state.showStudentName = false;
        state.subjectColorStyle = "custom"; render();`);
 });
 
@@ -209,16 +209,16 @@ test("the fallback grid escapes everything it draws", () => {
   run(`state.school = "99"; state.class = "3.a";
        state.subjectColorStyle = "custom"; state.subjectColors = {Matemaatika: ${JSON.stringify(bad)}};
        state.classes = {};
-       myOwn().events = [{day: "Mon", start: "09:00", end: "10:00",
-                          color: "#ff0000", textColor: "", label: ${JSON.stringify(bad)}}];
+       myOwn().events = [{day: "Mon", startTime: "09:00", endTime: "10:00",
+                          backgroundColor: "#ff0000", textColor: "", label: ${JSON.stringify(bad)}}];
        myOwn().studentName = ${JSON.stringify(bad)};
-       state.showName = true; printing = false; render();`);
+       state.showStudentName = true; printing = false; render();`);
   const html = json(`document.getElementById("grid").innerHTML`);
   assert.ok(html.includes("<table"), "the grid view really did render");
   assert.doesNotMatch(html, /<img/, "markup reached the page unescaped");
   assert.match(html, /&lt;img|&amp;lt;img/, "the payload is there, escaped");
   run(`state.school = "68"; state.class = "8"; state.subjectColors = {};
-       state.classes = {}; state.showName = false;
+       state.classes = {}; state.showStudentName = false;
        state.subjectColorStyle = "custom"; render();`);
 });
 
@@ -258,13 +258,13 @@ test("a hostile colour in a link is dropped before it is stored", () => {
   /* Through the real ingestion path, not by calling the filter directly: the
      filter was tested and the call to it was not, so removing the call left
      markup sitting in localStorage with the suite green. */
-  const hostile = JSON.stringify({ subjects: {
-    Matemaatika: { style: "custom", color: 'x"><img src=x>' },
+  const hostile = JSON.stringify({ subjectColors: {
+    Matemaatika: { style: "custom", backgroundColor: 'x"><img src=x>' },
     Bioloogia: { style: 'x"><img src=x>' },
-    Kunst: { style: "school", color: "#abc" } } });
+    Kunst: { style: "school", backgroundColor: "#abc" } } });
   const merged = json(`applyShared(JSON.parse(${JSON.stringify(hostile)}), defaults())`);
-  assert.deepEqual(merged.subjects, { Matemaatika: { style: "custom" },
-                                      Kunst: { style: "school", color: "#abc" } });
+  assert.deepEqual(merged.subjectColors, { Matemaatika: { style: "custom" },
+                                      Kunst: { style: "school", backgroundColor: "#abc" } });
 });
 
 test("a link adds to the other classes rather than replacing them", () => {
@@ -274,6 +274,44 @@ test("a link adds to the other classes rather than replacing them", () => {
         {classes: {"68/7": Object.assign(classDefaults(), {studentName: "Jaan"})}}))`);
   assert.equal(merged.classes["68/7"].studentName, "Jaan");
   assert.equal(merged.classes["68/8"].studentName, "Mari");
+});
+
+test("a big link is compressed, a small one is left alone", () => {
+  /* Not compression for its own sake: past about 2 kB there is no QR code that
+     will hold the link, and a family that recolours a lot of subjects gets
+     there. Small links gain nothing and are left plain, because gzip's header
+     would make them longer. */
+  const small = json(`packSettings(JSON.stringify({lang: "et"}))`);
+  assert.match(small, /^s=/);
+  assert.equal(json(`unpackSettings(${JSON.stringify(small)})`), '{"lang":"et"}');
+
+  const heavy = JSON.stringify({ subjectColors: Object.fromEntries(
+    Array.from({ length: 70 }, (_, i) =>
+      ["Subject number " + i, { style: "custom", backgroundColor: "#0000" + (i % 90 + 10) }])) });
+  const packed = json(`packSettings(${JSON.stringify(heavy)})`);
+  assert.match(packed, /^z=/);
+  assert.ok(packed.length < heavy.length / 3, `only got down to ${packed.length}`);
+  assert.equal(json(`unpackSettings(${JSON.stringify(packed)})`), heavy);
+});
+
+test("a link written by the page is read back by the page", () => {
+  // Both forms, through the real functions rather than the codec on its own.
+  for (const name of ["Eva", "Eva".repeat(400)]) {
+    run(`state.classes = {}; myOwn().studentName = ${JSON.stringify(name)};`);
+    const link = json(`shareUrl()`);
+    run(`location.hash = "#" + link.split("#")[1];`.replace("link", JSON.stringify(link)));
+    assert.equal(json(`readUrl().classes[classKey()].studentName`), name,
+                 `${name.length}-character name did not survive`);
+  }
+  run(`state.classes = {}; location.hash = "";`);
+});
+
+test("a fragment that is not ours is ignored, not thrown", () => {
+  for (const hash of ["", "#", "#anchor", "#s=!!!!", "#z=notgzip", "#z=", "#s="]) {
+    run(`location.hash = ${JSON.stringify(hash)};`);
+    assert.equal(json(`readUrl()`), null, hash);
+  }
+  run(`location.hash = "";`);
 });
 
 test("the address the link uses survives a round trip through base64", () => {
@@ -389,8 +427,8 @@ test("the clock reads the way the timetable prints it", () => {
 });
 
 test("a minute out of range is rejected, not rounded", () => {
-  for (const ev of [{ day: "Mon", start: "9:99", end: "10:00" },
-                    { day: "Mon", start: "9:00", end: "10:99" }]) {
+  for (const ev of [{ day: "Mon", startTime: "9:99", endTime: "10:00" },
+                    { day: "Mon", startTime: "9:00", endTime: "10:99" }]) {
     assert.equal(json(`readEvents([${JSON.stringify(ev)}])`).errors.length, 1,
                  JSON.stringify(ev));
   }
@@ -399,36 +437,36 @@ test("a minute out of range is rejected, not rounded", () => {
 test("an event with no name is still an event", () => {
   /* Unlike the old typed lines, a row with an empty name is a perfectly good
      block of time — someone marking out a gap does not have to name it. */
-  const parsed = json(`readEvents([{day: "Mon", start: "9:00", end: "10:00",
-                                    color: "#DDDDDD", label: ""}])`);
+  const parsed = json(`readEvents([{day: "Mon", startTime: "9:00", endTime: "10:00",
+                                    backgroundColor: "#DDDDDD", label: ""}])`);
   assert.equal(parsed.errors.length, 0);
   assert.equal(parsed.events.length, 1);
 });
 
 test("a settings bag reaches normalise with its colours filtered", () => {
-  const got = json(`normalise({subjects: {A: {color: "#fff"},
-                                          B: {color: 'x"><img src=x>'},
+  const got = json(`normalise({subjectColors: {A: {backgroundColor: "#fff"},
+                                          B: {backgroundColor: 'x"><img src=x>'},
                                           C: {style: "school"},
                                           D: {style: "nonsense"},
                                           E: "not an object"}})`);
-  assert.deepEqual(got.subjects, { A: { color: "#fff" }, C: { style: "school" } });
+  assert.deepEqual(got.subjectColors, { A: { backgroundColor: "#fff" }, C: { style: "school" } });
 });
 
 test("a subject can differ from what every other subject is doing", () => {
   /* The gap the per-subject entry exists to close: the school's own colours
      throughout, with one subject pulled out. */
   run(`state.subjectColorStyle = "school";
-       state.subjects = {Matemaatika: {style: "custom", color: "#123456"}};`);
+       state.subjectColors = {Matemaatika: {style: "custom", backgroundColor: "#123456"}};`);
   assert.equal(json(`colorFor("Matemaatika").bg`), "#123456");
   assert.equal(json(`styleFor("Ajalugu")`), "school");
   // And the radios mean every subject, so they clear the exception.
   run(`(() => { state.subjectColorStyle = "palette";
-       for (const e of Object.values(state.subjects)) delete e.style;
+       for (const e of Object.values(state.subjectColors)) delete e.style;
        tidySubjects(); })()`);
   assert.equal(json(`styleFor("Matemaatika")`), "palette");
-  assert.deepEqual(json(`state.subjects`), { Matemaatika: { color: "#123456" } },
+  assert.deepEqual(json(`state.subjectColors`), { Matemaatika: { backgroundColor: "#123456" } },
                    "the colour survives so switching back restores it");
-  run(`state.subjects = {}; state.subjectColorStyle = "custom";`);
+  run(`state.subjectColors = {}; state.subjectColorStyle = "custom";`);
 });
 
 test("the README describes the settings that actually exist", () => {
@@ -441,14 +479,37 @@ test("the README describes the settings that actually exist", () => {
   assert.ok(block, "the settings section has gone");
   const shown = JSON.parse(block[1]);
   assert.deepEqual(Object.keys(shown).sort(), json(`Object.keys(defaults())`).sort());
-  assert.deepEqual(Object.keys(shown.classes["68/8"]).sort(),
-                   json(`Object.keys(classDefaults())`).sort());
+  /* The written form leaves empty fields out, so the example shows a subset —
+     but never a field that does not exist. */
+  const real = json(`Object.keys(classDefaults())`);
+  for (const key of Object.keys(shown.classes["68/8"])) {
+    assert.ok(real.includes(key), `no such per-class setting: ${key}`);
+  }
   // And it survives being read back in as settings.
   const back = json(`normalise(${JSON.stringify(shown)})`);
   assert.equal(back.subjectColorStyle, shown.subjectColorStyle);
-  assert.deepEqual(back.subjects, shown.subjects);
+  assert.deepEqual(back.subjectColors, shown.subjectColors);
   assert.equal(back.classes["68/8"].studentName, "Eva");
   assert.equal(back.classes["68/8"].events.length, 1);
   assert.deepEqual(back.classes["68/8"].studyGroups,
                    { "Alfa/Beeta/Gamma": "Beeta", "8.1/8.2/8.3/8.4": "8.1" });
+});
+
+test("nothing empty is written down", () => {
+  /* In memory every field is there so no reader has to check; on the way out
+     the empty ones go, because a file full of "" and {} is harder to read. */
+  const written = json(`slim(Object.assign(defaults(), {
+    classes: {"68/8": Object.assign(classDefaults(), {studentName: "Eva"})},
+    subjectColors: {Ajalugu: {style: "custom", backgroundColor: "#123456", textColor: ""}}
+  }))`);
+  assert.deepEqual(Object.keys(written.classes["68/8"]), ["studentName"]);
+  assert.deepEqual(written.subjectColors.Ajalugu,
+                   { style: "custom", backgroundColor: "#123456" });
+  assert.ok(!("classes" in json(`slim({classes: {}})`)));
+  // false and 0 are values, not emptiness.
+  assert.deepEqual(json(`slim({showRoom: false, n: 0})`), { showRoom: false, n: 0 });
+  // And it survives being read back.
+  const back = json(`normalise(${JSON.stringify(written)})`);
+  assert.equal(back.classes["68/8"].schoolName, "", "the default is put back");
+  assert.deepEqual(back.classes["68/8"].studyGroups, {});
 });

@@ -1133,6 +1133,9 @@ PAGE = """<!DOCTYPE html>
   :root {
     --bg: #ffffff; --fg: #1b1d21; --muted: #6b7280;
     --line: #d6d9de; --panel: #f6f7f9; --accent: #1f5c8b;
+    /* A step darker than --panel, so a heading row still reads as a heading
+       above rows that are themselves striped with --panel. */
+    --head: #e8ecf1;
   }
   * { box-sizing: border-box; }
   body {
@@ -1188,11 +1191,20 @@ PAGE = """<!DOCTYPE html>
      they share sit in the same places and line up down the page. */
   .evtable { width: auto; max-width: 100%; border-collapse: collapse;
              margin: 6px 0 10px; }
+  /* A cell here holds several controls, so where one column ends and the next
+     begins is the thing that needs saying. A rule down each boundary says it;
+     the row stripes are for reading along a row, which is a different job. */
+  .evtable th, .evtable td { padding: 3px 12px; white-space: nowrap;
+                             border: none; border-left: 1px solid var(--line); }
+  .evtable th:first-child, .evtable td:first-child { padding-left: 0;
+                                                     border-left: none; }
   .evtable th { font-size: 11px; font-weight: 600; color: var(--muted);
-                text-align: left; padding: 0 14px 5px 0; border: none;
-                background: none; white-space: nowrap; }
-  .evtable td { padding: 3px 14px 3px 0; border: none; vertical-align: middle;
-                white-space: nowrap; }
+                text-align: left; padding-top: 5px; padding-bottom: 5px;
+                background: var(--head); border-bottom: 1px solid var(--line); }
+  /* The rule between headings is drawn on the heading itself, so it stays
+     visible against the darker background. */
+  .evtable th + th { border-left-color: #cdd3da; }
+  .evtable td { vertical-align: middle; }
   .evtable tbody tr:nth-child(even) td { background: var(--panel); }
   .evtable .rowlabel { font-size: 13px; padding-right: 18px; }
   /* One colour, however it is arrived at: the radio and the control that goes

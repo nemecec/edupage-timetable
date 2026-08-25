@@ -170,8 +170,7 @@ STRINGS = {
                               "maintain this page."),
         "sourceLink": "source",
         "footer.built": "data fetched {0}",
-        "footer.counts": ("GoatCounter counts the visits. No cookies, nothing "
-                          "personal, nothing shared."),
+        "footer.counts": "GoatCounter counts the visits. No cookies.",
         "footer.reports": ("If the page breaks, it tells us, and sends your "
                            "settings with the fault. Every name and label you "
                            "typed is replaced by its length first."),
@@ -276,8 +275,7 @@ STRINGS = {
                               "andmetest. Kool seda lehte ei avalda ega halda."),
         "sourceLink": "allikas",
         "footer.built": "andmed laaditud {0}",
-        "footer.counts": ("Külastusi loeb GoatCounter. Küpsiseid ei kasutata, "
-                          "isikuandmeid ei koguta ega jagata."),
+        "footer.counts": "Külastusi loeb GoatCounter. Küpsiseid ei kasutata.",
         "footer.reports": ("Kui leht katki läheb, teatab ta sellest meile ja "
                            "saadab kaasa sinu seaded. Kõik nimed ja sildid, "
                            "mis sa ise kirjutasid, asendatakse enne nende "

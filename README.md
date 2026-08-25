@@ -128,6 +128,22 @@ late. So a bell schedule can carry variants, chosen by what the class is named.
 a clock time rather than a length: there is nothing in front of it to measure
 from.
 
+**SädeTERA is a third shape.** Its periods are at fixed times, like an
+ordinary school, so there is no clock to run. But a paired lesson does not run
+to the end of its second period: it runs eighty minutes from where it starts,
+and finishes before that period would.
+
+    1. 9.00-9.45   2. 9.50-10.35   3. 10.45-11.30   4. 11.35-12.20
+    Lõuna + loovaeg 12.20-13.00
+    5. 13.00-13.45   6. 13.50-14.35   7. 14.40-15.25
+    a pair = 80 min from its own start, so 1-2 is 9.00-10.20
+
+EduPage carries period times for this school, and they are placeholders: 8.00,
+9.00, 10.00, one an hour. The page drew those until the school's own card was
+read. A named break here is named after the period it follows, and timed from
+that period's end to the next one's start, so it cannot drift away from them.
+A day that stops before lunch is not given a lunch.
+
 **LõunaTERA publishes fixed blocks instead.** There is no clock to run. Each
 block says which aSc periods it holds, and when it is:
 

@@ -86,9 +86,9 @@ class WholePage(unittest.TestCase):
         self.assertEqual(len(self.data["schools"]), 4)
         self.assertEqual(sum(len(s["c"]) for s in self.data["schools"]), 41)
         self.assertEqual((len(rows), len(boxes)), (1935, 1589))
-        # 70 subject names, plus the four named breaks. A break is drawn and
+        # 70 subject names, plus the five named breaks. A break is drawn and
         # recolored like a lesson, so it needs a color of its own.
-        self.assertEqual(len(self.data["palette"]), 74)
+        self.assertEqual(len(self.data["palette"]), 75)
         # Every class carries lessons, and the group pickers are populated.
         self.assertTrue(all(c["e"] for s in self.data["schools"] for c in s["c"]))
         self.assertEqual(sum(len(c["v"]) for s in self.data["schools"]
@@ -137,7 +137,8 @@ class WholePage(unittest.TestCase):
         a gap."""
         breaks = {b["n"] for s in self.data["schools"] for c in s["c"]
                   for day in c["h"].values() for b in day["b"] if b["n"]}
-        self.assertEqual(breaks, {"Vaba aeg", "Amps", "Hommikuamps", "Lõuna"})
+        self.assertEqual(breaks, {"Vaba aeg", "Amps", "Hommikuamps", "Lõuna",
+                                  "Lõuna + loovaeg"})
         for name in breaks:
             with self.subTest(name=name):
                 self.assertEqual(self.data["palette"][name],
@@ -232,15 +233,26 @@ class WholePage(unittest.TestCase):
                          {"ProTERA ja TERA gümnaasium": True, "SädeTERA": True,
                           "LõunaTERA": True, "TäheTERA": False})
 
-    def test_a_school_that_keeps_its_own_period_times_uses_them(self):
-        # SädeTERA writes no day plan here, but its periods carry real clock
-        # times; discarding them cost that school its timeline.
+    def test_sadetera_runs_its_published_periods_not_edupages(self):
+        """EduPage carries period times for this school and they are
+        placeholders — 8.00, 9.00, 10.00, one an hour. The page drew those."""
         school = next(s for s in self.data["schools"] if s["l"] == "SädeTERA")
         boxes = [e for c in school["c"] for e in c["e"] if not e["c"]]
         self.assertTrue(boxes)
         self.assertTrue(all(e["a"] is not None and e["z"] > e["a"] for e in boxes))
         first = min(boxes, key=lambda e: e["a"])
-        self.assertEqual((first["a"], first["w"]), (480, "08:00–08:45"))
+        self.assertEqual((first["a"], first["w"]), (540, "9.00–9.45"))
+        # Every box lands on a published period, and a pair runs eighty minutes
+        # rather than to the end of its second period.
+        starts = {"9.00", "9.50", "10.45", "11.35", "13.00", "13.50", "14.40"}
+        self.assertEqual({e["w"].split("–")[0] for e in boxes} - starts, set())
+        pair = next(e for e in boxes if e["u"] > 1 and e["w"].startswith("9.00"))
+        self.assertEqual(pair["w"], "9.00–10.20")
+        # And the break the card names, timed from the periods around it.
+        cls = next(c for c in school["c"] if c["e"])
+        rest = [(b["n"], b["s"], b["e"]) for day in cls["h"].values() for b in day["b"]]
+        self.assertTrue(rest, "no break at all")
+        self.assertEqual(set(rest), {("Lõuna + loovaeg", "12.20", "13.00")})
 
     def test_every_class_with_a_day_plan_gets_its_times(self):
         """The check that would have caught a class quietly losing them.

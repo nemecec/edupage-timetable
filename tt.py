@@ -334,6 +334,24 @@ BELLS = {
             "defaultGap": 10,
         }],
     },
+    # SädeTERA is a third shape again. Its periods are at fixed times, like an
+    # ordinary school, so there is no clock to run — but a paired lesson does
+    # not run to the end of its second period. It runs eighty minutes from
+    # where it starts, and ends before the second period would.
+    #
+    # EduPage carries period times for this school, and they are placeholders:
+    # 8.00, 9.00, 10.00, one an hour. That is what the page drew until now.
+    # Source: tartuerakool.ee/sadetera/ — I ja II kooliaste
+    "SädeTERA": {
+        "name": "Päevakava",
+        "periods": [("9:00", "9:45"), ("9:50", "10:35"), ("10:45", "11:30"),
+                    ("11:35", "12:20"), ("13:00", "13:45"), ("13:50", "14:35"),
+                    ("14:40", "15:25")],
+        "paired": 80,
+        # Named after the period it follows. The clock comes from the periods
+        # on either side of it, so it cannot drift away from them.
+        "gaps": [{"after": 4, "name": "Lõuna + loovaeg"}],
+    },
     # LõunaTERA does not work the way ProTERA does. Its day plan is published as
     # fixed blocks rather than lesson lengths, the two grade bands run different
     # days, and the breaks — Puder, Lõuna/Õue, Hea aeg — are lessons in the
@@ -439,6 +457,32 @@ def day_times(slot_kinds, cfg):
 def _minutes(text):
     hour, _, minute = text.partition(":")
     return int(hour) * 60 + int(minute)
+
+
+def fixed_periods(cfg):
+    """A school's own period clock, when it publishes one, as {period: (from, to)}."""
+    published = (cfg or {}).get("periods")
+    return {i: pair for i, pair in enumerate(published, start=1)} if published else None
+
+
+def named_gaps(cfg, clock, slots):
+    """The named breaks between fixed periods.
+
+    A gap is named after the period it follows, and timed from that period's
+    end to the next one's start. A break nobody is there for is not drawn: a
+    day that stops before lunch has no lunch on it.
+    """
+    last_period = max((s["period"] + s["periods"] - 1 for s in slots), default=0)
+    out = []
+    for gap in (cfg or {}).get("gaps", ()):
+        after = gap["after"]
+        before, behind = clock.get(after), clock.get(after + 1)
+        if not (before and behind) or after >= last_period:
+            continue
+        at, until = _minutes(before[1]), _minutes(behind[0])
+        out.append({"after": after, "name": gap["name"], "at": at, "until": until,
+                    "start": _fmt_time(at), "end": _fmt_time(until)})
+    return out
 
 
 def band_slots(cfg, class_name, day):
@@ -722,6 +766,11 @@ def extract(result, class_name, n_periods=None, cfg=None, period_times=None):
     # Slot the day, so a paired lesson is one cell and the breaks land in a
     # fixed column whatever shape the day happens to take.
     n_periods = n_periods or max((e["period"] for e in entries), default=0)
+    # Fixed periods, either the school's published ones or EduPage's. `paired`
+    # is set only where the school says how long a pair runs.
+    fixed = fixed_periods(cfg)
+    clock = fixed or period_times
+    paired = cfg.get("paired") if (cfg and fixed) else None
     shape = {}
     for day in {e["day"] for e in entries}:
         published = band_slots(cfg, cls["name"], day) if cfg else None
@@ -738,23 +787,27 @@ def extract(result, class_name, n_periods=None, cfg=None, period_times=None):
             # A school whose plan is published as blocks has no clock to run, so
             # a class its bands do not cover — the empty markers standing in for
             # a grade, say — goes without times.
-            if cfg and not cfg.get("bands"):
+            if cfg and not cfg.get("bands") and not fixed:
                 kinds = ["P" if s["periods"] > 1 else "L" for s in slots]
                 times, breaks = day_times(kinds, cfg)
                 for slot, time in zip(slots, times):
                     slot.update(time)
-            elif period_times:
-                # The school's own period clock. Each slot runs from the start
-                # of its first period to the end of its last, so a pair is one
-                # box spanning both and the gap between them stays a gap.
-                breaks = []
+            elif clock:
+                # Periods at fixed times. A slot starts where its first period
+                # does. Where the school publishes how long a pair runs, that
+                # decides the end — a pair can finish before its second period
+                # would. Otherwise the slot runs to the end of its last period.
+                breaks = named_gaps(cfg, clock, slots) if fixed else []
                 for slot in slots:
-                    first = period_times.get(slot["period"])
-                    last = period_times.get(slot["period"] + slot["periods"] - 1, first)
+                    first = clock.get(slot["period"])
+                    last = clock.get(slot["period"] + slot["periods"] - 1, first)
                     if not first:
                         continue
-                    slot.update({"at": _minutes(first[0]),
-                                 "start": first[0], "end": last[1]})
+                    at = _minutes(first[0])
+                    end = at + paired if (paired and slot["periods"] > 1) \
+                        else _minutes(last[1])
+                    slot.update({"at": at, "start": _fmt_time(at),
+                                 "end": _fmt_time(end)})
             else:
                 breaks = []
         shape[day] = {"slots": slots, "breaks": breaks}
@@ -778,14 +831,15 @@ def extract(result, class_name, n_periods=None, cfg=None, period_times=None):
                 e["startMin"] = slot["at"]
                 e["endMin"] = _minutes(last["end"].replace(".", ":"))
                 e["time"] = f"{slot['start']}–{last['end']}"
-            elif period_times and e["slot"] and "at" in slots[e["slot"] - 1]:
-                slot = slots[e["slot"] - 1]
-                first = period_times.get(e["startPeriod"])
-                last = period_times.get(e["startPeriod"] + e["duration"] - 1, first)
+            elif clock and e["slot"] and "at" in slots[e["slot"] - 1]:
+                first = clock.get(e["startPeriod"])
+                last = clock.get(e["startPeriod"] + e["duration"] - 1, first)
                 if first:
-                    e["startMin"] = _minutes(first[0])
-                    e["endMin"] = _minutes(last[1])
-                    e["time"] = f"{first[0]}–{last[1]}"
+                    at = _minutes(first[0])
+                    end = at + paired if (paired and e["duration"] > 1) \
+                        else _minutes(last[1])
+                    e["startMin"], e["endMin"] = at, end
+                    e["time"] = f"{_fmt_time(at)}–{_fmt_time(end)}"
             elif cfg and not cfg.get("bands") and e["slot"]:
                 slot = slots[e["slot"] - 1]
                 if e["startPeriod"] != slot["period"]:

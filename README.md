@@ -415,7 +415,8 @@ Some of these choices are not obvious:
 - **The named breaks are rows in that table too**, so *Vaba aeg* and *Amps* can
   be renamed and recolored like any subject. They sit after the subjects, under
   a heading of their own, because a gap is a different kind of thing from a
-  lesson.
+  lesson. Among themselves they run in clock order, the order the day runs
+  them: the midday hour first, the afternoon snack after it.
 
   A break keeps its diagonal hatch, which is what says "not a lesson". The
   stripes are translucent, so the color underneath shows through. The default

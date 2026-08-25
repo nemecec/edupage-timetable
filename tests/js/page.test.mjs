@@ -671,8 +671,10 @@ test("the breaks come last, under a heading of their own", () => {
   const names = rows.map(subjectOf);
   const breakAt = names.indexOf("Break, and more");
   assert.ok(breakAt >= 0, "the break has a row");
-  assert.equal(breakAt, names.length - 1, "and it is the last one");
   assert.ok(rows[breakAt - 1].includes("grouphead"), "the heading sits above it");
+  /* The day runs the long break first and the snack after it. Sorted by name
+     the snack would come first, which is not how anybody reads a day. */
+  assert.deepEqual(names.slice(breakAt), ["Break, and more", "Amps"]);
   // Everything before the heading is a lesson.
   for (const row of rows.slice(0, breakAt - 1)) {
     assert.ok(subjectOf(row), "a row with no subject before the heading");

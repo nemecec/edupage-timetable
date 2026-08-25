@@ -47,7 +47,11 @@ const DATA = {
       h: { 0: { s: [{ p: 1, d: 2, a: "9.00", z: "10.20" },
                     { p: 3, d: 1, a: "10.30", z: "11.15" }],
                 b: [{ a: 1, n: "Break, and more", s: "10.20", e: "10.30",
-                      m: 620, x: 630 }] } },
+                      m: 620, x: 630 },
+                    /* Later in the day, earlier in the alphabet: the table has
+                       to read the clock, not the name. */
+                    { a: 3, n: "Amps", s: "11.15", e: "11.30",
+                      m: 675, x: 690 }] } },
       e: [
         { d: 0, p: 1, s: "Matemaatika", S: 0, g: [], t: ["MT"], T: ["Mari Tamm"],
           r: ["A101"], c: 0, k: 1, u: 2, w: "9.00–10.20", o: 0, a: 540, z: 620 },

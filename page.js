@@ -1102,7 +1102,7 @@ function renderLegend(shown) {
   /* Breaks as well as lessons: both are drawn, so both are the reader's to
      rename and recolor. The breaks come after the subjects, under a heading of
      their own, because a gap is a different kind of thing from a lesson. */
-  const breaks = breaksOnScreen().slice().sort();
+  const breaks = breaksOnScreen();
   const lessons = [...new Set(shown.map(e => e.s))].sort()
                     .filter(name => !breaks.includes(name));
   const used = lessons.concat(breaks);
@@ -1514,14 +1514,20 @@ function syncPerClassInputs() {
    then hunting for its hex code is exactly the fiddly part. */
 const evRows = document.getElementById("evrows");
 
-/* Every named break the class has, on any day. */
+/* Every named break the class has, on any day, in the order the day runs
+   them. Alphabetical put the afternoon snack above the midday hour, which is
+   not how anybody reads a day. */
 function breaksOnScreen() {
   const shape = currentClass().h || {};
-  const names = [];
+  const first = new Map();
   for (const day of Object.values(shape)) {
-    for (const b of (day.b || [])) if (b.n && !names.includes(b.n)) names.push(b.n);
+    for (const b of (day.b || [])) {
+      if (!b.n) continue;
+      const at = typeof b.m === "number" ? b.m : 0;
+      if (!first.has(b.n) || at < first.get(b.n)) first.set(b.n, at);
+    }
   }
-  return names;
+  return [...first.keys()].sort((p, q) => first.get(p) - first.get(q));
 }
 
 function subjectsOnScreen() {

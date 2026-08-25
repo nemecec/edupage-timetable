@@ -348,6 +348,9 @@ BELLS = {
                     ("11:35", "12:20"), ("13:00", "13:45"), ("13:50", "14:35"),
                     ("14:40", "15:25")],
         "paired": 80,
+        # Some doubles are written as two cards of one period each. See
+        # pair_adjacent() for what is joined and what is left alone.
+        "pairAdjacent": True,
         # Named after the period it follows. The clock comes from the periods
         # on either side of it, so it cannot drift away from them.
         "gaps": [{"after": 4, "name": "Lõuna + loovaeg"}],
@@ -459,6 +462,55 @@ def _minutes(text):
     return int(hour) * 60 + int(minute)
 
 
+def pair_adjacent(entries, cfg):
+    """Join two lessons of the same subject in a row into one double.
+
+    A school whose card gives a double its own clock does not always write it
+    that way. SädeTERA splits some doubles into two cards of one period each,
+    and drawn as they are written they read as two lessons with a break in
+    between — which is not what happens in the room.
+
+    A run of the same subject is paired from its start: four periods become two
+    doubles, three become a double and then a single. The card gives a double
+    its own clock and offers nothing longer, so a run is read as doubles for as
+    far as it goes.
+
+    A named break ends a pair. Periods either side of lunch are two lessons
+    with lunch between them, whatever the subject is called.
+    """
+    gaps = {g["after"] for g in cfg.get("gaps", ())}
+    alone = {}
+    for e in entries:
+        alone.setdefault((e["day"], e["period"]), []).append(e)
+    # One lesson, one period, nothing else sharing the slot: a class split into
+    # groups is not a double, whatever the groups are called.
+    single = {where: here[0] for where, here in alone.items()
+              if len(here) == 1 and here[0]["duration"] == 1}
+
+    def same_subject(day, period, subject):
+        other = single.get((day, period))
+        return other if other and other["subject"] == subject else None
+
+    for (day, period), first in sorted(single.items()):
+        subject = first["subject"]
+        if same_subject(day, period - 1, subject):
+            continue                      # not the start of the run
+        run = [period]
+        while same_subject(day, run[-1] + 1, subject):
+            run.append(run[-1] + 1)
+        step = 0
+        while step < len(run) - 1:
+            at = run[step]
+            if at in gaps:                # a break, so this one stands alone
+                step += 1
+                continue
+            head, tail = single[(day, at)], single[(day, at + 1)]
+            head["duration"] = tail["duration"] = 2
+            tail["startPeriod"] = head["startPeriod"]
+            tail["part"] = 1
+            step += 2
+
+
 def fixed_periods(cfg):
     """A school's own period clock, when it publishes one, as {period: (from, to)}."""
     published = (cfg or {}).get("periods")
@@ -469,18 +521,25 @@ def named_gaps(cfg, clock, slots):
     """The named breaks between fixed periods.
 
     A gap is named after the period it follows, and timed from that period's
-    end to the next one's start. A break nobody is there for is not drawn: a
-    day that stops before lunch has no lunch on it.
+    end to the next one's start. It is reported after a *slot*, though, because
+    that is what the page counts. A day of doubles has fewer slots than
+    periods, and a break numbered by period reads as one past the end of the
+    day — which is how lunch went missing from every morning of doubles.
+
+    A break nobody is there for is not drawn: a day that stops before lunch has
+    no lunch on it.
     """
-    last_period = max((s["period"] + s["periods"] - 1 for s in slots), default=0)
     out = []
     for gap in (cfg or {}).get("gaps", ()):
         after = gap["after"]
         before, behind = clock.get(after), clock.get(after + 1)
-        if not (before and behind) or after >= last_period:
+        if not (before and behind):
             continue
+        index = sum(1 for s in slots if s["period"] + s["periods"] - 1 <= after)
+        if not 0 < index < len(slots):
+            continue                    # nothing before it, or nothing after
         at, until = _minutes(before[1]), _minutes(behind[0])
-        out.append({"after": after, "name": gap["name"], "at": at, "until": until,
+        out.append({"after": index, "name": gap["name"], "at": at, "until": until,
                     "start": _fmt_time(at), "end": _fmt_time(until)})
     return out
 
@@ -762,6 +821,8 @@ def extract(result, class_name, n_periods=None, cfg=None, period_times=None):
                                     startPeriod=start, part=step))
 
     entries.sort(key=lambda e: (e["day"], e["period"], e["subject"], "/".join(e["groups"])))
+    if (cfg or {}).get("pairAdjacent"):
+        pair_adjacent(entries, cfg)
 
     # Slot the day, so a paired lesson is one cell and the breaks land in a
     # fixed column whatever shape the day happens to take.

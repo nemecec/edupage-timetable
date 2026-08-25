@@ -85,7 +85,9 @@ class WholePage(unittest.TestCase):
         boxes = [e for e in rows if not e["c"]]
         self.assertEqual(len(self.data["schools"]), 4)
         self.assertEqual(sum(len(s["c"]) for s in self.data["schools"]), 41)
-        self.assertEqual((len(rows), len(boxes)), (1935, 1589))
+        # Fewer boxes than periods-with-a-lesson, because SädeTERA writes some
+        # doubles as two cards and those are joined back into one.
+        self.assertEqual((len(rows), len(boxes)), (1935, 1555))
         # 70 subject names, plus the five named breaks. A break is drawn and
         # recolored like a lesson, so it needs a color of its own.
         self.assertEqual(len(self.data["palette"]), 75)
@@ -175,6 +177,47 @@ class WholePage(unittest.TestCase):
         self.assertEqual(breaks, [("Vaba aeg", "11.50", "12.50"),
                                   ("Amps", "13.35", "13.55")])
 
+    def test_a_double_written_as_two_cards_is_drawn_as_one(self):
+        """SädeTERA writes some doubles as two cards of one period each. Drawn
+        as written they read as two lessons with a break in between, which is
+        not what happens in the room."""
+        school = next(s for s in self.data["schools"] if s["l"] == "SädeTERA")
+
+        def monday(klass, day=0):
+            cls = next(c for c in school["c"] if c["n"].strip() == klass)
+            first = {}
+            for e in cls["e"]:
+                if e["d"] == day and not e["c"]:
+                    first.setdefault(e["p"], e)
+            return [(e["w"], e["s"]) for _, e in sorted(first.items())]
+
+        # Two in a row become one, on the double column's clock.
+        self.assertIn(("9.50–11.10", "Kirjandus"), monday("6. S"))
+        # A run of four becomes two doubles, a run of three a double then a
+        # single: the card offers a double and nothing longer.
+        self.assertEqual(monday("1. S"),
+                         [("9.00–10.20", "Üldõpetus"), ("10.45–12.05", "Üldõpetus"),
+                          ("13.00–13.45", "Inglise keel")])
+        self.assertEqual(monday("2. S", day=4),
+                         [("9.00–9.45", "Inglise keel"), ("9.50–11.10", "Üldõpetus"),
+                          ("11.35–12.20", "Üldõpetus")])
+        # Never over lunch. These two are one subject in a row on paper.
+        pair = [w for w, s in monday("5. S", day=1) if s == "Liikumisõpetus"]
+        self.assertEqual(pair, ["11.35–12.20", "13.00–13.45"])
+
+        # A break is reported after a slot, not after a period. A morning of
+        # doubles has fewer slots than periods, and numbering lunch by period
+        # put it past the end of the day, where the page drops it.
+        cls = next(c for c in school["c"] if c["n"].strip() == "1. S")
+        lunch = {int(d): [b["a"] for b in day["b"]] for d, day in cls["h"].items()}
+        self.assertEqual(lunch[0], [2], "Monday is two doubles then lunch")
+        for day, after in lunch.items():
+            slots = len(cls["h"][str(day)]["s"])
+            for index in after:
+                self.assertLess(index, slots, "day %d: the page will drop it" % day)
+        # Friday stops at 11.30, so it is given no lunch at all.
+        self.assertEqual(lunch[4], [])
+
     def test_a_lesson_running_past_one_published_block_ends_where_it_ends(self):
         # LõunaTERA publishes blocks rather than lesson lengths. A lesson
         # covering two of them used to stop at the end of the first.
@@ -240,7 +283,7 @@ class WholePage(unittest.TestCase):
         boxes = [e for c in school["c"] for e in c["e"] if not e["c"]]
         self.assertTrue(boxes)
         self.assertTrue(all(e["a"] is not None and e["z"] > e["a"] for e in boxes))
-        first = min(boxes, key=lambda e: e["a"])
+        first = min(boxes, key=lambda e: (e["a"], e["u"]))
         self.assertEqual((first["a"], first["w"]), (540, "9.00–9.45"))
         # Every box lands on a published period, and a pair runs eighty minutes
         # rather than to the end of its second period.

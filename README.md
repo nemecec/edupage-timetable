@@ -138,6 +138,13 @@ and finishes before that period would.
     5. 13.00-13.45   6. 13.50-14.35   7. 14.40-15.25
     a pair = 80 min from its own start, so 1-2 is 9.00-10.20
 
+The card has two columns, one for a single lesson and one for a double, and
+the school does not always write a double as one card. Where the same subject
+runs in consecutive periods, those are read as doubles from the start of the
+run: four periods become two doubles, three become a double and then a single.
+A named break ends a pair, so the periods either side of lunch stay two
+lessons.
+
 EduPage carries period times for this school, and they are placeholders: 8.00,
 9.00, 10.00, one an hour. The page drew those until the school's own card was
 read. A named break here is named after the period it follows, and timed from

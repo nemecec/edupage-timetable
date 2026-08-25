@@ -370,6 +370,11 @@ period grid, which needs no times.
   scales itself to fill exactly one sheet. The scale is measured, not guessed.
   The colors survive even with Chrome's "Background graphics" unticked, which is
   its default, because the page forces `print-color-adjust: exact`.
+- **The plain grid** — what a school with no times at all gets — runs weekdays
+  across the top and periods down the side, the same way round as the timeline.
+  It used to be transposed, so the two views of one week read differently.
+  Periods the class never reaches are dropped from the bottom; an empty one in
+  the middle stays, because it is a break and the numbers either side say so.
 - **The printed sheet** carries the date the data was read and a QR code of the
   link, captioned *Edit it here*. A sheet on the fridge can then be picked back
   up on a phone with every choice still on it. Past about 2 kB no code holds the

@@ -698,8 +698,15 @@ function renderTimeline(school, cls, shown, mine, scale) {
                    e.r.join(" / "), when, e.u > 1 ? t("paired") : t("single"),
                    e.o ? t("noExactTime") : ""].filter(Boolean).join("\n");
       const name = lessonTitle(e);
-      let body = '<div class="when">' + esc(when) + (e.o ? " ?" : "") + "</div>" +
-                 '<div class="what">' + esc(name) + "</div>";
+      /* A twenty-minute box has room for one line. Stacked, the time takes it
+         and the name falls off the bottom, so a short lesson showed a clock
+         and nothing else. LõunaTERA writes its breaks as lessons, and Puder
+         is twenty minutes. */
+      let body = height >= 30
+        ? '<div class="when">' + esc(when) + (e.o ? " ?" : "") + "</div>" +
+          '<div class="what">' + esc(name) + "</div>"
+        : '<div class="what oneline"><span class="clock">' +
+          esc(when + (e.o ? " ?" : "")) + "</span> " + esc(name) + "</div>";
       if (height >= 54 && meta.length) {
         body += '<div class="who2">' + esc(meta.join(" · ")) + "</div>";
       }
@@ -720,7 +727,8 @@ function renderTimeline(school, cls, shown, mine, scale) {
       const body = height >= 30
         ? '<div class="when">' + esc(when) + "</div>" +
           '<div class="what">' + esc(it.label) + "</div>"
-        : '<div class="what">' + esc(when + " " + it.label) + "</div>";
+        : '<div class="what oneline"><span class="clock">' + esc(when) +
+          "</span> " + esc(it.label) + "</div>";
       h += '<div class="ev mine' + (height < 40 ? " tight" : "") +
            '" style="' + place(it, over ? 16 : 0) +
            "background-color:" + esc(it.bg) + ";color:" + esc(fg) + '" title="' +
@@ -982,7 +990,10 @@ function fitGrid(html) {
   return fitToSheet((s) => {
     grid.innerHTML = html;
     grid.style.setProperty("--grid", s);
-  }, 0.4, 1.0);
+    /* The same floor the timeline has. 0.4 was enough while the grid ran days
+       down the side — five rows. Turned round it has a row per period, and
+       three TäheTERA classes came out six pixels past the sheet. */
+  }, 0.25, 1.0);
 }
 
 /* Outer height of the footer, margins included: the sheet has to hold it, and
@@ -1044,20 +1055,31 @@ function render() {
     bucket.get(k).push(e);
   }
 
-  const cols = columnModel(school);
+  /* Weekdays across the top, periods down the side — the way the timeline
+     reads, and the way a school prints one. It used to be the other way round,
+     which meant the two views of the same week were transposed. */
+  let cols = columnModel(school);
+  /* Periods this class never reaches are dropped from the bottom, the way the
+     timeline drops its trailing free slots. An empty period in the middle
+     stays: it is a break, and the numbers either side of it say so. */
+  const lastUsed = Math.max(0, ...shown.map(e => e.p));
+  cols = cols.filter(col => col.p.n <= lastUsed);
   const dayIdx = daysWith(school, parsed.events);
   const anyMine = parsed.events.length > 0;
   let h = "<table><thead><tr><th></th>";
   {
-    for (const col of cols) {
-      h += "<th>" + columnLabel(school, cls, col) + "</th>";
-    }
-    if (anyMine) h += "<th>" + esc(t("mineCol")) + "</th>";
+    for (const i of dayIdx) h += "<th>" + esc(dayLabel(school, i)) + "</th>";
     h += "</tr></thead><tbody>";
-    for (const i of dayIdx) {
-      h += "<tr><th>" + esc(dayLabel(school, i)) + "</th>";
-      for (const col of cols) h += bodyCell(cls, i, col, bucket);
-      if (anyMine) h += mineCell(parsed.events.filter(ev => ev.day === i));
+    for (const col of cols) {
+      h += '<tr><th class="slot">' + columnLabel(school, cls, col) + "</th>";
+      for (const i of dayIdx) h += bodyCell(cls, i, col, bucket);
+      h += "</tr>";
+    }
+    /* One row for what the reader added. Their events carry a clock, and this
+       view has none to hang them on, so they sit under the day they belong to. */
+    if (anyMine) {
+      h += '<tr><th class="slot">' + esc(t("mineCol")) + "</th>";
+      for (const i of dayIdx) h += mineCell(parsed.events.filter(ev => ev.day === i));
       h += "</tr>";
     }
   }

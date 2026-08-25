@@ -1503,6 +1503,9 @@ PAGE = """<!DOCTYPE html>
   .brk .time { font-size: 11px; color: #3d444d; font-variant-numeric: tabular-nums; }
   thead th.brk, tbody th.brk { font-weight: 500; color: var(--muted); font-size: 11px;
                                white-space: normal; min-width: 80px; }
+  /* The period column. It holds "1" or "HA", not a weekday, so it needs no
+     width of its own and reads better centred. */
+  tbody th.slot { text-align: center; }
   .slottime { font-weight: 400; color: #6b7280; font-variant-numeric: tabular-nums; }
   textarea { font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; width: 100%;
              padding: 6px 8px; border: 1px solid var(--line); border-radius: 5px;
@@ -1546,6 +1549,13 @@ PAGE = """<!DOCTYPE html>
   .ev .what { font-weight: 600; font-size: 12px; line-height: 1.25; }
   .ev .who2 { font-size: 10.5px; opacity: .85; line-height: 1.25; }
   .ev.tight .what { font-size: 11px; }
+  /* One line in a box only tall enough for one. The clock reads lighter than
+     the name, as it does when the two are stacked, and a name too long for the
+     column is cut rather than wrapped out of sight. */
+  .ev .what.oneline { font-weight: 600; white-space: nowrap; overflow: hidden;
+                      text-overflow: ellipsis; }
+  .ev .what.oneline .clock { font-weight: 400; opacity: .85;
+                             font-variant-numeric: tabular-nums; }
   .ev.approx { border-style: dashed; border-width: 2px; }
   /* The stripes are translucent, so the color underneath shows through. A
      break is the reader's to recolor like any lesson, and the hatch is what

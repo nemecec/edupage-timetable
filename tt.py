@@ -141,15 +141,17 @@ STRINGS = {
         "events.badColor": "{0} is not a colour",
         "events.line": "row {0}: {1}",
         "settings.label": ("This box holds every choice you made on this page. "
-                           "Copy the text into a file to keep it safe. Paste it "
-                           "back later to get the same timetable in another "
-                           "browser, or on another computer."),
-        "settings.share": ("Your settings also travel in the link to this "
-                           "page. Send the link to somebody, and they see the "
-                           "timetable exactly as you set it up. The address of "
-                           "the page is always that link, so you can copy it "
-                           "straight from your browser. The {0} button in the "
-                           "top right corner copies it in one press."),
+                           "If you want, you can copy the text into a file to "
+                           "keep it safe. If you paste it back later, the same "
+                           "timetable opens again with the same settings, in "
+                           "another browser or even on another computer."),
+        "settings.share": ("Your settings are also inside the address of this "
+                           "page. Send the address to somebody else, and the "
+                           "timetable opens exactly as you set it up. The same "
+                           "happens if you open it yourself on another "
+                           "computer. You can copy it straight from the "
+                           "address bar, or use the {0} button in the top "
+                           "right corner."),
         "settings.copy": "Copy to clipboard",
         "settings.apply": "Apply pasted settings",
         "settings.copied": "Copied to clipboard.",
@@ -236,16 +238,18 @@ STRINGS = {
         "events.backwards": "lõpuaeg peab olema pärast algusaega",
         "events.badColor": "{0} ei ole värv",
         "events.line": "rida {0}: {1}",
-        "settings.label": ("Selles kastis on kõik valikud, mille sa sellel lehel "
-                           "tegid. Kopeeri tekst faili, et see alles hoida. "
-                           "Kleebi see hiljem tagasi, et sama tunniplaan avaneks "
-                           "teises brauseris või teises arvutis."),
-        "settings.share": ("Sinu seaded on ka selle lehe lingi sees. Saada "
-                           "link kellelegi ja ta näeb tunniplaani täpselt nii, "
-                           "nagu sa selle seadistasid. Lehe aadress on alati "
-                           "seesama link, nii et saad selle otse brauserist "
-                           "kopeerida. Nupp {0} üleval paremas nurgas kopeerib "
-                           "selle ühe vajutusega."),
+        "settings.label": ("Selles kastis on kõik valikud, mis sa oled sellel "
+                           "lehel teinud. Soovi korral võid selle teksti "
+                           "kopeerida faili, et see alles hoida. Kui kleebid "
+                           "selle hiljem tagasi, siis saad sama tunniplaani "
+                           "samade seadetega avada uuesti teises "
+                           "veebilehitsejas (kasvõi teises arvutis)."),
+        "settings.share": ("Sinu seaded on ka selle lehe aadressi sees. "
+                           "Saates selle aadressi kellelegi teisele (või "
+                           "avades selle ise teisest arvutist) avaneb "
+                           "tunniplaan täpselt nii, nagu sa selle seadistasid. "
+                           "Võid aadressi kopeerida otse aadressirealt või "
+                           "kasutades üleval paremas nurgas asuvat nuppu {0}."),
         "settings.copy": "Kopeeri lõikelauale",
         "settings.apply": "Rakenda kleebitud seaded",
         "settings.copied": "Kopeeritud lõikelauale.",

@@ -1785,8 +1785,9 @@ function countVisit() {
 
 /* Words the reader typed. Everything else in the settings is a switch, a code
    the school chose, or a color, and those are what a fault has to be read
-   against. A typed word is replaced by its length: enough to explain a broken
-   layout, short of saying who anybody is. */
+   against. A typed word is replaced by as many X as it had characters. The
+   length is what explains a broken layout, and a report then weighs what the
+   real one weighs — which matters, because the page truncates at 4000 bytes. */
 const TYPED = ["studentName", "schoolName", "className", "label"];
 
 /* The settings with every typed word taken out, and nothing else moved. The
@@ -1794,7 +1795,7 @@ const TYPED = ["studentName", "schoolName", "className", "label"];
    subjects carry a color of their own. */
 function scrubbed(value, key) {
   if (typeof value === "string") {
-    return TYPED.includes(key) ? "<" + value.length + ">" : value;
+    return TYPED.includes(key) ? "X".repeat(value.length) : value;
   }
   if (Array.isArray(value)) return value.map(v => scrubbed(v, key));
   if (value && typeof value === "object") {

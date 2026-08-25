@@ -684,10 +684,11 @@ test("a fault report carries the shape of the settings, not the words", () => {
   assert.equal(sent.settings.subjects.Matemaatika.backgroundColor, "#ff0000");
   assert.equal(sent.settings.classes["68/8"].events.length, 1);
   assert.equal(sent.settings.classes["68/8"].events[0].startTime, "17:15");
-  // A typed word leaves its length behind, and nothing else.
-  assert.equal(sent.settings.classes["68/8"].studentName, "<3>");
-  assert.equal(sent.settings.classes["68/8"].events[0].label, "<14>");
-  assert.equal(sent.settings.subjects.Matemaatika.label, "<19>");
+  // A typed word leaves its length behind, and nothing else. The same length,
+  // so the report weighs what the real one weighs.
+  assert.equal(sent.settings.classes["68/8"].studentName, "XXX");
+  assert.equal(sent.settings.classes["68/8"].events[0].label, "X".repeat(14));
+  assert.equal(sent.settings.subjects.Matemaatika.label, "X".repeat(19));
   // The address holds the settings, so the address is not in the report.
   assert.ok(!("href" in sent), "no address");
   assert.equal(sent.path, "/t/");

@@ -173,7 +173,7 @@ STRINGS = {
         "footer.counts": "GoatCounter counts the visits. No cookies.",
         "footer.reports": ("If the page breaks, it tells us, and sends your "
                            "settings with the fault. Every name and label you "
-                           "typed is replaced by its length first."),
+                           "typed becomes a row of X of the same length."),
         "days": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday",
                  "Saturday", "Sunday"],
     },
@@ -278,8 +278,8 @@ STRINGS = {
         "footer.counts": "Külastusi loeb GoatCounter. Küpsiseid ei kasutata.",
         "footer.reports": ("Kui leht katki läheb, teatab ta sellest meile ja "
                            "saadab kaasa sinu seaded. Kõik nimed ja sildid, "
-                           "mis sa ise kirjutasid, asendatakse enne nende "
-                           "pikkusega."),
+                           "mis sa ise kirjutasid, asendatakse sama pika "
+                           "X-ide reaga."),
         "days": ["Esmaspäev", "Teisipäev", "Kolmapäev", "Neljapäev", "Reede",
                  "Laupäev", "Pühapäev"],
     },

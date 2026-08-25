@@ -514,8 +514,11 @@ Three decisions shape it, and all three come from what the page holds.
 - **The report carries the shape, not the words.** The settings are the most
   useful thing to read a fault against: which switches are on, how many events
   there are, which subjects carry a color. So they are sent, with every word
-  the reader typed replaced by its length — `"studentName": "<3>"`. See
-  `scrubbed()` in `page.js`, and the test that fails if any typed word survives.
+  the reader typed replaced by as many `X` as it had characters —
+  `"studentName": "XXX"`. The length is what explains a broken layout, and a
+  report weighs what the real one weighs, which matters because the page
+  truncates at 4000 bytes. See `scrubbed()` in `page.js`, and the test that
+  fails if any typed word survives.
 - **The address is never sent.** The path is. The address carries the settings,
   and the settings carry a name.
 

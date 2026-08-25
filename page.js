@@ -429,6 +429,10 @@ function applyStrings() {
   document.querySelectorAll("[data-i18n-ph]").forEach(el => {
     el.placeholder = t(el.dataset.i18nPh);
   });
+  /* A control with no visible label still has to say what it is out loud. */
+  document.querySelectorAll("[data-i18n-aria]").forEach(el => {
+    el.setAttribute("aria-label", t(el.dataset.i18nAria));
+  });
 }
 
 const esc = (s) => String(s).replace(/[&<>"'`]/g, c =>

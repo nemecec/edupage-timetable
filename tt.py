@@ -75,7 +75,7 @@ STRINGS = {
         "lang": "Language",
         "school": "School", "class": "Class", "classN": "class {0}",
         "display": "Display options",
-        "advanced": "Advanced",
+        "advanced": "Save and restore settings",
         "showHeading": "For each lesson, show:",
         "showTeacher": "Teacher",
         "showRoom": "Room",
@@ -91,7 +91,7 @@ STRINGS = {
         "customColors": "Colours of my own",
         "colLabel": "Label",
         "colSubject": "Subject",
-        "breaks.heading": "Breaks between lessons",
+        "breaks.heading": "Longer breaks",
         "colBackground": "Background colour",
         "colTextColor": "Text colour",
         "colSample": "How it looks",
@@ -113,7 +113,7 @@ STRINGS = {
         "schoolName": "School name",
         "className": "Class name",
         "print": "Print…",
-        "backup": "Settings as JSON",
+        "backup": "Your settings as text",
         "reset": "Reset all settings",
         "share": "Share",
         "shared": "Link copied",
@@ -122,9 +122,7 @@ STRINGS = {
                       "or a shared link carries it with them."),
         "qrHint": "Edit it here",
         "qrTooLong": "Too many settings for a code. The link is:",
-        "groups": "Groups",
         "all": "— all —",
-        "time": "Time",
         "nothing": "Nothing to show.",
         "paired": "paired (2 periods)",
         "single": "single",
@@ -142,8 +140,10 @@ STRINGS = {
         "events.backwards": "end time must be after the start",
         "events.badColor": "{0} is not a colour",
         "events.line": "row {0}: {1}",
-        "settings.label": ("The settings as JSON. Copy this to keep a backup. "
-                           "Or paste a saved one and apply it."),
+        "settings.label": ("This box holds every choice you made on this page. "
+                           "Copy the text into a file to keep it safe. Paste it "
+                           "back later to get the same timetable in another "
+                           "browser, or on another computer."),
         "settings.copy": "Copy to clipboard",
         "settings.apply": "Apply pasted settings",
         "settings.copied": "Copied to clipboard.",
@@ -154,7 +154,6 @@ STRINGS = {
         "footer.disclaimer": ("Unofficial. Built from the school's public "
                               "timetable data. The school does not publish or "
                               "maintain this page."),
-        "footer.source": "Source: {0}",
         "sourceLink": "source",
         "footer.built": "data fetched {0}",
         "footer.counts": ("GoatCounter counts the visits. No cookies, nothing "
@@ -166,7 +165,7 @@ STRINGS = {
         "lang": "Keel",
         "school": "Kool", "class": "Klass", "classN": "{0}. klass",
         "display": "Kuvamise seaded",
-        "advanced": "Täpsemad seaded",
+        "advanced": "Seadete salvestamine ja taastamine",
         "showHeading": "Iga tunni juures näita:",
         "showTeacher": "Õpetaja",
         "showRoom": "Ruum",
@@ -182,7 +181,7 @@ STRINGS = {
         "customColors": "Minu omad värvid",
         "colLabel": "Nimetus",
         "colSubject": "Õppeaine",
-        "breaks.heading": "Vahetunnid",
+        "breaks.heading": "Pikemad vahetunnid",
         "colBackground": "Taustavärv",
         "colTextColor": "Teksti värv",
         "colSample": "Kuidas välja näeb",
@@ -204,7 +203,7 @@ STRINGS = {
         "schoolName": "Kooli nimi",
         "className": "Klassi nimi",
         "print": "Prindi…",
-        "backup": "Seaded JSON-ina",
+        "backup": "Sinu seaded tekstina",
         "reset": "Lähtesta kõik seaded",
         "share": "Jaga",
         "shared": "Link kopeeritud",
@@ -213,9 +212,7 @@ STRINGS = {
                       "jagatud link kannab need kaasa."),
         "qrHint": "Muuda siin",
         "qrTooLong": "Seadeid on koodi jaoks liiga palju. Link on:",
-        "groups": "Rühmad",
         "all": "— kõik —",
-        "time": "Aeg",
         "nothing": "Pole midagi näidata.",
         "paired": "paaristund (2 tundi)",
         "single": "üksiktund",
@@ -233,8 +230,10 @@ STRINGS = {
         "events.backwards": "lõpuaeg peab olema pärast algusaega",
         "events.badColor": "{0} ei ole värv",
         "events.line": "rida {0}: {1}",
-        "settings.label": ("Seaded JSON-ina. Kopeeri varukoopiaks. Või kleebi "
-                           "salvestatud seaded ja rakenda."),
+        "settings.label": ("Selles kastis on kõik valikud, mille sa sellel lehel "
+                           "tegid. Kopeeri tekst faili, et see alles hoida. "
+                           "Kleebi see hiljem tagasi, et sama tunniplaan avaneks "
+                           "teises brauseris või teises arvutis."),
         "settings.copy": "Kopeeri lõikelauale",
         "settings.apply": "Rakenda kleebitud seaded",
         "settings.copied": "Kopeeritud lõikelauale.",
@@ -244,7 +243,6 @@ STRINGS = {
         "settings.applied": "Rakendatud.",
         "footer.disclaimer": ("Mitteametlik. Koostatud kooli avalikest tunniplaani "
                               "andmetest. Kool seda lehte ei avalda ega halda."),
-        "footer.source": "Allikas: {0}",
         "sourceLink": "allikas",
         "footer.built": "andmed laaditud {0}",
         "footer.counts": ("Külastusi loeb GoatCounter. Küpsiseid ei kasutata, "
@@ -1172,6 +1170,7 @@ PAGE = """<!DOCTYPE html>
   }
   h1 { font-size: 20px; margin: 0 0 2px; }
   .sub { color: var(--muted); font-size: 13px; }
+  .help { margin: 4px 0 8px; max-width: 62ch; line-height: 1.45; }
   .sub a { color: var(--accent); }
   .unofficial { margin-top: 2px; font-size: 12px; color: #8a919b; }
   .foot:empty { display: none; }
@@ -1406,7 +1405,7 @@ PAGE = """<!DOCTYPE html>
     <div class="sub" id="subtitle"></div>
   </div>
   <div class="topactions">
-    <select id="lang" aria-label="Language"></select>
+    <select id="lang" data-i18n-aria="lang"></select>
     <button id="share" data-i18n="share"></button>
     <button id="doprint" class="go" data-i18n="print"></button>
   </div>
@@ -1557,6 +1556,7 @@ PAGE = """<!DOCTYPE html>
   <summary data-i18n="advanced"></summary>
   <div class="field" style="width:100%;margin-top:12px">
     <label for="settingsText" data-i18n="backup"></label>
+    <p class="sub help" data-i18n="settings.label"></p>
     <textarea id="settingsText" rows="5" spellcheck="false"></textarea>
   </div>
   <div class="row" style="margin-top:8px;padding-top:0;border-top:none">

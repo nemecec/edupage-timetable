@@ -302,7 +302,7 @@ period grid, which needs no times.
   hex code and imagining the result is the part nobody can do.
 
   For a bulk edit, such as a term's worth pasted in at once, the whole settings
-  object is in **Advanced**. Events are a plain list there.
+  object is in **Save and restore settings**. Events are a plain list there.
 
   Events are drawn **on top of** the timetable rather than beside it, so the
   lessons keep their full width. An event is inset a little where something sits
@@ -334,8 +334,9 @@ period grid, which needs no times.
   link, captioned *Edit it here*. A sheet on the fridge can then be picked back
   up on a phone with every choice still on it. The page's other furniture — the
   disclaimer, the source link, the controls — stays on screen.
-- **Advanced** holds the whole configuration as JSON, to copy or to paste back,
-  and **Reset all settings**.
+- **Save and restore settings** holds the whole configuration as JSON, to copy
+  or to paste back, and **Reset all settings**. The panel says in a sentence
+  what the box is for, because "settings as JSON" means nothing to a parent.
 - **Language** switches the interface between English and Estonian. Everything
   the school entered stays in the language it was entered in. That is the subject
   names, the group codes, the rooms, the teacher names, and the line the school
@@ -344,7 +345,7 @@ period grid, which needs no times.
 
 ## The settings, as they are stored
 
-`localStorage`, the link's fragment and the **Advanced** box all hold the same
+`localStorage`, the link's fragment and the settings box all hold the same
 object. Two rules shape it. The field names are what the interface calls things,
 so a reader can tell which control each name belongs to. Everything that belongs
 to one class sits in that class's own subtree, rather than each setting keeping

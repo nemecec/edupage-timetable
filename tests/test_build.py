@@ -367,7 +367,7 @@ class Documentation(unittest.TestCase):
         """A data-i18n naming a string that is not there renders as its key."""
         with open(os.path.join(ROOT, "tt.py"), encoding="utf-8") as fh:
             source = fh.read()
-        wanted = set(re.findall(r'data-i18n(?:-ph)?="([^"]+)"', source))
+        wanted = set(re.findall(r'data-i18n(?:-ph|-aria)?="([^"]+)"', source))
         self.assertGreater(len(wanted), 20, "the scan found suspiciously few")
         _, data = build()
         for lang in ("en", "et"):
@@ -375,6 +375,23 @@ class Documentation(unittest.TestCase):
             for key in sorted(wanted - have):
                 with self.subTest(lang=lang, key=key):
                     self.fail("no %s string for %s" % (lang, key))
+
+    def test_no_string_is_carried_that_nothing_renders(self):
+        """A string nobody asks for is dead weight, and it still gets
+        translated, reviewed and read every time somebody edits the table."""
+        with open(os.path.join(ROOT, "tt.py"), encoding="utf-8") as fh:
+            source = fh.read()
+        with open(os.path.join(ROOT, "page.js"), encoding="utf-8") as fh:
+            script = fh.read()
+        asked = set(re.findall(r'data-i18n(?:-ph|-aria)?="([^"]+)"', source))
+        for text in (source, script):
+            asked |= set(re.findall(r'\bt\(\s*"([^"]+)"', text))
+        # Read off the table by name rather than through t().
+        asked.add("days")
+        _, data = build()
+        for lang in ("en", "et"):
+            spare = sorted(set(data["strings"][lang]) - asked)
+            self.assertEqual(spare, [], "%s strings nothing renders" % lang)
 
     def test_the_deploy_readme_counts_the_resources_correctly(self):
         counts = {n: len(self.resources(n))

@@ -523,10 +523,24 @@ Five reports per page load, one per distinct message. A fault inside the
 drawing code fires on every repaint, and a reporter that reports its own
 reporting never stops.
 
-The function URL is public, because CloudFront needs an address to call. A
-header CloudFront alone adds keeps everybody else out, and a direct POST
-without it answers 403. That is a gate on noise, not a secret worth guarding:
-the worst a leak buys is a log line.
+The way in is an HTTP API, and it took two tries to learn why. A Lambda
+function URL is the smaller thing and was the first choice. It cannot be
+reached without authentication in this account, which sits in an organization
+that forbids that. CloudFront cannot supply the authentication either: its
+signature does not cover a request body, and the body is the whole payload. An
+HTTP API has neither limit.
+
+The API is reachable by anyone who finds it, so a header CloudFront alone adds
+is what the function answers to. A direct POST without it answers 403. That is
+a gate on noise, not a secret worth guarding: the worst a leak buys is a log
+line.
+
+One trap worth knowing, because it hid the first failure: `CustomErrorResponses`
+applies to the whole distribution. A 403 from the report origin came back as
+the site's own 404 page, which reads like a routing mistake rather than a
+refusal. The other half of that first failure was the path pattern. CloudFront
+matches it without a leading slash, so `/report` matched nothing and the
+request fell through to the bucket.
 
 `REPORT_ERRORS=no` in `site.conf` switches off the endpoint and the posting
 together, so the page can never post to a path nothing answers.

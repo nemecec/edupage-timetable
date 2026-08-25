@@ -417,7 +417,13 @@ class Documentation(unittest.TestCase):
         self.assertIsNotNone(checked, "the function checks no header")
         self.assertEqual(added.group(1), checked.group(1))
         # And the page posts where CloudFront listens.
-        self.assertIn("PathPattern: /report", template)
+        # Without a leading slash. CloudFront matches the pattern against the
+        # path with the slash already off, so "/report" matches nothing and the
+        # request falls through to the bucket.
+        self.assertIn("PathPattern: report\n", template)
+        self.assertNotIn("PathPattern: /report", template)
+        # And the route the API answers is the path the page posts to.
+        self.assertIn("RouteKey: POST /report", template)
         with open(os.path.join(ROOT, "deploy", "publish.py"), encoding="utf-8") as fh:
             body = fh.read()
         self.assertIn('configured("REPORT_ERRORS", "yes")', body)
@@ -438,13 +444,13 @@ class Documentation(unittest.TestCase):
     def test_the_deploy_readme_counts_the_resources_correctly(self):
         counts = {n: len(self.resources(n))
                   for n in ("site.yaml", "dns.yaml", "cert.yaml")}
-        self.assertEqual(counts, {"site.yaml": 23, "dns.yaml": 2, "cert.yaml": 1})
+        self.assertEqual(counts, {"site.yaml": 26, "dns.yaml": 2, "cert.yaml": 1})
         with open(os.path.join(ROOT, "deploy", "README.md"), encoding="utf-8") as fh:
             readme = fh.read()
         # The words, not their capitalisation: the sentence around them is
         # free to be reworded.
-        self.assertIn("twenty-six resources", readme.lower())
-        self.assertIn("twenty-three in `site.yaml`", readme)
+        self.assertIn("twenty-nine resources", readme.lower())
+        self.assertIn("twenty-six in `site.yaml`", readme)
 
     def test_the_size_the_readmes_quote_is_the_size_it_is(self):
         import gzip

@@ -164,10 +164,9 @@ supervisor and a length. The school says which subjects those are, and the page
 draws them the way it draws every other school's breaks: hatched, quiet grey,
 and listed under the breaks heading rather than among the subjects.
 
-The supervisor is not a person. aSc wants a teacher on every card, so the
-breaks carry `Vahe Paus` — "break pause" — on all 123 of them, and nothing
-else. The school names its placeholders and the page drops them, name and
-abbreviation together. A block that covers two periods is one box. What sits inside
+A break names no teacher. aSc wants one on every card, so LõunaTERA's carry
+`Vahe Paus` — "break pause" — on all 123 of them. Nobody reads a break to find
+out who is supervising it, so the name and its abbreviation both go. A block that covers two periods is one box. What sits inside
 the block decides how the script draws it:
 
 - Two subjects, one for each period: this is a sequence. The script makes one
@@ -235,6 +234,18 @@ repeats, saturated where it is rare, is the way round that reads.
 Only the leader moves, and only where it leads by a wide margin, so a rebuild
 does not shuffle the week's colors. `Inglise keel` has 282 lessons against the
 next language's 32.
+
+A box shows the clock, the subject, and — where there is room — the room,
+teacher and group. "Where there is room" is 46 pixels, which is exactly a
+45-minute lesson: three tight lines come to 36, and the box gives its content
+its height less the border and the padding. The old threshold was 54, so a
+SädeTERA week, which is mostly 45-minute lessons, named no teachers at all.
+
+Nothing in a box wraps past its bottom edge. The clock never wraps, the detail
+line is one line cut with an ellipsis, and the subject takes at most three
+lines — one in a box only tall enough for one. Before that, 104 boxes were
+cutting text mid-line, which reads as a rendering fault rather than as a name
+too long for the space.
 
 Every color is paired with black or white text, whichever contrasts better. A
 background that lands in the mid-luminance band, where neither text color clears

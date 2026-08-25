@@ -375,10 +375,6 @@ BELLS = {
         # still breaks, and reading a week is easier when they look like the
         # breaks every other school draws.
         "breakSubjects": ["Puder", "Lõuna/Õue", "Hea aeg"],
-        # aSc wants a teacher on every card, so the breaks get one that is not
-        # a person: "Vahe Paus" is "break pause". It supervises 123 lessons,
-        # all of them breaks, and never shares a box with anybody real.
-        "placeholderTeachers": ["Vahe Paus"],
         "bands": [
             {
                 "classes": ["Maarja", "Heliis", "Mari-Liis", "Cathleen", "Silva"],
@@ -831,17 +827,13 @@ def extract(result, class_name, n_periods=None, cfg=None, period_times=None):
                 entries.append(dict(base, day=day_idx, period=start + step,
                                     startPeriod=start, part=step))
 
-    fake = set((cfg or {}).get("placeholderTeachers", ()))
     for e in entries:
         if e["subject"] in (cfg or {}).get("breakSubjects", ()):
             e["isBreak"] = True
-        if fake:
-            # Both lists are built from the same ids in the same order, so an
-            # index dropped from one has to go from the other.
-            keep = [i for i, name in enumerate(e["teachers"]) if name not in fake]
-            if len(keep) != len(e["teachers"]):
-                e["teachers"] = [e["teachers"][i] for i in keep]
-                e["teacherShorts"] = [e["teacherShorts"][i] for i in keep]
+            # aSc wants a teacher on every card, so a break carries one that is
+            # not a person: LõunaTERA's is "Vahe Paus", which is "break pause".
+            # Nobody reads a break to find out who is supervising it.
+            e["teachers"], e["teacherShorts"] = [], []
     entries.sort(key=lambda e: (e["day"], e["period"], e["subject"], "/".join(e["groups"])))
     if (cfg or {}).get("pairAdjacent"):
         pair_adjacent(entries, cfg)
@@ -1586,11 +1578,30 @@ PAGE = """<!DOCTYPE html>
   }
   .ev { position: absolute; border-radius: 4px; padding: 2px 5px; overflow: hidden;
         box-sizing: border-box; border: 1px solid rgba(0,0,0,.18); }
+  /* A clock never wraps. In a narrow column "14.10–15.30" broke over two
+     lines and took the room the name needed. */
   .ev .when { font-size: 10px; opacity: .85; font-variant-numeric: tabular-nums;
-              line-height: 1.25; }
-  .ev .what { font-weight: 600; font-size: 12px; line-height: 1.25; }
-  .ev .who2 { font-size: 10.5px; opacity: .85; line-height: 1.25; }
+              line-height: 1.25; white-space: nowrap; }
+  /* Three lines at most, then an ellipsis. "Teadus, fantaasia ja
+     ulmekirjandus II" wraps to six in a narrow column, and the box cut it
+     mid-word. The tooltip and the subject table carry the whole name. */
+  .ev .what { font-weight: 600; font-size: 12px; line-height: 1.25;
+              display: -webkit-box; -webkit-box-orient: vertical;
+              -webkit-line-clamp: 3; overflow: hidden; }
+  .ev.snug .what { -webkit-line-clamp: 1; }
+  /* Room, teacher and group on one line, cut with an ellipsis. It is the
+     secondary line: wrapped, it pushed itself past the bottom of the box and
+     was sliced instead, which loses more than an ellipsis does. */
+  .ev .who2 { font-size: 10.5px; opacity: .85; line-height: 1.25;
+              white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .ev.tight .what { font-size: 11px; }
+  /* A box with room for exactly three lines gets exactly three lines. Each is
+     cut with an ellipsis rather than wrapped and then sliced by the bottom
+     edge, and they are set a little tighter so all three clear 45 minutes:
+     10 + 12 + 10.5px of text at 1.1 is 36, and a 45-minute box holds 40. */
+  .ev.snug .what, .ev.snug .who2, .ev.snug .when {
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      line-height: 1.1; }
   /* One line in a box only tall enough for one. The clock reads lighter than
      the name, as it does when the two are stacked, and a name too long for the
      column is cut rather than wrapped out of sight. */

@@ -179,18 +179,19 @@ class WholePage(unittest.TestCase):
         self.assertGreater(light("Üldõpetus"), 0.8)
         self.assertGreater(light("Inglise keel"), 0.8)
 
-    def test_a_teacher_that_is_not_a_person_is_not_shown(self):
-        """aSc wants a teacher on every card, so LõunaTERA's breaks carry one
-        that is not a person: "Vahe Paus" is "break pause"."""
+    def test_a_break_names_no_teacher(self):
+        """aSc wants a teacher on every card, so a break carries one that is
+        not a person: LõunaTERA's is "Vahe Paus", which is "break pause".
+        Nobody reads a break to find out who is supervising it."""
         named = {t for school in self.data["schools"] for c in school["c"]
                  for e in c["e"] for t in e["T"]}
         self.assertNotIn("Vahe Paus", named)
         shorts = {t for school in self.data["schools"] for c in school["c"]
                   for e in c["e"] for t in e["t"]}
         self.assertNotIn("VP", shorts, "the abbreviation stayed behind")
-        # It supervised only breaks, and every break lost it. The lists are
-        # built from the same ids, so dropping one and not the other would
-        # leave a box naming the wrong teacher.
+        # Every break lost its teacher, and the abbreviation went with the
+        # name: they are two lists built from the same ids, so dropping one
+        # and not the other would leave a box naming the wrong teacher.
         school = next(s for s in self.data["schools"] if s["l"] == "LõunaTERA")
         breaks = [e for c in school["c"] for e in c["e"] if e.get("B")]
         self.assertGreater(len(breaks), 100, "the fixtures lost the breaks")

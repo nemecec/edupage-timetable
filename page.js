@@ -707,13 +707,22 @@ function renderTimeline(school, cls, shown, mine, scale) {
           '<div class="what">' + esc(name) + "</div>"
         : '<div class="what oneline"><span class="clock">' +
           esc(when + (e.o ? " ?" : "")) + "</span> " + esc(name) + "</div>";
-      if (height >= 54 && meta.length) {
+      /* Room, teacher and group are a third line. A box gives its content its
+         height less 2px of border and 4px of padding, and three tight lines
+         come to 36, so 46 is where all three fit — which is exactly a
+         45-minute lesson. The old threshold of 54 refused those, and a
+         SädeTERA week is mostly 45-minute lessons. */
+      if (height >= 46 && meta.length) {
         body += '<div class="who2">' + esc(meta.join(" · ")) + "</div>";
       }
       /* A school that writes its breaks as lessons still gets breaks. The
          hatch is what says "not a lesson", whatever the timetable calls it. */
+      /* A box only just tall enough for three lines gets them only if the
+         name stays on one. Left to wrap, a long subject took two lines and the
+         bottom of the box cut it — which it did long before the detail line
+         was let in here. */
       h += '<div class="ev' + (e.B ? " brk" : "") + (height < 40 ? " tight" : "") +
-           (e.o ? " approx" : "") +
+           (height < 62 ? " snug" : "") + (e.o ? " approx" : "") +
            '" data-subject="' + esc(e.s) + '" style="' + geom + "background-color:" + esc(col.bg) +
            ";color:" + esc(col.fg) + '" title="' + esc(tip) + '">' + body + "</div>";
     }

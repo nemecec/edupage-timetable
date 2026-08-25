@@ -221,6 +221,16 @@ the members spread across the band and get well-separated lightness steps. A
 family larger than the lightness cycle gets a second, muted saturation tier, so
 the ninth member does not repeat the first.
 
+**The subject that covers the most paper gets the lightest step.** A family's
+most common member is put first, and the first step is the lightest one. A week
+is mostly its commonest subject — `Üldõpetus` is 219 lessons, and it filled
+every junior class in a deep slate, which read as a wall. Light where it
+repeats, saturated where it is rare, is the way round that reads.
+
+Only the leader moves, and only where it leads by a wide margin, so a rebuild
+does not shuffle the week's colors. `Inglise keel` has 282 lessons against the
+next language's 32.
+
 Every color is paired with black or white text, whichever contrasts better. A
 background that lands in the mid-luminance band, where neither text color clears
 **WCAG AA**, is moved lighter or darker until one does. All 69 subjects on

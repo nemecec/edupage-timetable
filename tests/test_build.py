@@ -133,6 +133,52 @@ class WholePage(unittest.TestCase):
         self.assertEqual((pair["u"], pair["a"], pair["z"]), (2, 835, 915))
         self.assertTrue(pair["t"] and pair["T"] and pair["r"])
 
+    def test_the_subject_that_covers_the_most_paper_is_the_lightest(self):
+        """A week of one subject in a deep color reads as a wall. Üldõpetus is
+        219 lessons and had a dark slate; every junior class was that slate."""
+        # Breaks are deliberately outside the palette — one quiet grey, whether
+        # the school writes them as gaps or as lessons. They would otherwise
+        # count as the lightest member of whatever family their name falls in.
+        breaks = {b["n"] for school in self.data["schools"] for c in school["c"]
+                  for day in c["h"].values() for b in day["b"] if b["n"]}
+        breaks |= {e["s"] for school in self.data["schools"] for c in school["c"]
+                   for e in c["e"] if e.get("B")}
+        counts = collections.Counter(
+            e["s"] for school in self.data["schools"] for c in school["c"]
+            for e in c["e"] if not e["c"] and e["s"] not in breaks)
+        palette = self.data["palette"]
+        families = collections.defaultdict(list)
+        for name in palette:
+            if name in counts:
+                families[tt.subject_family(name)[0]].append(name)
+
+        def light(name):
+            """How light the color was asked to be, not how bright it looks.
+            A green and a blue of one lightness have very different luminance,
+            and lightness is what the palette assigns."""
+            import colorsys
+            bg = palette[name]["bg"]
+            r, g, b = (int(bg[i:i + 2], 16) / 255 for i in (1, 3, 5))
+            return round(colorsys.rgb_to_hls(r, g, b)[1], 3)
+
+        checked = 0
+        for family, members in families.items():
+            if len(members) < 2:
+                continue
+            leader = max(members, key=lambda n: (counts[n], n))
+            # Only where the leader is a clear one. A family whose members are
+            # neck and neck has no business reshuffling on a rebuild.
+            rest = [n for n in members if n != leader]
+            if counts[leader] < 2 * max(counts[n] for n in rest):
+                continue
+            checked += 1
+            with self.subTest(family=family, leader=leader):
+                self.assertEqual(light(leader), max(light(n) for n in members))
+        self.assertGreater(checked, 2, "no family had a clear leader to check")
+        # And the two that made this worth doing.
+        self.assertGreater(light("Üldõpetus"), 0.8)
+        self.assertGreater(light("Inglise keel"), 0.8)
+
     def test_a_break_is_quiet_and_a_subject_is_not(self):
         """A break runs the full width of the day. Through the subject palette
         it came out a muddy beige and won every glance, which is backwards for

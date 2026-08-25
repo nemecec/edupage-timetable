@@ -18,6 +18,7 @@ Standard library only.
 """
 
 import argparse
+import collections
 import colorsys
 import datetime
 import html
@@ -1149,7 +1150,10 @@ SUBJECT_FAMILIES = [
 
 # Lightness steps within a family, ordered so that consecutive members differ
 # strongly — the point is telling them apart on a monochrome-ish print too.
-LIGHTNESS_STEPS = [0.72, 0.42, 0.86, 0.56, 0.34, 0.79, 0.49, 0.64]
+# The lightest comes first, and the family's most common subject is put there:
+# it covers the most paper, so it is the one that should recede. A week of
+# Üldõpetus in a deep slate reads as a wall.
+LIGHTNESS_STEPS = [0.86, 0.42, 0.72, 0.56, 0.34, 0.79, 0.49, 0.64]
 
 
 def subject_family(name):
@@ -1167,18 +1171,31 @@ def _relative_luminance(r, g, b):
     return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b)
 
 
-def palette(names):
+def palette(names, counts=None):
     """Print-friendly color per subject, with related subjects kept close.
 
     Each family owns a hue band. Members are spread across it and given
     well-separated lightness steps, which is what keeps them distinct on paper.
     Text color is picked from the background's luminance so every label stays
-    legible. Deterministic: everything derives from the sorted subject list.
+    legible.
+
+    `counts` says how many lessons each subject has. The most common member of
+    a family goes first, which is where the lightest step is. Only the leader
+    is moved, and by a wide margin — Inglise keel has 282 lessons against the
+    next language's 32 — so a rebuild does not shuffle the week's colors.
+
+    Deterministic: everything else derives from the sorted subject list.
     """
+    counts = counts or {}
     families = {}
     for name in sorted(names):
         family, hue = subject_family(name)
         families.setdefault(family, {"hue": hue, "members": []})["members"].append(name)
+    for info in families.values():
+        top = max(info["members"], key=lambda n: (counts.get(n, 0), n))
+        if counts.get(top):
+            info["members"].remove(top)
+            info["members"].insert(0, top)
 
     # Subjects with no family keyword still need hues. Give them the gaps left
     # between the named families rather than letting them collide.
@@ -1908,6 +1925,11 @@ def render_html(schools, edupage, year, initial_school, initial_class, lang="en"
     gaps = break_names(schools)
     all_subjects = sorted({name for per in subject_meta.values() for name in per}
                           - gaps)
+    # How much paper each subject covers. The most common one in its family
+    # takes the lightest color, so the week reads light where it repeats.
+    lessons = collections.Counter(
+        e["subject"] for school in schools for cls in school["classes"]
+        for e in cls["entries"] if e["part"] == 0 and not e.get("isBreak"))
     payload = {
         "edupage": edupage,
         "year": year,
@@ -1919,7 +1941,7 @@ def render_html(schools, edupage, year, initial_school, initial_class, lang="en"
         "report": report_path,
         "languages": [list(x) for x in LANGUAGES],
         "strings": STRINGS,
-        "palette": dict(palette(all_subjects), **break_palette(gaps)),
+        "palette": dict(palette(all_subjects, lessons), **break_palette(gaps)),
         "schools": entries_data,
     }
     # A literal "</" closes the block early. A literal "<!--<script" opens a

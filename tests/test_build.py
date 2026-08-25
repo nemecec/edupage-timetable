@@ -217,6 +217,27 @@ class WholePage(unittest.TestCase):
         self.assertEqual(sorted(lunch), [0, 1, 2, 3, 4])
         self.assertTrue(all(len(after) == 1 for after in lunch.values()), lunch)
 
+    def test_the_gumnaasium_prefix_comes_off_the_name_shown(self):
+        """"Gümn Matemaatika" is maths. A reader looking at a gümnaasium class
+        knows which school they are in."""
+        school = next(s for s in self.data["schools"] if s["n"] == "68")
+        facts = school["sj"]
+        prefixed = [n for n in facts if n.startswith("Gümn ")]
+        self.assertGreater(len(prefixed), 10, "the fixtures lost the prefix")
+        for name in prefixed:
+            with self.subTest(name=name):
+                self.assertEqual(facts[name]["label"], name[len("Gümn "):])
+        # It comes off the name shown, not off the name it is filed under.
+        # These two are different subjects with abbreviations of their own,
+        # and one entry cannot hold both.
+        self.assertEqual(facts["Gümn Inglise keel"]["short"], "Inglise k (B2)")
+        self.assertEqual(facts["Inglise keel"]["short"], "Eng")
+        self.assertEqual(facts["Gümn Inglise keel"]["label"], "Inglise keel")
+        self.assertNotIn("label", facts["Inglise keel"])
+        # Every lesson still carries the school's own name as its identity.
+        names = {e["s"] for c in school["c"] for e in c["e"]}
+        self.assertTrue([n for n in names if n.startswith("Gümn ")])
+
     def test_a_lesson_running_past_one_published_block_ends_where_it_ends(self):
         # LõunaTERA publishes blocks rather than lesson lengths. A lesson
         # covering two of them used to stop at the end of the first.

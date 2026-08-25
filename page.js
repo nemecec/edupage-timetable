@@ -812,10 +812,18 @@ function breakLabel(name) {
   return own || String(name).split(",")[0];
 }
 
+/* The school's own word for a subject, without the prefix its own timetable
+   puts on it. The prefix says which of the two schools in one timetable a
+   subject belongs to, which the reader of one class already knows. */
+function plainSubject(name) {
+  return (subjectFacts()[name] || {}).label || name;
+}
+
 function subjectLabel(name, short) {
   const own = ((state.subjects || {})[name] || {}).label;
   if (own) return own;
-  return short ? ((subjectFacts()[name] || {}).short || name) : name;
+  const plain = plainSubject(name);
+  return short ? ((subjectFacts()[name] || {}).short || plain) : plain;
 }
 
 function subjectName(e, short) {
@@ -1129,7 +1137,7 @@ function renderLegend(shown) {
        as a placeholder, so one word can be changed without retyping the rest,
        and an empty field means "use the school's" — the same bargain the title
        fields make. */
-    const shown = isBreak ? String(name).split(",")[0] : name;
+    const shown = isBreak ? String(name).split(",")[0] : plainSubject(name);
     /* One heading above the first break, so the two kinds do not read as one
        list. Five columns, because the table has five. */
     const head = (isBreak && name === breaks[0])

@@ -1237,6 +1237,23 @@ def _hexpair(hue, light, sat):
 HEX_COLOR = re.compile(r"^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$")
 
 
+# A timetable that holds two schools sometimes says which one a subject belongs
+# to. "Gümn Matemaatika" is maths, and a reader looking at a gümnaasium class
+# knows which school they are in. The prefix comes off the name shown, not off
+# the name the subject is filed under: five of these have a twin taught in the
+# grades below, with an abbreviation of its own — "Inglise k (B2)" against
+# "Eng" — and one entry cannot hold both.
+SUBJECT_PREFIXES = ("Gümn ",)
+
+
+def plain_subject(name):
+    """The subject's name without the prefix its own timetable puts on it."""
+    for prefix in SUBJECT_PREFIXES:
+        if name.startswith(prefix):
+            return name[len(prefix):].strip() or name
+    return name
+
+
 def break_names(schools):
     """Every named gap between lessons, across every class.
 
@@ -1283,6 +1300,9 @@ def compact(schools):
                                        e.get("nameShorts") or [e["subjectShort"]]):
                     meta = here.setdefault(name, {})
                     meta.setdefault("short", short)
+                    plain = plain_subject(name)
+                    if plain != name:
+                        meta["label"] = plain
                 if HEX_COLOR.match(e["schoolColor"] or ""):
                     here[e["subject"]].setdefault("color", e["schoolColor"])
     out = []

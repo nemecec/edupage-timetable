@@ -36,7 +36,10 @@ const DATA = {
   schools: [{
     n: "68", l: "A school", t: "A school 2026", v: "", b: true,
     sj: { Matemaatika: { short: "Mat", color: "#123456" },
-          Kunst: { short: "Ku" } },
+          Kunst: { short: "Ku" },
+          /* One timetable, two schools. The prefix comes off the name shown
+             and stays on the name it is filed under. */
+          "Gümn Matemaatika": { short: "Matem", label: "Matemaatika" } },
     d: [{ i: 0, n: "Monday" }],
     p: [{ n: 1, l: "1", s: "", e: "" }, { n: 2, l: "2", s: "", e: "" },
         { n: 3, l: "3", s: "", e: "" }],

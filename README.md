@@ -464,6 +464,15 @@ Some of these choices are not obvious:
   changed without retyping the rest, and an empty field means "use the
   school's". A name of your own is never abbreviated, because you already wrote
   it as short as you wanted it.
+
+  A subject can carry three names, and they are three different strings. The
+  school files it as `Gümn Inglise keel`; the page shows `Inglise keel`, with
+  the prefix its own timetable puts on it taken off; and a name of yours beats
+  both. The prefix comes off the name **shown**, not off the name the subject is
+  filed under, because five of these have a twin taught in the grades below
+  with an abbreviation of its own — `Inglise k (B2)` against `Eng` — and one
+  entry cannot hold both. So the two keep their own colors, and the settings
+  hold the school's name as the key.
 - **The named breaks are rows in that table too**, so *Vaba aeg* and *Amps* can
   be renamed and recolored like any subject. They sit after the subjects, under
   a heading of their own, because a gap is a different kind of thing from a

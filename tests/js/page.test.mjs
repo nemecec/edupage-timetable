@@ -667,6 +667,25 @@ test("a link too long for a code leaves the corner empty", () => {
   assert.ok(!html.includes("#s=") && !html.includes("#z="), "no address in the corner");
 });
 
+test("a subject shows the school's word for it, without the school's prefix", () => {
+  run(`state.school = "68"; state.subjects = {};`);
+  // Three strings, and they are not the same string.
+  assert.equal(json(`subjectLabel("Gümn Matemaatika", false)`), "Matemaatika");
+  assert.equal(json(`subjectLabel("Gümn Matemaatika", true)`), "Matem");
+  // The twin taught in the grades below keeps its own abbreviation. This is
+  // why the prefix comes off the name shown and not off the identity.
+  assert.equal(json(`subjectLabel("Matemaatika", true)`), "Mat");
+  assert.notEqual(json(`colorFor("Gümn Matemaatika").bg`),
+                  json(`colorFor("Matemaatika").bg`));
+  // A name of the reader's own beats both, and is keyed by the identity.
+  run(`state.subjects = { "Gümn Matemaatika": { label: "Matsu" } };`);
+  assert.equal(json(`subjectLabel("Gümn Matemaatika", false)`), "Matsu");
+  assert.equal(json(`subjectLabel("Gümn Matemaatika", true)`), "Matsu");
+  run(`state.subjects = {};`);
+  // A subject with no prefix is untouched.
+  assert.equal(json(`subjectLabel("Kunst", false)`), "Kunst");
+});
+
 test("a fault report carries the shape of the settings, not the words", () => {
   /* The whole reason a report is allowed to carry the settings at all. Every
      one of these strings is something a reader typed. */

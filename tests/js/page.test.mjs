@@ -655,6 +655,20 @@ test("a break keeps its hatch when it takes a color", () => {
   assert.doesNotMatch(hatched, /background:#/);
 });
 
+test("the address bar holds the link the Share button copies", () => {
+  /* The panel tells the reader to copy the address instead of pressing the
+     button. That is only true while the two strings are the same one. */
+  run(`state.school = "68"; state.class = "8"; state.showTeacher = false;
+       state.classes = { "68/8": { studentName: "Eva" } }; save();`);
+  const address = json(`window.__address`);
+  const shared = json(`shareUrl()`);
+  assert.equal(address, shared);
+  assert.ok(address.includes("#"), "the settings are in it");
+  // And a page with nothing changed keeps a clean address.
+  run(`state = defaults(); save();`);
+  assert.equal(json(`window.__address`), "https://example.test/t/");
+});
+
 test("the breaks come last, under a heading of their own", () => {
   /* A gap is a different kind of thing from a lesson, so the two do not read
      as one list. The harness break is named with a comma, which is how a

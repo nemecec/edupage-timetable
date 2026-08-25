@@ -139,7 +139,14 @@ export function load() {
     location: { href: "https://example.test/t/", pathname: "/t/", hash: "", search: "" },
     URL: class { constructor(u) { const i = String(u).indexOf("#");
                                   this.hash = i < 0 ? "" : String(u).slice(i); } },
-    history: { replaceState() {} },
+    /* The real one puts the link in the address bar. Record it: the panel
+       tells the reader they can copy it from there. */
+    history: { replaceState(_s, _t, url) {
+      context.__address = url;
+      /* The browser shows the new address, and the page reads it back to
+         decide whether anything has to change. */
+      context.location.href = url;
+    } },
     localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
     navigator: { clipboard: { writeText: () => Promise.resolve() } },
     getComputedStyle: () => ({ color: "rgb(0, 0, 0)", marginTop: "0", marginBottom: "0" }),

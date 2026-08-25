@@ -146,8 +146,10 @@ STRINGS = {
                            "browser, or on another computer."),
         "settings.share": ("Your settings also travel in the link to this "
                            "page. Send the link to somebody, and they see the "
-                           "timetable exactly as you set it up. The {0} button "
-                           "in the top right corner makes that link for you."),
+                           "timetable exactly as you set it up. The address of "
+                           "the page is always that link, so you can copy it "
+                           "straight from your browser. The {0} button in the "
+                           "top right corner copies it in one press."),
         "settings.copy": "Copy to clipboard",
         "settings.apply": "Apply pasted settings",
         "settings.copied": "Copied to clipboard.",
@@ -240,8 +242,10 @@ STRINGS = {
                            "teises brauseris või teises arvutis."),
         "settings.share": ("Sinu seaded on ka selle lehe lingi sees. Saada "
                            "link kellelegi ja ta näeb tunniplaani täpselt nii, "
-                           "nagu sa selle seadistasid. Nupp {0} üleval paremas "
-                           "nurgas teeb sellise lingi valmis."),
+                           "nagu sa selle seadistasid. Lehe aadress on alati "
+                           "seesama link, nii et saad selle otse brauserist "
+                           "kopeerida. Nupp {0} üleval paremas nurgas kopeerib "
+                           "selle ühe vajutusega."),
         "settings.copy": "Kopeeri lõikelauale",
         "settings.apply": "Rakenda kleebitud seaded",
         "settings.copied": "Kopeeritud lõikelauale.",

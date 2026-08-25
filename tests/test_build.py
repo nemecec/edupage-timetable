@@ -86,7 +86,9 @@ class WholePage(unittest.TestCase):
         self.assertEqual(len(self.data["schools"]), 4)
         self.assertEqual(sum(len(s["c"]) for s in self.data["schools"]), 41)
         self.assertEqual((len(rows), len(boxes)), (1935, 1589))
-        self.assertEqual(len(self.data["palette"]), 70)
+        # 70 subject names, plus the two named breaks. A break is drawn and
+        # recolored like a lesson, so it needs a color of its own.
+        self.assertEqual(len(self.data["palette"]), 72)
         # Every class carries lessons, and the group pickers are populated.
         self.assertTrue(all(c["e"] for s in self.data["schools"] for c in s["c"]))
         self.assertEqual(sum(len(c["v"]) for s in self.data["schools"]
@@ -157,7 +159,7 @@ class WholePage(unittest.TestCase):
         school = next(s for s in self.data["schools"] if s["n"] == "68")
         klass = next(c for c in school["c"] if c["n"] == "8")
         breaks = [(b["n"], b["s"], b["e"]) for b in klass["h"]["0"]["b"]]
-        self.assertEqual(breaks, [("Söömine, tiimitund, vaba aeg", "11.50", "12.50"),
+        self.assertEqual(breaks, [("Vaba aeg", "11.50", "12.50"),
                                   ("Amps", "13.35", "13.55")])
 
     def test_each_school_abbreviates_and_colors_in_its_own_words(self):

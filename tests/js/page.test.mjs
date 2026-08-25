@@ -130,7 +130,7 @@ test("nothing reaches the page as markup, in either view", () => {
      own, so it could be deleted from any one of them unnoticed. This drives
      every channel that carries text — the school's own data, what the reader
      typed, and what a link can bring — through both renderers and looks at the
-     result. state.subjectColors is written to directly on purpose: normalise and
+     result. state.subjects is written to directly on purpose: normalise and
      onlyColors keep it clean in real use, and esc() is what stands behind
      them if they ever stop. */
   const bad = 'x"><img src=x onerror=alert(1)>';
@@ -138,7 +138,7 @@ test("nothing reaches the page as markup, in either view", () => {
   for (const [school, klass] of [["68", "8"], ["99", "3.a"]]) {
     run(`state.school = ${JSON.stringify(school)}; state.class = ${JSON.stringify(klass)};
          state.subjectColorStyle = "custom";
-         state.subjectColors = {Matemaatika: ${q}, Kunst: ${q}};
+         state.subjects = {Matemaatika: ${q}, Kunst: ${q}};
          state.classes = {};
          myOwn().studentName = ${q};
          myOwn().schoolName = ${q};
@@ -157,7 +157,7 @@ test("nothing reaches the page as markup, in either view", () => {
     /* document.title is not markup — a browser shows it as text — so it is
        deliberately not escaped and not checked here. */
   }
-  run(`state.school = "68"; state.class = "8"; state.subjectColors = {};
+  run(`state.school = "68"; state.class = "8"; state.subjects = {};
        state.classes = {}; state.showStudentName = false;
        state.subjectColorStyle = "custom"; render();`);
 });
@@ -207,7 +207,7 @@ test("the fallback grid escapes everything it draws", () => {
      unnoticed. Drive it with markup in each thing it renders. */
   const bad = 'x"><img src=x onerror=alert(1)>';
   run(`state.school = "99"; state.class = "3.a";
-       state.subjectColorStyle = "custom"; state.subjectColors = {Matemaatika: ${JSON.stringify(bad)}};
+       state.subjectColorStyle = "custom"; state.subjects = {Matemaatika: ${JSON.stringify(bad)}};
        state.classes = {};
        myOwn().events = [{day: "Mon", startTime: "09:00", endTime: "10:00",
                           backgroundColor: "#ff0000", textColor: "", label: ${JSON.stringify(bad)}}];
@@ -217,7 +217,7 @@ test("the fallback grid escapes everything it draws", () => {
   assert.ok(html.includes("<table"), "the grid view really did render");
   assert.doesNotMatch(html, /<img/, "markup reached the page unescaped");
   assert.match(html, /&lt;img|&amp;lt;img/, "the payload is there, escaped");
-  run(`state.school = "68"; state.class = "8"; state.subjectColors = {};
+  run(`state.school = "68"; state.class = "8"; state.subjects = {};
        state.classes = {}; state.showStudentName = false;
        state.subjectColorStyle = "custom"; render();`);
 });
@@ -258,12 +258,12 @@ test("a hostile color in a link is dropped before it is stored", () => {
   /* Through the real ingestion path, not by calling the filter directly: the
      filter was tested and the call to it was not, so removing the call left
      markup sitting in localStorage with the suite green. */
-  const hostile = JSON.stringify({ subjectColors: {
+  const hostile = JSON.stringify({ subjects: {
     Matemaatika: { style: "custom", backgroundColor: 'x"><img src=x>' },
     Bioloogia: { style: 'x"><img src=x>' },
     Kunst: { style: "school", backgroundColor: "#abc" } } });
   const merged = json(`applyShared(JSON.parse(${JSON.stringify(hostile)}), defaults())`);
-  assert.deepEqual(merged.subjectColors, { Matemaatika: { style: "custom" },
+  assert.deepEqual(merged.subjects, { Matemaatika: { style: "custom" },
                                       Kunst: { style: "school", backgroundColor: "#abc" } });
 });
 
@@ -285,7 +285,7 @@ test("a big link is compressed, a small one is left alone", () => {
   assert.match(small, /^s=/);
   assert.equal(json(`unpackSettings(${JSON.stringify(small)})`), '{"lang":"et"}');
 
-  const heavy = JSON.stringify({ subjectColors: Object.fromEntries(
+  const heavy = JSON.stringify({ subjects: Object.fromEntries(
     Array.from({ length: 70 }, (_, i) =>
       ["Subject number " + i, { style: "custom", backgroundColor: "#0000" + (i % 90 + 10) }])) });
   const packed = json(`packSettings(${JSON.stringify(heavy)})`);
@@ -444,29 +444,29 @@ test("an event with no name is still an event", () => {
 });
 
 test("a settings bag reaches normalise with its colors filtered", () => {
-  const got = json(`normalise({subjectColors: {A: {backgroundColor: "#fff"},
+  const got = json(`normalise({subjects: {A: {backgroundColor: "#fff"},
                                           B: {backgroundColor: 'x"><img src=x>'},
                                           C: {style: "school"},
                                           D: {style: "nonsense"},
                                           E: "not an object"}})`);
-  assert.deepEqual(got.subjectColors, { A: { backgroundColor: "#fff" }, C: { style: "school" } });
+  assert.deepEqual(got.subjects, { A: { backgroundColor: "#fff" }, C: { style: "school" } });
 });
 
 test("a subject can differ from what every other subject is doing", () => {
   /* The gap the per-subject entry exists to close: the school's own colors
      throughout, with one subject pulled out. */
   run(`state.subjectColorStyle = "school";
-       state.subjectColors = {Matemaatika: {style: "custom", backgroundColor: "#123456"}};`);
+       state.subjects = {Matemaatika: {style: "custom", backgroundColor: "#123456"}};`);
   assert.equal(json(`colorFor("Matemaatika").bg`), "#123456");
   assert.equal(json(`styleFor("Ajalugu")`), "school");
   // And the radios mean every subject, so they clear the exception.
   run(`(() => { state.subjectColorStyle = "palette";
-       for (const e of Object.values(state.subjectColors)) delete e.style;
+       for (const e of Object.values(state.subjects)) delete e.style;
        tidySubjects(); })()`);
   assert.equal(json(`styleFor("Matemaatika")`), "palette");
-  assert.deepEqual(json(`state.subjectColors`), { Matemaatika: { backgroundColor: "#123456" } },
+  assert.deepEqual(json(`state.subjects`), { Matemaatika: { backgroundColor: "#123456" } },
                    "the color survives so switching back restores it");
-  run(`state.subjectColors = {}; state.subjectColorStyle = "custom";`);
+  run(`state.subjects = {}; state.subjectColorStyle = "custom";`);
 });
 
 test("the README describes the settings that actually exist", () => {
@@ -488,7 +488,7 @@ test("the README describes the settings that actually exist", () => {
   // And it survives being read back in as settings.
   const back = json(`normalise(${JSON.stringify(shown)})`);
   assert.equal(back.subjectColorStyle, shown.subjectColorStyle);
-  assert.deepEqual(back.subjectColors, shown.subjectColors);
+  assert.deepEqual(back.subjects, shown.subjects);
   assert.equal(back.classes["68/8"].studentName, "Eva");
   assert.equal(back.classes["68/8"].events.length, 1);
   assert.deepEqual(back.classes["68/8"].studyGroups,
@@ -500,10 +500,10 @@ test("nothing empty is written down", () => {
      the empty ones go, because a file full of "" and {} is harder to read. */
   const written = json(`slim(Object.assign(defaults(), {
     classes: {"68/8": Object.assign(classDefaults(), {studentName: "Eva"})},
-    subjectColors: {Ajalugu: {style: "custom", backgroundColor: "#123456", textColor: ""}}
+    subjects: {Ajalugu: {style: "custom", backgroundColor: "#123456", textColor: ""}}
   }))`);
   assert.deepEqual(Object.keys(written.classes["68/8"]), ["studentName"]);
-  assert.deepEqual(written.subjectColors.Ajalugu,
+  assert.deepEqual(written.subjects.Ajalugu,
                    { style: "custom", backgroundColor: "#123456" });
   assert.ok(!("classes" in json(`slim({classes: {}})`)));
   // false and 0 are values, not emptiness.
@@ -518,7 +518,7 @@ test("the two swatches in a legend row set different things", () => {
   /* Both are input[type=color] in the same row, and a handler bound by that
      alone caught the text one as well — picking a text color rewrote the
      background. They are told apart by class, and this is why. */
-  run(`state.subjectColors = {}; state.subjectColorStyle = "custom";
+  run(`state.subjects = {}; state.subjectColorStyle = "custom";
        renderLegend(currentClass().e);`);
   const html = json(`document.getElementById("legend").innerHTML`);
   const swatches = (html.match(/type="color"/g) || []).length;
@@ -528,13 +528,13 @@ test("the two swatches in a legend row set different things", () => {
 
   // And each writes only its own field.
   run(`setColor("Ajalugu", "#123456");`);
-  assert.deepEqual(json(`state.subjectColors.Ajalugu`), { backgroundColor: "#123456" });
+  assert.deepEqual(json(`state.subjects.Ajalugu`), { backgroundColor: "#123456" });
   run(`setTextColor("Ajalugu", "#ff00ff");`);
-  assert.deepEqual(json(`state.subjectColors.Ajalugu`),
+  assert.deepEqual(json(`state.subjects.Ajalugu`),
                    { backgroundColor: "#123456", textColor: "#ff00ff" });
   run(`setTextColor("Ajalugu", "");`);
-  assert.deepEqual(json(`state.subjectColors.Ajalugu`), { backgroundColor: "#123456" });
-  run(`state.subjectColors = {};`);
+  assert.deepEqual(json(`state.subjects.Ajalugu`), { backgroundColor: "#123456" });
+  run(`state.subjects = {};`);
 });
 
 test("every column has a heading and every heading a column", () => {
@@ -605,4 +605,52 @@ test("a box looks the same however its text color was arrived at", () => {
   assert.equal(shape(chosen), shape(worked),
                "the two differ by more than the text color");
   assert.doesNotMatch(chosen, /border|outlined/);
+});
+
+test("a subject can be given a name of the reader's own", () => {
+  /* The school's word for a subject is not always the word a family uses. The
+     override wins over both the full name and the abbreviation, and an empty
+     one means "use the school's". */
+  run(`state.subjects = {}; state.subjectNameStyle = "full";`);
+  assert.equal(json(`subjectLabel("Matemaatika", false)`), "Matemaatika");
+  assert.equal(json(`subjectLabel("Matemaatika", true)`), "Mat", "the school's short form");
+
+  run(`setSubjectLabel("Matemaatika", "Maths");`);
+  assert.equal(json(`subjectLabel("Matemaatika", false)`), "Maths");
+  assert.equal(json(`subjectLabel("Matemaatika", true)`), "Maths",
+               "a name of your own is never abbreviated");
+  assert.deepEqual(json(`state.subjects.Matemaatika`), { label: "Maths" });
+
+  // A merged box renames each of its parts.
+  assert.equal(json(`subjectName({s: "Matemaatika", S: ["Matemaatika", "Kunst"]}, false)`),
+               "Maths + Kunst");
+
+  run(`setSubjectLabel("Matemaatika", "   ");`);
+  assert.deepEqual(json(`state.subjects`), {}, "an empty name leaves nothing behind");
+});
+
+test("a break is renamed and recolored like a subject", () => {
+  /* Breaks are drawn on the timetable, so they are the reader's to change too.
+     They carry no groups and no room, but everything else is the same. */
+  run(`state.subjects = {};`);
+  assert.equal(json(`breakLabel("Vaba aeg")`), "Vaba aeg");
+  // A school that writes a break as a list gets only the part before the comma.
+  assert.equal(json(`breakLabel("Söömine, tiimitund, vaba aeg")`), "Söömine");
+  run(`setSubjectLabel("Vaba aeg", "Free time");`);
+  assert.equal(json(`breakLabel("Vaba aeg")`), "Free time");
+  run(`setColor("Vaba aeg", "#123456");`);
+  assert.equal(json(`colorFor("Vaba aeg").bg`), "#123456");
+  run(`state.subjects = {}; state.subjectColorStyle = "custom";`);
+});
+
+test("a break keeps its hatch when it takes a color", () => {
+  /* The stripes say "not a lesson". They are translucent now, so a color can
+     sit under them, and the sample in the table wears the same class. */
+  const hatched = json(`sampleBox("#123456", "#fff", "9.00–9.45", "Free time", "", true)`);
+  const plain = json(`sampleBox("#123456", "#fff", "9.00–9.45", "Maths", "", false)`);
+  assert.match(hatched, /class="ev brk"/);
+  assert.doesNotMatch(plain, /brk/);
+  // The color is named on its own, or the shorthand wipes the stripes out.
+  assert.match(hatched, /background-color:#123456/);
+  assert.doesNotMatch(hatched, /background:#/);
 });

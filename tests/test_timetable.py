@@ -64,8 +64,8 @@ class BellClock(unittest.TestCase):
 
     def test_the_named_breaks_land_where_the_plan_says(self):
         _, breaks = tt.day_times(["P", "P", "P", "L", "L"], self.cfg)
-        self.assertEqual([(b["name"].split(",")[0], b["start"], b["end"]) for b in breaks],
-                         [("Söömine", "11.50", "12.50"), ("Amps", "14.10", "14.30")])
+        self.assertEqual([(b["name"], b["start"], b["end"]) for b in breaks],
+                         [("Vaba aeg", "11.50", "12.50"), ("Amps", "14.10", "14.30")])
 
     def test_a_shorter_third_lesson_moves_the_rest_of_the_day(self):
         # The Päevaplaan puts Amps at 13.35 when slot 3 is a single, not a pair.

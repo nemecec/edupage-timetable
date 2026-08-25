@@ -109,9 +109,9 @@ out of the clock. The clock gets two details right:
   The slot fixes the start. Each lesson's own length fixes the end.
 - Slot 3 shifts the rest of the day, because it can be a single or a pair. This
   is why the 20-minute break named `Amps` falls at 13.35-13.55 on some days and
-  at 14.10-14.30 on others. The hour before it, `Söömine, tiimitund, vaba aeg`,
-  is fixed at 11.50-12.50. It comes after slot 2, and the first two slots are
-  always pairs. The grid shows only the first word of a break.
+  at 14.10-14.30 on others. The hour before it, `Vaba aeg`, is fixed at 11.50-12.50. It comes after slot 2, and the first two slots are
+  always pairs. Where a school writes a break as a list, the grid shows the part before the
+  first comma.
 
 **LõunaTERA publishes fixed blocks instead.** There is no clock to run. Each
 block says which aSc periods it holds, and when it is:
@@ -367,9 +367,11 @@ its own map of classes.
   "subjectNameStyle": "full",
 
   "subjectColorStyle": "school",
-  "subjectColors": {
-    "Matemaatika": { "style": "custom", "backgroundColor": "#83EC9B" },
-    "Kunst": { "style": "palette" }
+  "subjects": {
+        "Matemaatika": { "label": "Maths", "style": "custom",
+                     "backgroundColor": "#83EC9B" },
+    "Kunst": { "style": "palette" },
+    "Vaba aeg": { "label": "Free time" }
   },
 
   "classes": {
@@ -396,15 +398,24 @@ Some of these choices are not obvious:
 - **`subjectColorStyle` says what every subject does**: `palette` (the generated
   one), `school` (the timetable's own), or `custom` (yours). It was two
   checkboxes that layered on each other. Nobody can guess that by looking.
-- **`subjectColors` is where one subject differs from that.** It holds only the
-  subjects somebody touched. An entry can carry a `style` of its own, a color, or
-  both. The example above runs on the school's colors, with maths in a color of
+- **`subjects` is where one subject differs from that.** It holds only the
+  subjects somebody touched. An entry can carry a `label` of the reader's own, a
+  `style`, a color, or any of those together. Named breaks appear here as well,
+  keyed by the name the school gave them. The example above runs on the school's colors, with maths in a color of
   its own and art left on the generated palette. One global switch cannot
   express that. This map is not per class: a subject keeps its color wherever it
   turns up, which is rather the point of coloring it.
 - **The subject list is the same table** as the events list, one subject to a
-  row, under *Lesson colors*. It starts collapsed, because a class has twenty-odd
-  subjects and most people never touch it. Each row says what that subject
+  row. It starts collapsed, because a class has twenty-odd subjects and most
+  people never touch it. Every row carries a **Label** field. The school's own
+  word for the subject sits behind it as a placeholder, so one word can be
+  changed without retyping the rest, and an empty field means "use the
+  school's". A name of your own is never abbreviated, because you already wrote
+  it as short as you wanted it.
+- **The named breaks are rows in that table too**, so *Vaba aeg* and *Amps* can
+  be renamed and recolored like any subject. A break keeps its diagonal hatch,
+  which is what says "not a lesson". The stripes are translucent, so the color
+  underneath shows through. Each row says what that subject
   really does: **own color**, **from the timetable**, or **automatic**. A subject
   set to "own color" with no color behind it reads as automatic, because that is
   what gets drawn. The sample at the end of the row takes the room and teacher

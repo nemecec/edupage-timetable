@@ -85,11 +85,12 @@ STRINGS = {
         "nameShort": "abbreviated",
         "subjectFull": "full name",
         "subjectShort": "short name",
-        "colorsHeading": "Lesson colours:",
+        "colorsHeading": "How lessons look:",
         "paletteColors": "Automatic colours",
         "schoolColors": "Colours from the timetable",
         "customColors": "Colours of my own",
         "colLabel": "Label",
+        "colSubject": "Subject",
         "colBackground": "Background colour",
         "colTextColor": "Text colour",
         "colSample": "How it looks",
@@ -102,7 +103,7 @@ STRINGS = {
         "color.fromSubject": "copy from subject",
         "color.fromTimetable": "from the timetable",
         "color.automatic": "automatic",
-        "subjects.summary": "Colour of each subject",
+        "subjects.summary": "Name and colour of each subject",
         "appName": "School timetable",
         "filter": "Filter",
         "groupsHeading": "Show only these study groups:",
@@ -174,11 +175,12 @@ STRINGS = {
         "nameShort": "lühend",
         "subjectFull": "täisnimi",
         "subjectShort": "lühinimi",
-        "colorsHeading": "Tundide värvid:",
+        "colorsHeading": "Kuidas tunnid välja näevad:",
         "paletteColors": "Automaatsed värvid",
         "schoolColors": "Tunniplaani värvid",
         "customColors": "Minu omad värvid",
         "colLabel": "Nimetus",
+        "colSubject": "Õppeaine",
         "colBackground": "Taustavärv",
         "colTextColor": "Teksti värv",
         "colSample": "Kuidas välja näeb",
@@ -191,7 +193,7 @@ STRINGS = {
         "color.fromSubject": "kopeeri õppeainelt",
         "color.fromTimetable": "tunniplaanist",
         "color.automatic": "automaatne",
-        "subjects.summary": "Iga õppeaine värv",
+        "subjects.summary": "Iga õppeaine nimi ja värv",
         "appName": "Kooli tunniplaan",
         "filter": "Filter",
         "groupsHeading": "Näita ainult neid õpperühmi:",
@@ -282,7 +284,7 @@ BELLS = {
         # Gap in minutes after slot N. Named gaps are drawn in the grid.
         "gaps": [
             {"after": 1, "minutes": 10},
-            {"after": 2, "minutes": 60, "name": "Söömine, tiimitund, vaba aeg"},
+            {"after": 2, "minutes": 60, "name": "Vaba aeg"},
             {"after": 3, "minutes": 20, "name": "Amps"},
         ],
         "defaultGap": 5,
@@ -1053,6 +1055,17 @@ def _hexpair(hue, light, sat):
 HEX_COLOR = re.compile(r"^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$")
 
 
+def break_names(schools):
+    """Every named gap between lessons, across every class.
+
+    A break is drawn like a lesson and can be recolored like one, so it needs
+    a color of its own. LõunaTERA has none here. Its breaks are lessons in the
+    timetable already, and arrive as subjects.
+    """
+    return {b["name"] for school in schools for cls in school["classes"]
+            for day in cls["shape"].values() for b in day["breaks"] if b["name"]}
+
+
 def compact(schools):
     """Shrink the model for embedding: short keys, subject facts hoisted out.
 
@@ -1231,6 +1244,7 @@ PAGE = """<!DOCTYPE html>
     border-radius: 5px; background: #fff; }
   .evtable input[type=text] { width: 100%; }
   .evtable .evlabel { width: 99%; }
+  .evtable .subjlabel { width: 11rem; }
   .evtable input[type=color] { width: 34px; height: 24px; padding: 0;
     border: 1px solid var(--line); border-radius: 5px; background: #fff; }
   .evtable .drop { border: none; background: none; color: var(--muted);
@@ -1309,7 +1323,11 @@ PAGE = """<!DOCTYPE html>
   .ev .who2 { font-size: 10.5px; opacity: .85; line-height: 1.25; }
   .ev.tight .what { font-size: 11px; }
   .ev.approx { border-style: dashed; border-width: 2px; }
-  .ev.brk { background: repeating-linear-gradient(135deg, #f4f5f7 0 6px, #eceef1 6px 12px);
+  /* The stripes are translucent, so the color underneath shows through. A
+     break is the reader's to recolor like any lesson, and the hatch is what
+     still says "not a lesson". */
+  .ev.brk { background-image: repeating-linear-gradient(135deg,
+              rgba(255,255,255,.42) 0 6px, rgba(0,0,0,.05) 6px 12px);
             color: #6b7280; border-color: #e2e5ea; }
   .ev.brk .what { font-weight: 500; font-size: 11px; }
   /* A personal event is drawn over the timetable, so it needs to be above it —
@@ -1476,6 +1494,7 @@ PAGE = """<!DOCTYPE html>
         <div class="scroll">
           <table class="evtable">
             <thead><tr>
+              <th data-i18n="colSubject"></th>
               <th data-i18n="colLabel"></th>
               <th data-i18n="colBackground"></th>
               <th data-i18n="colTextColor"></th>
@@ -1636,7 +1655,8 @@ def render_html(schools, edupage, year, initial_school, initial_class, lang="en"
     # One palette across all four timetables, so a subject looks the same
     # whichever school is on screen. Only the school's own abbreviation and its
     # own color are per-school. Those live on the school, not here.
-    all_subjects = sorted({name for per in subject_meta.values() for name in per})
+    all_subjects = sorted({name for per in subject_meta.values() for name in per}
+                          | break_names(schools))
     payload = {
         "edupage": edupage,
         "year": year,

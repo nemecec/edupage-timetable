@@ -29,12 +29,15 @@ const defaults = () => ({
      can guess that by looking. */
   subjectColorStyle: "custom",          // "palette" | "school" | "custom"
 
-  /* Per subject, and only where the reader has said something: a color they
-     chose, a style that differs from the one above, or both. This is what lets
-     a timetable run on the school's own colors with one subject pulled out in
-     a color of your own. The single global switch cannot express that.
-     Not per class: a subject keeps its color wherever it turns up. */
-  subjectColors: {},
+  /* Per subject, and only where the reader has said something: a name of
+     their own, a color they chose, a style that differs from the one above, or
+     any of those together. This is what lets a timetable run on the school's
+     own colors with one subject pulled out in a color of your own. The single
+     global switch cannot express that.
+
+     Not per class. A subject keeps its name and its color wherever it turns
+     up, which is the point of setting either. */
+  subjects: {},
 
   classes: {},
 });
@@ -70,7 +73,7 @@ const STYLES = ["palette", "school", "custom"];
 /* What one subject is allowed to say about itself: a color, a style, or both.
    An entry saying neither is nothing at all and is dropped, which is what keeps
    the map to the handful of subjects somebody actually touched. */
-function onlySubjectColors(bag) {
+function onlySubjects(bag) {
   const out = {};
   for (const [subject, value] of Object.entries(bag || {})) {
     if (!value || typeof value !== "object" || Array.isArray(value)) continue;
@@ -80,6 +83,10 @@ function onlySubjectColors(bag) {
       if (typeof value[field] === "string" && HEX.test(value[field].trim())) {
         kept[field] = value[field].trim();
       }
+    }
+    /* A name of the reader's own. Blank means "use the school's". */
+    if (typeof value.label === "string" && value.label.trim()) {
+      kept.label = value.label;
     }
     if (Object.keys(kept).length) out[subject] = kept;
   }
@@ -156,7 +163,7 @@ function normalise(saved) {
     if (!allowed.includes(out[key])) out[key] = base[key];
   }
   if (!DATA.languages.some(l => l[0] === out.lang)) out.lang = DATA.lang;
-  out.subjectColors = onlySubjectColors(out.subjectColors);
+  out.subjects = onlySubjects(out.subjects);
   const classes = {};
   for (const [key, value] of Object.entries(out.classes)) classes[key] = oneClass(value);
   out.classes = classes;
@@ -184,12 +191,12 @@ function applyShared(shared, current) {
       merged.classes[key] = oneClass(Object.assign({}, current.classes[key], sub));
     }
   }
-  if (shared.subjectColors && typeof shared.subjectColors === "object") {
+  if (shared.subjects && typeof shared.subjects === "object") {
     /* Merged after normalise, so these have not been through it. Nothing
        hostile survives the escaping at the sinks either way, but a link's junk
        must not end up saved. */
-    merged.subjectColors = onlySubjectColors(
-      Object.assign({}, current.subjectColors, shared.subjectColors));
+    merged.subjects = onlySubjects(
+      Object.assign({}, current.subjects, shared.subjects));
   }
   return merged;
 }
@@ -474,11 +481,11 @@ function readable(bg) {
 /* What this subject is set to do — its own answer if it gave one, otherwise
    the one every subject follows. */
 function styleFor(subject) {
-  return ((state.subjectColors || {})[subject] || {}).style || state.subjectColorStyle;
+  return ((state.subjects || {})[subject] || {}).style || state.subjectColorStyle;
 }
 
 function colorFor(subject) {
-  const own = (state.subjectColors || {})[subject] || {};
+  const own = (state.subjects || {})[subject] || {};
   const style = own.style || state.subjectColorStyle;
   /* A chosen text color holds whatever the background came from — the same
      rule the events table follows, and there is no reason for a subject to
@@ -497,10 +504,11 @@ function colorFor(subject) {
 
 /* An entry that says nothing is not worth keeping, in storage or in a link. */
 function tidySubjects() {
-  for (const [subject, entry] of Object.entries(state.subjectColors || {})) {
+  for (const [subject, entry] of Object.entries(state.subjects || {})) {
     if (entry.style === state.subjectColorStyle) delete entry.style;
-    if (!entry.style && !entry.backgroundColor && !entry.textColor) {
-      delete state.subjectColors[subject];
+    if (!entry.label && !entry.style && !entry.backgroundColor &&
+        !entry.textColor) {
+      delete state.subjects[subject];
     }
   }
 }
@@ -669,9 +677,10 @@ function renderTimeline(school, cls, shown, mine, scale) {
       const geom = place(it, 0);
       const when = hhmm(it.a) + "–" + hhmm(it.z);
       if (it.brk) {
-        h += '<div class="ev brk" style="' + geom + '" title="' +
-             esc(it.brk + "\n" + when) +
-             '"><div class="what">' + esc(it.brk.split(",")[0]) + "</div>" +
+        const col = colorFor(it.brk);
+        h += '<div class="ev brk" style="' + geom + "background-color:" + esc(col.bg) +
+             ";color:" + esc(col.fg) + '" title="' + esc(it.brk + "\n" + when) +
+             '"><div class="what">' + esc(breakLabel(it.brk)) + "</div>" +
              (height >= 30 ? '<div class="when">' + esc(when) + "</div>" : "") + "</div>";
         continue;
       }
@@ -687,7 +696,7 @@ function renderTimeline(school, cls, shown, mine, scale) {
         body += '<div class="who2">' + esc(meta.join(" · ")) + "</div>";
       }
       h += '<div class="ev' + (height < 40 ? " tight" : "") + (e.o ? " approx" : "") +
-           '" data-subject="' + esc(e.s) + '" style="' + geom + "background:" + esc(col.bg) +
+           '" data-subject="' + esc(e.s) + '" style="' + geom + "background-color:" + esc(col.bg) +
            ";color:" + esc(col.fg) + '" title="' + esc(tip) + '">' + body + "</div>";
     }
     /* The layer on top. Events are packed among themselves, so two of them at
@@ -706,7 +715,7 @@ function renderTimeline(school, cls, shown, mine, scale) {
         : '<div class="what">' + esc(when + " " + it.label) + "</div>";
       h += '<div class="ev mine' + (height < 40 ? " tight" : "") +
            '" style="' + place(it, over ? 16 : 0) +
-           "background:" + esc(it.bg) + ";color:" + esc(fg) + '" title="' +
+           "background-color:" + esc(it.bg) + ";color:" + esc(fg) + '" title="' +
            esc(it.label + "\n" + when) + '">' + body + "</div>";
     }
     h += "</div>";
@@ -784,10 +793,25 @@ function detailLine(e) {
 /* What to call a lesson. A block the school publishes as one but which holds
    two subjects in sequence names both, in the order they run. The color and
    the legend still follow the one subject the box is keyed to. */
+/* What to call a subject: the reader's own name for it if they gave one, and
+   otherwise the school's, long or short as asked. A name of your own is never
+   abbreviated. You already wrote it as short as you wanted it. */
+/* A break carries its own name, and the reader can rename it like a subject.
+   The school writes some of them as a list — "Söömine, tiimitund, vaba aeg" —
+   and only the part before the comma fits a box. */
+function breakLabel(name) {
+  const own = ((state.subjects || {})[name] || {}).label;
+  return own || String(name).split(",")[0];
+}
+
+function subjectLabel(name, short) {
+  const own = ((state.subjects || {})[name] || {}).label;
+  if (own) return own;
+  return short ? ((subjectFacts()[name] || {}).short || name) : name;
+}
+
 function subjectName(e, short) {
-  const facts = subjectFacts();
-  const one = (name) => short ? ((facts[name] || {}).short || name) : name;
-  return (e.S && e.S.length ? e.S : [e.s]).map(one).join(" + ");
+  return (e.S && e.S.length ? e.S : [e.s]).map(n => subjectLabel(n, short)).join(" + ");
 }
 
 /* The subject as the reader asked to see it, or nothing at all. */
@@ -837,7 +861,7 @@ function tidy() {
 function mineCell(list) {
   if (!list.length) return "<td></td>";
   return "<td>" + list.slice().sort((p, q) => p.a - q.a).map(ev =>
-    '<div class="lesson" style="background:' + esc(ev.bg) + ";color:" + esc(eventFg(ev)) +
+    '<div class="lesson" style="background-color:' + esc(ev.bg) + ";color:" + esc(eventFg(ev)) +
     (ev.fg ? ";border:1px solid " + esc(ev.fg) : "") +
     '"><div class="name">' + esc(ev.label) + "</div>" +
     '<div class="time">' + esc(hhmm(ev.a) + "–" + hhmm(ev.z)) +
@@ -853,7 +877,7 @@ function lessonHtml(e, time) {
               .filter(Boolean).join("\n");
   const col = colorFor(e.s);
   return '<div class="lesson' + (e.c ? " cont" : "") + '" data-subject="' + esc(e.s) +
-    '" style="background:' + esc(col.bg) + ";color:" + esc(col.fg) +
+    '" style="background-color:' + esc(col.bg) + ";color:" + esc(col.fg) +
     '" title="' + esc(tip) + '">' +
     '<div class="name">' + esc(label) + "</div>" +
     ((time || e.o)
@@ -1040,7 +1064,7 @@ function render() {
 }
 
 function setTextColor(subject, value, redraw) {
-  const entry = state.subjectColors[subject] || (state.subjectColors[subject] = {});
+  const entry = state.subjects[subject] || (state.subjects[subject] = {});
   if (value) entry.textColor = value; else delete entry.textColor;
   tidySubjects();
   save();
@@ -1051,7 +1075,7 @@ function setTextColor(subject, value, redraw) {
 }
 
 function setColor(subject, value) {
-  const entry = state.subjectColors[subject] || (state.subjectColors[subject] = {});
+  const entry = state.subjects[subject] || (state.subjects[subject] = {});
   entry.backgroundColor = value;
   /* Choosing a color is asking for it — for this subject, not for every one.
      If everything is already on its own colors there is nothing to say. */
@@ -1075,7 +1099,9 @@ function cssQuote(text) {
 
 function renderLegend(shown) {
   document.getElementById("share").title = t("shareHint");
-  const used = [...new Set(shown.map(e => e.s))].sort();
+  /* Breaks as well as lessons: both are drawn, so both are the reader's to
+     rename and recolor. */
+  const used = [...new Set(shown.map(e => e.s).concat(breaksOnScreen()))].sort();
   /* One real lesson per subject, so the sample carries the room and teacher the
      boxes actually show rather than an empty shape. */
   example = {};
@@ -1084,18 +1110,28 @@ function renderLegend(shown) {
      the same way. The three ways a subject can get its background are the three
      the switch above offers, said per subject rather than through a dropdown
      whose entries meant nothing on their own. */
+  const breaks = breaksOnScreen();
   document.getElementById("legend").innerHTML = used.map((name, i) => {
-    const col = colorFor(name), own = (state.subjectColors || {})[name] || {};
-    const row = "s" + i;
+    const col = colorFor(name), own = (state.subjects || {})[name] || {};
+    const row = "s" + i, isBreak = breaks.includes(name);
+    /* The school's word for it, then the reader's. The field shows the school's
+       as a placeholder, so one word can be changed without retyping the rest,
+       and an empty field means "use the school's" — the same bargain the title
+       fields make. */
+    const shown = isBreak ? String(name).split(",")[0] : name;
     return '<tr data-subject="' + esc(name) + '">' +
-      '<td class="rowlabel">' + esc(name) + "</td>" +
+      '<td class="rowlabel">' + esc(shown) + "</td>" +
+      '<td><input type="text" class="subjlabel" value="' + esc(own.label || "") +
+        '" placeholder="' + esc(shown) + '"></td>' +
       backgroundCell(row, subjectMode(name), col.bg,
         [["school", t("color.fromTimetable"), ""],
          ["palette", t("color.automatic"), ""]]) +
       textColorCell(row, col.fg, !own.textColor) +
-      previewCell(col.bg, col.fg, sampleWhen("9:00"),
-                  lessonTitle(example[name] || { s: name, S: 0 }),
-                  (example[name] ? detailLine(example[name]) : []).join(" · ")) +
+            previewCell(col.bg, col.fg, sampleWhen("9:00"),
+                  isBreak ? breakLabel(name)
+                          : lessonTitle(example[name] || { s: name, S: 0 }),
+                  (example[name] ? detailLine(example[name]) : []).join(" · "),
+                  isBreak) +
       "</tr>";
   }).join("");
 }
@@ -1104,7 +1140,7 @@ function renderLegend(shown) {
 /* Which of the three a subject is really on. A style of "custom" with no
    color behind it draws from the palette, so that is what it says. */
 function subjectMode(name) {
-  const own = (state.subjectColors || {})[name] || {};
+  const own = (state.subjects || {})[name] || {};
   const style = styleFor(name);
   if (style === "school") return "school";
   if (style === "custom" && own.backgroundColor) return "own";
@@ -1118,9 +1154,22 @@ function refreshSubjectSample(name) {
   const row = document.querySelector('#legend tr[data-subject="' +
                                      cssQuote(name) + '"]');
   const col = colorFor(name), lesson = example[name];
+  const isBreak = breaksOnScreen().includes(name);
   refreshSample(row, col.bg, col.fg, sampleWhen("9:00"),
-                lessonTitle(lesson || { s: name, S: 0 }),
-                (lesson ? detailLine(lesson) : []).join(" · "));
+                isBreak ? breakLabel(name)
+                        : lessonTitle(lesson || { s: name, S: 0 }),
+                (lesson ? detailLine(lesson) : []).join(" · "), isBreak);
+}
+
+/* A name of the reader's own for one subject or break. Empty means "use the
+   school's", so the entry goes rather than holding an empty string. */
+function setSubjectLabel(name, value) {
+  const entry = state.subjects[name] || (state.subjects[name] = {});
+  if (value.trim()) entry.label = value; else delete entry.label;
+  tidySubjects();
+  save();
+  refreshSubjectSample(name);
+  paint();
 }
 
 function subjectOf(target) {
@@ -1132,7 +1181,9 @@ document.getElementById("legend").addEventListener("input", (e) => {
   const name = subjectOf(e.target);
   if (!name) return;
   const tr = e.target.closest("tr");
-  if (e.target.classList.contains("bgpick")) {
+  if (e.target.classList.contains("subjlabel")) {
+    setSubjectLabel(name, e.target.value);
+  } else if (e.target.classList.contains("bgpick")) {
     choose(tr, "bg", "own");
     setColor(name, e.target.value);
   } else if (e.target.classList.contains("fgpick")) {
@@ -1153,7 +1204,7 @@ document.getElementById("legend").addEventListener("change", (e) => {
     const swatch = tr.querySelector(".bgpick");
     setColor(name, swatch ? swatch.value : colorFor(name).bg);
   } else {
-    const entry = state.subjectColors[name] || (state.subjectColors[name] = {});
+    const entry = state.subjects[name] || (state.subjects[name] = {});
     entry.style = e.target.value;
     tidySubjects();
     save();
@@ -1237,7 +1288,7 @@ function bindChoice(name, key) {
         /* This one says what every subject does, so it means every subject —
            a row that quietly does its own thing makes the switch a lie.
            Chosen colors are kept, so turning "my own" back on restores them. */
-        for (const entry of Object.values(state.subjectColors)) delete entry.style;
+        for (const entry of Object.values(state.subjects)) delete entry.style;
         tidySubjects();
       }
       save(); render();
@@ -1455,6 +1506,16 @@ function syncPerClassInputs() {
    then hunting for its hex code is exactly the fiddly part. */
 const evRows = document.getElementById("evrows");
 
+/* Every named break the class has, on any day. */
+function breaksOnScreen() {
+  const shape = currentClass().h || {};
+  const names = [];
+  for (const day of Object.values(shape)) {
+    for (const b of (day.b || [])) if (b.n && !names.includes(b.n)) names.push(b.n);
+  }
+  return names;
+}
+
 function subjectsOnScreen() {
   const cls = currentClass();
   return [...new Set(cls.e.filter(e => !e.c).map(e => e.s))].sort();
@@ -1479,16 +1540,17 @@ const swatch = (cls, value) =>
    it — same classes, same three lines. Reading a hex code and imagining the
    result is the part nobody can do. This shows it. Sized as a 45-minute lesson,
    which is the common case and tall enough for all three lines. */
-function sampleBox(bg, fg, when, label, meta) {
-  const style = "background:" + esc(bg) + ";color:" + esc(fg);
-  return '<div class="ev" style="' + style + '">' +
+function sampleBox(bg, fg, when, label, meta, hatched) {
+  const style = "background-color:" + esc(bg) + ";color:" + esc(fg);
+  return '<div class="ev' + (hatched ? " brk" : "") + '" style="' + style + '">' +
     '<div class="when">' + esc(when) + "</div>" +
     '<div class="what">' + esc(label) + "</div>" +
     (meta ? '<div class="who2">' + esc(meta) + "</div>" : "") + "</div>";
 }
 
-function previewCell(bg, fg, when, label, meta) {
-  return '<td><div class="sample">' + sampleBox(bg, fg, when, label, meta) + "</div></td>";
+function previewCell(bg, fg, when, label, meta, hatched) {
+  return '<td><div class="sample">' +
+    sampleBox(bg, fg, when, label, meta, hatched) + "</div></td>";
 }
 
 /* Just the one cell, redrawn where it stands.
@@ -1497,9 +1559,9 @@ function previewCell(bg, fg, when, label, meta) {
    interrupted, and the legend is skipped by `paint` so an open color panel is
    not torn away. Both of those are right, and both meant the sample sat there
    showing the color before last. */
-function refreshSample(tr, bg, fg, when, label, meta) {
+function refreshSample(tr, bg, fg, when, label, meta, hatched) {
   const host = tr && tr.querySelector(".sample");
-  if (host) host.innerHTML = sampleBox(bg, fg, when, label, meta);
+  if (host) host.innerHTML = sampleBox(bg, fg, when, label, meta, hatched);
 }
 
 /* The color cells, shared by both tables so the two read the same way. */

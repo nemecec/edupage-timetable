@@ -121,7 +121,6 @@ STRINGS = {
         "shareHint": ("The address bar holds everything you chose. A bookmark "
                       "or a shared link carries it with them."),
         "qrHint": "Edit it here",
-        "qrTooLong": "Too many settings for a code. The link is:",
         "all": "— all —",
         "nothing": "Nothing to show.",
         "paired": "paired (2 periods)",
@@ -152,12 +151,8 @@ STRINGS = {
                            "computer. You can copy it straight from the "
                            "address bar, or use the {0} button in the top "
                            "right corner."),
-        "settings.printed": ("The printed sheet carries the same address, as "
-                             "a QR code in the corner. A phone reads it and "
-                             "opens your timetable. If the address is too long "
-                             "for a code, the sheet prints it in full instead. "
-                             "So a sheet you hand to somebody carries your "
-                             "settings, and the name in them."),
+        "settings.printed": ("The bottom right corner of the printed sheet "
+                             "carries the same address, as a QR code."),
         "settings.copy": "Copy to clipboard",
         "settings.apply": "Apply pasted settings",
         "settings.copied": "Copied to clipboard.",
@@ -228,7 +223,6 @@ STRINGS = {
         "shareHint": ("Aadressiribal on kõik sinu valikud. Järjehoidja või "
                       "jagatud link kannab need kaasa."),
         "qrHint": "Muuda siin",
-        "qrTooLong": "Seadeid on koodi jaoks liiga palju. Link on:",
         "all": "— kõik —",
         "nothing": "Pole midagi näidata.",
         "paired": "paaristund (2 tundi)",
@@ -259,12 +253,8 @@ STRINGS = {
                            "tunniplaan täpselt nii, nagu sa selle seadistasid. "
                            "Võid aadressi kopeerida otse aadressirealt või "
                            "kasutades üleval paremas nurgas asuvat nuppu {0}."),
-        "settings.printed": ("Väljatrükk kannab sama aadressi: nurgas on "
-                             "QR-kood. Telefon loeb selle ja avab sinu "
-                             "tunniplaani. Kui aadress on koodi jaoks liiga "
-                             "pikk, trükitakse see lehele tervikuna välja. Nii "
-                             "et kellelegi antud paberileht kannab kaasas sinu "
-                             "seadeid ja neis olevat nime."),
+        "settings.printed": ("Väljatrüki alumises paremas nurgas on sama "
+                             "aadress QR-koodi kujul."),
         "settings.copy": "Kopeeri lõikelauale",
         "settings.apply": "Rakenda kleebitud seaded",
         "settings.copied": "Kopeeritud lõikelauale.",
@@ -1302,8 +1292,6 @@ PAGE = """<!DOCTYPE html>
                    cursor: pointer; font-size: 15px; line-height: 1; padding: 2px 4px; }
   .evtable .drop:hover { color: #b3261e; }
   .addrow { width: auto; }
-  .qrlong { font-size: 9px; color: var(--muted); max-width: 46mm; text-align: right; }
-  .qraddr { word-break: break-all; font-size: 8px; }
   .scroll { overflow-x: auto; }
   table { border-collapse: collapse; width: 100%; min-width: 720px; background: #fff; }
   /* --grid scales the whole table down when a class has too many rows to fit

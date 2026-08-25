@@ -655,6 +655,18 @@ test("a break keeps its hatch when it takes a color", () => {
   assert.doesNotMatch(hatched, /background:#/);
 });
 
+test("a link too long for a code leaves the corner empty", () => {
+  /* It used to print the address as text instead. An address too long for a
+     code is far too long for anybody to type, so that filled the corner with
+     characters nobody would ever read. */
+  run(`printing = true; qrSvg = function () { return ""; };
+       renderFooter(DATA.schools[0]);`);
+  const html = json(`document.getElementById("foot").innerHTML`);
+  run(`printing = false;`);
+  assert.ok(!html.includes("qrbox"), "no box with nothing in it");
+  assert.ok(!html.includes("#s=") && !html.includes("#z="), "no address in the corner");
+});
+
 test("a fault report carries the shape of the settings, not the words", () => {
   /* The whole reason a report is allowed to carry the settings at all. Every
      one of these strings is something a reader typed. */

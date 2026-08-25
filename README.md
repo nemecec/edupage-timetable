@@ -332,7 +332,10 @@ period grid, which needs no times.
   its default, because the page forces `print-color-adjust: exact`.
 - **The printed sheet** carries the date the data was read and a QR code of the
   link, captioned *Edit it here*. A sheet on the fridge can then be picked back
-  up on a phone with every choice still on it. The page's other furniture — the
+  up on a phone with every choice still on it. Past about 2 kB no code holds the
+  link, and the corner is then empty. It used to print the address as text
+  instead, which was worse than nothing: an address too long for a code is far
+  too long to type. The page's other furniture — the
   disclaimer, the source link, the controls — stays on screen.
 - **Save and restore settings** holds the whole configuration as JSON, to copy
   or to paste back, and **Reset all settings**. The panel says in a sentence
@@ -342,8 +345,9 @@ period grid, which needs no times.
   it from there. The **Share** button does the same in one press. The note
   prints the button's own label, so the two cannot drift apart across a rename
   or a language. A third sentence says that the printed sheet carries the same
-  address in its QR code, and the name inside it — a sheet handed to somebody
-  is a copy of the settings, which is not obvious from a grid of lessons.
+  address in the QR code in its bottom right corner. That matters for the same
+  reason the second sentence does: a sheet handed to somebody is a copy of the
+  settings, which is not obvious from a grid of lessons.
 - **Language** switches the interface between English and Estonian. Everything
   the school entered stays in the language it was entered in. That is the subject
   names, the group codes, the rooms, the teacher names, and the line the school

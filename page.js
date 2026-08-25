@@ -357,18 +357,17 @@ function renderFooter(school) {
   if (DATA.counts && !printing) bits.push(esc(t("footer.counts")));
   if (DATA.report && !printing) bits.push(esc(t("footer.reports")));
   /* 36mm keeps a typical link at about half a millimetre per module, which a
-     phone reads without ceremony. A link with many custom colors gets denser. Past roughly 2 kB no code
-     holds it at all. The colors are shared across every class, so a family
-     that recolored a lot of subjects can reach that size. Rather than let the code quietly not be
-     there, print the address instead: longer to type, but it is the same link
-     and it is on the page. */
+     phone reads without ceremony. A link with many custom colors gets denser.
+     Past roughly 2 kB no code holds it at all, and the colors are shared across
+     every class, so a family that recolored a lot of subjects can reach that
+     size. Then the corner is empty. Printing the address as text instead was
+     worse than nothing: an address too long for a code is far too long to type,
+     and it filled the corner with characters nobody would ever read. */
   const link = printing ? shareUrl() : "";
   const code = link ? qrSvg(link, "36mm") : "";
-  const corner = !link ? ""
-    : code ? '<div class="qrbox">' + code +
-             '<div class="qrhint">' + esc(t("qrHint")) + "</div></div>"
-           : '<div class="qrbox"><div class="qrlong">' + esc(t("qrTooLong")) +
-             '<br><span class="qraddr">' + esc(link) + "</span></div></div>";
+  const corner = code ? '<div class="qrbox">' + code +
+                        '<div class="qrhint">' + esc(t("qrHint")) + "</div></div>"
+                      : "";
   document.getElementById("foot").innerHTML =
     '<div class="lines">' + bits.join("<br>") + "</div>" + corner;
   document.getElementById("foot").classList.toggle("bare", printing && !bits.length);

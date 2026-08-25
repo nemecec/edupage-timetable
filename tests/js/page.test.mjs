@@ -654,3 +654,27 @@ test("a break keeps its hatch when it takes a color", () => {
   assert.match(hatched, /background-color:#123456/);
   assert.doesNotMatch(hatched, /background:#/);
 });
+
+test("the breaks come last, under a heading of their own", () => {
+  /* A gap is a different kind of thing from a lesson, so the two do not read
+     as one list. The harness break is named with a comma, which is how a
+     school writes a list of what the gap is for. */
+  run(`state.subjects = {}; state.school = "68"; state.class = "8";
+       renderLegend(currentClass().e);`);
+  const html = json(`document.getElementById("legend").innerHTML`);
+  const rows = html.split("<tr").slice(1);
+  const subjectOf = (row) => (/data-subject="([^"]*)"/.exec(row) || [])[1];
+
+  const heads = rows.filter(r => r.includes("grouphead"));
+  assert.equal(heads.length, 1, "one heading, above the first break");
+
+  const names = rows.map(subjectOf);
+  const breakAt = names.indexOf("Break, and more");
+  assert.ok(breakAt >= 0, "the break has a row");
+  assert.equal(breakAt, names.length - 1, "and it is the last one");
+  assert.ok(rows[breakAt - 1].includes("grouphead"), "the heading sits above it");
+  // Everything before the heading is a lesson.
+  for (const row of rows.slice(0, breakAt - 1)) {
+    assert.ok(subjectOf(row), "a row with no subject before the heading");
+  }
+});

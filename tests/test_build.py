@@ -131,6 +131,20 @@ class WholePage(unittest.TestCase):
         self.assertEqual((pair["u"], pair["a"], pair["z"]), (2, 835, 915))
         self.assertTrue(pair["t"] and pair["T"] and pair["r"])
 
+    def test_a_break_is_quiet_and_a_subject_is_not(self):
+        """A break runs the full width of the day. Through the subject palette
+        it came out a muddy beige and won every glance, which is backwards for
+        a gap."""
+        breaks = {b["n"] for s in self.data["schools"] for c in s["c"]
+                  for day in c["h"].values() for b in day["b"] if b["n"]}
+        self.assertEqual(breaks, {"Vaba aeg", "Amps"})
+        for name in breaks:
+            with self.subTest(name=name):
+                self.assertEqual(self.data["palette"][name],
+                                 {"bg": tt.BREAK_BG, "fg": tt.BREAK_FG})
+        # A subject still gets a colour of its own from its family.
+        self.assertNotEqual(self.data["palette"]["Ajalugu"]["bg"], tt.BREAK_BG)
+
     def test_a_lesson_running_past_one_published_block_ends_where_it_ends(self):
         # LõunaTERA publishes blocks rather than lesson lengths. A lesson
         # covering two of them used to stop at the end of the first.

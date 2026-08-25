@@ -413,9 +413,15 @@ Some of these choices are not obvious:
   school's". A name of your own is never abbreviated, because you already wrote
   it as short as you wanted it.
 - **The named breaks are rows in that table too**, so *Vaba aeg* and *Amps* can
-  be renamed and recolored like any subject. A break keeps its diagonal hatch,
-  which is what says "not a lesson". The stripes are translucent, so the color
-  underneath shows through. Each row says what that subject
+  be renamed and recolored like any subject. They sit after the subjects, under
+  a heading of their own, because a gap is a different kind of thing from a
+  lesson.
+
+  A break keeps its diagonal hatch, which is what says "not a lesson". The
+  stripes are translucent, so the color underneath shows through. The default
+  color is a quiet grey rather than one from the subject palette. A break runs
+  the full width of the day, so a palette color wins every glance, which is
+  backwards for a gap. Each row says what that subject
   really does: **own color**, **from the timetable**, or **automatic**. A subject
   set to "own color" with no color behind it reads as automatic, because that is
   what gets drawn. The sample at the end of the row takes the room and teacher

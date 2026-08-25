@@ -91,6 +91,7 @@ STRINGS = {
         "customColors": "Colours of my own",
         "colLabel": "Label",
         "colSubject": "Subject",
+        "breaks.heading": "Breaks between lessons",
         "colBackground": "Background colour",
         "colTextColor": "Text colour",
         "colSample": "How it looks",
@@ -181,6 +182,7 @@ STRINGS = {
         "customColors": "Minu omad värvid",
         "colLabel": "Nimetus",
         "colSubject": "Õppeaine",
+        "breaks.heading": "Vahetunnid",
         "colBackground": "Taustavärv",
         "colTextColor": "Teksti värv",
         "colSample": "Kuidas välja näeb",
@@ -1066,6 +1068,17 @@ def break_names(schools):
             for day in cls["shape"].values() for b in day["breaks"] if b["name"]}
 
 
+# A break is a gap, not a lesson. Through the subject palette it came out a
+# muddy beige, and a break runs the full width of the day, so the mud won. The
+# quiet grey the hatch always used reads as background, which is what a gap is.
+# The reader can still recolor it.
+BREAK_BG, BREAK_FG = "#EDEFF2", "#4a5058"
+
+
+def break_palette(names):
+    return {name: {"bg": BREAK_BG, "fg": BREAK_FG} for name in names}
+
+
 def compact(schools):
     """Shrink the model for embedding: short keys, subject facts hoisted out.
 
@@ -1245,6 +1258,11 @@ PAGE = """<!DOCTYPE html>
   .evtable input[type=text] { width: 100%; }
   .evtable .evlabel { width: 99%; }
   .evtable .subjlabel { width: 11rem; }
+  /* A gap is not a lesson, so the two do not run together as one list. */
+  .evtable tr.grouphead td { padding-top: 14px; font-size: 11px; font-weight: 600;
+                             color: var(--muted); text-transform: uppercase;
+                             letter-spacing: .05em; border-top: 1px solid var(--line);
+                             border-left: none; background: none; }
   .evtable input[type=color] { width: 34px; height: 24px; padding: 0;
     border: 1px solid var(--line); border-radius: 5px; background: #fff; }
   .evtable .drop { border: none; background: none; color: var(--muted);
@@ -1655,8 +1673,8 @@ def render_html(schools, edupage, year, initial_school, initial_class, lang="en"
     # One palette across all four timetables, so a subject looks the same
     # whichever school is on screen. Only the school's own abbreviation and its
     # own color are per-school. Those live on the school, not here.
-    all_subjects = sorted({name for per in subject_meta.values() for name in per}
-                          | break_names(schools))
+    all_subjects = sorted({name for per in subject_meta.values() for name in per})
+    gaps = break_names(schools)
     payload = {
         "edupage": edupage,
         "year": year,
@@ -1667,7 +1685,7 @@ def render_html(schools, edupage, year, initial_school, initial_class, lang="en"
         "counts": bool(goatcounter),
         "languages": [list(x) for x in LANGUAGES],
         "strings": STRINGS,
-        "palette": palette(all_subjects),
+        "palette": dict(palette(all_subjects), **break_palette(gaps)),
         "schools": entries_data,
     }
     # A literal "</" closes the block early. A literal "<!--<script" opens a

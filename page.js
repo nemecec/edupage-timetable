@@ -1100,8 +1100,12 @@ function cssQuote(text) {
 function renderLegend(shown) {
   document.getElementById("share").title = t("shareHint");
   /* Breaks as well as lessons: both are drawn, so both are the reader's to
-     rename and recolor. */
-  const used = [...new Set(shown.map(e => e.s).concat(breaksOnScreen()))].sort();
+     rename and recolor. The breaks come after the subjects, under a heading of
+     their own, because a gap is a different kind of thing from a lesson. */
+  const breaks = breaksOnScreen().slice().sort();
+  const lessons = [...new Set(shown.map(e => e.s))].sort()
+                    .filter(name => !breaks.includes(name));
+  const used = lessons.concat(breaks);
   /* One real lesson per subject, so the sample carries the room and teacher the
      boxes actually show rather than an empty shape. */
   example = {};
@@ -1110,7 +1114,6 @@ function renderLegend(shown) {
      the same way. The three ways a subject can get its background are the three
      the switch above offers, said per subject rather than through a dropdown
      whose entries meant nothing on their own. */
-  const breaks = breaksOnScreen();
   document.getElementById("legend").innerHTML = used.map((name, i) => {
     const col = colorFor(name), own = (state.subjects || {})[name] || {};
     const row = "s" + i, isBreak = breaks.includes(name);
@@ -1119,7 +1122,12 @@ function renderLegend(shown) {
        and an empty field means "use the school's" — the same bargain the title
        fields make. */
     const shown = isBreak ? String(name).split(",")[0] : name;
-    return '<tr data-subject="' + esc(name) + '">' +
+    /* One heading above the first break, so the two kinds do not read as one
+       list. Five columns, because the table has five. */
+    const head = (isBreak && name === breaks[0])
+      ? '<tr class="grouphead"><td colspan="5">' + esc(t("breaks.heading")) + "</td></tr>"
+      : "";
+    return head + '<tr data-subject="' + esc(name) + '">' +
       '<td class="rowlabel">' + esc(shown) + "</td>" +
       '<td><input type="text" class="subjlabel" value="' + esc(own.label || "") +
         '" placeholder="' + esc(shown) + '"></td>' +

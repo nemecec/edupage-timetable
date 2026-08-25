@@ -172,8 +172,9 @@ STRINGS = {
         "footer.built": "data fetched {0}",
         "footer.counts": "GoatCounter counts the visits. No cookies.",
         "footer.reports": ("If the page breaks, it tells us, and sends your "
-                           "settings with the fault. Every name and label you "
-                           "typed becomes a row of X of the same length."),
+                           "anonymised settings with the fault. Every name and "
+                           "label you typed becomes a row of X of the same "
+                           "length."),
         "days": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday",
                  "Saturday", "Sunday"],
     },
@@ -277,9 +278,9 @@ STRINGS = {
         "footer.built": "andmed laaditud {0}",
         "footer.counts": "Külastusi loeb GoatCounter. Küpsiseid ei kasutata.",
         "footer.reports": ("Kui leht katki läheb, teatab ta sellest meile ja "
-                           "saadab kaasa sinu seaded. Kõik nimed ja sildid, "
-                           "mis sa ise kirjutasid, asendatakse sama pika "
-                           "X-ide reaga."),
+                           "saadab kaasa sinu anonümiseeritud seaded. Kõik "
+                           "nimed ja sildid, mis sa ise kirjutasid, "
+                           "asendatakse sama pika X-ide reaga."),
         "days": ["Esmaspäev", "Teisipäev", "Kolmapäev", "Neljapäev", "Reede",
                  "Laupäev", "Pühapäev"],
     },

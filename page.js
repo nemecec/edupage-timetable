@@ -623,9 +623,10 @@ function renderTimeline(school, cls, shown, mine, scale) {
     for (const i of dayIdx) {
       const shape = cls.h[i];
       if (!shape) continue;
-      for (const b of shape.b) {
-        if (shape.s.length > b.a) perDay.get(i).push({ a: b.m, z: b.x, brk: b.n });
-      }
+      /* Every break the day plan gives this day. Whether one belongs on a
+         short day is a question about the plan, so the generator answers it
+         and this draws what it is given. */
+      for (const b of shape.b) perDay.get(i).push({ a: b.m, z: b.x, brk: b.n });
     }
   }
 

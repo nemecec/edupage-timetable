@@ -449,7 +449,9 @@ def day_times(slot_kinds, cfg):
         clock += length
         gap = gaps.get(i)
         minutes = gap["minutes"] if gap else cfg["defaultGap"]
-        if gap and gap.get("name"):
+        # A running clock has no break after the last lesson: the gap it would
+        # sit in is the end of the day.
+        if gap and gap.get("name") and i < len(slot_kinds):
             breaks.append({"after": i, "name": gap["name"], "at": clock,
                            "until": clock + minutes,
                            "start": _fmt_time(clock), "end": _fmt_time(clock + minutes)})
@@ -526,18 +528,17 @@ def named_gaps(cfg, clock, slots):
     periods, and a break numbered by period reads as one past the end of the
     day — which is how lunch went missing from every morning of doubles.
 
-    A break nobody is there for is not drawn: a day that stops before lunch has
-    no lunch on it.
+    A day that stops before lunch is still given its lunch. This is not a gap
+    that opens up between two lessons — it is an hour the school sets aside,
+    and the children eat in it whether or not they are taught afterwards.
     """
     out = []
     for gap in (cfg or {}).get("gaps", ()):
         after = gap["after"]
         before, behind = clock.get(after), clock.get(after + 1)
-        if not (before and behind):
+        if not (before and behind) or not slots:
             continue
         index = sum(1 for s in slots if s["period"] + s["periods"] - 1 <= after)
-        if not 0 < index < len(slots):
-            continue                    # nothing before it, or nothing after
         at, until = _minutes(before[1]), _minutes(behind[0])
         out.append({"after": index, "name": gap["name"], "at": at, "until": until,
                     "start": _fmt_time(at), "end": _fmt_time(until)})

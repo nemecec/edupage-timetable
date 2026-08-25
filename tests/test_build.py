@@ -211,12 +211,11 @@ class WholePage(unittest.TestCase):
         cls = next(c for c in school["c"] if c["n"].strip() == "1. S")
         lunch = {int(d): [b["a"] for b in day["b"]] for d, day in cls["h"].items()}
         self.assertEqual(lunch[0], [2], "Monday is two doubles then lunch")
-        for day, after in lunch.items():
-            slots = len(cls["h"][str(day)]["s"])
-            for index in after:
-                self.assertLess(index, slots, "day %d: the page will drop it" % day)
-        # Friday stops at 11.30, so it is given no lunch at all.
-        self.assertEqual(lunch[4], [])
+        # Every day of the week, including Friday, which stops at 11.30. Lunch
+        # is an hour the school sets aside, not a gap that opens between two
+        # lessons, and the children eat in it either way.
+        self.assertEqual(sorted(lunch), [0, 1, 2, 3, 4])
+        self.assertTrue(all(len(after) == 1 for after in lunch.values()), lunch)
 
     def test_a_lesson_running_past_one_published_block_ends_where_it_ends(self):
         # LõunaTERA publishes blocks rather than lesson lengths. A lesson

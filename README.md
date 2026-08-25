@@ -143,7 +143,9 @@ the school does not always write a double as one card. Where the same subject
 runs in consecutive periods, those are read as doubles from the start of the
 run: four periods become two doubles, three become a double and then a single.
 A named break ends a pair, so the periods either side of lunch stay two
-lessons.
+lessons. Lunch itself is drawn on every day the class is at school, including
+one that stops before it: an hour the school sets aside is not a gap that
+opens between two lessons.
 
 EduPage carries period times for this school, and they are placeholders: 8.00,
 9.00, 10.00, one an hour. The page drew those until the school's own card was

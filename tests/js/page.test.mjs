@@ -655,6 +655,63 @@ test("a break keeps its hatch when it takes a color", () => {
   assert.doesNotMatch(hatched, /background:#/);
 });
 
+test("a fault report carries the shape of the settings, not the words", () => {
+  /* The whole reason a report is allowed to carry the settings at all. Every
+     one of these strings is something a reader typed. */
+  const typed = ["Eva", "Dance training", "Eva's school", "Eva's class",
+                 "Maths with Mrs Tamm"];
+  run(`DATA.report = "/report";
+       state = defaults();
+       state.school = "68"; state.class = "8"; state.showTeacher = false;
+       state.subjects = { Matemaatika: { label: "Maths with Mrs Tamm",
+                                         backgroundColor: "#ff0000" } };
+       state.classes = { "68/8": {
+         studentName: "Eva", schoolName: "Eva's school", className: "Eva's class",
+         events: [{ day: "Mon", startTime: "17:15", endTime: "18:15",
+                    label: "Dance training", backgroundColor: "#00ff00" }] } };
+       reportsSent = 0; reportsSeen.clear();
+       report("error", new Error("boom"));`);
+  const posted = json(`window.__posted`);
+  assert.equal(posted.url, "/report");
+  for (const word of typed) {
+    assert.ok(!posted.body.includes(word), "the report carries " + word);
+  }
+  const sent = JSON.parse(posted.body);
+  // The shape is what a fault has to be read against, so it must survive.
+  assert.equal(sent.message, "boom");
+  assert.equal(sent.settings.showTeacher, false);
+  assert.equal(sent.settings.class, "8");
+  assert.equal(sent.settings.subjects.Matemaatika.backgroundColor, "#ff0000");
+  assert.equal(sent.settings.classes["68/8"].events.length, 1);
+  assert.equal(sent.settings.classes["68/8"].events[0].startTime, "17:15");
+  // A typed word leaves its length behind, and nothing else.
+  assert.equal(sent.settings.classes["68/8"].studentName, "<3>");
+  assert.equal(sent.settings.classes["68/8"].events[0].label, "<14>");
+  assert.equal(sent.settings.subjects.Matemaatika.label, "<19>");
+  // The address holds the settings, so the address is not in the report.
+  assert.ok(!("href" in sent), "no address");
+  assert.equal(sent.path, "/t/");
+});
+
+test("one fault is reported once, and a storm has a ceiling", () => {
+  run(`DATA.report = "/report"; reportsSent = 0; reportsSeen.clear();
+       window.__posted = null;
+       report("error", new Error("same"));`);
+  assert.ok(json(`window.__posted`), "the first one goes");
+  run(`window.__posted = null; report("error", new Error("same"));`);
+  assert.equal(json(`window.__posted`), null, "the second one does not");
+  run(`window.__posted = null;
+       for (let i = 0; i < 20; i++) report("error", new Error("n" + i));`);
+  assert.equal(json(`reportsSent`), 5, "the cap holds");
+});
+
+test("with no endpoint the page reports nothing", () => {
+  run(`DATA.report = ""; reportsSent = 0; reportsSeen.clear();
+       window.__posted = null; report("error", new Error("quiet"));`);
+  assert.equal(json(`window.__posted`), null);
+  run(`DATA.report = "/report";`);
+});
+
 test("the address bar holds the link the Share button copies", () => {
   /* The panel tells the reader to copy the address instead of pressing the
      button. That is only true while the two strings are the same one. */

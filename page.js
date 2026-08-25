@@ -355,6 +355,7 @@ function renderFooter(school) {
   /* Say so where it is true. A page that counts its readers must admit it,
      and this one only counts when it was built for a public address. */
   if (DATA.counts && !printing) bits.push(esc(t("footer.counts")));
+  if (DATA.report && !printing) bits.push(esc(t("footer.reports")));
   /* 36mm keeps a typical link at about half a millimetre per module, which a
      phone reads without ceremony. A link with many custom colors gets denser. Past roughly 2 kB no code
      holds it at all. The colors are shared across every class, so a family
@@ -1778,6 +1779,71 @@ function countVisit() {
   };
   if (window.goatcounter && typeof window.goatcounter.count === "function") send();
   else tag.addEventListener("load", send, { once: true });
+}
+
+/* ------------------------------------------------------------ faults -- */
+
+/* Words the reader typed. Everything else in the settings is a switch, a code
+   the school chose, or a color, and those are what a fault has to be read
+   against. A typed word is replaced by its length: enough to explain a broken
+   layout, short of saying who anybody is. */
+const TYPED = ["studentName", "schoolName", "className", "label"];
+
+/* The settings with every typed word taken out, and nothing else moved. The
+   shape is the point: which switches are on, how many events there are, which
+   subjects carry a color of their own. */
+function scrubbed(value, key) {
+  if (typeof value === "string") {
+    return TYPED.includes(key) ? "<" + value.length + ">" : value;
+  }
+  if (Array.isArray(value)) return value.map(v => scrubbed(v, key));
+  if (value && typeof value === "object") {
+    const out = {};
+    for (const k of Object.keys(value)) out[k] = scrubbed(value[k], k);
+    return out;
+  }
+  return value;
+}
+
+/* One page, a handful of reports. A fault inside the drawing code fires on
+   every repaint, and a reporter that reports its own reporting never stops. */
+const REPORT_CAP = 5;
+let reportsSent = 0;
+const reportsSeen = new Set();
+
+function report(what, error) {
+  if (!DATA.report || reportsSent >= REPORT_CAP) return;
+  if (location.protocol !== "https:") return;   /* a saved copy talks to nobody */
+  try {
+    const message = String((error && error.message) || error || "").slice(0, 300);
+    const seen = what + "|" + message;
+    if (reportsSeen.has(seen)) return;
+    reportsSeen.add(seen);
+    reportsSent++;
+    const body = {
+      kind: "page-error",
+      what: what,
+      message: message,
+      stack: String((error && error.stack) || "").slice(0, 1200),
+      /* Where in the code, not where the reader is: the address carries the
+         settings, and the settings carry a name. */
+      path: location.pathname,
+      built: DATA.built || "",
+      agent: String(navigator.userAgent || "").slice(0, 200),
+      settings: scrubbed(slim(state)),
+    };
+    /* keepalive, because a fault often arrives as the reader leaves. */
+    fetch(DATA.report, {
+      method: "POST", keepalive: true, mode: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body).slice(0, 4000),
+    }).catch(() => {});
+  } catch (e) { /* the reporter is the last thing allowed to break the page */ }
+}
+
+if (typeof window.addEventListener === "function") {
+  window.addEventListener("error", (ev) => report("error", ev.error || ev.message));
+  window.addEventListener("unhandledrejection", (ev) => report("rejection", ev.reason));
 }
 
 renderLanguages();

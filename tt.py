@@ -152,6 +152,12 @@ STRINGS = {
                            "computer. You can copy it straight from the "
                            "address bar, or use the {0} button in the top "
                            "right corner."),
+        "settings.printed": ("The printed sheet carries the same address, as "
+                             "a QR code in the corner. A phone reads it and "
+                             "opens your timetable. If the address is too long "
+                             "for a code, the sheet prints it in full instead. "
+                             "So a sheet you hand to somebody carries your "
+                             "settings, and the name in them."),
         "settings.copy": "Copy to clipboard",
         "settings.apply": "Apply pasted settings",
         "settings.copied": "Copied to clipboard.",
@@ -166,6 +172,9 @@ STRINGS = {
         "footer.built": "data fetched {0}",
         "footer.counts": ("GoatCounter counts the visits. No cookies, nothing "
                           "personal, nothing shared."),
+        "footer.reports": ("If the page breaks, it tells us, and sends your "
+                           "settings with the fault. Every name and label you "
+                           "typed is replaced by its length first."),
         "days": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday",
                  "Saturday", "Sunday"],
     },
@@ -250,6 +259,12 @@ STRINGS = {
                            "tunniplaan täpselt nii, nagu sa selle seadistasid. "
                            "Võid aadressi kopeerida otse aadressirealt või "
                            "kasutades üleval paremas nurgas asuvat nuppu {0}."),
+        "settings.printed": ("Väljatrükk kannab sama aadressi: nurgas on "
+                             "QR-kood. Telefon loeb selle ja avab sinu "
+                             "tunniplaani. Kui aadress on koodi jaoks liiga "
+                             "pikk, trükitakse see lehele tervikuna välja. Nii "
+                             "et kellelegi antud paberileht kannab kaasas sinu "
+                             "seadeid ja neis olevat nime."),
         "settings.copy": "Kopeeri lõikelauale",
         "settings.apply": "Rakenda kleebitud seaded",
         "settings.copied": "Kopeeritud lõikelauale.",
@@ -263,6 +278,10 @@ STRINGS = {
         "footer.built": "andmed laaditud {0}",
         "footer.counts": ("Külastusi loeb GoatCounter. Küpsiseid ei kasutata, "
                           "isikuandmeid ei koguta ega jagata."),
+        "footer.reports": ("Kui leht katki läheb, teatab ta sellest meile ja "
+                           "saadab kaasa sinu seaded. Kõik nimed ja sildid, "
+                           "mis sa ise kirjutasid, asendatakse enne nende "
+                           "pikkusega."),
         "days": ["Esmaspäev", "Teisipäev", "Kolmapäev", "Neljapäev", "Reede",
                  "Laupäev", "Pühapäev"],
     },
@@ -1574,6 +1593,7 @@ PAGE = """<!DOCTYPE html>
     <label for="settingsText" data-i18n="backup"></label>
     <p class="sub help" data-i18n="settings.label"></p>
     <p class="sub help" id="shareNote"></p>
+    <p class="sub help" data-i18n="settings.printed"></p>
     <textarea id="settingsText" rows="5" spellcheck="false"></textarea>
   </div>
   <div class="row" style="margin-top:8px;padding-top:0;border-top:none">
@@ -1685,7 +1705,7 @@ def vendored(name):
 
 
 def render_html(schools, edupage, year, initial_school, initial_class, lang="en",
-                built="", goatcounter=""):
+                built="", goatcounter="", report_path=""):
     entries_data, subject_meta = compact(schools)
     # One palette across all four timetables, so a subject looks the same
     # whichever school is on screen. Only the school's own abbreviation and its
@@ -1700,6 +1720,7 @@ def render_html(schools, edupage, year, initial_school, initial_class, lang="en"
         "lang": lang,
         "built": built,
         "counts": bool(goatcounter),
+        "report": report_path,
         "languages": [list(x) for x in LANGUAGES],
         "strings": STRINGS,
         "palette": dict(palette(all_subjects), **break_palette(gaps)),

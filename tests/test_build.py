@@ -405,16 +405,46 @@ class Documentation(unittest.TestCase):
             # The button's own label goes in the hole, not a copy of the word.
             self.assertNotIn(data["strings"][lang]["share"], note, lang)
 
+    def test_cloudfront_and_the_report_function_agree_on_the_gate(self):
+        """The function URL is open to the world and a header is the only
+        thing between it and everybody. If the two spell it differently,
+        every report is refused and the page never finds out."""
+        with open(os.path.join(ROOT, "deploy", "site.yaml"), encoding="utf-8") as fh:
+            template = fh.read()
+        added = re.search(r"HeaderName:\s*(\S+)", template)
+        self.assertIsNotNone(added, "CloudFront adds no header")
+        checked = re.search(r'headers\.get\("([^"]+)"\)', template)
+        self.assertIsNotNone(checked, "the function checks no header")
+        self.assertEqual(added.group(1), checked.group(1))
+        # And the page posts where CloudFront listens.
+        self.assertIn("PathPattern: /report", template)
+        with open(os.path.join(ROOT, "deploy", "publish.py"), encoding="utf-8") as fh:
+            body = fh.read()
+        self.assertIn('configured("REPORT_ERRORS", "yes")', body)
+        self.assertIn('"/report"', body)
+
+    def test_the_policy_opens_only_for_something_that_is_there(self):
+        """default-src is 'none'. Every hole in it has to be earned by a
+        feature that is switched on."""
+        with open(os.path.join(ROOT, "deploy", "site.yaml"), encoding="utf-8") as fh:
+            template = fh.read()
+        policy = template.split("ContentSecurityPolicy: !Sub", 1)[1]
+        self.assertIn("connect-src ${Connect}", policy)
+        # 'self' is in the reporting arm and nowhere else.
+        arms = policy.split("Connect: !If", 1)[1].split("Beacon:", 1)[0]
+        self.assertIn("Reporting", arms)
+        self.assertEqual(arms.count("'self'"), 2, "one per counting case")
+
     def test_the_deploy_readme_counts_the_resources_correctly(self):
         counts = {n: len(self.resources(n))
                   for n in ("site.yaml", "dns.yaml", "cert.yaml")}
-        self.assertEqual(counts, {"site.yaml": 16, "dns.yaml": 2, "cert.yaml": 1})
+        self.assertEqual(counts, {"site.yaml": 23, "dns.yaml": 2, "cert.yaml": 1})
         with open(os.path.join(ROOT, "deploy", "README.md"), encoding="utf-8") as fh:
             readme = fh.read()
         # The words, not their capitalisation: the sentence around them is
         # free to be reworded.
-        self.assertIn("nineteen resources", readme.lower())
-        self.assertIn("sixteen in `site.yaml`", readme)
+        self.assertIn("twenty-six resources", readme.lower())
+        self.assertIn("twenty-three in `site.yaml`", readme)
 
     def test_the_size_the_readmes_quote_is_the_size_it_is(self):
         import gzip

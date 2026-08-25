@@ -337,11 +337,13 @@ period grid, which needs no times.
 - **Save and restore settings** holds the whole configuration as JSON, to copy
   or to paste back, and **Reset all settings**. The panel says in a sentence
   what the box is for, because "settings as JSON" means nothing to a parent. A
-  second sentence says the same settings ride in the link. The address bar
-  already holds that link, because every change rewrites it, so the note says
-  to copy it from there. The **Share** button does the same in one press. The
-  note prints the button's own label, so the two cannot drift apart across a
-  rename or a language.
+  second sentence says the same settings ride in the address. The address bar
+  already holds it, because every change rewrites it, so the note says to copy
+  it from there. The **Share** button does the same in one press. The note
+  prints the button's own label, so the two cannot drift apart across a rename
+  or a language. A third sentence says that the printed sheet carries the same
+  address in its QR code, and the name inside it — a sheet handed to somebody
+  is a copy of the settings, which is not obvious from a grid of lessons.
 - **Language** switches the interface between English and Estonian. Everything
   the school entered stays in the language it was entered in. That is the subject
   names, the group codes, the rooms, the teacher names, and the line the school
@@ -494,6 +496,40 @@ Those channels are the school's own subject, teacher, room, day and class names,
 and everything the reader can type. The test then checks the rendered markup in
 both views. It is deliberately end to end, rather than a test of `esc()` alone,
 because `esc()` was well tested and the calls to it were not.
+
+## When the page breaks
+
+A fault in the browser used to leave a half-drawn page and tell nobody. The
+page now posts one report to `/report` on its own site, which a Lambda answers
+by writing a line to CloudWatch. An alarm mails the same address the build
+alarm uses.
+
+Three decisions shape it, and all three come from what the page holds.
+
+- **Nobody else is in it.** Bugsnag and Sentry both capture `location.href` as
+  the context of an error. This page keeps every setting in the address, so a
+  stock install would have sent a child's name and school to a third party on
+  every crash. The endpoint is same-origin instead, so `connect-src` stays
+  `'self'` and the report never leaves the account.
+- **The report carries the shape, not the words.** The settings are the most
+  useful thing to read a fault against: which switches are on, how many events
+  there are, which subjects carry a color. So they are sent, with every word
+  the reader typed replaced by its length — `"studentName": "<3>"`. See
+  `scrubbed()` in `page.js`, and the test that fails if any typed word survives.
+- **The address is never sent.** The path is. The address carries the settings,
+  and the settings carry a name.
+
+Five reports per page load, one per distinct message. A fault inside the
+drawing code fires on every repaint, and a reporter that reports its own
+reporting never stops.
+
+The function URL is public, because CloudFront needs an address to call. A
+header CloudFront alone adds keeps everybody else out, and a direct POST
+without it answers 403. That is a gate on noise, not a secret worth guarding:
+the worst a leak buys is a log line.
+
+`REPORT_ERRORS=no` in `site.conf` switches off the endpoint and the posting
+together, so the page can never post to a path nothing answers.
 
 The suite itself is checked by breaking things on purpose. A change is made to
 the generator or the page, and the tests must fail. Anything that can break in

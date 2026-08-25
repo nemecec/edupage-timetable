@@ -136,7 +136,14 @@ export function load() {
       createRange: () => ({ selectNodeContents() {}, selectNode() {} }),
       addEventListener() {},
     },
-    location: { href: "https://example.test/t/", pathname: "/t/", hash: "", search: "" },
+    location: { href: "https://example.test/t/", pathname: "/t/", hash: "", search: "",
+                protocol: "https:" },
+    /* What the fault reporter posts. Recorded rather than sent, so a test can
+       read every byte that would have left the browser. */
+    fetch: (url, options) => {
+      context.__posted = { url, body: (options || {}).body };
+      return Promise.resolve({ ok: true });
+    },
     URL: class { constructor(u) { const i = String(u).indexOf("#");
                                   this.hash = i < 0 ? "" : String(u).slice(i); } },
     /* The real one puts the link in the address bar. Record it: the panel

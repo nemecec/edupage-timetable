@@ -179,6 +179,29 @@ class WholePage(unittest.TestCase):
         self.assertGreater(light("Üldõpetus"), 0.8)
         self.assertGreater(light("Inglise keel"), 0.8)
 
+    def test_a_teacher_that_is_not_a_person_is_not_shown(self):
+        """aSc wants a teacher on every card, so LõunaTERA's breaks carry one
+        that is not a person: "Vahe Paus" is "break pause"."""
+        named = {t for school in self.data["schools"] for c in school["c"]
+                 for e in c["e"] for t in e["T"]}
+        self.assertNotIn("Vahe Paus", named)
+        shorts = {t for school in self.data["schools"] for c in school["c"]
+                  for e in c["e"] for t in e["t"]}
+        self.assertNotIn("VP", shorts, "the abbreviation stayed behind")
+        # It supervised only breaks, and every break lost it. The lists are
+        # built from the same ids, so dropping one and not the other would
+        # leave a box naming the wrong teacher.
+        school = next(s for s in self.data["schools"] if s["l"] == "LõunaTERA")
+        breaks = [e for c in school["c"] for e in c["e"] if e.get("B")]
+        self.assertGreater(len(breaks), 100, "the fixtures lost the breaks")
+        for e in breaks:
+            self.assertEqual((e["T"], e["t"]), ([], []))
+        # A real teacher on a real lesson is untouched.
+        taught = [e for c in school["c"] for e in c["e"] if not e.get("B") and e["T"]]
+        self.assertGreater(len(taught), 100)
+        for e in taught:
+            self.assertEqual(len(e["T"]), len(e["t"]))
+
     def test_a_break_is_quiet_and_a_subject_is_not(self):
         """A break runs the full width of the day. Through the subject palette
         it came out a muddy beige and won every glance, which is backwards for

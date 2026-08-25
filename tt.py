@@ -375,6 +375,10 @@ BELLS = {
         # still breaks, and reading a week is easier when they look like the
         # breaks every other school draws.
         "breakSubjects": ["Puder", "Lõuna/Õue", "Hea aeg"],
+        # aSc wants a teacher on every card, so the breaks get one that is not
+        # a person: "Vahe Paus" is "break pause". It supervises 123 lessons,
+        # all of them breaks, and never shares a box with anybody real.
+        "placeholderTeachers": ["Vahe Paus"],
         "bands": [
             {
                 "classes": ["Maarja", "Heliis", "Mari-Liis", "Cathleen", "Silva"],
@@ -827,9 +831,17 @@ def extract(result, class_name, n_periods=None, cfg=None, period_times=None):
                 entries.append(dict(base, day=day_idx, period=start + step,
                                     startPeriod=start, part=step))
 
+    fake = set((cfg or {}).get("placeholderTeachers", ()))
     for e in entries:
         if e["subject"] in (cfg or {}).get("breakSubjects", ()):
             e["isBreak"] = True
+        if fake:
+            # Both lists are built from the same ids in the same order, so an
+            # index dropped from one has to go from the other.
+            keep = [i for i, name in enumerate(e["teachers"]) if name not in fake]
+            if len(keep) != len(e["teachers"]):
+                e["teachers"] = [e["teachers"][i] for i in keep]
+                e["teacherShorts"] = [e["teacherShorts"][i] for i in keep]
     entries.sort(key=lambda e: (e["day"], e["period"], e["subject"], "/".join(e["groups"])))
     if (cfg or {}).get("pairAdjacent"):
         pair_adjacent(entries, cfg)

@@ -162,7 +162,12 @@ Two grade bands run different days. The breaks — Puder, Lõuna/Õue, Hea aeg �
 are lessons in the timetable rather than gaps between lessons, with a
 supervisor and a length. The school says which subjects those are, and the page
 draws them the way it draws every other school's breaks: hatched, quiet grey,
-and listed under the breaks heading rather than among the subjects. A block that covers two periods is one box. What sits inside
+and listed under the breaks heading rather than among the subjects.
+
+The supervisor is not a person. aSc wants a teacher on every card, so the
+breaks carry `Vahe Paus` — "break pause" — on all 123 of them, and nothing
+else. The school names its placeholders and the page drops them, name and
+abbreviation together. A block that covers two periods is one box. What sits inside
 the block decides how the script draws it:
 
 - Two subjects, one for each period: this is a sequence. The script makes one

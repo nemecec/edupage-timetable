@@ -226,7 +226,14 @@ class WholePage(unittest.TestCase):
         self.assertGreater(len(prefixed), 10, "the fixtures lost the prefix")
         for name in prefixed:
             with self.subTest(name=name):
-                self.assertEqual(facts[name]["label"], name[len("Gümn "):])
+                rest = name[len("Gümn "):]
+                self.assertEqual(facts[name]["label"], rest[0].upper() + rest[1:])
+        # The prefix was carrying the capital, so the first letter takes it
+        # over. The words after it keep the school's own casing.
+        self.assertEqual(facts["Gümn programmeerimise algkursus"]["label"],
+                         "Programmeerimise algkursus")
+        self.assertEqual(facts["Gümn Teadus, fantaasia ja ulmekirjandus II"]["label"],
+                         "Teadus, fantaasia ja ulmekirjandus II")
         # It comes off the name shown, not off the name it is filed under.
         # These two are different subjects with abbreviations of their own,
         # and one entry cannot hold both.

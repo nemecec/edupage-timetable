@@ -472,7 +472,10 @@ Some of these choices are not obvious:
   filed under, because five of these have a twin taught in the grades below
   with an abbreviation of its own — `Inglise k (B2)` against `Eng` — and one
   entry cannot hold both. So the two keep their own colors, and the settings
-  hold the school's name as the key.
+  hold the school's name as the key. The prefix was also carrying the capital,
+  so the first letter of what is left takes it over: `Gümn programmeerimise
+  algkursus` shows as `Programmeerimise algkursus`. Only the first letter — the
+  words after it keep the school's own casing.
 - **The named breaks are rows in that table too**, so *Vaba aeg* and *Amps* can
   be renamed and recolored like any subject. They sit after the subjects, under
   a heading of their own, because a gap is a different kind of thing from a

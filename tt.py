@@ -1249,8 +1249,15 @@ SUBJECT_PREFIXES = ("Gümn ",)
 def plain_subject(name):
     """The subject's name without the prefix its own timetable puts on it."""
     for prefix in SUBJECT_PREFIXES:
-        if name.startswith(prefix):
-            return name[len(prefix):].strip() or name
+        if not name.startswith(prefix):
+            continue
+        rest = name[len(prefix):].strip()
+        if not rest:
+            return name
+        # The prefix was carrying the capital. Take it away and the name
+        # starts mid-sentence: "Gümn programmeerimise algkursus". Only the
+        # first letter, so the words after it keep the school's own casing.
+        return rest[0].upper() + rest[1:] if prefix[:1].isupper() else rest
     return name
 
 

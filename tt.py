@@ -369,6 +369,11 @@ BELLS = {
     # Source: tartuerakool.ee/lounatera/koolielu/
     "LõunaTERA": {
         "name": "Päevakava",
+        # Its breaks are lessons in the timetable, with a supervisor and a
+        # length, so they arrive as subjects rather than as gaps. They are
+        # still breaks, and reading a week is easier when they look like the
+        # breaks every other school draws.
+        "breakSubjects": ["Puder", "Lõuna/Õue", "Hea aeg"],
         "bands": [
             {
                 "classes": ["Maarja", "Heliis", "Mari-Liis", "Cathleen", "Silva"],
@@ -821,6 +826,9 @@ def extract(result, class_name, n_periods=None, cfg=None, period_times=None):
                 entries.append(dict(base, day=day_idx, period=start + step,
                                     startPeriod=start, part=step))
 
+    for e in entries:
+        if e["subject"] in (cfg or {}).get("breakSubjects", ()):
+            e["isBreak"] = True
     entries.sort(key=lambda e: (e["day"], e["period"], e["subject"], "/".join(e["groups"])))
     if (cfg or {}).get("pairAdjacent"):
         pair_adjacent(entries, cfg)
@@ -1262,14 +1270,18 @@ def plain_subject(name):
 
 
 def break_names(schools):
-    """Every named gap between lessons, across every class.
+    """Every break, across every class, however the school writes it.
 
-    A break is drawn like a lesson and can be recolored like one, so it needs
-    a color of its own. LõunaTERA has none here. Its breaks are lessons in the
-    timetable already, and arrive as subjects.
+    A break is drawn like a lesson and can be recolored like one, so it needs a
+    color of its own. Most schools write one as a gap between two lessons.
+    LõunaTERA writes its own as lessons, with a supervisor and a length.
     """
-    return {b["name"] for school in schools for cls in school["classes"]
+    gaps = {b["name"] for school in schools for cls in school["classes"]
             for day in cls["shape"].values() for b in day["breaks"] if b["name"]}
+    # LõunaTERA's arrive as subjects instead. Same thing to a reader, so the
+    # same quiet grey.
+    return gaps | {e["subject"] for school in schools for cls in school["classes"]
+                   for e in cls["entries"] if e.get("isBreak")}
 
 
 # A break is a gap, not a lesson. Through the subject palette it came out a
@@ -1346,6 +1358,7 @@ def compact(schools):
                     "T": e["teachers"], "r": e["rooms"], "c": e["part"],
                     "k": e["slot"], "u": e["duration"], "w": e.get("time", ""),
                     "o": 1 if e.get("offSlot") else 0,
+                    "B": 1 if e.get("isBreak") else 0,
                     "a": e.get("startMin"), "z": e.get("endMin"),
                 } for e in cls["entries"]],
             } for cls in school["classes"]],
@@ -1892,8 +1905,9 @@ def render_html(schools, edupage, year, initial_school, initial_class, lang="en"
     # One palette across all four timetables, so a subject looks the same
     # whichever school is on screen. Only the school's own abbreviation and its
     # own color are per-school. Those live on the school, not here.
-    all_subjects = sorted({name for per in subject_meta.values() for name in per})
     gaps = break_names(schools)
+    all_subjects = sorted({name for per in subject_meta.values() for name in per}
+                          - gaps)
     payload = {
         "edupage": edupage,
         "year": year,

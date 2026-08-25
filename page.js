@@ -710,7 +710,10 @@ function renderTimeline(school, cls, shown, mine, scale) {
       if (height >= 54 && meta.length) {
         body += '<div class="who2">' + esc(meta.join(" · ")) + "</div>";
       }
-      h += '<div class="ev' + (height < 40 ? " tight" : "") + (e.o ? " approx" : "") +
+      /* A school that writes its breaks as lessons still gets breaks. The
+         hatch is what says "not a lesson", whatever the timetable calls it. */
+      h += '<div class="ev' + (e.B ? " brk" : "") + (height < 40 ? " tight" : "") +
+           (e.o ? " approx" : "") +
            '" data-subject="' + esc(e.s) + '" style="' + geom + "background-color:" + esc(col.bg) +
            ";color:" + esc(col.fg) + '" title="' + esc(tip) + '">' + body + "</div>";
     }
@@ -900,7 +903,8 @@ function lessonHtml(e, time) {
                time, e.u > 1 ? t("paired") : t("single"), note]
               .filter(Boolean).join("\n");
   const col = colorFor(e.s);
-  return '<div class="lesson' + (e.c ? " cont" : "") + '" data-subject="' + esc(e.s) +
+  return '<div class="lesson' + (e.c ? " cont" : "") + (e.B ? " brk" : "") +
+    '" data-subject="' + esc(e.s) +
     '" style="background-color:' + esc(col.bg) + ";color:" + esc(col.fg) +
     '" title="' + esc(tip) + '">' +
     '<div class="name">' + esc(label) + "</div>" +
@@ -1558,12 +1562,17 @@ const evRows = document.getElementById("evrows");
 function breaksOnScreen() {
   const shape = currentClass().h || {};
   const first = new Map();
+  const note = (name, at) => {
+    if (!name) return;
+    if (!first.has(name) || at < first.get(name)) first.set(name, at);
+  };
   for (const day of Object.values(shape)) {
-    for (const b of (day.b || [])) {
-      if (!b.n) continue;
-      const at = typeof b.m === "number" ? b.m : 0;
-      if (!first.has(b.n) || at < first.get(b.n)) first.set(b.n, at);
-    }
+    for (const b of (day.b || [])) note(b.n, typeof b.m === "number" ? b.m : 0);
+  }
+  /* A school that writes its breaks as lessons has them among the subjects.
+     They belong under the same heading as everybody else's. */
+  for (const e of currentClass().e) {
+    if (e.B) note(e.s, typeof e.a === "number" ? e.a : 0);
   }
   return [...first.keys()].sort((p, q) => first.get(p) - first.get(q));
 }

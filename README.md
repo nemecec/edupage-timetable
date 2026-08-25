@@ -159,8 +159,10 @@ block says which aSc periods it holds, and when it is:
     (first period, how many periods, start, end)
 
 Two grade bands run different days. The breaks — Puder, Lõuna/Õue, Hea aeg —
-are lessons in the timetable rather than gaps between lessons, so they need no
-special handling. A block that covers two periods is one box. What sits inside
+are lessons in the timetable rather than gaps between lessons, with a
+supervisor and a length. The school says which subjects those are, and the page
+draws them the way it draws every other school's breaks: hatched, quiet grey,
+and listed under the breaks heading rather than among the subjects. A block that covers two periods is one box. What sits inside
 the block decides how the script draws it:
 
 - Two subjects, one for each period: this is a sequence. The script makes one

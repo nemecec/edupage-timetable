@@ -86,9 +86,9 @@ class WholePage(unittest.TestCase):
         self.assertEqual(len(self.data["schools"]), 4)
         self.assertEqual(sum(len(s["c"]) for s in self.data["schools"]), 41)
         self.assertEqual((len(rows), len(boxes)), (1935, 1589))
-        # 70 subject names, plus the two named breaks. A break is drawn and
+        # 70 subject names, plus the four named breaks. A break is drawn and
         # recolored like a lesson, so it needs a color of its own.
-        self.assertEqual(len(self.data["palette"]), 72)
+        self.assertEqual(len(self.data["palette"]), 74)
         # Every class carries lessons, and the group pickers are populated.
         self.assertTrue(all(c["e"] for s in self.data["schools"] for c in s["c"]))
         self.assertEqual(sum(len(c["v"]) for s in self.data["schools"]
@@ -137,13 +137,42 @@ class WholePage(unittest.TestCase):
         a gap."""
         breaks = {b["n"] for s in self.data["schools"] for c in s["c"]
                   for day in c["h"].values() for b in day["b"] if b["n"]}
-        self.assertEqual(breaks, {"Vaba aeg", "Amps"})
+        self.assertEqual(breaks, {"Vaba aeg", "Amps", "Hommikuamps", "Lõuna"})
         for name in breaks:
             with self.subTest(name=name):
                 self.assertEqual(self.data["palette"][name],
                                  {"bg": tt.BREAK_BG, "fg": tt.BREAK_FG})
         # A subject still gets a colour of its own from its family.
         self.assertNotEqual(self.data["palette"]["Ajalugu"]["bg"], tt.BREAK_BG)
+
+    def test_the_gumnaasium_keeps_its_own_day(self):
+        """One published timetable, two schools. Read against the grades below
+        it, the gümnaasium afternoon ran ten and then twenty minutes late."""
+        school = next(s for s in self.data["schools"] if s["n"] == "68")
+        names = [c["n"] for c in school["c"]]
+        self.assertEqual(names, ["7", "8", "9", "G1B", "G1J", "G1K",
+                                 "G2A", "G2M", "G2T"])
+
+        def monday(klass):
+            cls = next(c for c in school["c"] if c["n"] == klass)
+            first = {}
+            for e in cls["e"]:
+                if e["d"] == 0:
+                    first.setdefault(e["p"], e)
+            return ([e["w"] for _, e in sorted(first.items()) if not e["c"]],
+                    [(b["n"], b["s"], b["e"]) for b in cls["h"]["0"]["b"]])
+
+        # Four lessons of eighty minutes, and the day plan's own two breaks.
+        lessons, breaks = monday("G1B")
+        self.assertEqual(sorted(set(lessons)),
+                         ["10.30–11.50", "12.40–14.00", "14.10–15.30", "9.00–10.20"])
+        self.assertEqual(breaks, [("Hommikuamps", "8.30", "8.55"),
+                                  ("Lõuna", "11.50", "12.40")])
+        # The grades below it are untouched.
+        lessons, breaks = monday("8")
+        self.assertIn("12.50–13.35", lessons)
+        self.assertEqual(breaks, [("Vaba aeg", "11.50", "12.50"),
+                                  ("Amps", "13.35", "13.55")])
 
     def test_a_lesson_running_past_one_published_block_ends_where_it_ends(self):
         # LõunaTERA publishes blocks rather than lesson lengths. A lesson

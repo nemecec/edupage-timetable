@@ -113,6 +113,21 @@ out of the clock. The clock gets two details right:
   always pairs. Where a school writes a break as a list, the grid shows the part before the
   first comma.
 
+**One timetable can hold two schools.** School 68 is published as "ProTERA ja
+TERA gümnaasium", and the gümnaasium does not keep the ProTERA day. Its
+classes are the ones named `G1B`, `G2M` and so on, and they run four lessons of
+eighty minutes:
+
+    start 9.00 · every lesson 80 min · slots 1-4 always paired
+    Hommikuamps 8.30-8.55 · gaps after slot 1 = 10 min, 2 = 50 min (Lõuna),
+    3 = 10 min
+
+Read against the grades below it, its afternoon ran ten and then twenty minutes
+late. So a bell schedule can carry variants, chosen by what the class is named.
+`Hommikuamps` is a break before the first lesson, which is why it is written as
+a clock time rather than a length: there is nothing in front of it to measure
+from.
+
 **LõunaTERA publishes fixed blocks instead.** There is no clock to run. Each
 block says which aSc periods it holds, and when it is:
 

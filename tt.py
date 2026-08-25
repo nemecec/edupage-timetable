@@ -167,9 +167,8 @@ STRINGS = {
         "footer.built": "data fetched {0}",
         "footer.counts": "GoatCounter counts the visits. No cookies.",
         "footer.reports": ("If the page breaks, it tells us, and sends your "
-                           "anonymised settings with the fault. Every name and "
-                           "label you typed becomes a row of X of the same "
-                           "length."),
+                           "anonymised settings with the fault. Every name "
+                           "and label you typed is replaced by Xs."),
         "days": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday",
                  "Saturday", "Sunday"],
     },
@@ -270,7 +269,7 @@ STRINGS = {
         "footer.reports": ("Kui leht katki läheb, teatab ta sellest meile ja "
                            "saadab kaasa sinu anonümiseeritud seaded. Kõik "
                            "nimed ja sildid, mis sa ise kirjutasid, "
-                           "asendatakse sama pika X-ide reaga."),
+                           "asendatakse X-idega."),
         "days": ["Esmaspäev", "Teisipäev", "Kolmapäev", "Neljapäev", "Reede",
                  "Laupäev", "Pühapäev"],
     },
@@ -312,6 +311,28 @@ BELLS = {
             {"after": 3, "minutes": 20, "name": "Amps"},
         ],
         "defaultGap": 5,
+        # TERA gümnaasium is in the same published timetable and does not keep
+        # the same day. Four lessons of eighty minutes, its own two breaks, and
+        # nothing after half past three. Read against the grades below it, its
+        # afternoon ran ten and then twenty minutes late.
+        # Source: tartuerakool.ee/tera-gymnaasium/ — Päevakava
+        "variants": [{
+            "classPrefix": "G",
+            "name": "Gümnaasiumi päevakava",
+            "start": "9:00",
+            # Every lesson is a pair. `single` is here for a card that is not,
+            # which the published plan does not have and the data does not use.
+            "single": 80,
+            "paired": 80,
+            "alwaysPaired": 4,
+            "gaps": [
+                {"after": 0, "name": "Hommikuamps", "start": "8:30", "end": "8:55"},
+                {"after": 1, "minutes": 10},
+                {"after": 2, "minutes": 50, "name": "Lõuna"},
+                {"after": 3, "minutes": 10},
+            ],
+            "defaultGap": 10,
+        }],
     },
     # LõunaTERA does not work the way ProTERA does. Its day plan is published as
     # fixed blocks rather than lesson lengths, the two grade bands run different
@@ -355,6 +376,19 @@ BELLS = {
 }
 
 
+def for_class(cfg, class_name):
+    """The day plan one class runs.
+
+    A published timetable can hold more than one school. School 68 is
+    "ProTERA ja TERA gümnaasium", and the gümnaasium classes keep a day of
+    their own.
+    """
+    for variant in (cfg or {}).get("variants", ()):
+        if (class_name or "").strip().startswith(variant["classPrefix"]):
+            return variant
+    return cfg
+
+
 def bell_config(label, text):
     for key, cfg in BELLS.items():
         if key.casefold() in (label or "").casefold() or key.casefold() in (text or "").casefold():
@@ -376,6 +410,14 @@ def day_times(slot_kinds, cfg):
     clock = int(hour) * 60 + int(minute)
     gaps = {g["after"]: g for g in cfg["gaps"]}
     slots, breaks = [], []
+    # A break before the first lesson. It has its own clock rather than a
+    # length, because there is nothing in front of it to measure from.
+    opener = gaps.get(0)
+    if opener:
+        first, last = _minutes(opener["start"]), _minutes(opener["end"])
+        breaks.append({"after": 0, "name": opener["name"], "at": first,
+                       "until": last, "start": _fmt_time(first),
+                       "end": _fmt_time(last)})
     for i, kind in enumerate(slot_kinds, start=1):
         length = cfg["paired"] if kind == "P" else cfg["single"]
         # `at` lets a lesson that is shorter than its slot compute its own end:
@@ -914,7 +956,7 @@ def collect(client, year, only, verbose):
             # period times in EduPage. Those are as good as a bell schedule and
             # better than nothing, which is what the fallback grid is.
             own_times = None if cfg else meta["periodTimes"]
-            classes = [extract(result, name, n_periods, cfg, own_times)
+            classes = [extract(result, name, n_periods, for_class(cfg, name), own_times)
                        for name in meta["classNames"]]
         except (RuntimeError, KeyError, TypeError, IndexError, ValueError) as exc:
             print(f"warning: skipping timetable {entry['tt_num']} "

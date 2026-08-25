@@ -144,6 +144,10 @@ STRINGS = {
                            "Copy the text into a file to keep it safe. Paste it "
                            "back later to get the same timetable in another "
                            "browser, or on another computer."),
+        "settings.share": ("Your settings also travel in the link to this "
+                           "page. Send the link to somebody, and they see the "
+                           "timetable exactly as you set it up. The {0} button "
+                           "in the top right corner makes that link for you."),
         "settings.copy": "Copy to clipboard",
         "settings.apply": "Apply pasted settings",
         "settings.copied": "Copied to clipboard.",
@@ -234,6 +238,10 @@ STRINGS = {
                            "tegid. Kopeeri tekst faili, et see alles hoida. "
                            "Kleebi see hiljem tagasi, et sama tunniplaan avaneks "
                            "teises brauseris või teises arvutis."),
+        "settings.share": ("Sinu seaded on ka selle lehe lingi sees. Saada "
+                           "link kellelegi ja ta näeb tunniplaani täpselt nii, "
+                           "nagu sa selle seadistasid. Nupp {0} üleval paremas "
+                           "nurgas teeb sellise lingi valmis."),
         "settings.copy": "Kopeeri lõikelauale",
         "settings.apply": "Rakenda kleebitud seaded",
         "settings.copied": "Kopeeritud lõikelauale.",
@@ -1557,6 +1565,7 @@ PAGE = """<!DOCTYPE html>
   <div class="field" style="width:100%;margin-top:12px">
     <label for="settingsText" data-i18n="backup"></label>
     <p class="sub help" data-i18n="settings.label"></p>
+    <p class="sub help" id="shareNote"></p>
     <textarea id="settingsText" rows="5" spellcheck="false"></textarea>
   </div>
   <div class="row" style="margin-top:8px;padding-top:0;border-top:none">

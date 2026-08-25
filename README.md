@@ -336,7 +336,10 @@ period grid, which needs no times.
   disclaimer, the source link, the controls — stays on screen.
 - **Save and restore settings** holds the whole configuration as JSON, to copy
   or to paste back, and **Reset all settings**. The panel says in a sentence
-  what the box is for, because "settings as JSON" means nothing to a parent.
+  what the box is for, because "settings as JSON" means nothing to a parent. A
+  second sentence says the same settings ride in the link, and points at the
+  **Share** button. It prints the button's own label, so the two cannot drift
+  apart across a rename or a language.
 - **Language** switches the interface between English and Estonian. Everything
   the school entered stays in the language it was entered in. That is the subject
   names, the group codes, the rooms, the teacher names, and the line the school

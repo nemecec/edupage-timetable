@@ -393,6 +393,18 @@ class Documentation(unittest.TestCase):
             spare = sorted(set(data["strings"][lang]) - asked)
             self.assertEqual(spare, [], "%s strings nothing renders" % lang)
 
+    def test_the_share_note_names_the_button_it_points_at(self):
+        """The note tells the reader to press a button, so it has to print the
+        name that button really carries in that language."""
+        page, data = build()
+        self.assertIn('id="shareNote"', page)
+        self.assertIn('t("settings.share", t("share"))', page)
+        for lang in ("en", "et"):
+            note = data["strings"][lang]["settings.share"]
+            self.assertIn("{0}", note, lang)
+            # The button's own label goes in the hole, not a copy of the word.
+            self.assertNotIn(data["strings"][lang]["share"], note, lang)
+
     def test_the_deploy_readme_counts_the_resources_correctly(self):
         counts = {n: len(self.resources(n))
                   for n in ("site.yaml", "dns.yaml", "cert.yaml")}

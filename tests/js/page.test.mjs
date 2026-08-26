@@ -1099,6 +1099,21 @@ test("what a browser stored is read back, and a fault reading it is reported", (
             "the three failures are still handled as one");
 });
 
+test("the tear is drawn the width of the strip it tears", () => {
+  /* The strip's width lives in the stylesheet and the tear is drawn in the
+     page's own script. A tear narrower than the strip leaves a sliver of it
+     standing; a wider one spills into the first day. */
+  const css = readFileSync(join(root, "tt.py"), "utf8");
+  const said = /--gut:\s*(\d+)px/.exec(css);
+  assert.ok(said, "the stylesheet no longer says how wide the strip is");
+  assert.equal(json(`GUTTER`), Number(said[1]),
+               "the strip and the tear across it are different widths");
+
+  // And the strip is really there to be torn.
+  assert.match(css, /\.tlbody \{[^}]*var\(--panel\) 0 var\(--gut\)/s,
+               "the clock has no strip, so a tear in it says nothing");
+});
+
 test("a link says which class it is about, and an old one still can", () => {
   /* Which class the page opens on comes out of the school's own timetable, and
      it moves when the school moves one. A link written without a class of its
@@ -1324,6 +1339,23 @@ test("an hour where nothing happens is cut out of the axis", () => {
                           label: "Training", backgroundColor: "#00ff00"}];`);
   const late = draw();
   assert.equal(late.split('class="tlbreak"').length - 1, 1, "no cut for the empty evening");
+
+  /* The clock strip is torn across, and the two edges left behind match the
+     way the two halves of a torn sheet do. Drawn as two unrelated wiggles it
+     reads as decoration rather than as one piece lifted out. */
+  const edges = [...late.matchAll(/class="edge" d="M([^"]*)"/g)].map(m => m[1]);
+  assert.equal(edges.length, 2, "a tear with one edge");
+  const ys = (edge) => edge.split("L").map(p => Number(p.split(" ")[1]));
+  const [top, bottom] = edges.map(ys);
+  assert.equal(top.length, bottom.length);
+  const drop = bottom[0] - top[0];
+  assert.ok(drop > 0, "the second edge is not below the first");
+  for (let i = 0; i < top.length; i++) {
+    assert.ok(Math.abs((bottom[i] - top[i]) - drop) < 0.01,
+              "the two edges of the tear do not match at point " + i);
+  }
+  // And the piece lifted out is filled with the page, so the strip is missing.
+  assert.match(late, /class="gap" d="M/);
 
   /* The lesson is the same height it was, and the event is drawn to the same
      scale: eighty minutes and sixty minutes, at the same pixels per minute. */

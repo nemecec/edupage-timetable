@@ -84,8 +84,10 @@ function timelineBoxes(html) {
   for (const tick of html.matchAll(/<div class="(t hour|t)" style="top:(\d+)px">([^<]*)</g)) {
     out.push(["axis", tick[1], "t" + tick[2], tick[3]].join(" | "));
   }
+  /* The tear across the clock strip. Its own wavy path is not recorded — it is
+     the same shape every time — but where it is and how tall it is are. */
   for (const cut of html.matchAll(
-         /<div class="tlbreak" style="top:(\d+)px;height:(\d+)px" title="([^"]*)"/g)) {
+         /<svg class="tlbreak"[^>]*style="top:(\d+)px;height:(\d+)px"[^>]*>\s*<title>([^<]*)</g)) {
     out.push(["cut", "t" + cut[1], "h" + cut[2], text(cut[3])].join(" | "));
   }
   const height = /class="tlbody" style="height:(\d+)px/.exec(html);

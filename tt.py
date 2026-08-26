@@ -1837,7 +1837,12 @@ PAGE = """<!DOCTYPE html>
   .tlhead .cell { flex: 1 1 0; text-align: center; font-size: 12px; font-weight: 600;
                   padding: 6px 4px; border-left: 1px solid var(--line); }
   .tlhead .gut { flex: 0 0 var(--gut); border-left: none; }
-  .tlbody { display: flex; position: relative; padding: 9px 0 11px; }
+  /* The clock runs down a strip of its own, carried on through from the day
+     headings above it. The strip is what makes a cut readable: where the axis
+     jumps, the strip is torn across and the page shows through the gap. */
+  .tlbody { display: flex; position: relative; padding: 9px 0 11px;
+            background: linear-gradient(to right,
+              var(--panel) 0 var(--gut), transparent var(--gut)); }
   .tlaxis { flex: 0 0 var(--gut); position: relative; }
   .tlaxis .t { position: absolute; right: 6px; font-size: 10.5px; color: var(--muted);
                transform: translateY(-50%); font-variant-numeric: tabular-nums; }
@@ -1881,18 +1886,16 @@ PAGE = """<!DOCTYPE html>
   .ev .what.oneline .clock { font-weight: 400; opacity: .85;
                              font-variant-numeric: tabular-nums; }
   .ev.approx { border-style: dashed; border-width: 2px; }
-  /* Where the axis is cut: the two slanted strokes a broken scale is drawn
-     with, in the margin beside the clock. Nothing is drawn across the days.
-     A band there wore the same stripes as a break, and the day's own boxes
-     covered it, so it added confusion rather than reading as a scale. */
-  .tlbreak { position: absolute; right: 2px; width: 18px; pointer-events: none; }
-  .tlbreak::before, .tlbreak::after {
-    content: ""; position: absolute; left: 0; width: 18px; height: 0;
-    border-top: 1.5px solid #939aa4; transform: rotate(-22deg); }
-  /* Off the middle rather than off the ends, so the two strokes keep clear of
-     the clock either side of them however short the cut is. */
-  .tlbreak::before { top: calc(50% - 5px); }
-  .tlbreak::after { top: calc(50% + 5px); }
+  /* Where the axis is cut, the clock strip is torn across: a piece the shape
+     of the gap is lifted out, and the two edges left behind match each other
+     the way the two halves of a torn sheet do.
+     Nothing is drawn across the days. A band there wore the same stripes as a
+     break, and the day's own boxes covered it, so it added confusion rather
+     than reading as a scale. */
+  .tlbreak { position: absolute; left: 0; width: var(--gut); z-index: 1;
+             pointer-events: none; display: block; }
+  .tlbreak .gap { fill: var(--bg); }
+  .tlbreak .edge { fill: none; stroke: #c2c7cf; stroke-width: 1; }
   /* Worked out here, not published by the school, so it does not wear the
      school's hatch. An outline and nothing inside it: the lessons on either
      side already say when it starts and ends. */

@@ -504,6 +504,27 @@ period grid, which needs no times.
   table with the other breaks, under the key `gap`, and can be renamed and
   recolored like any of them. A hole the school's window says is lunch is the
   exception: it is a meal, and it is drawn as one.
+- **An hour where every day is empty is cut out of the axis.** A training
+  session at six in the evening otherwise pushes the whole afternoon off the
+  screen, and the emptiness it pushes it with says nothing. A stretch of
+  45 minutes or more with nothing on any day is drawn at a sixth of the scale,
+  between 26 and 64 pixels. Everywhere anything happens keeps the scale it had:
+  no lesson is squeezed to make room, because squeezing what a reader came to
+  read is the wrong trade.
+
+  The clock runs down a strip of its own, carried on from the day headings
+  above it, and where the axis jumps the strip is torn across. A piece the
+  shape of the gap is lifted out, and the two edges left behind match each
+  other the way the two halves of a torn sheet do. The tear sits clear of the
+  clock at either end, since a label is centred on its own minute and half of
+  it hangs into the cut.
+
+  A band across the days was drawn there first, and it was wrong twice over. It
+  wore the same stripes as a break, so it read as one, and the day's own boxes
+  are drawn over the top of it — the worked-out break that fills the same hours
+  hid it on every day that had one, leaving stripes only on the days that did
+  not. It also covered the tick label at the top of the cut. A scale belongs
+  beside the scale.
 - **The plain grid** — what a school with no times at all gets — runs weekdays
   across the top and periods down the side, the same way round as the timeline.
   It used to be transposed, so the two views of one week read differently.

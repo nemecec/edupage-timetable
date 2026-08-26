@@ -128,6 +128,12 @@ const STYLES = ["palette", "school", "custom"];
    inside the try that guards against unreadable storage, where it was
    swallowed, and then again out loud on the first draw. */
 const MARGINS = [5, 9, 14];
+/* The clock strip is this wide, and the tear is drawn across it. The
+   stylesheet says the same in --gut, and a test holds the two together. */
+const GUTTER = 58;
+const TEAR = 3;                   // how far the torn edge wanders, in pixels
+const TEAR_CLEAR = 8;             // room left for the clock at either end
+const TEAR_MIN = 2 * TEAR + 4;    // the shortest tear with a gap still in it
 const MM = 96 / 25.4;             // CSS pixels per millimetre, at 96dpi
 
 /* What one subject is allowed to say about itself: a color, a style, a name of
@@ -921,7 +927,36 @@ function renderTimeline(school, cls, shown, mine, scale) {
     }
   }
 
-  /* Minutes to pixels, with every cut before that minute taken out. */
+  /* One wave of the tear, sampled rather than curved: at this size a polyline
+   of fifty points is a smooth edge, and it needs no path arithmetic to keep
+   the two sides of the tear identical. `shift` moves the same wave down, so
+   the piece lifted out has matching edges — which is what makes it read as one
+   tear rather than as two unrelated wiggles. */
+function tearWave(width, shift, amp) {
+  const steps = 48, waves = 3, out = [];
+  for (let i = 0; i <= steps; i++) {
+    const x = Math.round((width * i / steps) * 100) / 100;
+    const at = amp + shift + amp * Math.sin(2 * Math.PI * waves * i / steps);
+    out.push(x + " " + (Math.round(at * 100) / 100));
+  }
+  return out;
+}
+
+/* The piece of strip that is lifted out: down one wave, across, and back along
+   the same wave lower down. */
+function tornOut(width, height, amp) {
+  const top = tearWave(width, 0, amp);
+  const bottom = tearWave(width, height - 2 * amp, amp).reverse();
+  return "M" + top.join("L") + "L" + bottom.join("L") + "Z";
+}
+
+/* And the line along one torn edge, so it reads as an edge rather than as the
+   place two flat colors happen to meet. */
+function tornEdge(width, shift, amp) {
+  return "M" + tearWave(width, shift, amp).join("L");
+}
+
+/* Minutes to pixels, with every cut before that minute taken out. */
   const y = (t) => {
     let out = (t - lo) * ppm;
     for (const cut of cuts) {
@@ -965,9 +1000,19 @@ function renderTimeline(school, cls, shown, mine, scale) {
      covered the tick label at the top of the cut. A scale belongs beside the
      scale. */
   for (const cut of cuts) {
-    h += '<div class="tlbreak" style="top:' + Math.round(y(cut.a)) +
-         "px;height:" + Math.round(cut.h) + 'px" title="' +
-         esc(hhmm(cut.a) + "–" + hhmm(cut.z)) + '"></div>';
+    /* Clear of the clock at either end of the cut. A label is centred on its
+       own minute, so half of it hangs into the cut, and a tear drawn across
+       the whole of the cut is drawn across the reading. */
+    const tall = Math.max(TEAR_MIN, Math.round(cut.h) - 2 * TEAR_CLEAR);
+    const at = Math.round(y(cut.a) + (cut.h - tall) / 2);
+    h += '<svg class="tlbreak" viewBox="0 0 ' + GUTTER + " " + tall +
+         '" preserveAspectRatio="none" style="top:' + at +
+         "px;height:" + tall + 'px"><title>' +
+         esc(hhmm(cut.a) + "–" + hhmm(cut.z)) + "</title>" +
+         '<path class="gap" d="' + tornOut(GUTTER, tall, TEAR) + '"/>' +
+         '<path class="edge" d="' + tornEdge(GUTTER, 0, TEAR) + '"/>' +
+         '<path class="edge" d="' + tornEdge(GUTTER, tall - 2 * TEAR, TEAR) + '"/>' +
+         "</svg>";
   }
   h += "</div>";
 

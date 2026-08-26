@@ -587,7 +587,7 @@ function colorFor(subject) {
    Turning one off leaves the hole it made, which the day then reads as a
    break or as time to go home, both of which are true. */
 function hidden(name) {
-  return ((state.subjects || {})[name] || {}).off === true;
+  return ((state.subjects || {})[name] || {}).hide === true;
 }
 
 /* An entry that says nothing is not worth keeping, in storage or in a link. */
@@ -595,7 +595,7 @@ function tidySubjects() {
   for (const [subject, entry] of Object.entries(state.subjects || {})) {
     if (entry.style === state.subjectColorStyle) delete entry.style;
     if (!entry.label && !entry.style && !entry.backgroundColor &&
-        !entry.textColor && !entry.off) {
+        !entry.textColor && !entry.hide) {
       delete state.subjects[subject];
     }
   }
@@ -1398,7 +1398,7 @@ function renderLegend(shown) {
       ? '<tr class="grouphead"><td colspan="6">' + esc(t("breaks.heading")) + "</td></tr>"
       : "";
     return head + '<tr data-subject="' + esc(name) + '"' +
-      (hidden(name) ? ' class="off"' : "") + ">" +
+      (hidden(name) ? ' class="hide"' : "") + ">" +
       '<td class="show"><input type="checkbox" class="subjshow"' +
         (hidden(name) ? "" : " checked") + ' aria-label="' +
         esc(t("colShow")) + '"></td>' +
@@ -1448,7 +1448,7 @@ function refreshSubjectSample(name) {
    the row stays where it is and only its own look changes. */
 function setSubjectShown(name, on) {
   const entry = state.subjects[name] || (state.subjects[name] = {});
-  if (on) delete entry.off; else entry.off = true;
+  if (on) delete entry.hide; else entry.hide = true;
   tidySubjects();
   save();
   render();

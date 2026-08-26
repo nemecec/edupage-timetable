@@ -1735,8 +1735,8 @@ PAGE = """<!DOCTYPE html>
   .evtable .subjlabel { width: 11rem; }
   .evtable td.show { text-align: center; width: 3rem; }
   /* A row that draws nothing says so, and still reads well enough to find. */
-  .evtable tr.off td.rowlabel { color: #9aa1ab; text-decoration: line-through; }
-  .evtable tr.off .sample { opacity: .35; }
+  .evtable tr.hide td.rowlabel { color: #9aa1ab; text-decoration: line-through; }
+  .evtable tr.hide .sample { opacity: .35; }
   /* A gap is not a lesson, so the two do not run together as one list. */
   .evtable tr.grouphead td { padding-top: 14px; font-size: 11px; font-weight: 600;
                              color: var(--muted); text-transform: uppercase;

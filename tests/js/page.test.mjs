@@ -1000,7 +1000,7 @@ test("a subject the reader does not take can be switched off", () => {
   assert.ok(rows.includes('data-subject="Matemaatika"'), "the row went with it");
 
   // It rides in the settings, so a shared link carries it.
-  assert.equal(json(`state.subjects["Matemaatika"].off`), true);
+  assert.equal(json(`state.subjects["Matemaatika"].hide`), true);
   run(`setSubjectShown("Matemaatika", true);`);
   assert.ok(day().includes("Matemaatika"), "switching it back on did nothing");
   assert.equal(json(`Object.keys(state.subjects)`).length, 0,

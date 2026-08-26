@@ -545,6 +545,7 @@ its own map of classes.
         "Matemaatika": { "label": "Maths", "style": "custom",
                      "backgroundColor": "#83EC9B" },
     "Kunst": { "style": "palette" },
+    "Lastekoor": { "hide": true },
     "Vaba aeg": { "label": "Free time" }
   },
 
@@ -600,11 +601,12 @@ Some of these choices are not obvious:
   words after it keep the school's own casing.
 - **Every row has a switch**, ticked to begin with. Not every subject in a
   timetable is every child's: a choir sits in the class's week and in nobody
-  else's afternoon. Turning a row off drops it from the day and from the
-  printout, and leaves the row in the table so it can be turned back on. The
-  hole it leaves is read like any other, so it becomes a break, or the day
-  simply ends earlier. The switch rides in the settings with the names and the
-  colors, so a shared link carries it.
+  else's afternoon. Clearing the tick drops that row from the day and from the
+  printout, and leaves the row in the table so it can be brought back. It is
+  stored as `"hide": true` against the subject. The hole it leaves is read like
+  any other, so it becomes a break, or the day simply ends earlier. The switch
+  rides in the settings with the names and the colors, so a shared link carries
+  it.
 - **The named breaks are rows in that table too**, so *Vaba aeg* and *Amps* can
   be renamed and recolored like any subject. They sit after the subjects, under
   a heading of their own, because a gap is a different kind of thing from a

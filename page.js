@@ -373,8 +373,19 @@ function renderFooter(school) {
   const corner = code ? '<div class="qrbox">' + code +
                         '<div class="qrhint">' + esc(t("qrHint")) + "</div></div>"
                       : "";
+  /* Where the sheet came from, in the corner opposite the code. The code goes
+     to this reader's own timetable; this says where anybody can get one of
+     their own. Taken from the address rather than written down, so it cannot
+     name somewhere the page is not. */
+  const here = location.host
+    ? location.host + location.pathname.replace(/\/index\.html$/, "").replace(/\/$/, "")
+    : "";
+  const brand = (printing && here)
+    ? '<div class="brand"><img alt="" src="' + esc(DATA.icon || "") + '">' +
+      "<span>" + esc(here) + "</span></div>"
+    : "";
   document.getElementById("foot").innerHTML =
-    '<div class="lines">' + bits.join("<br>") + "</div>" + corner;
+    brand + '<div class="lines">' + bits.join("<br>") + "</div>" + corner;
   document.getElementById("foot").classList.toggle("bare", printing && !bits.length);
 }
 

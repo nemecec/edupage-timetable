@@ -639,8 +639,17 @@ request fell through to the bucket.
 Inline, as a `data:` URI, on all three pages — the timetable, the root and the
 404. Without one a browser asks for `/favicon.ico`, and there is nothing at
 that address, so it is handed the 404 page as an image and logs a failure. The
-icon is a week: five columns, one a day, tall at both ends and dipping between,
-so the shape survives being shrunk. It costs 607 bytes and no request.
+icon is a week: five columns, one a day, hanging from the morning down the way
+lessons fill a day, tall at both ends and dipping between so the shape survives
+being shrunk. It costs 607 bytes and no request.
+
+It appears three times, from one string in `tt.py`: as the tab icon, beside the
+heading on screen, and in the bottom left of the printed sheet next to the
+site's address. That last one is the opposite corner from the QR code, and the
+two say different things — the code goes to *this* reader's timetable, the
+address says where anybody can get one of their own. The address is read off
+`location` rather than written down, so it cannot name somewhere the page is
+not.
 
 ## Feedback
 

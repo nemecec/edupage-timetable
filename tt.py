@@ -1338,6 +1338,11 @@ def break_names(schools):
 # The reader can still recolor it.
 BREAK_BG, BREAK_FG = "#EDEFF2", "#4a5058"
 
+# The page's own mark: a week, one column a day, hanging from the morning
+# down. Inline, so no browser asks for /favicon.ico and is handed the 404
+# page as an image.
+ICON = "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2016%2016'%3E%3Crect%20width='16'%20height='16'%20rx='3.5'%20fill='%231C53BA'/%3E%3Crect%20x='1.4'%20y='3.5'%20width='2.0'%20height='9.0'%20rx='1.0'%20fill='%23fff'/%3E%3Crect%20x='4.2'%20y='3.5'%20width='2.0'%20height='3.8'%20rx='1.0'%20fill='%23fff'/%3E%3Crect%20x='7.0'%20y='3.5'%20width='2.0'%20height='7.0'%20rx='1.0'%20fill='%23fff'/%3E%3Crect%20x='9.8'%20y='3.5'%20width='2.0'%20height='3.8'%20rx='1.0'%20fill='%23fff'/%3E%3Crect%20x='12.6'%20y='3.5'%20width='2.0'%20height='9.0'%20rx='1.0'%20fill='%23fff'/%3E%3C/svg%3E"
+
 
 def break_palette(names):
     return {name: {"bg": BREAK_BG, "fg": BREAK_FG} for name in names}
@@ -1424,8 +1429,8 @@ PAGE = """<!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <!-- Inline, so no browser asks for /favicon.ico and gets the 404 page
-     back. It is a week: one column a day, tall at both ends. -->
-<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2016%2016'%3E%3Crect%20width='16'%20height='16'%20rx='3.5'%20fill='%231C53BA'/%3E%3Crect%20x='1.4'%20y='3.9'%20width='2.0'%20height='9.0'%20rx='1.0'%20fill='%23fff'/%3E%3Crect%20x='4.2'%20y='9.1'%20width='2.0'%20height='3.8'%20rx='1.0'%20fill='%23fff'/%3E%3Crect%20x='7.0'%20y='5.9'%20width='2.0'%20height='7.0'%20rx='1.0'%20fill='%23fff'/%3E%3Crect%20x='9.8'%20y='9.1'%20width='2.0'%20height='3.8'%20rx='1.0'%20fill='%23fff'/%3E%3Crect%20x='12.6'%20y='3.9'%20width='2.0'%20height='9.0'%20rx='1.0'%20fill='%23fff'/%3E%3C/svg%3E">
+     back. It is a week: one column a day, hanging from the morning down. -->
+<link rel="icon" href="__ICON__">
 <title>__TITLE__</title>
 <style>
   :root {
@@ -1442,6 +1447,8 @@ PAGE = """<!DOCTYPE html>
     color: var(--fg); background: var(--bg);
   }
   h1 { font-size: 20px; margin: 0 0 2px; }
+  .brandline { display: flex; align-items: center; gap: 9px; }
+  .mark { flex: 0 0 auto; }
   .sub { color: var(--muted); font-size: 13px; }
   .help { margin: 4px 0 8px; max-width: 62ch; line-height: 1.45; }
   .sub a { color: var(--accent); }
@@ -1695,6 +1702,12 @@ PAGE = """<!DOCTYPE html>
      off the sheet. */
   .foot { display: flex; align-items: flex-start; gap: 16px; }
   .foot .lines { flex: 1 1 auto; }
+  /* The sheet leaves the screen behind, so it has to say where it came from.
+     The code in the other corner goes to this reader's own timetable; this
+     goes to the page itself, for somebody who wants their own. */
+  .foot .brand { flex: 0 0 auto; display: flex; align-items: center; gap: 5px; }
+  .foot .brand img { width: 13px; height: 13px; }
+  .foot .brand span { font-size: 8.5px; white-space: nowrap; }
   .qrbox { flex: 0 0 auto; text-align: center; }
   .qrhint { font-size: 7.5px; max-width: 32mm; line-height: 1.2; margin-top: 2px; }
   .qr { display: block; }
@@ -1708,7 +1721,10 @@ PAGE = """<!DOCTYPE html>
 <body>
 <div class="topbar">
   <div>
-    <h1 id="heading" data-i18n="appName"></h1>
+    <div class="brandline">
+      <img class="mark" alt="" width="24" height="24" src="__ICON__">
+      <h1 id="heading" data-i18n="appName"></h1>
+    </div>
     <div class="sub" id="subtitle"></div>
   </div>
   <div class="topactions">
@@ -2023,6 +2039,7 @@ def render_html(schools, edupage, year, initial_school, initial_class, lang="en"
         "lang": lang,
         "built": built,
         "counts": bool(goatcounter),
+        "icon": ICON,
         "report": report_path,
         "languages": [list(x) for x in LANGUAGES],
         "strings": STRINGS,
@@ -2034,6 +2051,7 @@ def render_html(schools, edupage, year, initial_school, initial_class, lang="en"
     blob = json.dumps(payload, ensure_ascii=False, sort_keys=True).replace("<", "\\u003c")
     tag = GOATCOUNTER.format(site=html.escape(goatcounter, quote=True)) if goatcounter else ""
     return (PAGE
+            .replace("__ICON__", ICON)
             .replace("__APP__", beside("page.js"))
             .replace("__QRLIB__", vendored("qrcode-generator.js"))
             .replace("__ZIPLIB__", vendored("fflate.js"))

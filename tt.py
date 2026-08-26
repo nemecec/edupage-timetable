@@ -1897,6 +1897,14 @@ PAGE = """<!DOCTYPE html>
      for a line, so the padding thins rather than disappears. */
   .ev.brk.tiny { padding: 1px 4px; }
   .ev.brk.tiny .what { font-size: 10.5px; line-height: 1.2; }
+  /* Shorter than one line of type. A printed sheet is scaled to fit the paper,
+     and a ten-minute band on a full week comes out under fourteen pixels —
+     where the line no longer fits and the box cuts it. The clock is what a
+     reader cannot work out from the lessons either side, so it stays, and the
+     type gives way instead. */
+  .ev.brk.squeeze { padding: 0 3px; }
+  .ev.brk.squeeze .what { font-size: 9px; line-height: 1; }
+  .ev.brk.squeeze .clock { font-size: 8.5px; }
   /* A personal event is drawn over the timetable, so it needs to be above it —
      but it should not look like a different kind of thing. It is a lesson in
      every visible respect, whichever way its text color was arrived at: the

@@ -890,7 +890,8 @@ function renderTimeline(school, cls, shown, mine, scale) {
         /* Ten minutes is the shortest band anything is written in — TäheTERA
            has one between its second and third lessons — and at that height
            the padding is the difference between a line and a cut line. */
-        h += '<div class="ev brk' + (height < 22 ? " tiny" : "") + '" style="' +
+        h += '<div class="ev brk' +
+             (height < 17 ? " tiny squeeze" : height < 22 ? " tiny" : "") + '" style="' +
              geom + "background-color:" + esc(col.bg) +
              ";color:" + esc(col.fg) + ";" + hatch(col.bg) +
              '" data-subject="' + esc(band) + '" title="' +

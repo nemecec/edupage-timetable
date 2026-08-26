@@ -71,9 +71,10 @@ function onlyColors(bag) {
 
 const STYLES = ["palette", "school", "custom"];
 
-/* What one subject is allowed to say about itself: a color, a style, or both.
-   An entry saying neither is nothing at all and is dropped, which is what keeps
-   the map to the handful of subjects somebody actually touched. */
+/* What one subject is allowed to say about itself: a color, a style, a name of
+   the reader's own, or that it is not drawn at all. An entry saying none of
+   those is nothing at all and is dropped, which is what keeps the map to the
+   handful of subjects somebody actually touched. */
 function onlySubjects(bag) {
   const out = {};
   for (const [subject, value] of Object.entries(bag || {})) {
@@ -89,6 +90,8 @@ function onlySubjects(bag) {
     if (typeof value.label === "string" && value.label.trim()) {
       kept.label = value.label;
     }
+    /* Only true is worth keeping. False is what every other row already says. */
+    if (value.hide === true) kept.hide = true;
     if (Object.keys(kept).length) out[subject] = kept;
   }
   return out;

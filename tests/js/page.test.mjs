@@ -999,8 +999,14 @@ test("a subject the reader does not take can be switched off", () => {
   assert.ok(!row.slice(0, 200).includes("checked"), "the switch is still on");
   assert.ok(rows.includes('data-subject="Matemaatika"'), "the row went with it");
 
-  // It rides in the settings, so a shared link carries it.
+  /* It rides in the settings, so a shared link carries it — which means
+     surviving the reader that guards against a hand-edited file. Written down
+     and read straight back is what a shared link does. */
   assert.equal(json(`state.subjects["Matemaatika"].hide`), true);
+  assert.deepEqual(json(`normalise(JSON.parse(JSON.stringify(slim(state)))).subjects`),
+                   { Matemaatika: { hide: true } });
+  assert.deepEqual(json(`onlySubjects({ A: { hide: false }, B: { hide: "yes" } })`), {},
+                   "anything but true was kept");
   run(`setSubjectShown("Matemaatika", true);`);
   assert.ok(day().includes("Matemaatika"), "switching it back on did nothing");
   assert.equal(json(`Object.keys(state.subjects)`).length, 0,

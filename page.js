@@ -77,6 +77,17 @@ function onlyColors(bag) {
 
 const STYLES = ["palette", "school", "custom"];
 
+/* Millimetres of paper the reader can leave blank. Three is enough: as narrow
+   as a printer will take, the usual, and roomy for a hole punch.
+
+   Declared here, above everything, because `normalise` reads it and
+   `normalise` is called on the third line of the page's life. A `const` is
+   not readable before its own line runs, so declared further down it threw —
+   inside the try that guards against unreadable storage, where it was
+   swallowed, and then again out loud on the first draw. */
+const MARGINS = [5, 9, 14];
+const MM = 96 / 25.4;             // CSS pixels per millimetre, at 96dpi
+
 /* What one subject is allowed to say about itself: a color, a style, a name of
    the reader's own, or that it is not drawn at all. An entry saying none of
    those is nothing at all and is dropped, which is what keeps the map to the
@@ -182,9 +193,33 @@ function normalise(saved) {
 }
 
 let state = defaults();
-try {
-  state = normalise(JSON.parse(localStorage.getItem(KEY) || "null"));
-} catch (e) { /* corrupt or unavailable storage: fall back to defaults */ }
+{
+  /* Three things can go wrong here and only one of them is ours. A browser
+     that refuses storage and a stored value that is not JSON are both normal
+     and both mean "open on the defaults". A fault in `normalise` is a fault in
+     this page, and one blanket catch around all three said nothing about any
+     of them — which is how a broken read went unnoticed while every returning
+     reader quietly lost their settings. */
+  let stored = null;
+  try {
+    stored = localStorage.getItem(KEY);
+  } catch (e) { /* private window, or storage switched off */ }
+  let saved = null;
+  if (stored) {
+    try {
+      saved = JSON.parse(stored);
+    } catch (e) { /* not ours to read, so the defaults stand */ }
+  }
+  if (saved) {
+    try {
+      state = normalise(saved);
+    } catch (e) {
+      /* Ours. Say so, and open on the defaults rather than on nothing. */
+      report("settings", e);
+      state = defaults();
+    }
+  }
+}
 /* A link wins over what this browser had, since following one is a request to
    see that. The per-class bags merge rather than replace, so a link for one
    class does not wipe the choices made for a sibling's.
@@ -1184,11 +1219,6 @@ function bodyCell(cls, dayIdx, col, bucket) {
    entry there. So it is drawn and measured rather than guessed at from constants —
    the footer alone changes size with the QR code and the language, and a guess
    that was right once quietly stops being right. */
-/* What the reader can pick from. Three is enough: as narrow as a printer will
-   take, the usual, and roomy for a hole punch. */
-const MARGINS = [5, 9, 14];
-const MM = 96 / 25.4;             // CSS pixels per millimetre, at 96dpi
-
 /* A4 landscape is 210mm tall, less the margin at each end. */
 function sheetHeight() {
   return Math.round(210 * MM - 2 * state.printMargin * MM);

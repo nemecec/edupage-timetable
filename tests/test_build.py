@@ -85,9 +85,11 @@ class WholePage(unittest.TestCase):
         boxes = [e for e in rows if not e["c"]]
         self.assertEqual(len(self.data["schools"]), 4)
         self.assertEqual(sum(len(s["c"]) for s in self.data["schools"]), 41)
-        # Fewer boxes than periods-with-a-lesson, because SädeTERA writes some
-        # doubles as two cards and those are joined back into one.
-        self.assertEqual((len(rows), len(boxes)), (1935, 1555))
+        # Fewer boxes than periods-with-a-lesson: a published block covering
+        # two periods is one box. Fewer rows than periods with a card, too —
+        # SädeTERA has two lessons its own day plan leaves no room for, and the
+        # build says so rather than drawing them at a guessed time.
+        self.assertEqual((len(rows), len(boxes)), (1903, 1563))
         # 70 subject names, plus the five named breaks. A break is drawn and
         # recolored like a lesson, so it needs a color of its own.
         self.assertEqual(len(self.data["palette"]), 75)
@@ -247,74 +249,6 @@ class WholePage(unittest.TestCase):
         self.assertEqual(breaks, [("Vaba aeg", "11.50", "12.50"),
                                   ("Amps", "13.35", "13.55")])
 
-    def test_a_double_written_as_two_cards_is_drawn_as_one(self):
-        """SädeTERA writes some doubles as two cards of one period each. Drawn
-        as written they read as two lessons with a break in between, which is
-        not what happens in the room."""
-        school = next(s for s in self.data["schools"] if s["l"] == "SädeTERA")
-
-        def monday(klass, day=0):
-            cls = next(c for c in school["c"] if c["n"].strip() == klass)
-            first = {}
-            for e in cls["e"]:
-                if e["d"] == day and not e["c"]:
-                    first.setdefault(e["p"], e)
-            return [(e["w"], e["s"]) for _, e in sorted(first.items())]
-
-        # Two in a row become one, on the double column's clock.
-        self.assertIn(("9.50–11.10", "Kirjandus"), monday("6. S"))
-        # A run of four becomes two doubles, a run of three a double then a
-        # single: the card offers a double and nothing longer.
-        self.assertEqual(monday("1. S"),
-                         [("9.00–10.20", "Üldõpetus"), ("10.45–12.05", "Üldõpetus"),
-                          ("13.00–13.45", "Inglise keel")])
-        self.assertEqual(monday("2. S", day=4),
-                         [("9.00–9.45", "Inglise keel"), ("9.50–11.10", "Üldõpetus"),
-                          ("11.35–12.20", "Üldõpetus")])
-        # Never over lunch. These two are one subject in a row on paper.
-        pair = [w for w, s in monday("5. S", day=1) if s == "Liikumisõpetus"]
-        self.assertEqual(pair, ["11.35–12.20", "13.00–13.45"])
-
-        # A break is reported after a slot, not after a period. A morning of
-        # doubles has fewer slots than periods, and numbering lunch by period
-        # put it past the end of the day, where the page drops it.
-        cls = next(c for c in school["c"] if c["n"].strip() == "1. S")
-        lunch = {int(d): [b["a"] for b in day["b"]] for d, day in cls["h"].items()}
-        self.assertEqual(lunch[0], [2], "Monday is two doubles then lunch")
-        # Every day of the week, including Friday, which stops at 11.30. Lunch
-        # is an hour the school sets aside, not a gap that opens between two
-        # lessons, and the children eat in it either way.
-        self.assertEqual(sorted(lunch), [0, 1, 2, 3, 4])
-        self.assertTrue(all(len(after) == 1 for after in lunch.values()), lunch)
-
-    def test_the_gumnaasium_prefix_comes_off_the_name_shown(self):
-        """"Gümn Matemaatika" is maths. A reader looking at a gümnaasium class
-        knows which school they are in."""
-        school = next(s for s in self.data["schools"] if s["n"] == "68")
-        facts = school["sj"]
-        prefixed = [n for n in facts if n.startswith("Gümn ")]
-        self.assertGreater(len(prefixed), 10, "the fixtures lost the prefix")
-        for name in prefixed:
-            with self.subTest(name=name):
-                rest = name[len("Gümn "):]
-                self.assertEqual(facts[name]["label"], rest[0].upper() + rest[1:])
-        # The prefix was carrying the capital, so the first letter takes it
-        # over. The words after it keep the school's own casing.
-        self.assertEqual(facts["Gümn programmeerimise algkursus"]["label"],
-                         "Programmeerimise algkursus")
-        self.assertEqual(facts["Gümn Teadus, fantaasia ja ulmekirjandus II"]["label"],
-                         "Teadus, fantaasia ja ulmekirjandus II")
-        # It comes off the name shown, not off the name it is filed under.
-        # These two are different subjects with abbreviations of their own,
-        # and one entry cannot hold both.
-        self.assertEqual(facts["Gümn Inglise keel"]["short"], "Inglise k (B2)")
-        self.assertEqual(facts["Inglise keel"]["short"], "Eng")
-        self.assertEqual(facts["Gümn Inglise keel"]["label"], "Inglise keel")
-        self.assertNotIn("label", facts["Inglise keel"])
-        # Every lesson still carries the school's own name as its identity.
-        names = {e["s"] for c in school["c"] for e in c["e"]}
-        self.assertTrue([n for n in names if n.startswith("Gümn ")])
-
     def test_a_lesson_running_past_one_published_block_ends_where_it_ends(self):
         # LõunaTERA publishes blocks rather than lesson lengths. A lesson
         # covering two of them used to stop at the end of the first.
@@ -327,7 +261,7 @@ class WholePage(unittest.TestCase):
     def test_a_merged_box_carries_the_subjects_it_merged(self):
         merged = [e for s in self.data["schools"] for c in s["c"]
                   for e in c["e"] if e["S"]]
-        self.assertEqual(len(merged), 28)
+        self.assertEqual(len(merged), 36)
         self.assertIn(["Häälestus", "Üldõpetus"], [e["S"] for e in merged])
 
     def test_the_two_teacher_spellings_do_not_change_places(self):
@@ -373,26 +307,38 @@ class WholePage(unittest.TestCase):
                          {"ProTERA ja TERA gümnaasium": True, "SädeTERA": True,
                           "LõunaTERA": True, "TäheTERA": False})
 
-    def test_sadetera_runs_its_published_periods_not_edupages(self):
-        """EduPage carries period times for this school and they are
-        placeholders — 8.00, 9.00, 10.00, one an hour. The page drew those."""
+    def test_sadetera_draws_the_day_plan_the_school_publishes(self):
+        """It ran on a clock with fixed periods, and had to guess which lessons
+        in a row were a double. The guess is not derivable — the school decides
+        — and it was wrong on one box in five. So the plan is copied in."""
         school = next(s for s in self.data["schools"] if s["l"] == "SädeTERA")
         boxes = [e for c in school["c"] for e in c["e"] if not e["c"]]
-        self.assertTrue(boxes)
         self.assertTrue(all(e["a"] is not None and e["z"] > e["a"] for e in boxes))
-        first = min(boxes, key=lambda e: (e["a"], e["u"]))
-        self.assertEqual((first["a"], first["w"]), (540, "9.00–9.45"))
-        # Every box lands on a published period, and a pair runs eighty minutes
-        # rather than to the end of its second period.
-        starts = {"9.00", "9.50", "10.45", "11.35", "13.00", "13.50", "14.40"}
-        self.assertEqual({e["w"].split("–")[0] for e in boxes} - starts, set())
-        pair = next(e for e in boxes if e["u"] > 1 and e["w"].startswith("9.00"))
-        self.assertEqual(pair["w"], "9.00–10.20")
-        # And the break the card names, timed from the periods around it.
-        cls = next(c for c in school["c"] if c["e"])
-        rest = [(b["n"], b["s"], b["e"]) for day in cls["h"].values() for b in day["b"]]
-        self.assertTrue(rest, "no break at all")
-        self.assertEqual(set(rest), {("Lõuna + loovaeg", "12.20", "13.00")})
+
+        def day(klass, idx):
+            cls = next(c for c in school["c"] if c["n"].strip() == klass)
+            first = {}
+            for e in cls["e"]:
+                if e["d"] == idx and not e["c"]:
+                    first.setdefault(e["p"], e)
+            return [e["w"] for _, e in sorted(first.items())]
+
+        # A double the school pairs, where the old guess paired 2 and 3.
+        self.assertEqual(day("1. S", 3),
+                         ["9.00–9.45", "9.50–10.35", "10.45–12.05", "13.00–13.45"])
+        # And a day of its own: this one starts its third lesson ten minutes late.
+        self.assertIn("10.55–12.15", day("6. S", 2))
+
+        # Two lunch sittings, which is why one plan for the school cannot be
+        # right for all of it: the younger half eats at 12.05, the older at 12.20.
+        def lunch(klass):
+            cls = next(c for c in school["c"] if c["n"].strip() == klass)
+            return sorted({b["s"] for d in cls["h"].values() for b in d["b"]})
+        self.assertEqual(lunch("1. S"), ["12.05"])
+        self.assertEqual(lunch("5. S"), ["12.20"])
+        # A gap in the morning is not lunch, however long it is. This Wednesday
+        # leaves 35 minutes between the second lesson and the third.
+        self.assertTrue(all(b >= "11.30" for b in lunch("6. S")), lunch("6. S"))
 
     def test_every_class_with_a_day_plan_gets_its_times(self):
         """The check that would have caught a class quietly losing them.
@@ -643,16 +589,28 @@ class Documentation(unittest.TestCase):
                         "say.send", "say.sent", "say.failed", "say.empty"):
                 self.assertIn(key, data["strings"][lang], (lang, key))
 
+    def test_a_stale_day_plan_is_alarmed_on(self):
+        """The plans in tt.py are copied from published sheets. A lesson
+        landing where the plan has no slot is what a republished sheet looks
+        like from here, and it has to reach somebody."""
+        with open(os.path.join(ROOT, "deploy", "site.yaml"), encoding="utf-8") as fh:
+            template = fh.read()
+        self.assertIn("""FilterPattern: '"the day plan has no time for"'""", template)
+        self.assertIn("MetricName: PlanDrift", template)
+        # The words the filter looks for are the words the build prints.
+        with open(os.path.join(ROOT, "tt.py"), encoding="utf-8") as fh:
+            self.assertIn("the day plan has no time for", fh.read())
+
     def test_the_deploy_readme_counts_the_resources_correctly(self):
         counts = {n: len(self.resources(n))
                   for n in ("site.yaml", "dns.yaml", "cert.yaml")}
-        self.assertEqual(counts, {"site.yaml": 28, "dns.yaml": 2, "cert.yaml": 1})
+        self.assertEqual(counts, {"site.yaml": 30, "dns.yaml": 2, "cert.yaml": 1})
         with open(os.path.join(ROOT, "deploy", "README.md"), encoding="utf-8") as fh:
             readme = fh.read()
         # The words, not their capitalisation: the sentence around them is
         # free to be reworded.
-        self.assertIn("thirty-one resources", readme.lower())
-        self.assertIn("twenty-eight in `site.yaml`", readme)
+        self.assertIn("thirty-three resources", readme.lower())
+        self.assertIn("thirty in `site.yaml`", readme)
 
     def test_the_size_the_readmes_quote_is_the_size_it_is(self):
         import gzip

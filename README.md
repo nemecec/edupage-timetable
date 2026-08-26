@@ -128,30 +128,28 @@ late. So a bell schedule can carry variants, chosen by what the class is named.
 a clock time rather than a length: there is nothing in front of it to measure
 from.
 
-**SädeTERA is a third shape.** Its periods are at fixed times, like an
-ordinary school, so there is no clock to run. But a paired lesson does not run
-to the end of its second period: it runs eighty minutes from where it starts,
-and finishes before that period would.
+**SädeTERA publishes a day plan per class**, and a class is the unit: the
+school is small enough that a class stays together for every lesson, so there
+are no groups to split. What it does have is two lunch sittings, grades 1-3 and
+grades 4-6, which is why the fourth lesson ends at 12.05 for the younger half
+and 12.20 for the older — and why one plan for the school cannot be right for
+all of it.
 
-    1. 9.00-9.45   2. 9.50-10.35   3. 10.45-11.30   4. 11.35-12.20
-    Lõuna + loovaeg 12.20-13.00
-    5. 13.00-13.45   6. 13.50-14.35   7. 14.40-15.25
-    a pair = 80 min from its own start, so 1-2 is 9.00-10.20
+This ran on a clock with fixed periods, and it was wrong on one box in five. A
+clock has to guess which lessons in a row are a double, and the guess is not
+derivable: the school decides, class by class and day by day. So the published
+sheet is copied in, 135 blocks of it, in the same shape LõunaTERA uses.
 
-The card has two columns, one for a single lesson and one for a double, and
-the school does not always write a double as one card. Where the same subject
-runs in consecutive periods, those are read as doubles from the start of the
-run: four periods become two doubles, three become a double and then a single.
-A named break ends a pair, so the periods either side of lunch stay two
-lessons. Lunch itself is drawn on every day the class is at school, including
-one that stops before it: an hour the school sets aside is not a gap that
-opens between two lessons.
+A published plan lists lessons, not the spaces between them. Most of those
+spaces are a corridor and one of them is lunch, so a gap is named only when it
+is long enough **and** falls in the middle of the day. One Wednesday leaves 35
+minutes between the second lesson and the third, and that is a morning.
 
-EduPage carries period times for this school, and they are placeholders: 8.00,
-9.00, 10.00, one an hour. The page drew those until the school's own card was
-read. A named break here is named after the period it follows, and timed from
-that period's end to the next one's start, so it cannot drift away from them.
-A day that stops before lunch is not given a lunch.
+Hand-copied data goes stale. The build already warns when a lesson lands where
+the plan has no slot — which is what a republished sheet looks like from here —
+and a metric filter on that warning raises an alarm, so a plan that has moved
+on says so instead of quietly drawing last year's times. It earned its keep on
+the first run: it caught two lessons the transcription had missed.
 
 **LõunaTERA publishes fixed blocks instead.** There is no clock to run. Each
 block says which aSc periods it holds, and when it is:

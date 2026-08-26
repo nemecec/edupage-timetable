@@ -370,18 +370,137 @@ BELLS = {
     # EduPage carries period times for this school, and they are placeholders:
     # 8.00, 9.00, 10.00, one an hour. That is what the page drew until now.
     # Source: tartuerakool.ee/sadetera/ — I ja II kooliaste
+    # SädeTERA publishes a day plan per class, and a class is the unit here:
+    # the school is small enough that a class stays together for every lesson,
+    # so there are no groups to split. What it does have is two lunch sittings,
+    # grades 1-3 and grades 4-6, which is why the fourth lesson ends at 12.05
+    # for the younger half and 12.20 for the older, and why one plan for the
+    # school cannot be right for all of it.
+    #
+    # This was a clock with fixed periods, and it was wrong on one box in five:
+    # it had to guess which lessons in a row were a double, and the guess is
+    # not derivable — the school decides. The plan says. Read off the published
+    # sheet, "SädeTERA päevakava 2026/2027".
+    #
+    #   (first period, how many periods, start, end)
+    #
+    # Hand-copied, so it goes stale when the school republishes. The build
+    # warns when a lesson lands where the plan has no slot, which is what a
+    # changed plan looks like from here.
     "SädeTERA": {
         "name": "Päevakava",
-        "periods": [("9:00", "9:45"), ("9:50", "10:35"), ("10:45", "11:30"),
-                    ("11:35", "12:20"), ("13:00", "13:45"), ("13:50", "14:35"),
-                    ("14:40", "15:25")],
-        "paired": 80,
-        # Some doubles are written as two cards of one period each. See
-        # pair_adjacent() for what is joined and what is left alone.
-        "pairAdjacent": True,
-        # Named after the period it follows. The clock comes from the periods
-        # on either side of it, so it cannot drift away from them.
-        "gaps": [{"after": 4, "name": "Lõuna + loovaeg"}],
+        # Between two blocks far enough apart to be a break rather than a
+        # corridor. The sheet calls the middle of the day this.
+        "gapName": "Lõuna + loovaeg",
+        "gapAtLeast": 30,
+        "gapAfter": "11:30",
+        "bands": [
+            {
+                "classes": ["1. S"],
+                "days": {
+                    (0,): [(1, 2, "9:00", "10:20"), (3, 2, "10:45", "12:05"),
+                                (5, 1, "13:00", "13:45")],
+                    (1,): [(1, 1, "9:00", "9:45"), (2, 1, "9:50", "10:35"),
+                                (3, 2, "10:45", "12:05"), (5, 1, "13:00", "13:45")],
+                    (2,): [(1, 1, "9:00", "9:45"), (2, 1, "9:50", "10:35"),
+                                (3, 2, "10:45", "12:05"), (5, 1, "13:00", "13:45"),
+                                (6, 1, "13:50", "14:35")],
+                    (3,): [(1, 1, "9:00", "9:45"), (2, 1, "9:50", "10:35"),
+                                (3, 2, "10:45", "12:05"), (5, 1, "13:00", "13:45")],
+                    (4,): [(1, 1, "9:00", "9:45"), (2, 1, "9:50", "10:35"),
+                                (3, 1, "10:45", "11:30")],
+                },
+            },
+            {
+                "classes": ["2. S"],
+                "days": {
+                    (0,): [(1, 1, "9:00", "9:45"), (2, 1, "9:50", "10:35"),
+                                (3, 2, "10:45", "12:05"), (5, 1, "13:00", "13:45")],
+                    (1,): [(1, 1, "9:00", "9:45"), (2, 1, "9:50", "10:35"),
+                                (3, 1, "10:45", "11:30"), (4, 1, "11:35", "12:05"),
+                                (5, 1, "13:00", "13:45"), (6, 1, "13:50", "14:35")],
+                    (2,): [(1, 2, "9:00", "10:20"), (3, 2, "10:45", "12:05"),
+                                (5, 1, "13:00", "13:45"), (6, 1, "13:50", "14:35")],
+                    (3,): [(1, 1, "9:00", "9:45"), (2, 1, "9:50", "10:35"),
+                                (3, 2, "10:45", "12:05"), (5, 1, "13:00", "13:45")],
+                    (4,): [(1, 1, "9:00", "9:45"), (2, 1, "9:50", "10:35"),
+                                (3, 1, "10:45", "11:30"), (4, 1, "11:35", "12:20")],
+                },
+            },
+            {
+                "classes": ["3. S"],
+                "days": {
+                    (0,): [(1, 1, "9:00", "9:45"), (2, 1, "9:50", "10:35"),
+                                (3, 2, "10:45", "12:05"), (5, 1, "13:00", "13:45"),
+                                (6, 2, "14:00", "15:25")],
+                    (1,): [(1, 1, "9:00", "9:45"), (2, 1, "9:50", "10:35"),
+                                (3, 2, "10:45", "12:05"), (5, 1, "12:45", "13:30"),
+                                (6, 1, "13:50", "14:35")],
+                    (2,): [(1, 1, "9:00", "9:45"), (2, 1, "9:50", "10:35"),
+                                (3, 2, "10:45", "12:05"), (5, 1, "13:00", "13:45"),
+                                (6, 1, "13:50", "14:35")],
+                    (3,): [(1, 1, "9:00", "9:45"), (2, 2, "9:50", "11:10"),
+                                (4, 1, "11:20", "12:05"), (5, 1, "13:00", "13:45")],
+                    (4,): [(1, 1, "9:00", "9:45"), (2, 1, "9:50", "10:35"),
+                                (3, 1, "10:45", "11:30"), (4, 1, "11:35", "12:20")],
+                },
+            },
+            {
+                "classes": ["4. S"],
+                "days": {
+                    (0,): [(1, 1, "9:00", "9:45"), (2, 1, "9:50", "10:35"),
+                                (3, 2, "10:45", "12:05"), (5, 1, "13:00", "13:45"),
+                                (6, 1, "13:50", "14:35")],
+                    (1,): [(1, 1, "9:00", "9:45"), (2, 2, "9:50", "11:10"),
+                                (4, 1, "11:35", "12:20"), (5, 1, "13:00", "13:45")],
+                    (2,): [(1, 2, "9:00", "10:20"), (3, 2, "10:45", "12:05"),
+                                (5, 1, "13:00", "13:45"), (6, 1, "13:50", "14:35")],
+                    (3,): [(1, 1, "9:00", "9:45"), (2, 2, "9:50", "11:10"),
+                                (4, 1, "11:35", "12:20"), (5, 1, "13:00", "13:45")],
+                    (4,): [(1, 1, "9:00", "9:45"), (2, 1, "9:50", "10:35"),
+                                (3, 1, "10:45", "11:30"), (4, 1, "11:35", "12:20")],
+                },
+            },
+            {
+                "classes": ["5. S"],
+                "days": {
+                    (0,): [(1, 2, "9:00", "10:20"), (3, 1, "10:45", "11:30"),
+                                (4, 1, "11:35", "12:20"), (5, 1, "13:00", "13:45"),
+                                (6, 1, "13:50", "14:35")],
+                    (1,): [(1, 2, "9:00", "10:20"), (3, 1, "10:45", "11:30"),
+                                (4, 1, "11:35", "12:20"), (5, 1, "13:00", "13:45"),
+                                (6, 1, "13:50", "14:35")],
+                    (2,): [(1, 2, "9:00", "10:20"), (3, 1, "10:45", "11:30"),
+                                (4, 1, "11:35", "12:20"), (5, 1, "13:00", "13:45"),
+                                (6, 1, "13:50", "14:35")],
+                    (3,): [(1, 1, "9:00", "9:45"), (2, 1, "9:50", "10:35"),
+                                (3, 1, "10:45", "11:30"), (4, 1, "11:35", "12:20"),
+                                (5, 1, "13:00", "13:45"), (6, 1, "13:50", "14:35")],
+                    (4,): [(1, 2, "9:00", "10:20"), (3, 1, "10:45", "11:30"),
+                                (4, 1, "11:35", "12:20"), (5, 1, "13:00", "13:45"),
+                                (6, 1, "13:50", "14:35")],
+                },
+            },
+            {
+                "classes": ["6. S"],
+                "days": {
+                    (0,): [(1, 1, "9:00", "9:45"), (2, 2, "9:50", "11:10"),
+                                (4, 1, "11:35", "12:20"), (5, 1, "13:00", "13:45"),
+                                (6, 1, "13:50", "14:35"), (7, 1, "14:40", "15:25")],
+                    (1,): [(1, 1, "9:00", "9:45"), (2, 2, "9:50", "11:10"),
+                                (4, 1, "11:35", "12:20"), (5, 1, "12:45", "13:30"),
+                                (6, 1, "13:50", "14:35")],
+                    (2,): [(1, 2, "9:00", "10:20"), (3, 2, "10:55", "12:15"),
+                                (5, 1, "13:00", "13:45"), (6, 1, "13:50", "14:35"),
+                                (7, 1, "14:40", "15:25")],
+                    (3,): [(1, 1, "9:00", "9:45"), (2, 2, "9:50", "11:10"),
+                                (4, 2, "11:25", "12:35"), (6, 1, "13:50", "14:35")],
+                    (4,): [(1, 2, "9:00", "10:20"), (3, 1, "10:45", "11:30"),
+                                (4, 1, "11:35", "12:20"), (5, 1, "13:00", "13:45"),
+                                (6, 1, "13:50", "14:35"), (7, 1, "14:40", "15:25")],
+                },
+            },
+        ],
     },
     # LõunaTERA does not work the way ProTERA does. Its day plan is published as
     # fixed blocks rather than lesson lengths, the two grade bands run different
@@ -497,84 +616,28 @@ def _minutes(text):
     return int(hour) * 60 + int(minute)
 
 
-def pair_adjacent(entries, cfg):
-    """Join two lessons of the same subject in a row into one double.
+def block_gaps(cfg, slots):
+    """A named break between two published blocks far enough apart to be one.
 
-    A school whose card gives a double its own clock does not always write it
-    that way. SädeTERA splits some doubles into two cards of one period each,
-    and drawn as they are written they read as two lessons with a break in
-    between — which is not what happens in the room.
-
-    A run of the same subject is paired from its start: four periods become two
-    doubles, three become a double and then a single. The card gives a double
-    its own clock and offers nothing longer, so a run is read as doubles for as
-    far as it goes.
-
-    A named break ends a pair. Periods either side of lunch are two lessons
-    with lunch between them, whatever the subject is called.
+    A published plan lists lessons, not the spaces between them. Most of those
+    spaces are a corridor; one of them is lunch. The school says how long a
+    break has to be before it is worth drawing, and what to call it.
     """
-    gaps = {g["after"] for g in cfg.get("gaps", ())}
-    alone = {}
-    for e in entries:
-        alone.setdefault((e["day"], e["period"]), []).append(e)
-    # One lesson, one period, nothing else sharing the slot: a class split into
-    # groups is not a double, whatever the groups are called.
-    single = {where: here[0] for where, here in alone.items()
-              if len(here) == 1 and here[0]["duration"] == 1}
-
-    def same_subject(day, period, subject):
-        other = single.get((day, period))
-        return other if other and other["subject"] == subject else None
-
-    for (day, period), first in sorted(single.items()):
-        subject = first["subject"]
-        if same_subject(day, period - 1, subject):
-            continue                      # not the start of the run
-        run = [period]
-        while same_subject(day, run[-1] + 1, subject):
-            run.append(run[-1] + 1)
-        step = 0
-        while step < len(run) - 1:
-            at = run[step]
-            if at in gaps:                # a break, so this one stands alone
-                step += 1
-                continue
-            head, tail = single[(day, at)], single[(day, at + 1)]
-            head["duration"] = tail["duration"] = 2
-            tail["startPeriod"] = head["startPeriod"]
-            tail["part"] = 1
-            step += 2
-
-
-def fixed_periods(cfg):
-    """A school's own period clock, when it publishes one, as {period: (from, to)}."""
-    published = (cfg or {}).get("periods")
-    return {i: pair for i, pair in enumerate(published, start=1)} if published else None
-
-
-def named_gaps(cfg, clock, slots):
-    """The named breaks between fixed periods.
-
-    A gap is named after the period it follows, and timed from that period's
-    end to the next one's start. It is reported after a *slot*, though, because
-    that is what the page counts. A day of doubles has fewer slots than
-    periods, and a break numbered by period reads as one past the end of the
-    day — which is how lunch went missing from every morning of doubles.
-
-    A day that stops before lunch is still given its lunch. This is not a gap
-    that opens up between two lessons — it is an hour the school sets aside,
-    and the children eat in it whether or not they are taught afterwards.
-    """
+    name = (cfg or {}).get("gapName")
+    if not name:
+        return []
+    least = cfg.get("gapAtLeast", 30)
+    # Long enough is not sufficient. One SädeTERA Wednesday leaves 35 minutes
+    # between the second lesson and the third, and that is a morning, not a
+    # lunch. Lunch is the break in the middle of the day.
+    earliest = _minutes(cfg.get("gapAfter", "0:00"))
     out = []
-    for gap in (cfg or {}).get("gaps", ()):
-        after = gap["after"]
-        before, behind = clock.get(after), clock.get(after + 1)
-        if not (before and behind) or not slots:
-            continue
-        index = sum(1 for s in slots if s["period"] + s["periods"] - 1 <= after)
-        at, until = _minutes(before[1]), _minutes(behind[0])
-        out.append({"after": index, "name": gap["name"], "at": at, "until": until,
-                    "start": _fmt_time(at), "end": _fmt_time(until)})
+    for i, (before, after) in enumerate(zip(slots, slots[1:]), start=1):
+        at = _minutes(before["end"].replace(".", ":"))
+        until = _minutes(after["start"].replace(".", ":"))
+        if until - at >= least and at >= earliest:
+            out.append({"after": i, "name": name, "at": at, "until": until,
+                        "start": before["end"], "end": after["start"]})
     return out
 
 
@@ -862,17 +925,12 @@ def extract(result, class_name, n_periods=None, cfg=None, period_times=None):
             # Nobody reads a break to find out who is supervising it.
             e["teachers"], e["teacherShorts"] = [], []
     entries.sort(key=lambda e: (e["day"], e["period"], e["subject"], "/".join(e["groups"])))
-    if (cfg or {}).get("pairAdjacent"):
-        pair_adjacent(entries, cfg)
 
     # Slot the day, so a paired lesson is one cell and the breaks land in a
     # fixed column whatever shape the day happens to take.
     n_periods = n_periods or max((e["period"] for e in entries), default=0)
-    # Fixed periods, either the school's published ones or EduPage's. `paired`
-    # is set only where the school says how long a pair runs.
-    fixed = fixed_periods(cfg)
-    clock = fixed or period_times
-    paired = cfg.get("paired") if (cfg and fixed) else None
+    # EduPage's own period times, for a school with no hand-written plan.
+    clock = period_times
     shape = {}
     for day in {e["day"] for e in entries}:
         published = band_slots(cfg, cls["name"], day) if cfg else None
@@ -881,7 +939,7 @@ def extract(result, class_name, n_periods=None, cfg=None, period_times=None):
                     for k in range(e["duration"])}
             slots = [s for s in published
                      if any(s["period"] + k in used for k in range(s["periods"]))]
-            breaks = []
+            breaks = block_gaps(cfg, slots)
         else:
             blocks = {(e["startPeriod"], e["duration"]) for e in entries
                       if e["day"] == day and e["part"] == 0}
@@ -889,27 +947,24 @@ def extract(result, class_name, n_periods=None, cfg=None, period_times=None):
             # A school whose plan is published as blocks has no clock to run, so
             # a class its bands do not cover — the empty markers standing in for
             # a grade, say — goes without times.
-            if cfg and not cfg.get("bands") and not fixed:
+            if cfg and not cfg.get("bands"):
                 kinds = ["P" if s["periods"] > 1 else "L" for s in slots]
                 times, breaks = day_times(kinds, cfg)
                 for slot, time in zip(slots, times):
                     slot.update(time)
             elif clock:
-                # Periods at fixed times. A slot starts where its first period
-                # does. Where the school publishes how long a pair runs, that
-                # decides the end — a pair can finish before its second period
-                # would. Otherwise the slot runs to the end of its last period.
-                breaks = named_gaps(cfg, clock, slots) if fixed else []
+                # EduPage's own period clock. A slot runs from the start of its
+                # first period to the end of its last, so a pair is one box
+                # spanning both and the gap between them stays a gap.
+                breaks = []
                 for slot in slots:
                     first = clock.get(slot["period"])
                     last = clock.get(slot["period"] + slot["periods"] - 1, first)
                     if not first:
                         continue
                     at = _minutes(first[0])
-                    end = at + paired if (paired and slot["periods"] > 1) \
-                        else _minutes(last[1])
                     slot.update({"at": at, "start": _fmt_time(at),
-                                 "end": _fmt_time(end)})
+                                 "end": _fmt_time(_minutes(last[1]))})
             else:
                 breaks = []
         shape[day] = {"slots": slots, "breaks": breaks}
@@ -937,9 +992,7 @@ def extract(result, class_name, n_periods=None, cfg=None, period_times=None):
                 first = clock.get(e["startPeriod"])
                 last = clock.get(e["startPeriod"] + e["duration"] - 1, first)
                 if first:
-                    at = _minutes(first[0])
-                    end = at + paired if (paired and e["duration"] > 1) \
-                        else _minutes(last[1])
+                    at, end = _minutes(first[0]), _minutes(last[1])
                     e["startMin"], e["endMin"] = at, end
                     e["time"] = f"{_fmt_time(at)}–{_fmt_time(end)}"
             elif cfg and not cfg.get("bands") and e["slot"]:

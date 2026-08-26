@@ -34,8 +34,10 @@ const DATA = {
      from many, so both languages carry the duration words. */
   strings: {
     en: { classN: "class {0}", gap: "Break",
+          "link.unreadable": "This link carries settings the page cannot read.",
           "dur.hour": "{0} hour", "dur.hours": "{0} hours", "dur.min": "{0} min" },
     et: { classN: "{0}. klass", gap: "Paus",
+          "link.unreadable": "Leht ei oska seda linki lugeda.",
           "dur.hour": "{0} tund", "dur.hours": "{0} tundi", "dur.min": "{0} min" },
   },
   palette: { Matemaatika: { bg: "#83EC9B", fg: "#14171A" },
@@ -124,7 +126,7 @@ function element() {
 /* The two schools above are enough to exercise every path. A caller with the
    real thing — the golden test builds one from the checked-in fixtures — hands
    it in here instead, and gets the same stubbed browser around it. */
-export function load(dataOverride) {
+export function load(dataOverride, hash) {
   const data = element();
   data.textContent = JSON.stringify(dataOverride || DATA);
   /* One node per id, as a document has. Handing back a fresh stub each time
@@ -149,7 +151,11 @@ export function load(dataOverride) {
       createRange: () => ({ selectNodeContents() {}, selectNode() {} }),
       addEventListener() {},
     },
-    location: { href: "https://example.test/t/", pathname: "/t/", hash: "", search: "",
+    /* A link in the address, where a test asks for one. The page reads it
+       while it is still loading, so it has to be here before the file runs —
+       and that path is where two declaration-order faults have hidden. */
+    location: { href: "https://example.test/t/" + (hash || ""), pathname: "/t/",
+                hash: hash || "", search: "",
                 protocol: "https:", host: "example.test" },
     /* Window listeners are kept rather than dropped, so a test can fire one.
        beforeprint is the whole reason: it is how Cmd+P reaches the page. */

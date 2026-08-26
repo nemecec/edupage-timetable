@@ -448,6 +448,47 @@ class ArrivingWithSettings(InABrowser):
                     self.js("return {n: document.querySelectorAll('.ev').length};")["n"],
                     0, "a fragment we did not write took the page down")
 
+    def test_a_link_that_cannot_be_read_tells_the_reader(self):
+        """It drew the timetable as the page opens and said nothing, so the
+        reader believed that was what was shared. The usual cause is a link cut
+        short on its way through a chat window, which they can do something
+        about — but only if they know."""
+        self.visit(self.LINK[:-10])          # cut short, as a chat window does
+        shown = self.js(
+            "var note = document.getElementById('linkwarn');"
+            "return {hidden: note.hidden, said: note.textContent,"
+            "        boxes: document.querySelectorAll('.ev').length};")
+        self.assertFalse(shown["hidden"], "a broken link said nothing")
+        self.assertGreater(len(shown["said"]), 30)
+        self.assertGreater(shown["boxes"], 0, "and the page still draws")
+
+        # A link that reads says nothing, and neither does an anchor.
+        for quiet in (self.LINK, "#somewhere", ""):
+            with self.subTest(fragment=quiet[:20]):
+                self.visit(quiet)
+                self.assertTrue(
+                    self.js("return {h: document.getElementById('linkwarn').hidden};")["h"],
+                    "a good address was called broken")
+
+    def test_the_notice_is_not_printed(self):
+        """The sheet is the timetable, not a note about how the reader got
+        to it. Asked of the browser with print media in force, because a rule
+        inside `@media print` says nothing about the screen."""
+        self.visit(self.LINK[:-10])
+        on_screen = self.js(
+            "return {display: getComputedStyle("
+            "  document.getElementById('linkwarn')).display};")
+        self.assertNotEqual(on_screen["display"], "none",
+                            "the notice is invisible on screen too")
+        self.browser.call("Emulation.setEmulatedMedia", media="print")
+        try:
+            on_paper = self.js(
+                "return {display: getComputedStyle("
+                "  document.getElementById('linkwarn')).display};")
+        finally:
+            self.browser.call("Emulation.setEmulatedMedia", media="")
+        self.assertEqual(on_paper["display"], "none", "the notice would print")
+
 
 class WhenItBreaks(InABrowser):
     """The fault reporter, proved by breaking the page.

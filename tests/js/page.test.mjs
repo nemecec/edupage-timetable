@@ -981,6 +981,75 @@ test("a lunch the page works out is drawn as the meal it is", () => {
   run(`delete currentSchool().lg; state = defaults(); myOwn().events = [];`);
 });
 
+test("the page loads with a link in the address without falling over", () => {
+  /* Everything above runs the file with a bare address, so the code that reads
+     a link is skipped and a fault in it goes unseen. Two have: a constant read
+     before its own line, each time on this path, and each time silent because
+     something swallowed it. Loading the file with a link in the address is one
+     line and closes that off. */
+  const withLink = load(undefined, "#s=" + Buffer.from(
+    JSON.stringify({ showRoom: false, class: "8" })).toString("base64url"));
+  const ask = (expression) => JSON.parse(withLink(`JSON.stringify(${expression})`));
+  assert.equal(ask("state.showRoom"), false, "the link was not read");
+  assert.equal(ask("state.class"), "8");
+  assert.equal(ask("linkFault"), "", "a good link was called broken");
+  assert.ok(ask(`document.getElementById("grid").innerHTML.length`) > 0,
+            "the page drew nothing");
+
+  // And with one it cannot read, it still comes up, and says so.
+  const broken = load(undefined, "#z=this-is-not-gzip");
+  const said = (expression) => JSON.parse(broken(`JSON.stringify(${expression})`));
+  assert.ok(said("linkFault"), "an unreadable link said nothing");
+  assert.ok(said(`document.getElementById("grid").innerHTML.length`) > 0,
+            "an unreadable link took the page down");
+  assert.equal(said(`document.getElementById("linkwarn").hidden`), false,
+               "the reader was not told");
+  assert.ok(said(`document.getElementById("linkwarn").textContent`).length > 20);
+});
+
+test("a link we wrote and cannot read says so, and one we did not stays quiet", () => {
+  /* A link cut short on its way through a chat window drew the timetable as
+     the page opens and said nothing, so the reader believed that was what was
+     shared. An anchor somebody appended is a different thing and is not worth
+     a word. */
+  const fault = (hash) => json(
+    `(function () { location.hash = ${JSON.stringify(hash)};
+                    linkFault = ""; readUrl(); return linkFault; })()`);
+
+  // Ours, and readable: nothing to say.
+  const good = json(`(function () {
+    state = defaults(); state.showRoom = false;
+    return "#" + packSettings(JSON.stringify(slim(changedFromDefaults())));
+  })()`);
+  assert.equal(fault(good), "", "a good link was called broken");
+
+  // Ours, and cut short. Both ways of writing one.
+  assert.ok(fault(good.slice(0, good.length - 8)), "a truncated link said nothing");
+  assert.ok(fault("#z=this-is-not-gzip"), "unreadable gzip said nothing");
+  assert.ok(fault("#s=))))not base64(((("), "unreadable text said nothing");
+  assert.ok(fault("#s=" + json(`packSettings("[1,2,3]")`).slice(2)) ||
+            fault("#s=" + Buffer.from("[1,2,3]").toString("base64url")),
+            "a link carrying the wrong shape said nothing");
+
+  // Not ours: an anchor, or nothing at all.
+  assert.equal(fault(""), "", "an empty fragment was called broken");
+  assert.equal(fault("#somewhere"), "", "an anchor was called broken");
+  assert.equal(fault("#z"), "", "a fragment that is not ours was called broken");
+  run(`location.hash = ""; linkFault = ""; state = defaults();`);
+});
+
+test("a broken link is counted but never wakes anybody", () => {
+  /* A handful a week is normal, and none of them is a fault in this page. A
+     lot of them at once would say the links have grown too long for something
+     to carry, which is worth being able to see. */
+  const source = readFileSync(join(root, "page.js"), "utf8");
+  assert.match(source, /if \(what === "link"\) body\.opaque = 1;/,
+               "a cut-short link would ring the alarm");
+  const template = readFileSync(join(root, "deploy", "site.yaml"), "utf8");
+  assert.match(template, /\$\.opaque NOT EXISTS/,
+               "the alarm no longer skips what is marked opaque");
+});
+
 test("the fault reporter is armed before anything can break", () => {
   /* It used to be installed at the bottom of the file. A fault near the top
      then took the whole script down with it, including the line that would

@@ -100,6 +100,10 @@ STRINGS = {
         "customColors": "Colours of my own",
         "colLabel": "Label",
         "colShow": "Show",
+        "link.unreadable": "This link carries settings that the page cannot read. "
+                           "The timetable below is the one the page opens with. "
+                           "A link is often cut short when it is copied, so ask "
+                           "for the whole one again.",
         "colSubject": "Subject",
         "breaks.heading": "Longer breaks",
         "colBackground": "Background colour",
@@ -223,6 +227,10 @@ STRINGS = {
         "customColors": "Minu omad värvid",
         "colLabel": "Nimetus",
         "colShow": "Näita",
+        "link.unreadable": "See link sisaldab seadeid, mida leht ei oska lugeda. "
+                           "Allpool on tunniplaan sellisena, nagu leht avaneb. "
+                           "Kopeerimisel jääb link sageli poolikuks, seega küsi "
+                           "terve link uuesti.",
         "colSubject": "Õppeaine",
         "breaks.heading": "Pikemad vahetunnid",
         "colBackground": "Taustavärv",
@@ -1802,6 +1810,12 @@ PAGE = """<!DOCTYPE html>
            max-height: 190px; overflow: auto; white-space: pre-wrap;
            word-break: break-word; }
   .evwarn { font-size: 12px; color: #a33; margin-top: 5px; white-space: pre-line; }
+  /* Said once, at the top, and never printed: the sheet is the timetable, not
+     a note about how the reader arrived at it. */
+  .linkwarn { margin: 0 0 14px; padding: 9px 12px; border-radius: 8px;
+              border: 1px solid #f0c9c9; background: #fdf3f3; color: #8a2b2b;
+              font-size: 13px; line-height: 1.45; }
+  @media print { .linkwarn { display: none; } }
   details.panel { padding: 0; }
   details.panel > summary { padding: 12px 16px; cursor: pointer; font-size: 13px;
                             font-weight: 600; color: var(--muted); list-style: none;
@@ -1988,6 +2002,10 @@ PAGE = """<!DOCTYPE html>
 <!-- Only ever shown when the clipboard refused: the link has to be somewhere
      the reader can actually select it. -->
 <input id="shareBox" class="sharebox off" readonly aria-label="Link">
+
+<!-- A link this page wrote and cannot read. Above the filter, because it is
+     about the whole page rather than about any one control in it. -->
+<p class="linkwarn" id="linkwarn" role="status" hidden></p>
 
 <details class="panel" id="filterPanel" open>
   <summary data-i18n="filter"></summary>

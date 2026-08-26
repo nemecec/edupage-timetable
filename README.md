@@ -455,6 +455,29 @@ period grid, which needs no times.
   a printed sheet you can scan and one that falls back to printing the address.
   Small links stay uncompressed, because gzip's header makes them longer. The
   page reads both forms.
+
+  A link this page wrote and cannot read is said out loud, above the filter. It
+  used to be dropped in silence: the timetable came up as the page opens, and
+  the reader believed that was what was shared. The usual cause is a link cut
+  short on its way through a chat window, which the reader can do something
+  about — but only if they are told. A fragment that is not ours, an anchor
+  somebody appended, is not a fault and says nothing. The notice is not
+  printed: the sheet is the timetable, not a note about how the reader got to
+  it.
+
+  Each one is logged and none of them wakes anybody. A handful a week is
+  normal and none is a fault in this page. A lot of them at once would say the
+  links have grown too long for something to carry, which is worth being able
+  to see.
+
+  Which class the page opens on comes out of the school's own timetable, and it
+  moves when the school moves one. A link written when the class it was about
+  happened to be that class carried no class of its own — there was nothing to
+  write down — and from the day the default moved, it showed a different week
+  than the one that was shared. It still says which class it is about, in the
+  one per-class bag it carries, so a link that names exactly one class and does
+  not say which to show now shows that one. Every link written from now on
+  carries the class outright.
 - **Print…** lays the page out for A4 landscape and prints it. Printing is a
   moment, not a setting: the page returns to normal afterwards. The timeline
   scales itself to fill exactly one sheet. The scale is measured, not guessed.

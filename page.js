@@ -18,6 +18,16 @@ const KEY = "tt:" + DATA.edupage + ":" + DATA.year;
 const INJECTED = ["ethereum", "solana", "web3", "tronWeb", "keplr",
                   "__firefox__", "webkit.messageHandlers"];
 
+/* Why a link was not used, where there was one. Empty means there was nothing
+   wrong: either the fragment was ours and readable, or it was not ours at all.
+   An anchor somebody appended is not a fault and is not worth a word.
+
+   A link this page wrote and cannot read is a different thing. Left silent, it
+   drew the timetable as the page opens and let the reader believe that was
+   what was shared — and the usual cause is a link cut short on its way through
+   a chat window, which the reader can do something about. */
+let linkFault = "";
+
 /* One page, a handful of reports. A fault inside the drawing code fires on
    every repaint, and a reporter that reports its own reporting never stops.
 
@@ -301,6 +311,11 @@ function applyShared(shared, current) {
 
 {
   const shared = readUrl();
+  /* Logged, never alarmed on. A link cut short in a chat window is not a fault
+     in this page, and a handful a week is normal. Seeing them counted is still
+     worth having: a lot of them at once would say the links have grown too
+     long for something to carry. */
+  if (linkFault) report("link", new Error(linkFault));
   if (shared) {
     state = applyShared(shared, state);
     /* Keep what the link brought, so closing it and coming back later still
@@ -415,12 +430,19 @@ function shareUrl() {
 }
 
 function readUrl() {
+  const hash = location.hash.slice(1);
+  const ours = hash.startsWith("s=") || hash.startsWith("z=");
   try {
-    const text = unpackSettings(location.hash.slice(1));
+    const text = unpackSettings(hash);
     if (text === null) return null;
     const parsed = JSON.parse(text);
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : null;
-  } catch (e) { return null; }
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) return parsed;
+    linkFault = "not a set of settings";
+    return null;
+  } catch (e) {
+    if (ours) linkFault = String((e && e.message) || e).slice(0, 120);
+    return null;
+  }
 }
 
 const save = () => {
@@ -457,6 +479,15 @@ function renderSubtitle(school) {
   document.getElementById("subtitle").innerHTML =
     [esc(school.t), esc(school.v), link, say, stamp].filter(Boolean).join(" · ") +
     '<div class="unofficial">' + esc(t("footer.disclaimer")) + "</div>";
+}
+
+/* Said once, where the reader is looking, and in their own language — which
+   is why it is written at render rather than when the link was read. */
+function showLinkFault() {
+  const note = document.getElementById("linkwarn");
+  if (!note) return;
+  note.hidden = !linkFault;
+  note.textContent = linkFault ? t("link.unreadable") : "";
 }
 
 function renderFooter(school) {
@@ -1378,6 +1409,7 @@ function render() {
   syncPerClassInputs();
 
   renderFooter(school);
+  showLinkFault();
   document.title = displayTitle(school, cls) || t("classN", cls.n);
   renderSubtitle(school);
 
@@ -2421,6 +2453,9 @@ function report(what, error, at) {
     }
     /* Injected by something the reader installed, not by this page. */
     if (INJECTED.some(name => body.message.includes(name))) body.opaque = 1;
+    /* A link cut short on its way through a chat window is not a fault here.
+       Counted in the log, and never woken anybody up for. */
+    if (what === "link") body.opaque = 1;
     /* keepalive, because a fault often arrives as the reader leaves. */
     fetch(DATA.report, {
       method: "POST", keepalive: true, mode: "same-origin",

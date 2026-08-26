@@ -555,7 +555,14 @@ Some of these choices are not obvious:
   stripes are white at two strengths rather than white against black: the dark
   half of the old pair sat under the words, and a twenty-minute band writes its
   name and clock straight across them. Worst-case contrast goes from 6.3:1 to
-  7.3:1. The stripes are translucent, so the color underneath shows through. The default
+  7.3:1.
+
+  The two stripe colors are mixed in `page.js` against whatever color the band
+  carries, and written onto the box opaque. They used to be translucent white
+  in the stylesheet, and a printer rendered the translucent half as solid black
+  — on paper only, never in a PDF, which is the sort of thing a driver does
+  with alpha it would rather not composite. Nothing is left for a driver to
+  blend. The default
   color is a quiet grey rather than one from the subject palette. A break runs
   the full width of the day, so a palette color wins every glance, which is
   backwards for a gap. Each row says what that subject

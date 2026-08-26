@@ -502,6 +502,27 @@ function readable(bg) {
   const cr = (x, y) => (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
   return cr(L, dark) >= cr(L, 1) ? "#14171A" : "#FFFFFF";
 }
+/* The hatch that says "not a lesson", worked out here rather than left to CSS.
+   It was a gradient of translucent white over whatever color the band had, and
+   a printer turned the translucent part solid black — on paper only, never in
+   a PDF, which is the sort of thing a driver does with alpha it does not want
+   to composite. So the two stripe colors are mixed here and written out
+   opaque. Nothing is left for a driver to blend. */
+function hatch(bg) {
+  const paler = (amount) => {
+    let hex = String(bg || "").trim().replace("#", "");
+    if (/^[0-9a-f]{3,4}$/i.test(hex)) hex = hex.split("").map(c => c + c).join("");
+    const m = /^([0-9a-f]{6})/i.exec(hex);
+    const n = m ? parseInt(m[1], 16) : 0xEDEFF2;
+    const mix = (c) => Math.round(c + (255 - c) * amount);
+    return "#" + [n >> 16 & 255, n >> 8 & 255, n & 255]
+      .map(c => mix(c).toString(16).padStart(2, "0")).join("");
+  };
+  const light = paler(0.62), dark = paler(0.22);
+  return "background-image:repeating-linear-gradient(135deg," +
+    light + " 0 6px," + dark + " 6px 12px);";
+}
+
 /* What this subject is set to do — its own answer if it gave one, otherwise
    the one every subject follows. */
 function styleFor(subject) {
@@ -757,8 +778,8 @@ function renderTimeline(school, cls, shown, mine, scale) {
           : '<div class="what oneline">' + esc(label) +
             ' <span class="clock">' + esc(when) + "</span></div>";
         h += '<div class="ev brk" style="' + geom + "background-color:" + esc(col.bg) +
-             ";color:" + esc(col.fg) + '" title="' + esc(it.brk + "\n" + when) +
-             '">' + inside + "</div>";
+             ";color:" + esc(col.fg) + ";" + hatch(col.bg) + '" title="' +
+             esc(it.brk + "\n" + when) + '">' + inside + "</div>";
         continue;
       }
       const e = it.lesson, col = colorFor(e.s), info = subjectFacts()[e.s] || {};
@@ -1741,7 +1762,8 @@ const swatch = (cls, value) =>
    breaks, or a gap this page worked out. A sample that does not look like the
    thing it stands for is worth less than no sample. */
 function sampleBox(bg, fg, when, label, meta, kind) {
-  const style = "background-color:" + esc(bg) + ";color:" + esc(fg);
+  const style = "background-color:" + esc(bg) + ";color:" + esc(fg) +
+                (kind === "brk" ? ";" + hatch(bg) : "");
   const body = kind === "gap"
     ? '<div class="what">' + esc(label) + " · " + esc(durationText(45)) + "</div>"
     : '<div class="when">' + esc(when) + "</div>" +

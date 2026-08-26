@@ -1751,12 +1751,11 @@ PAGE = """<!DOCTYPE html>
   /* The stripes are translucent, so the color underneath shows through. A
      break is the reader's to recolor like any lesson, and the hatch is what
      still says "not a lesson". */
-  /* White at two strengths rather than white against black. The dark half of
-     the old pair sat under the words, and a twenty-minute band writes its
-     name and clock straight across them. */
-  .ev.brk { background-image: repeating-linear-gradient(135deg,
-              rgba(255,255,255,.62) 0 6px, rgba(255,255,255,.22) 6px 12px);
-            color: #6b7280; border-color: #e2e5ea; }
+  /* The hatch itself is written onto the box by hatch() in page.js, mixed
+     opaque against whatever color the band carries. It used to live here as
+     translucent white, and a printer turned the translucent part solid black
+     — on paper only, never in a PDF. */
+  .ev.brk { color: #6b7280; border-color: #e2e5ea; }
   .ev.brk .what { font-weight: 500; font-size: 11px; }
   /* A personal event is drawn over the timetable, so it needs to be above it —
      but it should not look like a different kind of thing. It is a lesson in

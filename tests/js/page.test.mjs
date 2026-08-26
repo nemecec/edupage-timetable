@@ -950,6 +950,29 @@ test("a sample looks like the thing it stands for", () => {
   assert.match(row("Break, and more"), /class="ev brk"/, "a break lost its hatch");
 });
 
+test("the hatch carries no transparency onto the paper", () => {
+  /* A printer turned the translucent half of the hatch into solid black — on
+     paper only, never in a PDF. So both stripes are mixed here and written
+     out opaque, and nothing is left for a driver to composite. */
+  const style = json(`hatch("#EDEFF2")`);
+  assert.ok(!/rgba|transparent/i.test(style), "alpha went out to the printer");
+  // The same two colors the translucent pair used to composite to.
+  assert.match(style, /#f8f9fa/i);
+  assert.match(style, /#f1f3f5/i);
+
+  // Mixed against whatever color the band carries, not against one fixed grey.
+  const dark = json(`hatch("#2e7d32")`);
+  assert.ok(!/rgba/i.test(dark));
+  assert.notEqual(dark, style, "a recolored band got the default hatch");
+
+  // A band drawn in the day says so on the box, not in the stylesheet.
+  run(`state = defaults(); state.school = "68"; state.class = "8";`);
+  const html = run(`renderTimeline(currentSchool(), currentClass(),
+                                   currentClass().e, [], 0)`);
+  const band = html.split('class="ev brk"')[1].slice(0, 400);
+  assert.match(band, /repeating-linear-gradient/, "the band has no hatch of its own");
+});
+
 test("a short break keeps its clock, on one line", () => {
   /* A twenty-minute band has room for one line. Stacked, the clock was simply
      dropped — and the times either side of a break are the one thing a reader

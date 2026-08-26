@@ -634,13 +634,16 @@ refusal. The other half of that first failure was the path pattern. CloudFront
 matches it without a leading slash, so `/report` matched nothing and the
 request fell through to the bucket.
 
-## Telling us something
+## Feedback
 
 The way in is a link in the subtitle, beside the source link — the line at the
-top where this page keeps its own business, and where somebody who is annoyed
-already is. A panel four down the settings stack is somewhere nobody scrolls to
-on purpose. The subtitle is rebuilt on every render, so the link is handled by
-one listener on the document rather than its own.
+top where this page keeps its own business. It opens the last panel on the
+page. The subtitle is rebuilt on every render, so the link is handled by one
+listener on the document rather than its own.
+
+It asks for anything, not only faults: what is missing, what is wrong, what can
+be better, or that it all works. Worded as a bug report it would collect only
+bug reports, and most of what a reader has to say is not one.
 
 The same endpoint takes a message from a reader. A panel on the page has a text
 box, a Send button, and a checkbox that attaches your settings. Tick it and the

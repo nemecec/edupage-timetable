@@ -154,12 +154,13 @@ STRINGS = {
                            "right corner."),
         "settings.printed": ("The bottom right corner of the printed sheet "
                              "carries the same address, as a QR code."),
-        "say": "Tell us what is wrong",
-        "say.link": "tell us",
-        "say.intro": ("Something missing, or wrong, or hard to read? Write it "
-                      "here. This is the one thing on this page that is sent "
-                      "to us, so write only what you want us to read."),
-        "say.placeholder": "What did you expect to see?",
+        "say": "Send us feedback",
+        "say.link": "feedback",
+        "say.intro": ("Anything you want to say about this page: what is "
+                      "missing, what is wrong, what can be better, or that it "
+                      "all works. This is the one thing on this page that is "
+                      "sent to us, so write only what you want us to read."),
+        "say.placeholder": "What would you like to say?",
         "say.withSettings": "Send my settings too, so we can see what you see",
         "say.shown": "This is what is sent with your message:",
         "say.send": "Send",
@@ -267,13 +268,14 @@ STRINGS = {
                            "kasutades üleval paremas nurgas asuvat nuppu {0}."),
         "settings.printed": ("Väljatrüki alumises paremas nurgas on sama "
                              "aadress QR-koodi kujul."),
-        "say": "Anna teada, mis on valesti",
-        "say.link": "anna teada",
-        "say.intro": ("Kas midagi on puudu, vale või raskesti loetav? Kirjuta "
-                      "siia. See on ainus asi sellel lehel, mis meile "
+        "say": "Saada tagasisidet",
+        "say.link": "tagasiside",
+        "say.intro": ("Kõik, mida soovid selle lehe kohta öelda: mis on puudu, "
+                      "mis on valesti, mida saaks paremaks teha, või et kõik "
+                      "toimib. See on ainus asi sellel lehel, mis meile "
                       "saadetakse, nii et kirjuta ainult seda, mida soovid, et "
                       "me loeksime."),
-        "say.placeholder": "Mida sa ootasid, et näed?",
+        "say.placeholder": "Mida soovid öelda?",
         "say.withSettings": "Saada ka minu seaded, et näeksime sedasama mida sina",
         "say.shown": "Koos sõnumiga saadetakse see:",
         "say.send": "Saada",
@@ -1854,6 +1856,23 @@ PAGE = """<!DOCTYPE html>
   </div>
 </details>
 
+<details class="panel" id="advancedPanel">
+  <summary data-i18n="advanced"></summary>
+  <div class="field" style="width:100%;margin-top:12px">
+    <label for="settingsText" data-i18n="backup"></label>
+    <p class="sub help" data-i18n="settings.label"></p>
+    <p class="sub help" id="shareNote"></p>
+    <p class="sub help" data-i18n="settings.printed"></p>
+    <textarea id="settingsText" rows="5" spellcheck="false"></textarea>
+  </div>
+  <div class="row" style="margin-top:8px;padding-top:0;border-top:none">
+    <button id="copySettings" data-i18n="settings.copy"></button>
+    <button id="applySettings" data-i18n="settings.apply"></button>
+    <button id="reset" data-i18n="reset"></button>
+    <span class="evwarn" id="settingsMsg"></span>
+  </div>
+</details>
+
 <details class="panel" id="sayPanel">
   <summary data-i18n="say"></summary>
   <div class="field" style="width:100%;margin-top:12px">
@@ -1871,23 +1890,6 @@ PAGE = """<!DOCTYPE html>
   <div class="row" style="margin-top:8px;padding-top:0;border-top:none">
     <button id="saySend" data-i18n="say.send"></button>
     <span class="evwarn" id="sayMsg"></span>
-  </div>
-</details>
-
-<details class="panel" id="advancedPanel">
-  <summary data-i18n="advanced"></summary>
-  <div class="field" style="width:100%;margin-top:12px">
-    <label for="settingsText" data-i18n="backup"></label>
-    <p class="sub help" data-i18n="settings.label"></p>
-    <p class="sub help" id="shareNote"></p>
-    <p class="sub help" data-i18n="settings.printed"></p>
-    <textarea id="settingsText" rows="5" spellcheck="false"></textarea>
-  </div>
-  <div class="row" style="margin-top:8px;padding-top:0;border-top:none">
-    <button id="copySettings" data-i18n="settings.copy"></button>
-    <button id="applySettings" data-i18n="settings.apply"></button>
-    <button id="reset" data-i18n="reset"></button>
-    <span class="evwarn" id="settingsMsg"></span>
   </div>
 </details>
 

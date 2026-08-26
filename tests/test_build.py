@@ -283,6 +283,16 @@ class WholePage(unittest.TestCase):
         names = {b["n"] for d in cls["h"].values() for b in d["b"]}
         self.assertEqual(names, {"Amps"})
 
+    def test_only_the_school_that_leaves_lunch_to_arithmetic_says_so(self):
+        """Three schools publish a lunch band. TäheTERA cannot: it is a
+        different hour for each language group, so it is whatever the reader's
+        own lessons leave — and the school says which holes count as one."""
+        window = {s["l"]: s["lg"] for s in self.data["schools"]}
+        self.assertEqual(window["TäheTERA"],
+                         {"n": "Lõuna", "a": 12 * 60, "z": 13 * 60, "m": 30})
+        for name in ("ProTERA ja TERA gümnaasium", "SädeTERA", "LõunaTERA"):
+            self.assertEqual(window[name], 0, name)
+
     def test_a_lesson_running_past_one_published_block_ends_where_it_ends(self):
         # LõunaTERA publishes blocks rather than lesson lengths. A lesson
         # covering two of them used to stop at the end of the first.

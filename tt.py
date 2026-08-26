@@ -552,6 +552,12 @@ BELLS = {
         "gapAtLeast": 10,
         "gapAfter": "10:15",
         "gapBefore": "10:40",
+        # Lunch here is whatever the language split leaves over, and that is a
+        # different hour for each group. So it is not a band across the class:
+        # it is the hole the reader's own lessons leave, and this says what to
+        # call one that falls in the middle of the day and is long enough to
+        # eat in. Fifteen minutes between two lessons is not lunch.
+        "lunchGap": {"name": "Lõuna", "from": "12:00", "to": "13:00", "least": 30},
         "bands": [
             {
                 "classes": ["5.a"],
@@ -1294,6 +1300,7 @@ def collect(client, year, only, verbose):
             "periods": meta["periods"],
             "showTimes": meta["showTimes"],
             "bells": bool(cfg) or bool(meta["periodTimes"]),
+            "lunchGap": (cfg or {}).get("lunchGap"),
             "classes": classes,
         })
         if verbose:
@@ -1539,6 +1546,14 @@ def compact(schools):
                   for p in school["periods"]],
             "ts": school["showTimes"],
             "b": school["bells"],
+            # When a hole in the middle of the day is lunch rather than a
+            # corridor, and what to call it. See block_gaps for the bands a
+            # school publishes; this is for the ones it leaves to arithmetic.
+            "lg": ({"n": school["lunchGap"]["name"],
+                    "a": _minutes(school["lunchGap"]["from"]),
+                    "z": _minutes(school["lunchGap"]["to"]),
+                    "m": school["lunchGap"]["least"]}
+                   if school.get("lunchGap") else 0),
             "c": [{
                 "n": cls["name"],
                 "v": [{"id": d["id"], "groups": d["groups"], "l": d["label"],

@@ -932,6 +932,25 @@ test("a gap long enough to plan around is drawn, and belongs to the reader", () 
   run(`state = defaults(); myOwn().events = [];`);
 });
 
+test("a hole in the middle of the day is called lunch where the school says so", () => {
+  /* Some schools leave lunch to arithmetic: it is whatever the lessons leave,
+     and at TäheTERA that is a different hour for each language group. The
+     school says which holes count, and the page says what they are. */
+  run(`state = defaults(); state.lang = "en"; applyStrings();
+       state.school = "68"; state.class = "8";
+       currentSchool().lg = { n: "Lõuna", a: 720, z: 780, m: 30 };`);
+  assert.equal(json(`gapKind(755, 805)`), "lunch", "a 50-minute midday hole");
+  assert.equal(json(`gapKind(725, 740)`), "gap", "15 minutes is not a meal");
+  assert.equal(json(`gapKind(600, 660)`), "gap", "an hour in the morning is not lunch");
+  assert.equal(json(`gapKind(790, 850)`), "gap", "an hour in the afternoon is not lunch");
+  assert.equal(json(`breakName("lunch")`), "Lõuna");
+
+  // A school that never says goes on saying gap, whatever the hour.
+  run(`delete currentSchool().lg;`);
+  assert.equal(json(`gapKind(755, 805)`), "gap");
+  assert.equal(json(`breakName("lunch")`), json(`t("gap")`));
+});
+
 test("a sample looks like the thing it stands for", () => {
   /* Three kinds of row, three ways the day draws them. A sample that shows a
      hatched two-line box for something the day draws as a dashed one-liner is

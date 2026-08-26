@@ -176,11 +176,18 @@ one group takes the language at **12.10-12.55** and eats after, the other eats
 first and takes it at **12.55-13.40**. Two rows, two periods in the timetable,
 so both are drawn.
 
-That is why this school has no named lunch, only the morning `Amps`. Lunch is a
+So this school publishes no lunch band, only the morning `Amps`. Lunch is a
 different hour for each group, and a band across the class would be wrong for
 half of it. It does not need one: a reader who picks their language group is
-left with their own lunch as the free time between that lesson and whatever
-sits either side, drawn by the same rule that finds any other gap.
+left with their own lunch as the free time around that lesson, found by the
+same rule that finds any other gap.
+
+A gap found that way says what it is. The school gives a window — midday, at
+least half an hour — and a hole that fits it is drawn as `Lõuna` rather than
+the generic `Paus`. Fifteen minutes between two lessons is not a meal, and a
+free hour in the morning is not one either. The two are listed separately in
+the subject table, so each can be renamed and recolored on its own, and a
+school that names no window goes on saying `Paus`.
 
 **LõunaTERA publishes fixed blocks instead.** There is no clock to run. Each
 block says which aSc periods it holds, and when it is:

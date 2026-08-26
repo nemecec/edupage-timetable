@@ -534,7 +534,18 @@ function styleFor(subject) {
    listed and recolored like any other break, because a reader who wants it in
    their own words should not have to care where it came from. */
 const GAP = "gap";
+/* The same thing at the middle of the day, where the school says a hole that
+   size is lunch. It is worked out the same way and drawn the same way; it just
+   knows what it is, and is listed and recolored on its own. */
+const LUNCH = "lunch";
 const GAP_COLOR = { bg: "#F7F8FA", fg: "#6b7280" };
+
+/* Which of the two a hole is. A school that never says goes on saying gap. */
+function gapKind(from, to) {
+  const rule = currentSchool().lg;
+  if (!rule) return GAP;
+  return (to - from >= rule.m && from >= rule.a && from < rule.z) ? LUNCH : GAP;
+}
 
 function colorFor(subject) {
   const own = (state.subjects || {})[subject] || {};
@@ -551,7 +562,8 @@ function colorFor(subject) {
     if (bg) return paint(bg);
   }
   const base = DATA.palette[subject] ||
-    (subject === GAP ? GAP_COLOR : { bg: "#EEEEEE", fg: "#14171A" });
+    (subject === GAP || subject === LUNCH ? GAP_COLOR
+                                          : { bg: "#EEEEEE", fg: "#14171A" });
   return own.textColor ? paint(base.bg) : base;
 }
 
@@ -691,7 +703,9 @@ function renderTimeline(school, cls, shown, mine, scale) {
       const holes = [];
       let reach = busy[0].z;
       for (const item of busy.slice(1)) {
-        if (item.a - reach >= 15) holes.push({ a: reach, z: item.a, gap: true });
+        if (item.a - reach >= 15) {
+          holes.push({ a: reach, z: item.a, gap: gapKind(reach, item.a) });
+        }
         reach = Math.max(reach, item.z);
       }
       for (const hole of holes) items.push(hole);
@@ -756,11 +770,11 @@ function renderTimeline(school, cls, shown, mine, scale) {
         /* Worked out here rather than published, so it says only the one thing
            the lessons around it do not: how long it is. The outline is what
            says it was inferred; the color is the reader's like any other. */
-        const col = colorFor(GAP), how = durationText(it.z - it.a);
-        h += '<div class="ev gap" data-subject="' + esc(GAP) + '" style="' + geom +
+        const kind = it.gap, col = colorFor(kind), how = durationText(it.z - it.a);
+        h += '<div class="ev gap" data-subject="' + esc(kind) + '" style="' + geom +
              "background-color:" + esc(col.bg) + ";color:" + esc(col.fg) +
-             '" title="' + esc(breakLabel(GAP) + " " + how) +
-             '"><div class="what">' + esc(breakLabel(GAP)) + " · " + esc(how) +
+             '" title="' + esc(breakLabel(kind) + " " + how) +
+             '"><div class="what">' + esc(breakLabel(kind)) + " · " + esc(how) +
              "</div></div>";
         continue;
       }
@@ -940,7 +954,9 @@ function detailLine(e) {
    other one is the school's word, cut at the first comma where the school
    wrote a list of what the break is for. */
 function breakName(name) {
-  return name === GAP ? t("gap") : String(name).split(",")[0];
+  if (name === GAP) return t("gap");
+  if (name === LUNCH) return (currentSchool().lg || {}).n || t("gap");
+  return String(name).split(",")[0];
 }
 
 function breakLabel(name) {
@@ -1305,7 +1321,7 @@ function renderLegend(shown) {
                   isBreak ? breakLabel(name)
                           : lessonTitle(example[name] || { s: name, S: 0 }),
                   (example[name] ? detailLine(example[name]) : []).join(" · "),
-                  name === GAP ? "gap" : (isBreak ? "brk" : "")) +
+                  name === GAP || name === LUNCH ? "gap" : (isBreak ? "brk" : "")) +
       "</tr>";
   }).join("");
 }
@@ -1333,7 +1349,7 @@ function refreshSubjectSample(name) {
                 isBreak ? breakLabel(name)
                         : lessonTitle(lesson || { s: name, S: 0 }),
                 (lesson ? detailLine(lesson) : []).join(" · "),
-                name === GAP ? "gap" : (isBreak ? "brk" : ""));
+                name === GAP || name === LUNCH ? "gap" : (isBreak ? "brk" : ""));
 }
 
 /* A name of the reader's own for one subject or break. Empty means "use the
@@ -1730,7 +1746,10 @@ function breaksOnScreen() {
   }
   /* And the one this page works out for itself, so it can be renamed and
      recolored like the rest. Last, because it is the least of them. */
-  if (state.showGaps) note(GAP, 24 * 60);
+  if (state.showGaps) {
+    note(GAP, 24 * 60);
+    if (currentSchool().lg) note(LUNCH, 24 * 60 + 1);
+  }
   return [...first.keys()].sort((p, q) => first.get(p) - first.get(q));
 }
 

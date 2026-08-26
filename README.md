@@ -141,9 +141,17 @@ derivable: the school decides, class by class and day by day. So the published
 sheet is copied in, 135 blocks of it, in the same shape LõunaTERA uses.
 
 A published plan lists lessons, not the spaces between them. Most of those
-spaces are a corridor and one of them is lunch, so a gap is named only when it
-is long enough **and** falls in the middle of the day. One Wednesday leaves 35
-minutes between the second lesson and the third, and that is a morning.
+spaces are a corridor and one is lunch, so both when and how long decide it.
+Length alone is not enough in either direction: one Tuesday's lunch is 20
+minutes, and one Wednesday leaves 35 minutes in the morning that is not lunch
+at all. A space counts when it runs 20 minutes or more and starts between 12.00
+and 12.45.
+
+A day can also stop before lunch, and then there is no second block to measure
+a space against — four Fridays do. Those children still eat, so the sheet's own
+heading is drawn instead, `Lõuna- ja loovaeg 12.00-13.00`, starting no earlier
+than the last lesson ends. Every one of the thirty class-days now carries
+exactly one lunch, which a test holds it to.
 
 Hand-copied data goes stale. The build already warns when a lesson lands where
 the plan has no slot — which is what a republished sheet looks like from here —

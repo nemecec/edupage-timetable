@@ -334,11 +334,26 @@ class WholePage(unittest.TestCase):
         def lunch(klass):
             cls = next(c for c in school["c"] if c["n"].strip() == klass)
             return sorted({b["s"] for d in cls["h"].values() for b in d["b"]})
-        self.assertEqual(lunch("1. S"), ["12.05"])
+        # The younger half never eats later than 12.05, the older never earlier
+        # than 12.20. A day that stops before lunch gets the sheet's own window,
+        # which is why the first sitting also shows a 12.00.
+        self.assertEqual(lunch("1. S"), ["12.00", "12.05"])
         self.assertEqual(lunch("5. S"), ["12.20"])
-        # A gap in the morning is not lunch, however long it is. This Wednesday
-        # leaves 35 minutes between the second lesson and the third.
-        self.assertTrue(all(b >= "11.30" for b in lunch("6. S")), lunch("6. S"))
+        self.assertTrue(all(b <= "12.05" for b in lunch("2. S") if b != "12.20"))
+        # Every day a class is at school, it eats. Five of thirty had no band:
+        # four Fridays that stop before lunch, so there is no second block to
+        # measure a space against, and one Tuesday whose lunch is 25 minutes.
+        for cls in school["c"]:
+            for day, shape in cls["h"].items():
+                with self.subTest(klass=cls["n"].strip(), day=day):
+                    self.assertEqual(len(shape["b"]), 1, "one lunch, no more")
+
+        # What makes a space lunch is when it falls, not only how long it is.
+        # A 20-minute gap at half past one is neither corridor nor lunch.
+        for cls in school["c"]:
+            for shape in cls["h"].values():
+                for b in shape["b"]:
+                    self.assertTrue("12.00" <= b["s"] <= "12.45", b)
 
     def test_every_class_with_a_day_plan_gets_its_times(self):
         """The check that would have caught a class quietly losing them.

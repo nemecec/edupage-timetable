@@ -392,8 +392,15 @@ BELLS = {
         # Between two blocks far enough apart to be a break rather than a
         # corridor. The sheet calls the middle of the day this.
         "gapName": "Lõuna + loovaeg",
-        "gapAtLeast": 30,
-        "gapAfter": "11:30",
+        # When a class eats is where its lessons stop, so the band is read off
+        # the plan. What makes a space lunch rather than a corridor is that it
+        # is at least twenty minutes and starts in the middle of the day.
+        "gapAtLeast": 20,
+        "gapAfter": "12:00",
+        "gapBefore": "12:45",
+        # And the sheet's own heading, for a day that stops before lunch and so
+        # leaves no space to read.
+        "lunch": ("12:00", "13:00"),
         "bands": [
             {
                 "classes": ["1. S"],
@@ -617,28 +624,39 @@ def _minutes(text):
 
 
 def block_gaps(cfg, slots):
-    """A named break between two published blocks far enough apart to be one.
+    """Lunch, on a day the school publishes as a list of blocks.
 
     A published plan lists lessons, not the spaces between them. Most of those
-    spaces are a corridor; one of them is lunch. The school says how long a
-    break has to be before it is worth drawing, and what to call it.
+    spaces are a corridor and one is lunch, so both when and how long decide
+    it: SädeTERA's corridors are five minutes and its lunches start between
+    12.05 and 12.35, but one Tuesday has a twenty-minute gap at half past one
+    that is neither.
+
+    A day can also stop before lunch, and then there is no second block to
+    measure a space against. Those children still eat, so the school's own
+    window is drawn instead, starting no earlier than the last lesson ends.
     """
     name = (cfg or {}).get("gapName")
-    if not name:
+    if not name or not slots:
         return []
     least = cfg.get("gapAtLeast", 30)
-    # Long enough is not sufficient. One SädeTERA Wednesday leaves 35 minutes
-    # between the second lesson and the third, and that is a morning, not a
-    # lunch. Lunch is the break in the middle of the day.
-    earliest = _minutes(cfg.get("gapAfter", "0:00"))
-    out = []
+    opens, closes = _minutes(cfg.get("gapAfter", "0:00")), _minutes(cfg.get("gapBefore", "23:59"))
     for i, (before, after) in enumerate(zip(slots, slots[1:]), start=1):
         at = _minutes(before["end"].replace(".", ":"))
         until = _minutes(after["start"].replace(".", ":"))
-        if until - at >= least and at >= earliest:
-            out.append({"after": i, "name": name, "at": at, "until": until,
-                        "start": before["end"], "end": after["start"]})
-    return out
+        if until - at >= least and opens <= at < closes:
+            return [{"after": i, "name": name, "at": at, "until": until,
+                     "start": before["end"], "end": after["start"]}]
+
+    window = (cfg or {}).get("lunch")
+    if not window:
+        return []
+    ends = _minutes(slots[-1]["end"].replace(".", ":"))
+    at, until = max(_minutes(window[0]), ends), _minutes(window[1])
+    if at >= until:
+        return []                     # the day runs through it, so nobody stops
+    return [{"after": len(slots), "name": name, "at": at, "until": until,
+             "start": _fmt_time(at), "end": _fmt_time(until)}]
 
 
 def band_slots(cfg, class_name, day):

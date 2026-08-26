@@ -874,9 +874,15 @@ class EduPage:
             # Written beside and moved into place: a run interrupted here leaves
             # the previous cache intact instead of a truncated file.
             tmp = f"{path}.{os.getpid()}.part"
-            with open(tmp, "w", encoding="utf-8") as fh:
-                json.dump(payload, fh, ensure_ascii=False)
-            os.replace(tmp, path)
+            try:
+                with open(tmp, "w", encoding="utf-8") as fh:
+                    json.dump(payload, fh, ensure_ascii=False)
+                os.replace(tmp, path)
+            finally:
+                # A run stopped between the write and the move would otherwise
+                # leave the part behind, and the cache directory is checked in.
+                if os.path.exists(tmp):
+                    os.unlink(tmp)
             self.log(f"cached -> {path}")
         return payload
 

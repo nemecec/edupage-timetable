@@ -100,6 +100,7 @@ STRINGS = {
         "customColors": "Colours of my own",
         "colLabel": "Label",
         "colShow": "Show",
+        "colNote": "Second line",
         "showQr": "QR code on the printout",
         "nameLastFirst": "Kask Mari",
         "nameFirstLast": "Mari Kask",
@@ -230,6 +231,7 @@ STRINGS = {
         "customColors": "Minu omad värvid",
         "colLabel": "Nimetus",
         "colShow": "Näita",
+        "colNote": "Teine rida",
         "showQr": "QR-kood väljatrükil",
         "nameLastFirst": "Kask Mari",
         "nameFirstLast": "Mari Kask",
@@ -2164,6 +2166,7 @@ PAGE = """<!DOCTYPE html>
           <th data-i18n="colStartTime"></th>
           <th data-i18n="colEndTime"></th>
           <th data-i18n="colLabel"></th>
+          <th data-i18n="colNote"></th>
           <th data-i18n="colBackground"></th>
           <th data-i18n="colTextColor"></th>
           <th data-i18n="colSample"></th>

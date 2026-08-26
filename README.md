@@ -422,9 +422,13 @@ period grid, which needs no times.
   without retyping the rest. Text typed into any row ticks that row. The result
   appears above the timetable as you type it, and that is what prints.
 - **My own events** — one row for each thing the school does not know about.
-  A row holds a weekday, a span, a label and its colors, in that order. When
-  comes first, then what. There is no syntax to get wrong and no color to spell. A row that cannot
-  be drawn says so underneath. An event on a day the school week does not cover,
+  A row holds a weekday, a span, a label, a second line and its colors, in that
+  order. When comes first, then what. The second line is where a lesson shows
+  its room and teacher, so a training session can show its hall and its coach.
+  It needs the same height to earn it — three tight lines come to 36 pixels,
+  and 46 is where all three fit — and a box too short for it drops the line
+  rather than cutting it. There is no syntax to get wrong and no color to
+  spell. A row that cannot be drawn says so underneath. An event on a day the school week does not cover,
   such as a Saturday rehearsal, adds that day.
 
   Each color is a small set of radio buttons, with the control beside the option
@@ -620,7 +624,8 @@ its own map of classes.
       "studentName": "Eva",
       "events": [
         { "day": "Mon", "startTime": "16:15", "endTime": "17:10",
-          "backgroundColor": "#F6F2C1", "label": "Tantsutrenn" }
+          "backgroundColor": "#F6F2C1", "label": "Tantsutrenn",
+          "note": "Stuudio 2 · Maret" }
       ]
     }
   }

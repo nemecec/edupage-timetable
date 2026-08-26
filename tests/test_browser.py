@@ -351,6 +351,51 @@ class TheControls(InABrowser):
         self.assertEqual(gone["count"], 0)
         self.assertEqual(gone["rows"], 0)
 
+    def test_an_event_can_carry_a_second_line(self):
+        """Where a lesson shows its room and teacher, a training session can
+        show its hall and its coach. It needs the height to earn it, the same
+        as a lesson does, so this is asked of a browser."""
+        self.show("68", "8")
+        drawn = self.js(
+            "myOwn().events = [{day: 'Mon', startTime: '16:00', endTime: '17:30',"
+            "  label: 'Ronimine', note: 'Saal 2 · Maret', backgroundColor: '#F6EAC1'}];"
+            "render();"
+            "var box = [].filter.call(document.querySelectorAll('.ev.mine'),"
+            "  function (e) { return e.textContent.indexOf('Ronimine') >= 0; })[0];"
+            "return {found: !!box,"
+            "        second: box && !!box.querySelector('.who2'),"
+            "        text: box && (box.querySelector('.who2') || {}).textContent,"
+            "        title: box && box.getAttribute('title')};")
+        self.assertTrue(drawn["found"], "the event was not drawn")
+        self.assertTrue(drawn["second"], "no second line on the box")
+        self.assertEqual(drawn["text"], "Saal 2 · Maret")
+        self.assertIn("Saal 2", drawn["title"], "the tooltip lost the second line")
+
+        # A short box has no room for it, and drops it rather than cutting it.
+        short = self.js(
+            "myOwn().events[0].endTime = '16:20'; render();"
+            "var box = [].filter.call(document.querySelectorAll('.ev.mine'),"
+            "  function (e) { return e.textContent.indexOf('Ronimine') >= 0; })[0];"
+            "return {second: box && !!box.querySelector('.who2'),"
+            "        clipped: box && box.scrollHeight > box.clientHeight + 1};")
+        self.assertFalse(short["second"], "a 20-minute box wrote three lines")
+        self.assertFalse(short["clipped"], "the box cut its own text")
+
+        # Through the row, and it survives being written down and read back.
+        typed = self.js(
+            "myOwn().events = []; render();"
+            "document.getElementById('evadd').dispatchEvent("
+            "  new MouseEvent('click', {bubbles: true}));"
+            "var el = document.querySelector('#evrows tr .evnote');"
+            "el.value = 'Saal 2';"
+            "el.dispatchEvent(new Event('input', {bubbles: true}));"
+            "return {note: myOwn().events[0].note,"
+            "        back: normalise(JSON.parse(JSON.stringify(slim(state))))"
+            "              .classes['68/8'].events[0].note};")
+        self.assertEqual(typed["note"], "Saal 2")
+        self.assertEqual(typed["back"], "Saal 2", "the second line was not saved")
+        self.js("myOwn().events = []; render(); return {};")
+
     def test_a_display_switch_reaches_the_drawing(self):
         self.show("68", "8")
         got = self.js(

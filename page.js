@@ -200,6 +200,9 @@ function oneEvent(raw) {
     backgroundColor: color(raw.backgroundColor) || "#DDDDDD",
     textColor: color(raw.textColor),      // empty means: work it out
     label: typeof raw.label === "string" ? raw.label : "",
+    /* The line under the name, where a lesson shows its room and teacher. A
+       training session has a hall and a coach too. */
+    note: typeof raw.note === "string" ? raw.note : "",
   };
 }
 
@@ -811,7 +814,8 @@ function readEvents(list) {
     }
     out.push({ day: day, a: a, z: z, fg: ev.textColor || null,
                bg: ev.backgroundColor || "#DDDDDD",
-               label: String(ev.label || ""), mine: true });
+               label: String(ev.label || ""), note: String(ev.note || ""),
+               mine: true });
   });
   return { events: out, errors: errors };
 }
@@ -1132,15 +1136,21 @@ function tornEdge(width, shift, amp) {
       const fg = eventFg(it);
       /* A twenty-minute box has room for one line, so the time joins the label
          rather than pushing it out of sight. */
-      const body = height >= 30
+      let body = height >= 30
         ? '<div class="when">' + esc(when) + "</div>" +
           '<div class="what">' + esc(it.label) + "</div>"
         : '<div class="what oneline"><span class="clock">' + esc(when) +
           "</span> " + esc(it.label) + "</div>";
+      /* A third line, where a lesson puts its room and teacher. Same height to
+         earn it: three tight lines come to 36, and 46 is where all three fit. */
+      if (height >= 46 && it.note) {
+        body += '<div class="who2">' + esc(it.note) + "</div>";
+      }
       h += '<div class="ev mine' + (height < 40 ? " tight" : "") +
            '" style="' + place(it, over ? 16 : 0) +
            "background-color:" + esc(it.bg) + ";color:" + esc(fg) + '" title="' +
-           esc(it.label + "\n" + when) + '">' + body + "</div>";
+           esc([it.label, it.note, when].filter(Boolean).join("\n")) + '">' +
+           body + "</div>";
     }
     h += "</div>";
   }
@@ -1349,6 +1359,7 @@ function mineCell(list) {
     '<div class="lesson" style="background-color:' + esc(ev.bg) + ";color:" + esc(eventFg(ev)) +
     (ev.fg ? ";border:1px solid " + esc(ev.fg) : "") +
     '"><div class="name">' + esc(ev.label) + "</div>" +
+    (ev.note ? '<div class="who">' + esc(ev.note) + "</div>" : "") +
     '<div class="time">' + esc(hhmm(ev.a) + "–" + hhmm(ev.z)) +
     "</div></div>").join("") + "</td>";
 }
@@ -2250,12 +2261,13 @@ function eventRow(ev, i) {
     '<td><input type="time" class="evstart" value="' + esc(ev.startTime) + '"></td>' +
     '<td><input type="time" class="evend" value="' + esc(ev.endTime) + '"></td>' +
     '<td><input type="text" class="evlabel" value="' + esc(ev.label) + '"></td>' +
+    '<td><input type="text" class="evnote" value="' + esc(ev.note || "") + '"></td>' +
     backgroundCell("e" + i, from ? "subject" : "own", ev.backgroundColor,
       [["subject", t("color.fromSubject"),
         '<select class="evlike"><option value=""></option>' + lessons + "</select>"]]) +
     textColorCell("e" + i, ev.textColor || readable(ev.backgroundColor), !ev.textColor) +
     previewCell(ev.backgroundColor, ev.textColor || readable(ev.backgroundColor),
-                sampleWhen(ev.startTime), ev.label, "") +
+                sampleWhen(ev.startTime), ev.label, ev.note || "") +
     '<td><button class="drop" type="button" title="' + esc(t("events.remove")) +
       '">\u00d7</button></td>' +
     "</tr>";
@@ -2281,7 +2293,7 @@ function editEvent(index, change) {
    a chain of branches: a control added to the row with no field behind it then
    shows up as a missing entry, not as a control that quietly does nothing. */
 const EVENT_FIELDS = { evday: "day", evstart: "startTime", evend: "endTime",
-                       evlabel: "label" };
+                       evlabel: "label", evnote: "note" };
 
 function eventFieldFor(className) {
   for (const name of String(className).split(/\s+/)) {
@@ -2295,7 +2307,8 @@ function rowChanged(tr, change) {
   const ev = editEvent(+tr.dataset.i, change);
   if (!ev) return;
   const fg = ev.textColor || readable(ev.backgroundColor);
-  refreshSample(tr, ev.backgroundColor, fg, sampleWhen(ev.startTime), ev.label, "");
+  refreshSample(tr, ev.backgroundColor, fg, sampleWhen(ev.startTime), ev.label,
+                ev.note || "");
   paint();
 }
 
@@ -2369,7 +2382,7 @@ evRows.addEventListener("click", (e) => {
 function renderEventsSoon() { setTimeout(() => { evRows.innerHTML = ""; renderEvents(); }, 0); }
 
 document.getElementById("evadd").addEventListener("click", () => {
-  myOwn().events.push({ day: "Mon", startTime: "16:00", endTime: "17:00",
+  myOwn().events.push({ day: "Mon", startTime: "16:00", endTime: "17:00", note: "",
                         backgroundColor: "#F6F2C1", textColor: "", label: "" });
   save(); renderEventsSoon(); paint();
 });

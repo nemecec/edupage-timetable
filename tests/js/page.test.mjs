@@ -12,13 +12,18 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const run = load();
 const json = (expression) => JSON.parse(run(`JSON.stringify(${expression})`));
 
-test("a saved event is read into a day, a span, a color and a label", () => {
+test("a saved event is read into a day, a span, a color and two lines", () => {
   const parsed = json(`readEvents([{day: "Mon", startTime: "17:15", endTime: "18:15",
                                     backgroundColor: "#F6F2C1", textColor: "",
-                                    label: "Dance training"}])`);
+                                    label: "Dance training", note: "Studio 2 · Maret"}])`);
   assert.equal(parsed.errors.length, 0);
   assert.deepEqual(parsed.events[0], { day: 0, a: 1035, z: 1095, fg: null,
-                                       bg: "#F6F2C1", label: "Dance training", mine: true });
+                                       bg: "#F6F2C1", label: "Dance training",
+                                       note: "Studio 2 · Maret", mine: true });
+  // The second line is the reader's to leave out.
+  const bare = json(`readEvents([{day: "Mon", startTime: "17:15", endTime: "18:15",
+                                  backgroundColor: "#F6F2C1", label: "Dance"}])`);
+  assert.equal(bare.events[0].note, "");
 });
 
 test("every weekday key lands on the right day", () => {
@@ -55,7 +60,7 @@ test("a saved event of the wrong shape is dropped on the way in", () => {
     json(`oneEvent({day: "Fri", startTime: "9:00", endTime: "10:00", backgroundColor: "nonsense",
                     textColor: "#123", label: 7})`),
     { day: "Fri", startTime: "09:00", endTime: "10:00", backgroundColor: "#DDDDDD",
-      textColor: "#123", label: "" });
+      textColor: "#123", label: "", note: "" });
 });
 
 test("only something that is plainly a color can be stored as one", () => {

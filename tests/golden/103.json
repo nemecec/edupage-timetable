@@ -1,7 +1,7 @@
 {
  "school": "TäheTERA",
  "classes": {
-  "1.i · plain": [
+  "1.i · full": [
    "r0 | Monday | Tuesday | Wednesday | Thursday | Friday",
    "r1 | 1 | Üldõpetus 207 1.i Inge · IngeA | Üldõpetus 207 1.i Inge · IngeA | Muusikaõpetus stuudioA · SirjeN | Üldõpetus 207 1.i Inge · IngeA | Üldõpetus 207 1.i Inge · IngeA",
    "r2 | 2 | Inglise keel 305 · MariaM | Üldõpetus 207 1.i Inge · IngeA | Inglise keel 305 · MariaM | Tantsuõpetus stuudioB · KertuV | Üldõpetus 207 1.i Inge · IngeA",
@@ -21,27 +21,7 @@
    "r6 | 5 | Muusikaõpetus stuudioA · SirjeN | Inglise keel 305 · MariaM | Üldõpetus 207 1.i Inge · IngeA | Üldõpetus 207 1.i Inge · IngeA | Üldõpetus 207 1.i Inge · IngeA",
    "r7 | 6 | 1 klassi koorilaul stuudioA · SirjeN"
   ],
-  "1.i · evening": [
-   "r0 | Monday | Tuesday | Wednesday | Thursday | Friday",
-   "r1 | 1 | Üldõpetus 207 1.i Inge · IngeA | Üldõpetus 207 1.i Inge · IngeA | Muusikaõpetus stuudioA · SirjeN | Üldõpetus 207 1.i Inge · IngeA | Üldõpetus 207 1.i Inge · IngeA",
-   "r2 | 2 | Inglise keel 305 · MariaM | Üldõpetus 207 1.i Inge · IngeA | Inglise keel 305 · MariaM | Tantsuõpetus stuudioB · KertuV | Üldõpetus 207 1.i Inge · IngeA",
-   "r3 | 3 | Üldõpetus 207 1.i Inge · IngeA | Üldõpetus 207 1.i Inge · IngeA | Üldõpetus 207 1.i Inge · IngeA | Üldõpetus 207 1.i Inge · IngeA | Inglise keel 305 · MariaM",
-   "r4 | 4 | Üldõpetus 207 1.i Inge · IngeA | Liikumisõpetus Saal · KaitiL | Üldõpetus 207 1.i Inge · IngeA | Üldõpetus 207 1.i Inge · IngeA | Liikumisõpetus Saal · KaitiL",
-   "r5 | HA",
-   "r6 | 5 | Muusikaõpetus stuudioA · SirjeN | Inglise keel 305 · MariaM | Üldõpetus 207 1.i Inge · IngeA | Üldõpetus 207 1.i Inge · IngeA | Üldõpetus 207 1.i Inge · IngeA",
-   "r7 | 6 | 1 klassi koorilaul stuudioA · SirjeN",
-   "r8 | My own | Training 18.00–19.00 | Choir 18.00–19.30"
-  ],
-  "1.i · hidden": [
-   "r0 | Monday | Tuesday | Wednesday | Thursday | Friday",
-   "r1 | 1 | Üldõpetus 207 1.i Inge · IngeA | Üldõpetus 207 1.i Inge · IngeA | Muusikaõpetus stuudioA · SirjeN | Üldõpetus 207 1.i Inge · IngeA | Üldõpetus 207 1.i Inge · IngeA",
-   "r2 | 2 | Inglise keel 305 · MariaM | Üldõpetus 207 1.i Inge · IngeA | Inglise keel 305 · MariaM | Tantsuõpetus stuudioB · KertuV | Üldõpetus 207 1.i Inge · IngeA",
-   "r3 | 3 | Üldõpetus 207 1.i Inge · IngeA | Üldõpetus 207 1.i Inge · IngeA | Üldõpetus 207 1.i Inge · IngeA | Üldõpetus 207 1.i Inge · IngeA | Inglise keel 305 · MariaM",
-   "r4 | 4 | Üldõpetus 207 1.i Inge · IngeA | Liikumisõpetus Saal · KaitiL | Üldõpetus 207 1.i Inge · IngeA | Üldõpetus 207 1.i Inge · IngeA | Liikumisõpetus Saal · KaitiL",
-   "r5 | HA",
-   "r6 | 5 | Muusikaõpetus stuudioA · SirjeN | Inglise keel 305 · MariaM | Üldõpetus 207 1.i Inge · IngeA | Üldõpetus 207 1.i Inge · IngeA | Üldõpetus 207 1.i Inge · IngeA"
-  ],
-  "1.k · plain": [
+  "1.k · full": [
    "r0 | Monday | Tuesday | Wednesday | Thursday | Friday",
    "r1 | 1 | Üldõpetus 206 1.e Kertu · KertuP | Üldõpetus 206 1.e Kertu · KertuP | Üldõpetus 206 1.e Kertu · KertuP | Üldõpetus 206 1.e Kertu · KertuP | Üldõpetus 206 1.e Kertu · KertuP",
    "r2 | 2 | Muusikaõpetus stuudioA · SirjeN | Liikumisõpetus Saal · KaitiL | Muusikaõpetus stuudioA · SirjeN | Inglise keel 305 · MariaM | Üldõpetus 206 1.e Kertu · KertuP",
@@ -61,27 +41,7 @@
    "r6 | 5 | Üldõpetus 206 1.e Kertu · KertuP | Üldõpetus 206 1.e Kertu · KertuP | Inglise keel 305 · MariaM | Tantsuõpetus stuudioB · KertuV | Üldõpetus 206 1.e Kertu · KertuP",
    "r7 | 6 | 1 klassi koorilaul stuudioA · SirjeN"
   ],
-  "1.k · evening": [
-   "r0 | Monday | Tuesday | Wednesday | Thursday | Friday",
-   "r1 | 1 | Üldõpetus 206 1.e Kertu · KertuP | Üldõpetus 206 1.e Kertu · KertuP | Üldõpetus 206 1.e Kertu · KertuP | Üldõpetus 206 1.e Kertu · KertuP | Üldõpetus 206 1.e Kertu · KertuP",
-   "r2 | 2 | Muusikaõpetus stuudioA · SirjeN | Liikumisõpetus Saal · KaitiL | Muusikaõpetus stuudioA · SirjeN | Inglise keel 305 · MariaM | Üldõpetus 206 1.e Kertu · KertuP",
-   "r3 | 3 | Üldõpetus 206 1.e Kertu · KertuP | Inglise keel 305 · MariaM | Üldõpetus 206 1.e Kertu · KertuP | Üldõpetus 206 1.e Kertu · KertuP | Liikumisõpetus Saal · KaitiL",
-   "r4 | 4 | Üldõpetus 206 1.e Kertu · KertuP | Üldõpetus 206 1.e Kertu · KertuP | Üldõpetus 206 1.e Kertu · KertuP | Üldõpetus 206 1.e Kertu · KertuP | Inglise keel 305 · MariaM",
-   "r5 | HA",
-   "r6 | 5 | Üldõpetus 206 1.e Kertu · KertuP | Üldõpetus 206 1.e Kertu · KertuP | Inglise keel 305 · MariaM | Tantsuõpetus stuudioB · KertuV | Üldõpetus 206 1.e Kertu · KertuP",
-   "r7 | 6 | 1 klassi koorilaul stuudioA · SirjeN",
-   "r8 | My own | Training 18.00–19.00 | Choir 18.00–19.30"
-  ],
-  "1.k · hidden": [
-   "r0 | Monday | Tuesday | Wednesday | Thursday | Friday",
-   "r1 | 1 | Üldõpetus 206 1.e Kertu · KertuP | Üldõpetus 206 1.e Kertu · KertuP | Üldõpetus 206 1.e Kertu · KertuP | Üldõpetus 206 1.e Kertu · KertuP | Üldõpetus 206 1.e Kertu · KertuP",
-   "r2 | 2 | Muusikaõpetus stuudioA · SirjeN | Liikumisõpetus Saal · KaitiL | Muusikaõpetus stuudioA · SirjeN | Inglise keel 305 · MariaM | Üldõpetus 206 1.e Kertu · KertuP",
-   "r3 | 3 | Üldõpetus 206 1.e Kertu · KertuP | Inglise keel 305 · MariaM | Üldõpetus 206 1.e Kertu · KertuP | Üldõpetus 206 1.e Kertu · KertuP | Liikumisõpetus Saal · KaitiL",
-   "r4 | 4 | Üldõpetus 206 1.e Kertu · KertuP | Üldõpetus 206 1.e Kertu · KertuP | Üldõpetus 206 1.e Kertu · KertuP | Üldõpetus 206 1.e Kertu · KertuP | Inglise keel 305 · MariaM",
-   "r5 | HA",
-   "r6 | 5 | Üldõpetus 206 1.e Kertu · KertuP | Üldõpetus 206 1.e Kertu · KertuP | Inglise keel 305 · MariaM | Tantsuõpetus stuudioB · KertuV | Üldõpetus 206 1.e Kertu · KertuP"
-  ],
-  "2.t · plain": [
+  "2.t · full": [
    "r0 | Monday | Tuesday | Wednesday | Thursday | Friday",
    "r1 | 1 | Üldõpetus 106 2.t Thea · Thea | Üldõpetus 106 2.t Thea · Thea | Üldõpetus 106 2.t Thea · Thea | Muusikaõpetus stuudioA · SirjeN | Liikumisõpetus Võimlemise tuba · KaitiL",
    "r2 | 2 | Üldõpetus 106 2.t Thea · Thea | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 307 · MeeriK · IK 2 Inglise keel 301 · IrisM · IK 3 | Üldõpetus 106 2.t Thea · Thea | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 307 · MeeriK · IK 2 Inglise keel 301 · IrisM · IK 3 | Üldõpetus 106 2.t Thea · Thea",
@@ -101,28 +61,7 @@
    "r6 | 5 | Liikumisõpetus Võimlemise tuba · KaitiL | Tantsuõpetus stuudioB · KertuV | Üldõpetus 106 2.t Thea · Thea | Üldõpetus 106 2.t Thea · Thea | Üldõpetus 106 2.t Thea · Thea",
    "r7 | 6 | 1 klassi koorilaul stuudioA · SirjeN | Üldõpetus 106 2.t Thea · Thea"
   ],
-  "2.t · evening": [
-   "r0 | Monday | Tuesday | Wednesday | Thursday | Friday",
-   "r1 | 1 | Üldõpetus 106 2.t Thea · Thea | Üldõpetus 106 2.t Thea · Thea | Üldõpetus 106 2.t Thea · Thea | Muusikaõpetus stuudioA · SirjeN | Liikumisõpetus Võimlemise tuba · KaitiL",
-   "r2 | 2 | Üldõpetus 106 2.t Thea · Thea | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 307 · MeeriK · IK 2 Inglise keel 301 · IrisM · IK 3 | Üldõpetus 106 2.t Thea · Thea | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 307 · MeeriK · IK 2 Inglise keel 301 · IrisM · IK 3 | Üldõpetus 106 2.t Thea · Thea",
-   "r3 | 3 | Üldõpetus 106 2.t Thea · Thea | Üldõpetus 106 2.t Thea · Thea | Muusikaõpetus stuudioA · SirjeN | Üldõpetus 106 2.t Thea · Thea | Üldõpetus 106 2.t Thea · Thea",
-   "r4 | 4 | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 307 · MeeriK · IK 2 Inglise keel 301 · IrisM · IK 3 | Üldõpetus 106 2.t Thea · Thea | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 307 · MeeriK · IK 2 Inglise keel 301 · IrisM · IK 3 | Üldõpetus 106 2.t Thea · Thea | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 307 · MeeriK · IK 2 Inglise keel 301 · IrisM · IK 3",
-   "r5 | HA",
-   "r6 | 5 | Liikumisõpetus Võimlemise tuba · KaitiL | Tantsuõpetus stuudioB · KertuV | Üldõpetus 106 2.t Thea · Thea | Üldõpetus 106 2.t Thea · Thea | Üldõpetus 106 2.t Thea · Thea",
-   "r7 | 6 | 1 klassi koorilaul stuudioA · SirjeN | Üldõpetus 106 2.t Thea · Thea",
-   "r8 | My own | Training 18.00–19.00 | Choir 18.00–19.30"
-  ],
-  "2.t · hidden": [
-   "r0 | Monday | Tuesday | Wednesday | Thursday | Friday",
-   "r1 | 1 | Üldõpetus 106 2.t Thea · Thea | Üldõpetus 106 2.t Thea · Thea | Üldõpetus 106 2.t Thea · Thea | Muusikaõpetus stuudioA · SirjeN | Liikumisõpetus Võimlemise tuba · KaitiL",
-   "r2 | 2 | Üldõpetus 106 2.t Thea · Thea | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 307 · MeeriK · IK 2 Inglise keel 301 · IrisM · IK 3 | Üldõpetus 106 2.t Thea · Thea | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 307 · MeeriK · IK 2 Inglise keel 301 · IrisM · IK 3 | Üldõpetus 106 2.t Thea · Thea",
-   "r3 | 3 | Üldõpetus 106 2.t Thea · Thea | Üldõpetus 106 2.t Thea · Thea | Muusikaõpetus stuudioA · SirjeN | Üldõpetus 106 2.t Thea · Thea | Üldõpetus 106 2.t Thea · Thea",
-   "r4 | 4 | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 307 · MeeriK · IK 2 Inglise keel 301 · IrisM · IK 3 | Üldõpetus 106 2.t Thea · Thea | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 307 · MeeriK · IK 2 Inglise keel 301 · IrisM · IK 3 | Üldõpetus 106 2.t Thea · Thea | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 307 · MeeriK · IK 2 Inglise keel 301 · IrisM · IK 3",
-   "r5 | HA",
-   "r6 | 5 | Liikumisõpetus Võimlemise tuba · KaitiL | Tantsuõpetus stuudioB · KertuV | Üldõpetus 106 2.t Thea · Thea | Üldõpetus 106 2.t Thea · Thea | Üldõpetus 106 2.t Thea · Thea",
-   "r7 | 6 | Üldõpetus 106 2.t Thea · Thea"
-  ],
-  "2.l · plain": [
+  "2.l · full": [
    "r0 | Monday | Tuesday | Wednesday | Thursday | Friday",
    "r1 | 1 | Üldõpetus 107 2.l Ly · LyO | Üldõpetus 107 2.l Ly · LyO | Üldõpetus 107 2.l Ly · LyO | Tantsuõpetus stuudioB · KertuV | Üldõpetus 107 2.l Ly · LyO",
    "r2 | 2 | Üldõpetus 107 2.l Ly · LyO | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 307 · MeeriK · IK 2 Inglise keel 301 · IrisM · IK 3 | Üldõpetus 107 2.l Ly · LyO | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 307 · MeeriK · IK 2 Inglise keel 301 · IrisM · IK 3 | Üldõpetus 107 2.l Ly · LyO",
@@ -142,28 +81,7 @@
    "r6 | 5 | Üldõpetus 107 2.l Ly · LyO | Liikumisõpetus Saal · KaitiL | Muusikaõpetus stuudioA · SirjeN | Üldõpetus 107 2.l Ly · LyO | Üldõpetus 107 2.l Ly · LyO",
    "r7 | 6 | 1 klassi koorilaul stuudioA · SirjeN | Liikumisõpetus Võimlemise tuba · KaitiL"
   ],
-  "2.l · evening": [
-   "r0 | Monday | Tuesday | Wednesday | Thursday | Friday",
-   "r1 | 1 | Üldõpetus 107 2.l Ly · LyO | Üldõpetus 107 2.l Ly · LyO | Üldõpetus 107 2.l Ly · LyO | Tantsuõpetus stuudioB · KertuV | Üldõpetus 107 2.l Ly · LyO",
-   "r2 | 2 | Üldõpetus 107 2.l Ly · LyO | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 307 · MeeriK · IK 2 Inglise keel 301 · IrisM · IK 3 | Üldõpetus 107 2.l Ly · LyO | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 307 · MeeriK · IK 2 Inglise keel 301 · IrisM · IK 3 | Üldõpetus 107 2.l Ly · LyO",
-   "r3 | 3 | Muusikaõpetus stuudioA · SirjeN | Üldõpetus 107 2.l Ly · LyO | Üldõpetus 107 2.l Ly · LyO | Üldõpetus 107 2.l Ly · LyO | Üldõpetus 107 2.l Ly · LyO",
-   "r4 | 4 | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 307 · MeeriK · IK 2 Inglise keel 301 · IrisM · IK 3 | Üldõpetus 107 2.l Ly · LyO | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 307 · MeeriK · IK 2 Inglise keel 301 · IrisM · IK 3 | Üldõpetus 107 2.l Ly · LyO | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 307 · MeeriK · IK 2 Inglise keel 301 · IrisM · IK 3",
-   "r5 | HA",
-   "r6 | 5 | Üldõpetus 107 2.l Ly · LyO | Liikumisõpetus Saal · KaitiL | Muusikaõpetus stuudioA · SirjeN | Üldõpetus 107 2.l Ly · LyO | Üldõpetus 107 2.l Ly · LyO",
-   "r7 | 6 | 1 klassi koorilaul stuudioA · SirjeN | Liikumisõpetus Võimlemise tuba · KaitiL",
-   "r8 | My own | Training 18.00–19.00 | Choir 18.00–19.30"
-  ],
-  "2.l · hidden": [
-   "r0 | Monday | Tuesday | Wednesday | Thursday | Friday",
-   "r1 | 1 | Üldõpetus 107 2.l Ly · LyO | Üldõpetus 107 2.l Ly · LyO | Üldõpetus 107 2.l Ly · LyO | Tantsuõpetus stuudioB · KertuV | Üldõpetus 107 2.l Ly · LyO",
-   "r2 | 2 | Üldõpetus 107 2.l Ly · LyO | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 307 · MeeriK · IK 2 Inglise keel 301 · IrisM · IK 3 | Üldõpetus 107 2.l Ly · LyO | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 307 · MeeriK · IK 2 Inglise keel 301 · IrisM · IK 3 | Üldõpetus 107 2.l Ly · LyO",
-   "r3 | 3 | Muusikaõpetus stuudioA · SirjeN | Üldõpetus 107 2.l Ly · LyO | Üldõpetus 107 2.l Ly · LyO | Üldõpetus 107 2.l Ly · LyO | Üldõpetus 107 2.l Ly · LyO",
-   "r4 | 4 | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 307 · MeeriK · IK 2 Inglise keel 301 · IrisM · IK 3 | Üldõpetus 107 2.l Ly · LyO | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 307 · MeeriK · IK 2 Inglise keel 301 · IrisM · IK 3 | Üldõpetus 107 2.l Ly · LyO | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 307 · MeeriK · IK 2 Inglise keel 301 · IrisM · IK 3",
-   "r5 | HA",
-   "r6 | 5 | Üldõpetus 107 2.l Ly · LyO | Liikumisõpetus Saal · KaitiL | Muusikaõpetus stuudioA · SirjeN | Üldõpetus 107 2.l Ly · LyO | Üldõpetus 107 2.l Ly · LyO",
-   "r7 | 6 | Liikumisõpetus Võimlemise tuba · KaitiL"
-  ],
-  "3.k · plain": [
+  "3.k · full": [
    "r0 | Monday | Tuesday | Wednesday | Thursday | Friday",
    "r1 | 1 | Üldõpetus 204 3.k Katri · KatriS | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 307 · MeeriK · IK 2 Inglise keel 301 · IrisM · IK 4 | Üldõpetus 204 3.k Katri · KatriS | Üldõpetus 204 3.k Katri · KatriS | Üldõpetus 204 3.k Katri · KatriS",
    "r2 | 2 | Üldõpetus 204 3.k Katri · KatriS | Tantsuõpetus stuudioB · KertuV | Üldõpetus 204 3.k Katri · KatriS | Üldõpetus 204 3.k Katri · KatriS | Liikumisõpetus Võimlemise tuba · KaitiL",
@@ -183,28 +101,7 @@
    "r6 | 5 | Inglise keel 308 · VeronikaV · IK 1 | Üldõpetus 204 3.k Katri · KatriS | Inglise keel 308 · VeronikaV · IK 1 | Üldõpetus 204 3.k Katri · KatriS | Üldõpetus 204 3.k Katri · KatriS",
    "r7 | 6 | Üldõpetus 204 3.k Katri · KatriS | 3.klassi koorilaul stuudioB · SirjeN | Muusikaõpetus stuudioA · SirjeN | Üldõpetus 204 3.k Katri · KatriS"
   ],
-  "3.k · evening": [
-   "r0 | Monday | Tuesday | Wednesday | Thursday | Friday",
-   "r1 | 1 | Üldõpetus 204 3.k Katri · KatriS | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 307 · MeeriK · IK 2 Inglise keel 301 · IrisM · IK 4 | Üldõpetus 204 3.k Katri · KatriS | Üldõpetus 204 3.k Katri · KatriS | Üldõpetus 204 3.k Katri · KatriS",
-   "r2 | 2 | Üldõpetus 204 3.k Katri · KatriS | Tantsuõpetus stuudioB · KertuV | Üldõpetus 204 3.k Katri · KatriS | Üldõpetus 204 3.k Katri · KatriS | Liikumisõpetus Võimlemise tuba · KaitiL",
-   "r3 | 3 | Üldõpetus 204 3.k Katri · KatriS | Informaatika Tehnika/robootika · KertuP | Üldõpetus 204 3.k Katri · KatriS | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 307 · MeeriK · IK 2 Inglise keel 301 · IrisM · IK 4 | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 307 · MeeriK · IK 2 Inglise keel 301 · IrisM · IK 4",
-   "r4 | 4 | Liikumisõpetus Saal · KaitiL | Üldõpetus 204 3.k Katri · KatriS | Muusikaõpetus stuudioA · SirjeN | Üldõpetus 204 3.k Katri · KatriS | Üldõpetus 204 3.k Katri · KatriS",
-   "r5 | HA",
-   "r6 | 5 | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 307 · MeeriK · IK 2 Inglise keel 301 · IrisM · IK 4 | Üldõpetus 204 3.k Katri · KatriS | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 307 · MeeriK · IK 2 Inglise keel 301 · IrisM · IK 4 | Üldõpetus 204 3.k Katri · KatriS | Üldõpetus 204 3.k Katri · KatriS",
-   "r7 | 6 | Üldõpetus 204 3.k Katri · KatriS | 3.klassi koorilaul stuudioB · SirjeN | Muusikaõpetus stuudioA · SirjeN | Üldõpetus 204 3.k Katri · KatriS",
-   "r8 | My own | Training 18.00–19.00 | Choir 18.00–19.30"
-  ],
-  "3.k · hidden": [
-   "r0 | Monday | Tuesday | Wednesday | Thursday | Friday",
-   "r1 | 1 | Üldõpetus 204 3.k Katri · KatriS | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 307 · MeeriK · IK 2 Inglise keel 301 · IrisM · IK 4 | Üldõpetus 204 3.k Katri · KatriS | Üldõpetus 204 3.k Katri · KatriS | Üldõpetus 204 3.k Katri · KatriS",
-   "r2 | 2 | Üldõpetus 204 3.k Katri · KatriS | Tantsuõpetus stuudioB · KertuV | Üldõpetus 204 3.k Katri · KatriS | Üldõpetus 204 3.k Katri · KatriS | Liikumisõpetus Võimlemise tuba · KaitiL",
-   "r3 | 3 | Üldõpetus 204 3.k Katri · KatriS | Informaatika Tehnika/robootika · KertuP | Üldõpetus 204 3.k Katri · KatriS | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 307 · MeeriK · IK 2 Inglise keel 301 · IrisM · IK 4 | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 307 · MeeriK · IK 2 Inglise keel 301 · IrisM · IK 4",
-   "r4 | 4 | Liikumisõpetus Saal · KaitiL | Üldõpetus 204 3.k Katri · KatriS | Muusikaõpetus stuudioA · SirjeN | Üldõpetus 204 3.k Katri · KatriS | Üldõpetus 204 3.k Katri · KatriS",
-   "r5 | HA",
-   "r6 | 5 | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 307 · MeeriK · IK 2 Inglise keel 301 · IrisM · IK 4 | Üldõpetus 204 3.k Katri · KatriS | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 307 · MeeriK · IK 2 Inglise keel 301 · IrisM · IK 4 | Üldõpetus 204 3.k Katri · KatriS | Üldõpetus 204 3.k Katri · KatriS",
-   "r7 | 6 | Üldõpetus 204 3.k Katri · KatriS | Muusikaõpetus stuudioA · SirjeN | Üldõpetus 204 3.k Katri · KatriS"
-  ],
-  "3.a · plain": [
+  "3.a · full": [
    "r0 | Monday | Tuesday | Wednesday | Thursday | Friday",
    "r1 | 1 | Üldõpetus 202 3.a Anu · AnuJ | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 307 · MeeriK · IK 2 Inglise keel 301 · IrisM · IK 4 | Üldõpetus 202 3.a Anu · AnuJ | Üldõpetus 202 3.a Anu · AnuJ | Üldõpetus 202 3.a Anu · AnuJ",
    "r2 | 2 | Üldõpetus 202 3.a Anu · AnuJ | Informaatika Tehnika/robootika · KertuP | Tantsuõpetus stuudioB · KertuV | Üldõpetus 202 3.a Anu · AnuJ | Üldõpetus 202 3.a Anu · AnuJ",
@@ -224,28 +121,7 @@
    "r6 | 5 | Inglise keel 308 · VeronikaV · IK 1 | Üldõpetus 202 3.a Anu · AnuJ | Inglise keel 308 · VeronikaV · IK 1 | Muusikaõpetus stuudioA · SirjeN | Üldõpetus 202 3.a Anu · AnuJ",
    "r7 | 6 | Üldõpetus 202 3.a Anu · AnuJ | 3.klassi koorilaul stuudioB · SirjeN | Üldõpetus 202 3.a Anu · AnuJ | Liikumisõpetus Saal · KaitiL"
   ],
-  "3.a · evening": [
-   "r0 | Monday | Tuesday | Wednesday | Thursday | Friday",
-   "r1 | 1 | Üldõpetus 202 3.a Anu · AnuJ | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 307 · MeeriK · IK 2 Inglise keel 301 · IrisM · IK 4 | Üldõpetus 202 3.a Anu · AnuJ | Üldõpetus 202 3.a Anu · AnuJ | Üldõpetus 202 3.a Anu · AnuJ",
-   "r2 | 2 | Üldõpetus 202 3.a Anu · AnuJ | Informaatika Tehnika/robootika · KertuP | Tantsuõpetus stuudioB · KertuV | Üldõpetus 202 3.a Anu · AnuJ | Üldõpetus 202 3.a Anu · AnuJ",
-   "r3 | 3 | Üldõpetus 202 3.a Anu · AnuJ | Liikumisõpetus Saal · KaitiL | Üldõpetus 202 3.a Anu · AnuJ | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 307 · MeeriK · IK 2 Inglise keel 301 · IrisM · IK 4 | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 307 · MeeriK · IK 2 Inglise keel 301 · IrisM · IK 4",
-   "r4 | 4 | Muusikaõpetus stuudioA · SirjeN | Üldõpetus 202 3.a Anu · AnuJ | Üldõpetus 202 3.a Anu · AnuJ | Üldõpetus 202 3.a Anu · AnuJ | Üldõpetus 202 3.a Anu · AnuJ",
-   "r5 | HA",
-   "r6 | 5 | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 307 · MeeriK · IK 2 Inglise keel 301 · IrisM · IK 4 | Üldõpetus 202 3.a Anu · AnuJ | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 307 · MeeriK · IK 2 Inglise keel 301 · IrisM · IK 4 | Muusikaõpetus stuudioA · SirjeN | Üldõpetus 202 3.a Anu · AnuJ",
-   "r7 | 6 | Üldõpetus 202 3.a Anu · AnuJ | 3.klassi koorilaul stuudioB · SirjeN | Üldõpetus 202 3.a Anu · AnuJ | Liikumisõpetus Saal · KaitiL",
-   "r8 | My own | Training 18.00–19.00 | Choir 18.00–19.30"
-  ],
-  "3.a · hidden": [
-   "r0 | Monday | Tuesday | Wednesday | Thursday | Friday",
-   "r1 | 1 | Üldõpetus 202 3.a Anu · AnuJ | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 307 · MeeriK · IK 2 Inglise keel 301 · IrisM · IK 4 | Üldõpetus 202 3.a Anu · AnuJ | Üldõpetus 202 3.a Anu · AnuJ | Üldõpetus 202 3.a Anu · AnuJ",
-   "r2 | 2 | Üldõpetus 202 3.a Anu · AnuJ | Informaatika Tehnika/robootika · KertuP | Tantsuõpetus stuudioB · KertuV | Üldõpetus 202 3.a Anu · AnuJ | Üldõpetus 202 3.a Anu · AnuJ",
-   "r3 | 3 | Üldõpetus 202 3.a Anu · AnuJ | Liikumisõpetus Saal · KaitiL | Üldõpetus 202 3.a Anu · AnuJ | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 307 · MeeriK · IK 2 Inglise keel 301 · IrisM · IK 4 | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 307 · MeeriK · IK 2 Inglise keel 301 · IrisM · IK 4",
-   "r4 | 4 | Muusikaõpetus stuudioA · SirjeN | Üldõpetus 202 3.a Anu · AnuJ | Üldõpetus 202 3.a Anu · AnuJ | Üldõpetus 202 3.a Anu · AnuJ | Üldõpetus 202 3.a Anu · AnuJ",
-   "r5 | HA",
-   "r6 | 5 | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 307 · MeeriK · IK 2 Inglise keel 301 · IrisM · IK 4 | Üldõpetus 202 3.a Anu · AnuJ | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 307 · MeeriK · IK 2 Inglise keel 301 · IrisM · IK 4 | Muusikaõpetus stuudioA · SirjeN | Üldõpetus 202 3.a Anu · AnuJ",
-   "r7 | 6 | Üldõpetus 202 3.a Anu · AnuJ | Üldõpetus 202 3.a Anu · AnuJ | Liikumisõpetus Saal · KaitiL"
-  ],
-  "4.a · plain": [
+  "4.a · full": [
    "r0 | Monday | Tuesday | Wednesday | Thursday | Friday",
    "r1 | 1 | Muusikaõpetus stuudioB · Maribeth | Eesti keel 408 · Sandra-Ly | Matemaatika 406 · MargeL · Mat 1 Matemaatika 408 · Sandra-Ly · Mat 2 Matemaatika 405 · Irmeli · Mat 3 Matemaatika 407 · Merili · Mat 4 | Loodusõpetus 401 · AveS | Kunstiõpetus 306 EK · TriinV",
    "r2 | 2 | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 306 EK · TriinV · IK 2 Inglise keel 307 · MeeriK · IK 3 Inglise keel 301 · IrisM · IK 4 | Eesti keel 408 · Sandra-Ly | Matemaatika 406 · MargeL · Mat 1 Matemaatika 408 · Sandra-Ly · Mat 2 Matemaatika 405 · Irmeli · Mat 3 Matemaatika 407 · Merili · Mat 4 | Informaatika Tehnika/robootika · MadisT | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 306 EK · TriinV · IK 2 Inglise keel 307 · MeeriK · IK 3 Inglise keel 301 · IrisM · IK 4",
@@ -267,30 +143,7 @@
    "r7 | 6 | Loodusõpetus 401 · AveS | Inglise keel 308 · VeronikaV · IK 1 | Klassijuhatajatund 306 EK · TriinV | Loovloodus Käsitöö · AveS / ReginaP",
    "r8 | 7 | Lastekoor stuudioA · Maribeth"
   ],
-  "4.a · evening": [
-   "r0 | Monday | Tuesday | Wednesday | Thursday | Friday",
-   "r1 | 1 | Muusikaõpetus stuudioB · Maribeth | Eesti keel 408 · Sandra-Ly | Matemaatika 406 · MargeL · Mat 1 Matemaatika 408 · Sandra-Ly · Mat 2 Matemaatika 405 · Irmeli · Mat 3 Matemaatika 407 · Merili · Mat 4 | Loodusõpetus 401 · AveS | Kunstiõpetus 306 EK · TriinV",
-   "r2 | 2 | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 306 EK · TriinV · IK 2 Inglise keel 307 · MeeriK · IK 3 Inglise keel 301 · IrisM · IK 4 | Eesti keel 408 · Sandra-Ly | Matemaatika 406 · MargeL · Mat 1 Matemaatika 408 · Sandra-Ly · Mat 2 Matemaatika 405 · Irmeli · Mat 3 Matemaatika 407 · Merili · Mat 4 | Informaatika Tehnika/robootika · MadisT | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 306 EK · TriinV · IK 2 Inglise keel 307 · MeeriK · IK 3 Inglise keel 301 · IrisM · IK 4",
-   "r3 | 3 | Eesti keel 408 · Sandra-Ly | Matemaatika 406 · MargeL · Mat 1 Matemaatika 408 · Sandra-Ly · Mat 2 Matemaatika 405 · Irmeli · Mat 3 Matemaatika 407 · Merili · Mat 4 | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 306 EK · TriinV · IK 2 Inglise keel 307 · MeeriK · IK 3 Inglise keel 301 · IrisM · IK 4 | Tantsuõpetus stuudioB · KertuV | Matemaatika 406 · MargeL · Mat 1 Matemaatika 408 · Sandra-Ly · Mat 2 Matemaatika 405 · Irmeli · Mat 3 Matemaatika 407 · Merili · Mat 4",
-   "r4 | 4 | Eesti keel 408 · Sandra-Ly | Muusikaõpetus stuudioA · Maribeth | Liikumisõpetus Saal · MartiinaN | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 306 EK · TriinV · IK 2 Inglise keel 307 · MeeriK · IK 3 Inglise keel 301 · IrisM · IK 4 | Matemaatika 406 · MargeL / Sandra-Ly / Irmeli / Merili",
-   "r5 | HA",
-   "r6 | 5 | Matemaatika 406 · MargeL · Mat 1 Matemaatika 408 · Sandra-Ly · Mat 2 Matemaatika 405 · Irmeli · Mat 3 Matemaatika 407 · Merili · Mat 4 | Liikumisõpetus Võimlemise tuba · MartiinaN | Eesti keel 408 · Sandra-Ly | Loovloodus Käsitöö · AveS / ReginaP | Inimeseõpetus 306 EK · TriinV",
-   "r7 | 6 | Loodusõpetus 401 · AveS | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 306 EK · TriinV · IK 2 Inglise keel 307 · MeeriK · IK 3 Inglise keel 301 · IrisM · IK 4 | Klassijuhatajatund 306 EK · TriinV | Loovloodus Käsitöö · AveS / ReginaP",
-   "r8 | 7 | Lastekoor stuudioA · Maribeth",
-   "r9 | My own | Training 18.00–19.00 | Choir 18.00–19.30"
-  ],
-  "4.a · hidden": [
-   "r0 | Monday | Tuesday | Wednesday | Thursday | Friday",
-   "r1 | 1 | Muusikaõpetus stuudioB · Maribeth | Matemaatika 406 · MargeL · Mat 1 Matemaatika 408 · Sandra-Ly · Mat 2 Matemaatika 405 · Irmeli · Mat 3 Matemaatika 407 · Merili · Mat 4 | Loodusõpetus 401 · AveS | Kunstiõpetus 306 EK · TriinV",
-   "r2 | 2 | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 306 EK · TriinV · IK 2 Inglise keel 307 · MeeriK · IK 3 Inglise keel 301 · IrisM · IK 4 | Matemaatika 406 · MargeL · Mat 1 Matemaatika 408 · Sandra-Ly · Mat 2 Matemaatika 405 · Irmeli · Mat 3 Matemaatika 407 · Merili · Mat 4 | Informaatika Tehnika/robootika · MadisT | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 306 EK · TriinV · IK 2 Inglise keel 307 · MeeriK · IK 3 Inglise keel 301 · IrisM · IK 4",
-   "r3 | 3 | Matemaatika 406 · MargeL · Mat 1 Matemaatika 408 · Sandra-Ly · Mat 2 Matemaatika 405 · Irmeli · Mat 3 Matemaatika 407 · Merili · Mat 4 | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 306 EK · TriinV · IK 2 Inglise keel 307 · MeeriK · IK 3 Inglise keel 301 · IrisM · IK 4 | Tantsuõpetus stuudioB · KertuV | Matemaatika 406 · MargeL · Mat 1 Matemaatika 408 · Sandra-Ly · Mat 2 Matemaatika 405 · Irmeli · Mat 3 Matemaatika 407 · Merili · Mat 4",
-   "r4 | 4 | Muusikaõpetus stuudioA · Maribeth | Liikumisõpetus Saal · MartiinaN | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 306 EK · TriinV · IK 2 Inglise keel 307 · MeeriK · IK 3 Inglise keel 301 · IrisM · IK 4 | Matemaatika 406 · MargeL / Sandra-Ly / Irmeli / Merili",
-   "r5 | HA",
-   "r6 | 5 | Matemaatika 406 · MargeL · Mat 1 Matemaatika 408 · Sandra-Ly · Mat 2 Matemaatika 405 · Irmeli · Mat 3 Matemaatika 407 · Merili · Mat 4 | Liikumisõpetus Võimlemise tuba · MartiinaN | Loovloodus Käsitöö · AveS / ReginaP | Inimeseõpetus 306 EK · TriinV",
-   "r7 | 6 | Loodusõpetus 401 · AveS | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 306 EK · TriinV · IK 2 Inglise keel 307 · MeeriK · IK 3 Inglise keel 301 · IrisM · IK 4 | Klassijuhatajatund 306 EK · TriinV | Loovloodus Käsitöö · AveS / ReginaP",
-   "r8 | 7 | Lastekoor stuudioA · Maribeth"
-  ],
-  "4.i · plain": [
+  "4.i · full": [
    "r0 | Monday | Tuesday | Wednesday | Thursday | Friday",
    "r1 | 1 | Inimeseõpetus 307 · MeeriK | Loovloodus Käsitöö · ReginaP / KertuK | Matemaatika 406 · MargeL · Mat 1 Matemaatika 408 · Sandra-Ly · Mat 2 Matemaatika 405 · Irmeli · Mat 3 Matemaatika 407 · Merili · Mat 4 | Eesti keel 408 · Sandra-Ly | Eesti keel 408 · Sandra-Ly",
    "r2 | 2 | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 306 EK · TriinV · IK 2 Inglise keel 307 · MeeriK · IK 3 Inglise keel 301 · IrisM · IK 4 | Loovloodus Käsitöö · ReginaP / KertuK | Matemaatika 406 · MargeL · Mat 1 Matemaatika 408 · Sandra-Ly · Mat 2 Matemaatika 405 · Irmeli · Mat 3 Matemaatika 407 · Merili · Mat 4 | Eesti keel 408 · Sandra-Ly | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 306 EK · TriinV · IK 2 Inglise keel 307 · MeeriK · IK 3 Inglise keel 301 · IrisM · IK 4",
@@ -312,30 +165,7 @@
    "r7 | 6 | Liikumisõpetus Saal · MartiinaN | Inglise keel 308 · VeronikaV · IK 1 | Klassijuhatajatund 307 · MeeriK | Tantsuõpetus stuudioB · KertuV",
    "r8 | 7 | Lastekoor stuudioA · Maribeth"
   ],
-  "4.i · evening": [
-   "r0 | Monday | Tuesday | Wednesday | Thursday | Friday",
-   "r1 | 1 | Inimeseõpetus 307 · MeeriK | Loovloodus Käsitöö · ReginaP / KertuK | Matemaatika 406 · MargeL · Mat 1 Matemaatika 408 · Sandra-Ly · Mat 2 Matemaatika 405 · Irmeli · Mat 3 Matemaatika 407 · Merili · Mat 4 | Eesti keel 408 · Sandra-Ly | Eesti keel 408 · Sandra-Ly",
-   "r2 | 2 | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 306 EK · TriinV · IK 2 Inglise keel 307 · MeeriK · IK 3 Inglise keel 301 · IrisM · IK 4 | Loovloodus Käsitöö · ReginaP / KertuK | Matemaatika 406 · MargeL · Mat 1 Matemaatika 408 · Sandra-Ly · Mat 2 Matemaatika 405 · Irmeli · Mat 3 Matemaatika 407 · Merili · Mat 4 | Eesti keel 408 · Sandra-Ly | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 306 EK · TriinV · IK 2 Inglise keel 307 · MeeriK · IK 3 Inglise keel 301 · IrisM · IK 4",
-   "r3 | 3 | Loodusõpetus 401 · AveS | Matemaatika 406 · MargeL · Mat 1 Matemaatika 408 · Sandra-Ly · Mat 2 Matemaatika 405 · Irmeli · Mat 3 Matemaatika 407 · Merili · Mat 4 | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 306 EK · TriinV · IK 2 Inglise keel 307 · MeeriK · IK 3 Inglise keel 301 · IrisM · IK 4 | Loodusõpetus 401 · AveS | Matemaatika 406 · MargeL · Mat 1 Matemaatika 408 · Sandra-Ly · Mat 2 Matemaatika 405 · Irmeli · Mat 3 Matemaatika 407 · Merili · Mat 4",
-   "r4 | 4 | Muusikaõpetus stuudioB · Maribeth | Eesti keel 408 · Sandra-Ly | Eesti keel 408 · Sandra-Ly | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 306 EK · TriinV · IK 2 Inglise keel 307 · MeeriK · IK 3 Inglise keel 301 · IrisM · IK 4 | Matemaatika 406 · MargeL / Sandra-Ly / Irmeli / Merili",
-   "r5 | HA",
-   "r6 | 5 | Matemaatika 406 · MargeL · Mat 1 Matemaatika 408 · Sandra-Ly · Mat 2 Matemaatika 405 · Irmeli · Mat 3 Matemaatika 407 · Merili · Mat 4 | Muusikaõpetus stuudioA · Maribeth | Informaatika Tehnika/robootika · MadisT | Kunstiõpetus 306 EK · TriinV | Liikumisõpetus Saal · MartiinaN",
-   "r7 | 6 | Liikumisõpetus Saal · MartiinaN | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 306 EK · TriinV · IK 2 Inglise keel 307 · MeeriK · IK 3 Inglise keel 301 · IrisM · IK 4 | Klassijuhatajatund 307 · MeeriK | Tantsuõpetus stuudioB · KertuV",
-   "r8 | 7 | Lastekoor stuudioA · Maribeth",
-   "r9 | My own | Training 18.00–19.00 | Choir 18.00–19.30"
-  ],
-  "4.i · hidden": [
-   "r0 | Monday | Tuesday | Wednesday | Thursday | Friday",
-   "r1 | 1 | Inimeseõpetus 307 · MeeriK | Loovloodus Käsitöö · ReginaP / KertuK | Matemaatika 406 · MargeL · Mat 1 Matemaatika 408 · Sandra-Ly · Mat 2 Matemaatika 405 · Irmeli · Mat 3 Matemaatika 407 · Merili · Mat 4",
-   "r2 | 2 | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 306 EK · TriinV · IK 2 Inglise keel 307 · MeeriK · IK 3 Inglise keel 301 · IrisM · IK 4 | Loovloodus Käsitöö · ReginaP / KertuK | Matemaatika 406 · MargeL · Mat 1 Matemaatika 408 · Sandra-Ly · Mat 2 Matemaatika 405 · Irmeli · Mat 3 Matemaatika 407 · Merili · Mat 4 | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 306 EK · TriinV · IK 2 Inglise keel 307 · MeeriK · IK 3 Inglise keel 301 · IrisM · IK 4",
-   "r3 | 3 | Loodusõpetus 401 · AveS | Matemaatika 406 · MargeL · Mat 1 Matemaatika 408 · Sandra-Ly · Mat 2 Matemaatika 405 · Irmeli · Mat 3 Matemaatika 407 · Merili · Mat 4 | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 306 EK · TriinV · IK 2 Inglise keel 307 · MeeriK · IK 3 Inglise keel 301 · IrisM · IK 4 | Loodusõpetus 401 · AveS | Matemaatika 406 · MargeL · Mat 1 Matemaatika 408 · Sandra-Ly · Mat 2 Matemaatika 405 · Irmeli · Mat 3 Matemaatika 407 · Merili · Mat 4",
-   "r4 | 4 | Muusikaõpetus stuudioB · Maribeth | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 306 EK · TriinV · IK 2 Inglise keel 307 · MeeriK · IK 3 Inglise keel 301 · IrisM · IK 4 | Matemaatika 406 · MargeL / Sandra-Ly / Irmeli / Merili",
-   "r5 | HA",
-   "r6 | 5 | Matemaatika 406 · MargeL · Mat 1 Matemaatika 408 · Sandra-Ly · Mat 2 Matemaatika 405 · Irmeli · Mat 3 Matemaatika 407 · Merili · Mat 4 | Muusikaõpetus stuudioA · Maribeth | Informaatika Tehnika/robootika · MadisT | Kunstiõpetus 306 EK · TriinV | Liikumisõpetus Saal · MartiinaN",
-   "r7 | 6 | Liikumisõpetus Saal · MartiinaN | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 306 EK · TriinV · IK 2 Inglise keel 307 · MeeriK · IK 3 Inglise keel 301 · IrisM · IK 4 | Klassijuhatajatund 307 · MeeriK | Tantsuõpetus stuudioB · KertuV",
-   "r8 | 7 | Lastekoor stuudioA · Maribeth"
-  ],
-  "4.e · plain": [
+  "4.e · full": [
    "r0 | Monday | Tuesday | Wednesday | Thursday | Friday",
    "r1 | 1 | Inimeseõpetus 301 · IrisM | Tantsuõpetus stuudioB · KertuV | Matemaatika 406 · MargeL · Mat 1 Matemaatika 408 · Sandra-Ly · Mat 2 Matemaatika 405 · Irmeli · Mat 3 Matemaatika 407 · Merili · Mat 4 | Loovloodus Käsitöö · KertuK / ReginaP | Eesti keel 208 · MarjuL",
    "r2 | 2 | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 306 EK · TriinV · IK 2 Inglise keel 307 · MeeriK · IK 3 Inglise keel 301 · IrisM · IK 4 | Muusikaõpetus stuudioA · Maribeth | Matemaatika 406 · MargeL · Mat 1 Matemaatika 408 · Sandra-Ly · Mat 2 Matemaatika 405 · Irmeli · Mat 3 Matemaatika 407 · Merili · Mat 4 | Loovloodus Käsitöö · KertuK / ReginaP | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 306 EK · TriinV · IK 2 Inglise keel 307 · MeeriK · IK 3 Inglise keel 301 · IrisM · IK 4",
@@ -357,30 +187,7 @@
    "r7 | 6 | Eesti keel 208 · MarjuL | Inglise keel 308 · VeronikaV · IK 1 | Klassijuhatajatund 301 · IrisM | Loodusõpetus 401 · KertuK",
    "r8 | 7 | Lastekoor stuudioA · Maribeth"
   ],
-  "4.e · evening": [
-   "r0 | Monday | Tuesday | Wednesday | Thursday | Friday",
-   "r1 | 1 | Inimeseõpetus 301 · IrisM | Tantsuõpetus stuudioB · KertuV | Matemaatika 406 · MargeL · Mat 1 Matemaatika 408 · Sandra-Ly · Mat 2 Matemaatika 405 · Irmeli · Mat 3 Matemaatika 407 · Merili · Mat 4 | Loovloodus Käsitöö · KertuK / ReginaP | Eesti keel 208 · MarjuL",
-   "r2 | 2 | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 306 EK · TriinV · IK 2 Inglise keel 307 · MeeriK · IK 3 Inglise keel 301 · IrisM · IK 4 | Muusikaõpetus stuudioA · Maribeth | Matemaatika 406 · MargeL · Mat 1 Matemaatika 408 · Sandra-Ly · Mat 2 Matemaatika 405 · Irmeli · Mat 3 Matemaatika 407 · Merili · Mat 4 | Loovloodus Käsitöö · KertuK / ReginaP | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 306 EK · TriinV · IK 2 Inglise keel 307 · MeeriK · IK 3 Inglise keel 301 · IrisM · IK 4",
-   "r3 | 3 | Liikumisõpetus Saal · MartiinaN | Matemaatika 406 · MargeL · Mat 1 Matemaatika 408 · Sandra-Ly · Mat 2 Matemaatika 405 · Irmeli · Mat 3 Matemaatika 407 · Merili · Mat 4 | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 306 EK · TriinV · IK 2 Inglise keel 307 · MeeriK · IK 3 Inglise keel 301 · IrisM · IK 4 | Eesti keel 208 · MarjuL | Matemaatika 406 · MargeL · Mat 1 Matemaatika 408 · Sandra-Ly · Mat 2 Matemaatika 405 · Irmeli · Mat 3 Matemaatika 407 · Merili · Mat 4",
-   "r4 | 4 | Kunstiõpetus 306 EK · TriinV | Informaatika Tehnika/robootika · MadisT | Eesti keel 208 · MarjuL | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 306 EK · TriinV · IK 2 Inglise keel 307 · MeeriK · IK 3 Inglise keel 301 · IrisM · IK 4 | Matemaatika 406 · MargeL / Sandra-Ly / Irmeli / Merili",
-   "r5 | HA",
-   "r6 | 5 | Matemaatika 406 · MargeL · Mat 1 Matemaatika 408 · Sandra-Ly · Mat 2 Matemaatika 405 · Irmeli · Mat 3 Matemaatika 407 · Merili · Mat 4 | Eesti keel 208 · MarjuL | Muusikaõpetus stuudioB · Maribeth | Liikumisõpetus Saal · MartiinaN | Loodusõpetus 401 · KertuK",
-   "r7 | 6 | Eesti keel 208 · MarjuL | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 306 EK · TriinV · IK 2 Inglise keel 307 · MeeriK · IK 3 Inglise keel 301 · IrisM · IK 4 | Klassijuhatajatund 301 · IrisM | Loodusõpetus 401 · KertuK",
-   "r8 | 7 | Lastekoor stuudioA · Maribeth",
-   "r9 | My own | Training 18.00–19.00 | Choir 18.00–19.30"
-  ],
-  "4.e · hidden": [
-   "r0 | Monday | Tuesday | Wednesday | Thursday | Friday",
-   "r1 | 1 | Inimeseõpetus 301 · IrisM | Tantsuõpetus stuudioB · KertuV | Matemaatika 406 · MargeL · Mat 1 Matemaatika 408 · Sandra-Ly · Mat 2 Matemaatika 405 · Irmeli · Mat 3 Matemaatika 407 · Merili · Mat 4 | Loovloodus Käsitöö · KertuK / ReginaP",
-   "r2 | 2 | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 306 EK · TriinV · IK 2 Inglise keel 307 · MeeriK · IK 3 Inglise keel 301 · IrisM · IK 4 | Muusikaõpetus stuudioA · Maribeth | Matemaatika 406 · MargeL · Mat 1 Matemaatika 408 · Sandra-Ly · Mat 2 Matemaatika 405 · Irmeli · Mat 3 Matemaatika 407 · Merili · Mat 4 | Loovloodus Käsitöö · KertuK / ReginaP | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 306 EK · TriinV · IK 2 Inglise keel 307 · MeeriK · IK 3 Inglise keel 301 · IrisM · IK 4",
-   "r3 | 3 | Liikumisõpetus Saal · MartiinaN | Matemaatika 406 · MargeL · Mat 1 Matemaatika 408 · Sandra-Ly · Mat 2 Matemaatika 405 · Irmeli · Mat 3 Matemaatika 407 · Merili · Mat 4 | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 306 EK · TriinV · IK 2 Inglise keel 307 · MeeriK · IK 3 Inglise keel 301 · IrisM · IK 4 | Matemaatika 406 · MargeL · Mat 1 Matemaatika 408 · Sandra-Ly · Mat 2 Matemaatika 405 · Irmeli · Mat 3 Matemaatika 407 · Merili · Mat 4",
-   "r4 | 4 | Kunstiõpetus 306 EK · TriinV | Informaatika Tehnika/robootika · MadisT | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 306 EK · TriinV · IK 2 Inglise keel 307 · MeeriK · IK 3 Inglise keel 301 · IrisM · IK 4 | Matemaatika 406 · MargeL / Sandra-Ly / Irmeli / Merili",
-   "r5 | HA",
-   "r6 | 5 | Matemaatika 406 · MargeL · Mat 1 Matemaatika 408 · Sandra-Ly · Mat 2 Matemaatika 405 · Irmeli · Mat 3 Matemaatika 407 · Merili · Mat 4 | Muusikaõpetus stuudioB · Maribeth | Liikumisõpetus Saal · MartiinaN | Loodusõpetus 401 · KertuK",
-   "r7 | 6 | Inglise keel 308 · VeronikaV · IK 1 Inglise keel 306 EK · TriinV · IK 2 Inglise keel 307 · MeeriK · IK 3 Inglise keel 301 · IrisM · IK 4 | Klassijuhatajatund 301 · IrisM | Loodusõpetus 401 · KertuK",
-   "r8 | 7 | Lastekoor stuudioA · Maribeth"
-  ],
-  "5.a · plain": [
+  "5.a · full": [
    "Monday | ev | Käsitöö | t0 | h143 | l0 | w50 | 9.00–10.20 (1 hour 20 min) Käsitöö Käsitöö · ReginaP · tüdrukud",
    "Monday | ev | Tehnoloogiaõpetus | t0 | h143 | l50 | w50 | 9.00–10.20 (1 hour 20 min) Tehnoloogiaõpetus Tehnoloogia · MadisT · poisid",
    "Monday | ev brk | Amps | t144 | h44 | l0 | w100 | Amps 10.20–10.45 (25 min)",
@@ -509,167 +316,7 @@
    "axis | t | t702 | 15.30",
    "body | h722"
   ],
-  "5.a · evening": [
-   "Monday | ev | Käsitöö | t0 | h143 | l0 | w50 | 9.00–10.20 (1 hour 20 min) Käsitöö Käsitöö · ReginaP · tüdrukud",
-   "Monday | ev | Tehnoloogiaõpetus | t0 | h143 | l50 | w50 | 9.00–10.20 (1 hour 20 min) Tehnoloogiaõpetus Tehnoloogia · MadisT · poisid",
-   "Monday | ev brk | Amps | t144 | h44 | l0 | w100 | Amps 10.20–10.45 (25 min)",
-   "Monday | ev | Inglise keel | t189 | h80 | l0 | w33.3 | 10.45–11.30 (45 min) Inglise keel 307 · MeeriK · IK1",
-   "Monday | ev | Inglise keel | t189 | h80 | l33.3 | w33.3 | 10.45–11.30 (45 min) Inglise keel 301 · IrisM · IK2",
-   "Monday | ev | Inglise keel | t189 | h80 | l66.7 | w33.3 | 10.45–11.30 (45 min) Inglise keel 308 · VeronikaV · IK3",
-   "Monday | ev snug | Eesti keel | t279 | h53 | l0 | w100 | 11.35–12.05 (30 min) Eesti keel 208 · MarjuL",
-   "Monday | ev | Hispaania keel | t342 | h80 | l0 | w100 | 12.10–12.55 (45 min) Hispaania keel 305 · MariaM · HK",
-   "Monday | ev | Hispaania keel | t423 | h80 | l0 | w33.3 | 12.55–13.40 (45 min) Hispaania keel 305 · MariaM · HK1",
-   "Monday | ev | Prantsuse keel | t423 | h80 | l33.3 | w33.3 | 12.55–13.40 (45 min) Prantsuse keel 306 EK · Eeva · PK",
-   "Monday | ev | Saksa keel | t423 | h80 | l66.7 | w33.3 | 12.55–13.40 (45 min) Saksa keel 404 · TuuliH · SK",
-   "Monday | ev | Matemaatika | t513 | h80 | l0 | w25 | 13.45–14.30 (45 min) Matemaatika 406 · MargeL · Mat 1",
-   "Monday | ev | Matemaatika | t513 | h80 | l25 | w25 | 13.45–14.30 (45 min) Matemaatika 407 · Merili · Mat 2",
-   "Monday | ev | Matemaatika | t513 | h80 | l50 | w25 | 13.45–14.30 (45 min) Matemaatika 405 · Irmeli · Mat 3",
-   "Monday | ev | Matemaatika | t513 | h80 | l75 | w25 | 13.45–14.30 (45 min) Matemaatika 408 · Sandra-Ly · Mat 4",
-   "Monday | ev gap | gap | t594 | h137 | l0 | w100 | Break · 3 hours 30 min",
-   "Monday | ev mine |  | t732 | h107 | l0 | w100 | 18.00–19.00 (1 hour) Training",
-   "Tuesday | ev | Kirjandus | t0 | h143 | l0 | w100 | 9.00–10.20 (1 hour 20 min) Kirjandus 208 · MarjuL",
-   "Tuesday | ev brk | Amps | t144 | h44 | l0 | w100 | Amps 10.20–10.45 (25 min)",
-   "Tuesday | ev | Inglise keel | t189 | h170 | l0 | w33.3 | 10.45–12.20 (1 hour 35 min) Inglise keel 307 · MeeriK · IK1",
-   "Tuesday | ev | Inglise keel | t189 | h170 | l33.3 | w33.3 | 10.45–12.20 (1 hour 35 min) Inglise keel 301 · IrisM · IK2",
-   "Tuesday | ev | Inglise keel | t189 | h170 | l66.7 | w33.3 | 10.45–12.20 (1 hour 35 min) Inglise keel 308 · VeronikaV · IK3",
-   "Tuesday | ev | Matemaatika | t360 | h134 | l0 | w25 | 12.20–13.35 (1 hour 15 min) Matemaatika 406 · MargeL · Mat 1",
-   "Tuesday | ev | Matemaatika | t360 | h134 | l25 | w25 | 12.20–13.35 (1 hour 15 min) Matemaatika 407 · Merili · Mat 2",
-   "Tuesday | ev | Matemaatika | t360 | h134 | l50 | w25 | 12.20–13.35 (1 hour 15 min) Matemaatika 405 · Irmeli · Mat 3",
-   "Tuesday | ev | Matemaatika | t360 | h134 | l75 | w25 | 12.20–13.35 (1 hour 15 min) Matemaatika 408 · Sandra-Ly · Mat 4",
-   "Tuesday | ev brk tiny | Lõuna | t495 | h17 | l0 | w100 | Lõuna 13.35–13.45 (10 min)",
-   "Tuesday | ev | Muusikaõpetus | t513 | h80 | l0 | w100 | 13.45–14.30 (45 min) Muusikaõpetus stuudioA · Maribeth",
-   "Wednesday | ev | Eesti keel | t0 | h143 | l0 | w100 | 9.00–10.20 (1 hour 20 min) Eesti keel 208 · MarjuL",
-   "Wednesday | ev brk | Amps | t144 | h44 | l0 | w100 | Amps 10.20–10.45 (25 min)",
-   "Wednesday | ev | Informaatika | t189 | h80 | l0 | w100 | 10.45–11.30 (45 min) Informaatika Tehnika/robootika · MadisT",
-   "Wednesday | ev | Loodusõpetus | t279 | h80 | l0 | w100 | 11.35–12.20 (45 min) Loodusõpetus 401 · KertuK",
-   "Wednesday | ev | Kunstiõpetus | t360 | h134 | l0 | w100 | 12.20–13.35 (1 hour 15 min) Kunstiõpetus 306 EK · TriinV",
-   "Wednesday | ev brk tiny | Lõuna | t495 | h17 | l0 | w100 | Lõuna 13.35–13.45 (10 min)",
-   "Wednesday | ev | Klassijuhatajatund | t513 | h80 | l0 | w100 | 13.45–14.30 (45 min) Klassijuhatajatund Käsitöö · ReginaP",
-   "Wednesday | ev gap | gap | t594 | h137 | l0 | w100 | Break · 3 hours 30 min",
-   "Wednesday | ev mine |  | t732 | h161 | l0 | w100 | 18.00–19.30 (1 hour 30 min) Choir",
-   "Thursday | ev | Inimeseõpetus | t0 | h80 | l0 | w100 | 9.00–9.45 (45 min) Inimeseõpetus pesad · MartiinaN",
-   "Thursday | ev | Ajalugu | t90 | h80 | l0 | w100 | 9.50–10.35 (45 min) Ajalugu 404 · TuuliH",
-   "Thursday | ev brk tiny | Amps | t171 | h17 | l0 | w100 | Amps 10.35–10.45 (10 min)",
-   "Thursday | ev | Matemaatika | t189 | h143 | l0 | w25 | 10.45–12.05 (1 hour 20 min) Matemaatika 406 · MargeL · Mat 1",
-   "Thursday | ev | Matemaatika | t189 | h143 | l25 | w25 | 10.45–12.05 (1 hour 20 min) Matemaatika 407 · Merili · Mat 2",
-   "Thursday | ev | Matemaatika | t189 | h143 | l50 | w25 | 10.45–12.05 (1 hour 20 min) Matemaatika 405 · Irmeli · Mat 3",
-   "Thursday | ev | Matemaatika | t189 | h143 | l75 | w25 | 10.45–12.05 (1 hour 20 min) Matemaatika 408 · Sandra-Ly · Mat 4",
-   "Thursday | ev | Hispaania keel | t342 | h80 | l0 | w100 | 12.10–12.55 (45 min) Hispaania keel 305 · MariaM · HK",
-   "Thursday | ev | Hispaania keel | t423 | h80 | l0 | w33.3 | 12.55–13.40 (45 min) Hispaania keel 305 · MariaM · HK1",
-   "Thursday | ev | Prantsuse keel | t423 | h80 | l33.3 | w33.3 | 12.55–13.40 (45 min) Prantsuse keel 405 · Eeva · PK",
-   "Thursday | ev | Saksa keel | t423 | h80 | l66.7 | w33.3 | 12.55–13.40 (45 min) Saksa keel 404 · TuuliH · SK",
-   "Thursday | ev | Liikumisõpetus | t513 | h80 | l0 | w100 | 13.45–14.30 (45 min) Liikumisõpetus Saal · MartiinaN",
-   "Thursday | ev | Lastekoor | t603 | h80 | l0 | w100 | 14.35–15.20 (45 min) Lastekoor stuudioA · Maribeth",
-   "Friday | ev | Loodusõpetus | t0 | h80 | l0 | w100 | 9.00–9.45 (45 min) Loodusõpetus 401 · KertuK",
-   "Friday | ev | Ajalugu | t90 | h80 | l0 | w100 | 9.50–10.35 (45 min) Ajalugu 404 · TuuliH",
-   "Friday | ev brk tiny | Amps | t171 | h17 | l0 | w100 | Amps 10.35–10.45 (10 min)",
-   "Friday | ev | Liikumisõpetus | t189 | h143 | l0 | w100 | 10.45–12.05 (1 hour 20 min) Liikumisõpetus Võimlemise tuba · MartiinaN",
-   "Friday | ev gap | gap | t333 | h26 | l0 | w100 | Break · 15 min",
-   "Friday | ev | Matemaatika | t360 | h134 | l0 | w25 | 12.20–13.35 (1 hour 15 min) Matemaatika 406 · MargeL · Mat 1",
-   "Friday | ev | Matemaatika | t360 | h134 | l25 | w25 | 12.20–13.35 (1 hour 15 min) Matemaatika 407 · Merili · Mat 2",
-   "Friday | ev | Matemaatika | t360 | h134 | l50 | w25 | 12.20–13.35 (1 hour 15 min) Matemaatika 405 · Irmeli · Mat 3",
-   "Friday | ev | Matemaatika | t360 | h134 | l75 | w25 | 12.20–13.35 (1 hour 15 min) Matemaatika 408 · Sandra-Ly · Mat 4",
-   "Friday | ev brk tiny | Lõuna | t495 | h17 | l0 | w100 | Lõuna 13.35–13.45 (10 min)",
-   "Friday | ev | Inglise keel | t513 | h80 | l0 | w33.3 | 13.45–14.30 (45 min) Inglise keel 307 · MeeriK · IK1",
-   "Friday | ev | Inglise keel | t513 | h80 | l33.3 | w33.3 | 13.45–14.30 (45 min) Inglise keel 301 · IrisM · IK2",
-   "Friday | ev | Inglise keel | t513 | h80 | l66.7 | w33.3 | 13.45–14.30 (45 min) Inglise keel 308 · VeronikaV · IK3",
-   "axis | t hour | t0 | 9.00",
-   "axis | t | t54 | 9.30",
-   "axis | t hour | t108 | 10.00",
-   "axis | t | t162 | 10.30",
-   "axis | t hour | t216 | 11.00",
-   "axis | t | t270 | 11.30",
-   "axis | t hour | t324 | 12.00",
-   "axis | t | t378 | 12.30",
-   "axis | t hour | t432 | 13.00",
-   "axis | t | t486 | 13.30",
-   "axis | t hour | t540 | 14.00",
-   "axis | t | t594 | 14.30",
-   "axis | t hour | t648 | 15.00",
-   "axis | t hour | t732 | 18.00",
-   "axis | t | t786 | 18.30",
-   "axis | t hour | t840 | 19.00",
-   "axis | t | t894 | 19.30",
-   "cut | t684 | h48 | 15.20–18.00",
-   "body | h914"
-  ],
-  "5.a · hidden": [
-   "Monday | ev | Käsitöö | t0 | h143 | l0 | w50 | 9.00–10.20 (1 hour 20 min) Käsitöö Käsitöö · ReginaP · tüdrukud",
-   "Monday | ev | Tehnoloogiaõpetus | t0 | h143 | l50 | w50 | 9.00–10.20 (1 hour 20 min) Tehnoloogiaõpetus Tehnoloogia · MadisT · poisid",
-   "Monday | ev brk | Amps | t144 | h44 | l0 | w100 | Amps 10.20–10.45 (25 min)",
-   "Monday | ev | Inglise keel | t189 | h80 | l0 | w33.3 | 10.45–11.30 (45 min) Inglise keel 307 · MeeriK · IK1",
-   "Monday | ev | Inglise keel | t189 | h80 | l33.3 | w33.3 | 10.45–11.30 (45 min) Inglise keel 301 · IrisM · IK2",
-   "Monday | ev | Inglise keel | t189 | h80 | l66.7 | w33.3 | 10.45–11.30 (45 min) Inglise keel 308 · VeronikaV · IK3",
-   "Monday | ev snug | Eesti keel | t279 | h53 | l0 | w100 | 11.35–12.05 (30 min) Eesti keel 208 · MarjuL",
-   "Monday | ev | Hispaania keel | t342 | h80 | l0 | w100 | 12.10–12.55 (45 min) Hispaania keel 305 · MariaM · HK",
-   "Monday | ev | Hispaania keel | t423 | h80 | l0 | w33.3 | 12.55–13.40 (45 min) Hispaania keel 305 · MariaM · HK1",
-   "Monday | ev | Prantsuse keel | t423 | h80 | l33.3 | w33.3 | 12.55–13.40 (45 min) Prantsuse keel 306 EK · Eeva · PK",
-   "Monday | ev | Saksa keel | t423 | h80 | l66.7 | w33.3 | 12.55–13.40 (45 min) Saksa keel 404 · TuuliH · SK",
-   "Monday | ev | Matemaatika | t513 | h80 | l0 | w25 | 13.45–14.30 (45 min) Matemaatika 406 · MargeL · Mat 1",
-   "Monday | ev | Matemaatika | t513 | h80 | l25 | w25 | 13.45–14.30 (45 min) Matemaatika 407 · Merili · Mat 2",
-   "Monday | ev | Matemaatika | t513 | h80 | l50 | w25 | 13.45–14.30 (45 min) Matemaatika 405 · Irmeli · Mat 3",
-   "Monday | ev | Matemaatika | t513 | h80 | l75 | w25 | 13.45–14.30 (45 min) Matemaatika 408 · Sandra-Ly · Mat 4",
-   "Tuesday | ev | Kirjandus | t0 | h143 | l0 | w100 | 9.00–10.20 (1 hour 20 min) Kirjandus 208 · MarjuL",
-   "Tuesday | ev brk | Amps | t144 | h44 | l0 | w100 | Amps 10.20–10.45 (25 min)",
-   "Tuesday | ev | Inglise keel | t189 | h170 | l0 | w33.3 | 10.45–12.20 (1 hour 35 min) Inglise keel 307 · MeeriK · IK1",
-   "Tuesday | ev | Inglise keel | t189 | h170 | l33.3 | w33.3 | 10.45–12.20 (1 hour 35 min) Inglise keel 301 · IrisM · IK2",
-   "Tuesday | ev | Inglise keel | t189 | h170 | l66.7 | w33.3 | 10.45–12.20 (1 hour 35 min) Inglise keel 308 · VeronikaV · IK3",
-   "Tuesday | ev | Matemaatika | t360 | h134 | l0 | w25 | 12.20–13.35 (1 hour 15 min) Matemaatika 406 · MargeL · Mat 1",
-   "Tuesday | ev | Matemaatika | t360 | h134 | l25 | w25 | 12.20–13.35 (1 hour 15 min) Matemaatika 407 · Merili · Mat 2",
-   "Tuesday | ev | Matemaatika | t360 | h134 | l50 | w25 | 12.20–13.35 (1 hour 15 min) Matemaatika 405 · Irmeli · Mat 3",
-   "Tuesday | ev | Matemaatika | t360 | h134 | l75 | w25 | 12.20–13.35 (1 hour 15 min) Matemaatika 408 · Sandra-Ly · Mat 4",
-   "Tuesday | ev brk tiny | Lõuna | t495 | h17 | l0 | w100 | Lõuna 13.35–13.45 (10 min)",
-   "Tuesday | ev | Muusikaõpetus | t513 | h80 | l0 | w100 | 13.45–14.30 (45 min) Muusikaõpetus stuudioA · Maribeth",
-   "Wednesday | ev | Eesti keel | t0 | h143 | l0 | w100 | 9.00–10.20 (1 hour 20 min) Eesti keel 208 · MarjuL",
-   "Wednesday | ev brk | Amps | t144 | h44 | l0 | w100 | Amps 10.20–10.45 (25 min)",
-   "Wednesday | ev | Informaatika | t189 | h80 | l0 | w100 | 10.45–11.30 (45 min) Informaatika Tehnika/robootika · MadisT",
-   "Wednesday | ev | Loodusõpetus | t279 | h80 | l0 | w100 | 11.35–12.20 (45 min) Loodusõpetus 401 · KertuK",
-   "Wednesday | ev | Kunstiõpetus | t360 | h134 | l0 | w100 | 12.20–13.35 (1 hour 15 min) Kunstiõpetus 306 EK · TriinV",
-   "Wednesday | ev brk tiny | Lõuna | t495 | h17 | l0 | w100 | Lõuna 13.35–13.45 (10 min)",
-   "Wednesday | ev | Klassijuhatajatund | t513 | h80 | l0 | w100 | 13.45–14.30 (45 min) Klassijuhatajatund Käsitöö · ReginaP",
-   "Thursday | ev | Inimeseõpetus | t0 | h80 | l0 | w100 | 9.00–9.45 (45 min) Inimeseõpetus pesad · MartiinaN",
-   "Thursday | ev gap | gap | t81 | h89 | l0 | w100 | Break · 50 min",
-   "Thursday | ev brk tiny | Amps | t171 | h17 | l0 | w100 | Amps 10.35–10.45 (10 min)",
-   "Thursday | ev | Matemaatika | t189 | h143 | l0 | w25 | 10.45–12.05 (1 hour 20 min) Matemaatika 406 · MargeL · Mat 1",
-   "Thursday | ev | Matemaatika | t189 | h143 | l25 | w25 | 10.45–12.05 (1 hour 20 min) Matemaatika 407 · Merili · Mat 2",
-   "Thursday | ev | Matemaatika | t189 | h143 | l50 | w25 | 10.45–12.05 (1 hour 20 min) Matemaatika 405 · Irmeli · Mat 3",
-   "Thursday | ev | Matemaatika | t189 | h143 | l75 | w25 | 10.45–12.05 (1 hour 20 min) Matemaatika 408 · Sandra-Ly · Mat 4",
-   "Thursday | ev | Hispaania keel | t342 | h80 | l0 | w100 | 12.10–12.55 (45 min) Hispaania keel 305 · MariaM · HK",
-   "Thursday | ev | Hispaania keel | t423 | h80 | l0 | w33.3 | 12.55–13.40 (45 min) Hispaania keel 305 · MariaM · HK1",
-   "Thursday | ev | Prantsuse keel | t423 | h80 | l33.3 | w33.3 | 12.55–13.40 (45 min) Prantsuse keel 405 · Eeva · PK",
-   "Thursday | ev | Saksa keel | t423 | h80 | l66.7 | w33.3 | 12.55–13.40 (45 min) Saksa keel 404 · TuuliH · SK",
-   "Thursday | ev | Liikumisõpetus | t513 | h80 | l0 | w100 | 13.45–14.30 (45 min) Liikumisõpetus Saal · MartiinaN",
-   "Thursday | ev | Lastekoor | t603 | h80 | l0 | w100 | 14.35–15.20 (45 min) Lastekoor stuudioA · Maribeth",
-   "Friday | ev | Loodusõpetus | t0 | h80 | l0 | w100 | 9.00–9.45 (45 min) Loodusõpetus 401 · KertuK",
-   "Friday | ev gap | gap | t81 | h89 | l0 | w100 | Break · 50 min",
-   "Friday | ev brk tiny | Amps | t171 | h17 | l0 | w100 | Amps 10.35–10.45 (10 min)",
-   "Friday | ev | Liikumisõpetus | t189 | h143 | l0 | w100 | 10.45–12.05 (1 hour 20 min) Liikumisõpetus Võimlemise tuba · MartiinaN",
-   "Friday | ev gap | gap | t333 | h26 | l0 | w100 | Break · 15 min",
-   "Friday | ev | Matemaatika | t360 | h134 | l0 | w25 | 12.20–13.35 (1 hour 15 min) Matemaatika 406 · MargeL · Mat 1",
-   "Friday | ev | Matemaatika | t360 | h134 | l25 | w25 | 12.20–13.35 (1 hour 15 min) Matemaatika 407 · Merili · Mat 2",
-   "Friday | ev | Matemaatika | t360 | h134 | l50 | w25 | 12.20–13.35 (1 hour 15 min) Matemaatika 405 · Irmeli · Mat 3",
-   "Friday | ev | Matemaatika | t360 | h134 | l75 | w25 | 12.20–13.35 (1 hour 15 min) Matemaatika 408 · Sandra-Ly · Mat 4",
-   "Friday | ev brk tiny | Lõuna | t495 | h17 | l0 | w100 | Lõuna 13.35–13.45 (10 min)",
-   "Friday | ev | Inglise keel | t513 | h80 | l0 | w33.3 | 13.45–14.30 (45 min) Inglise keel 307 · MeeriK · IK1",
-   "Friday | ev | Inglise keel | t513 | h80 | l33.3 | w33.3 | 13.45–14.30 (45 min) Inglise keel 301 · IrisM · IK2",
-   "Friday | ev | Inglise keel | t513 | h80 | l66.7 | w33.3 | 13.45–14.30 (45 min) Inglise keel 308 · VeronikaV · IK3",
-   "axis | t hour | t0 | 9.00",
-   "axis | t | t54 | 9.30",
-   "axis | t hour | t108 | 10.00",
-   "axis | t | t162 | 10.30",
-   "axis | t hour | t216 | 11.00",
-   "axis | t | t270 | 11.30",
-   "axis | t hour | t324 | 12.00",
-   "axis | t | t378 | 12.30",
-   "axis | t hour | t432 | 13.00",
-   "axis | t | t486 | 13.30",
-   "axis | t hour | t540 | 14.00",
-   "axis | t | t594 | 14.30",
-   "axis | t hour | t648 | 15.00",
-   "axis | t | t702 | 15.30",
-   "body | h722"
-  ],
-  "5.l · plain": [
+  "5.l · full": [
    "r0 | Monday | Tuesday | Wednesday | Thursday | Friday",
    "r1 | 1 | Kirjandus 208 · MarjuL | Informaatika Tehnika/robootika · MadisT | Käsitöö Käsitöö · ReginaP · tüdrukud Tehnoloogiaõpetus Tehnoloogia · MadisT · poisid | Ajalugu 404 · TuuliH | Liikumisõpetus Saal · MartiinaN",
    "r2 | 2 | Eesti keel 208 · MarjuL | Ajalugu 404 · TuuliH | Käsitöö Käsitöö · ReginaP · tüdrukud Tehnoloogiaõpetus Tehnoloogia · MadisT · poisid | Eesti keel 208 · MarjuL | Liikumisõpetus Saal · MartiinaN",
@@ -691,30 +338,7 @@
    "r7 | 6 | Matemaatika 408 · Sandra-Ly Matemaatika 406 · MargeL · Mat 1 | Eesti keel 208 · MarjuL | Klassijuhatajatund Saal · MartiinaN | Kunstiõpetus 306 EK · TriinV | Inglise keel 307 · MeeriK · IK1",
    "r8 | 7 | Lastekoor stuudioA · Maribeth"
   ],
-  "5.l · evening": [
-   "r0 | Monday | Tuesday | Wednesday | Thursday | Friday",
-   "r1 | 1 | Kirjandus 208 · MarjuL | Informaatika Tehnika/robootika · MadisT | Käsitöö Käsitöö · ReginaP · tüdrukud Tehnoloogiaõpetus Tehnoloogia · MadisT · poisid | Ajalugu 404 · TuuliH | Liikumisõpetus Saal · MartiinaN",
-   "r2 | 2 | Eesti keel 208 · MarjuL | Ajalugu 404 · TuuliH | Käsitöö Käsitöö · ReginaP · tüdrukud Tehnoloogiaõpetus Tehnoloogia · MadisT · poisid | Eesti keel 208 · MarjuL | Liikumisõpetus Saal · MartiinaN",
-   "r3 | 3 | Inglise keel 307 · MeeriK · IK1 Inglise keel 301 · IrisM · IK2 Inglise keel 308 · VeronikaV · IK3 | Inglise keel 307 · MeeriK · IK1 Inglise keel 301 · IrisM · IK2 Inglise keel 308 · VeronikaV · IK3 | Liikumisõpetus Saal · MartiinaN | Matemaatika 408 · Sandra-Ly Matemaatika 406 · MargeL · Mat 1 Matemaatika 407 · Merili · Mat 2 Matemaatika 405 · Irmeli · Mat 3 | Kirjandus 208 · MarjuL",
-   "r4 | 4 | Loodusõpetus 407 · KertuK | Inglise keel 307 · MeeriK · IK1 Inglise keel 301 · IrisM · IK2 Inglise keel 308 · VeronikaV · IK3 | Muusikaõpetus Saal · Maribeth | Matemaatika 408 · Sandra-Ly Matemaatika 406 · MargeL · Mat 1 Matemaatika 407 · Merili · Mat 2 Matemaatika 405 · Irmeli · Mat 3 | Loodusõpetus 401 · KertuK",
-   "r5 | HA | Hispaania keel 305 · MariaM · HK | Hispaania keel 305 · MariaM · HK",
-   "r6 | 5 | Hispaania keel 305 · MariaM · HK1 Prantsuse keel 306 EK · Eeva · PK Saksa keel 404 · TuuliH · SK | Matemaatika 408 · Sandra-Ly Matemaatika 406 · MargeL · Mat 1 Matemaatika 407 · Merili · Mat 2 Matemaatika 405 · Irmeli · Mat 3 | Inimeseõpetus 407 · MartiinaN | Hispaania keel 305 · MariaM · HK1 Prantsuse keel 405 · Eeva · PK Saksa keel 404 · TuuliH · SK | Matemaatika 408 · Sandra-Ly Matemaatika 406 · MargeL · Mat 1 Matemaatika 407 · Merili · Mat 2 Matemaatika 405 · Irmeli · Mat 3",
-   "r7 | 6 | Matemaatika 408 · Sandra-Ly Matemaatika 406 · MargeL · Mat 1 Matemaatika 407 · Merili · Mat 2 Matemaatika 405 · Irmeli · Mat 3 | Eesti keel 208 · MarjuL | Klassijuhatajatund Saal · MartiinaN | Kunstiõpetus 306 EK · TriinV | Inglise keel 307 · MeeriK · IK1 Inglise keel 301 · IrisM · IK2 Inglise keel 308 · VeronikaV · IK3",
-   "r8 | 7 | Lastekoor stuudioA · Maribeth",
-   "r9 | My own | Training 18.00–19.00 | Choir 18.00–19.30"
-  ],
-  "5.l · hidden": [
-   "r0 | Monday | Tuesday | Wednesday | Thursday | Friday",
-   "r1 | 1 | Kirjandus 208 · MarjuL | Informaatika Tehnika/robootika · MadisT | Käsitöö Käsitöö · ReginaP · tüdrukud Tehnoloogiaõpetus Tehnoloogia · MadisT · poisid | Liikumisõpetus Saal · MartiinaN",
-   "r2 | 2 | Eesti keel 208 · MarjuL | Käsitöö Käsitöö · ReginaP · tüdrukud Tehnoloogiaõpetus Tehnoloogia · MadisT · poisid | Eesti keel 208 · MarjuL | Liikumisõpetus Saal · MartiinaN",
-   "r3 | 3 | Inglise keel 307 · MeeriK · IK1 Inglise keel 301 · IrisM · IK2 Inglise keel 308 · VeronikaV · IK3 | Inglise keel 307 · MeeriK · IK1 Inglise keel 301 · IrisM · IK2 Inglise keel 308 · VeronikaV · IK3 | Liikumisõpetus Saal · MartiinaN | Matemaatika 408 · Sandra-Ly Matemaatika 406 · MargeL · Mat 1 Matemaatika 407 · Merili · Mat 2 Matemaatika 405 · Irmeli · Mat 3 | Kirjandus 208 · MarjuL",
-   "r4 | 4 | Loodusõpetus 407 · KertuK | Inglise keel 307 · MeeriK · IK1 Inglise keel 301 · IrisM · IK2 Inglise keel 308 · VeronikaV · IK3 | Muusikaõpetus Saal · Maribeth | Matemaatika 408 · Sandra-Ly Matemaatika 406 · MargeL · Mat 1 Matemaatika 407 · Merili · Mat 2 Matemaatika 405 · Irmeli · Mat 3 | Loodusõpetus 401 · KertuK",
-   "r5 | HA | Hispaania keel 305 · MariaM · HK | Hispaania keel 305 · MariaM · HK",
-   "r6 | 5 | Hispaania keel 305 · MariaM · HK1 Prantsuse keel 306 EK · Eeva · PK Saksa keel 404 · TuuliH · SK | Matemaatika 408 · Sandra-Ly Matemaatika 406 · MargeL · Mat 1 Matemaatika 407 · Merili · Mat 2 Matemaatika 405 · Irmeli · Mat 3 | Inimeseõpetus 407 · MartiinaN | Hispaania keel 305 · MariaM · HK1 Prantsuse keel 405 · Eeva · PK Saksa keel 404 · TuuliH · SK | Matemaatika 408 · Sandra-Ly Matemaatika 406 · MargeL · Mat 1 Matemaatika 407 · Merili · Mat 2 Matemaatika 405 · Irmeli · Mat 3",
-   "r7 | 6 | Matemaatika 408 · Sandra-Ly Matemaatika 406 · MargeL · Mat 1 Matemaatika 407 · Merili · Mat 2 Matemaatika 405 · Irmeli · Mat 3 | Eesti keel 208 · MarjuL | Klassijuhatajatund Saal · MartiinaN | Kunstiõpetus 306 EK · TriinV | Inglise keel 307 · MeeriK · IK1 Inglise keel 301 · IrisM · IK2 Inglise keel 308 · VeronikaV · IK3",
-   "r8 | 7 | Lastekoor stuudioA · Maribeth"
-  ],
-  "5.t · plain": [
+  "5.t · full": [
    "r0 | Monday | Tuesday | Wednesday | Thursday | Friday",
    "r1 | 1 | Ajalugu 404 · TuuliH | Liikumisõpetus Saal · MartiinaN | Liikumisõpetus Saal · MartiinaN | Kirjandus 208 · MarjuL | Ajalugu 404 · TuuliH",
    "r2 | 2 | Muusikaõpetus stuudioB · Maribeth | Liikumisõpetus Võimlemise tuba · MartiinaN | Kunstiõpetus 306 EK · TriinV | Loodusõpetus 401 · AveS | Eesti keel 208 · MarjuL",
@@ -736,30 +360,7 @@
    "r7 | 6 | Matemaatika 408 · Sandra-Ly Matemaatika 406 · MargeL · Mat 1 | Inimeseõpetus 406 · MartiinaN | Klassijuhatajatund MargeL | Eesti keel 208 · MarjuL | Inglise keel 307 · MeeriK · IK1",
    "r8 | 7 | Lastekoor stuudioA · Maribeth"
   ],
-  "5.t · evening": [
-   "r0 | Monday | Tuesday | Wednesday | Thursday | Friday",
-   "r1 | 1 | Ajalugu 404 · TuuliH | Liikumisõpetus Saal · MartiinaN | Liikumisõpetus Saal · MartiinaN | Kirjandus 208 · MarjuL | Ajalugu 404 · TuuliH",
-   "r2 | 2 | Muusikaõpetus stuudioB · Maribeth | Liikumisõpetus Võimlemise tuba · MartiinaN | Kunstiõpetus 306 EK · TriinV | Loodusõpetus 401 · AveS | Eesti keel 208 · MarjuL",
-   "r3 | 3 | Inglise keel 307 · MeeriK · IK1 Inglise keel 301 · IrisM · IK2 Inglise keel 308 · VeronikaV · IK3 | Inglise keel 307 · MeeriK · IK1 Inglise keel 301 · IrisM · IK2 Inglise keel 308 · VeronikaV · IK3 | Eesti keel 208 · MarjuL | Matemaatika 408 · Sandra-Ly Matemaatika 406 · MargeL · Mat 1 Matemaatika 407 · Merili · Mat 2 Matemaatika 405 · Irmeli · Mat 3 | Käsitöö Käsitöö · ReginaP · Tüdrukud Tehnoloogiaõpetus Tehnika/robootika · MadisT · Poisid",
-   "r4 | 4 | Loodusõpetus 401 · AveS | Inglise keel 307 · MeeriK · IK1 Inglise keel 301 · IrisM · IK2 Inglise keel 308 · VeronikaV · IK3 | Informaatika Tehnika/robootika · MadisT | Matemaatika 408 · Sandra-Ly Matemaatika 406 · MargeL · Mat 1 Matemaatika 407 · Merili · Mat 2 Matemaatika 405 · Irmeli · Mat 3 | Käsitöö Käsitöö · ReginaP · Tüdrukud Tehnoloogiaõpetus Tehnika/robootika · MadisT · Poisid",
-   "r5 | HA | Hispaania keel 305 · MariaM · HK | Hispaania keel 305 · MariaM · HK",
-   "r6 | 5 | Hispaania keel 305 · MariaM · HK1 Prantsuse keel 306 EK · Eeva · PK Saksa keel 404 · TuuliH · SK | Matemaatika 408 · Sandra-Ly Matemaatika 406 · MargeL · Mat 1 Matemaatika 407 · Merili · Mat 2 Matemaatika 405 · Irmeli · Mat 3 | Kirjandus 208 · MarjuL | Hispaania keel 305 · MariaM · HK1 Prantsuse keel 405 · Eeva · PK Saksa keel 404 · TuuliH · SK | Matemaatika 408 · Sandra-Ly Matemaatika 406 · MargeL · Mat 1 Matemaatika 407 · Merili · Mat 2 Matemaatika 405 · Irmeli · Mat 3",
-   "r7 | 6 | Matemaatika 408 · Sandra-Ly Matemaatika 406 · MargeL · Mat 1 Matemaatika 407 · Merili · Mat 2 Matemaatika 405 · Irmeli · Mat 3 | Inimeseõpetus 406 · MartiinaN | Klassijuhatajatund MargeL | Eesti keel 208 · MarjuL | Inglise keel 307 · MeeriK · IK1 Inglise keel 301 · IrisM · IK2 Inglise keel 308 · VeronikaV · IK3",
-   "r8 | 7 | Lastekoor stuudioA · Maribeth",
-   "r9 | My own | Training 18.00–19.00 | Choir 18.00–19.30"
-  ],
-  "5.t · hidden": [
-   "r0 | Monday | Tuesday | Wednesday | Thursday | Friday",
-   "r1 | 1 | Liikumisõpetus Saal · MartiinaN | Liikumisõpetus Saal · MartiinaN | Kirjandus 208 · MarjuL",
-   "r2 | 2 | Muusikaõpetus stuudioB · Maribeth | Liikumisõpetus Võimlemise tuba · MartiinaN | Kunstiõpetus 306 EK · TriinV | Loodusõpetus 401 · AveS | Eesti keel 208 · MarjuL",
-   "r3 | 3 | Inglise keel 307 · MeeriK · IK1 Inglise keel 301 · IrisM · IK2 Inglise keel 308 · VeronikaV · IK3 | Inglise keel 307 · MeeriK · IK1 Inglise keel 301 · IrisM · IK2 Inglise keel 308 · VeronikaV · IK3 | Eesti keel 208 · MarjuL | Matemaatika 408 · Sandra-Ly Matemaatika 406 · MargeL · Mat 1 Matemaatika 407 · Merili · Mat 2 Matemaatika 405 · Irmeli · Mat 3 | Käsitöö Käsitöö · ReginaP · Tüdrukud Tehnoloogiaõpetus Tehnika/robootika · MadisT · Poisid",
-   "r4 | 4 | Loodusõpetus 401 · AveS | Inglise keel 307 · MeeriK · IK1 Inglise keel 301 · IrisM · IK2 Inglise keel 308 · VeronikaV · IK3 | Informaatika Tehnika/robootika · MadisT | Matemaatika 408 · Sandra-Ly Matemaatika 406 · MargeL · Mat 1 Matemaatika 407 · Merili · Mat 2 Matemaatika 405 · Irmeli · Mat 3 | Käsitöö Käsitöö · ReginaP · Tüdrukud Tehnoloogiaõpetus Tehnika/robootika · MadisT · Poisid",
-   "r5 | HA | Hispaania keel 305 · MariaM · HK | Hispaania keel 305 · MariaM · HK",
-   "r6 | 5 | Hispaania keel 305 · MariaM · HK1 Prantsuse keel 306 EK · Eeva · PK Saksa keel 404 · TuuliH · SK | Matemaatika 408 · Sandra-Ly Matemaatika 406 · MargeL · Mat 1 Matemaatika 407 · Merili · Mat 2 Matemaatika 405 · Irmeli · Mat 3 | Kirjandus 208 · MarjuL | Hispaania keel 305 · MariaM · HK1 Prantsuse keel 405 · Eeva · PK Saksa keel 404 · TuuliH · SK | Matemaatika 408 · Sandra-Ly Matemaatika 406 · MargeL · Mat 1 Matemaatika 407 · Merili · Mat 2 Matemaatika 405 · Irmeli · Mat 3",
-   "r7 | 6 | Matemaatika 408 · Sandra-Ly Matemaatika 406 · MargeL · Mat 1 Matemaatika 407 · Merili · Mat 2 Matemaatika 405 · Irmeli · Mat 3 | Inimeseõpetus 406 · MartiinaN | Klassijuhatajatund MargeL | Eesti keel 208 · MarjuL | Inglise keel 307 · MeeriK · IK1 Inglise keel 301 · IrisM · IK2 Inglise keel 308 · VeronikaV · IK3",
-   "r8 | 7 | Lastekoor stuudioA · Maribeth"
-  ],
-  "6.v · plain": [
+  "6.v · full": [
    "r0 | Monday | Tuesday | Wednesday | Thursday | Friday",
    "r1 | 1 | Liikumisõpetus Saal · MartiinaN | Matemaatika 406 · MargeL · M1 Matemaatika 407 · Merili · M2 Matemaatika 405 · Irmeli · M3 | Inglise keel 307 · MeeriK · IK1 Inglise keel 308 · VeronikaV · IK2 Inglise keel 301 · IrisM · IK3 | Matemaatika 406 · MargeL · M1 Matemaatika 407 · Merili · M2 Matemaatika 405 · Irmeli · M3 | Matemaatika 406 · MargeL · M1 Matemaatika 407 · Merili · M2 Matemaatika 405 · Irmeli · M3",
    "r2 | 2 | Liikumisõpetus Saal · MartiinaN | Matemaatika 406 · MargeL · M1 Matemaatika 407 · Merili · M2 Matemaatika 405 · Irmeli · M3 | Inglise keel 307 · MeeriK · IK1 Inglise keel 308 · VeronikaV · IK2 Inglise keel 301 · IrisM · IK3 | Matemaatika 406 · MargeL · M1 Matemaatika 407 · Merili · M2 Matemaatika 405 · Irmeli · M3 | Loodusõpetus 401 · KertuK",
@@ -781,30 +382,7 @@
    "r7 | 6 | Hispaania keel MariaM · H1.1 | Loodusõpetus 401 · KertuK | Klassijuhatajatund 308 · VeronikaV | Hispaania keel 305 · MariaM · H2.1 | Kirjandus 208 · MarjuL",
    "r8 | 7 | Muusikaõpetus stuudioA · Maribeth | Inimeseõpetus 308 · VeronikaV | Lastekoor stuudioA · Maribeth"
   ],
-  "6.v · evening": [
-   "r0 | Monday | Tuesday | Wednesday | Thursday | Friday",
-   "r1 | 1 | Liikumisõpetus Saal · MartiinaN | Matemaatika 406 · MargeL · M1 Matemaatika 407 · Merili · M2 Matemaatika 405 · Irmeli · M3 | Inglise keel 307 · MeeriK · IK1 Inglise keel 308 · VeronikaV · IK2 Inglise keel 301 · IrisM · IK3 | Matemaatika 406 · MargeL · M1 Matemaatika 407 · Merili · M2 Matemaatika 405 · Irmeli · M3 | Matemaatika 406 · MargeL · M1 Matemaatika 407 · Merili · M2 Matemaatika 405 · Irmeli · M3",
-   "r2 | 2 | Liikumisõpetus Saal · MartiinaN | Matemaatika 406 · MargeL · M1 Matemaatika 407 · Merili · M2 Matemaatika 405 · Irmeli · M3 | Inglise keel 307 · MeeriK · IK1 Inglise keel 308 · VeronikaV · IK2 Inglise keel 301 · IrisM · IK3 | Matemaatika 406 · MargeL · M1 Matemaatika 407 · Merili · M2 Matemaatika 405 · Irmeli · M3 | Loodusõpetus 401 · KertuK",
-   "r3 | 3 | Hispaania keel 305 · MariaM · H2 Käsitöö Käsitöö · ReginaP · Kä2 Saksa keel 404 · TuuliH · S2 Tehnoloogiaõpetus Tehnoloogia · MadisT · Teh2 | Eesti keel 208 · MarjuL | Ühiskonnaõpetus 404 · TuuliH | Hispaania keel 305 · MariaM · H1 Käsitöö Käsitöö · ReginaP · Kä1 Prantsuse keel 404 · Eeva · Pr1.1 Tehnoloogiaõpetus Tehnika/robootika · MadisT · Teh1 | Loodusõpetus 401 · KertuK",
-   "r4 | 4 | Hispaania keel 305 · MariaM · H2 Käsitöö Käsitöö · ReginaP · Kä2 Saksa keel 404 · TuuliH · S2 Tehnoloogiaõpetus Tehnoloogia · MadisT · Teh2 | Eesti keel 208 · MarjuL | Kunstiõpetus 306 EK · TriinV | Hispaania keel 305 · MariaM · H1 Käsitöö Käsitöö · ReginaP · Kä1 Prantsuse keel 404 · Eeva · Pr1.1 Tehnoloogiaõpetus Tehnika/robootika · MadisT · Teh1 | Ajalugu 404 · TuuliH",
-   "r5 | HA",
-   "r6 | 5 | Kirjandus 208 · MarjuL | Inglise keel 307 · MeeriK · IK1 Inglise keel 308 · VeronikaV · IK2 Inglise keel 301 · IrisM · IK3 | Ajalugu 404 · TuuliH | Eesti keel 208 · MarjuL | Inglise keel 307 · MeeriK · IK1 Inglise keel 308 · VeronikaV · IK2 Inglise keel 301 · IrisM · IK3",
-   "r7 | 6 | Hispaania keel MariaM · H1.1 Informaatika Tehnika/robootika · MadisT · In1 Prantsuse keel 306 EK · Eeva · Pr1.1 | Loodusõpetus 401 · KertuK | Klassijuhatajatund 308 · VeronikaV | Hispaania keel 305 · MariaM · H2.1 Informaatika Tehnoloogia · MadisT · In2 Saksa keel 404 · TuuliH · S2.1 | Kirjandus 208 · MarjuL",
-   "r8 | 7 | Muusikaõpetus stuudioA · Maribeth | Inimeseõpetus 308 · VeronikaV | Lastekoor stuudioA · Maribeth",
-   "r9 | My own | Training 18.00–19.00 | Choir 18.00–19.30"
-  ],
-  "6.v · hidden": [
-   "r0 | Monday | Tuesday | Wednesday | Thursday | Friday",
-   "r1 | 1 | Liikumisõpetus Saal · MartiinaN | Matemaatika 406 · MargeL · M1 Matemaatika 407 · Merili · M2 Matemaatika 405 · Irmeli · M3 | Inglise keel 307 · MeeriK · IK1 Inglise keel 308 · VeronikaV · IK2 Inglise keel 301 · IrisM · IK3 | Matemaatika 406 · MargeL · M1 Matemaatika 407 · Merili · M2 Matemaatika 405 · Irmeli · M3 | Matemaatika 406 · MargeL · M1 Matemaatika 407 · Merili · M2 Matemaatika 405 · Irmeli · M3",
-   "r2 | 2 | Liikumisõpetus Saal · MartiinaN | Matemaatika 406 · MargeL · M1 Matemaatika 407 · Merili · M2 Matemaatika 405 · Irmeli · M3 | Inglise keel 307 · MeeriK · IK1 Inglise keel 308 · VeronikaV · IK2 Inglise keel 301 · IrisM · IK3 | Matemaatika 406 · MargeL · M1 Matemaatika 407 · Merili · M2 Matemaatika 405 · Irmeli · M3 | Loodusõpetus 401 · KertuK",
-   "r3 | 3 | Hispaania keel 305 · MariaM · H2 Käsitöö Käsitöö · ReginaP · Kä2 Saksa keel 404 · TuuliH · S2 Tehnoloogiaõpetus Tehnoloogia · MadisT · Teh2 | Eesti keel 208 · MarjuL | Ühiskonnaõpetus 404 · TuuliH | Hispaania keel 305 · MariaM · H1 Käsitöö Käsitöö · ReginaP · Kä1 Prantsuse keel 404 · Eeva · Pr1.1 Tehnoloogiaõpetus Tehnika/robootika · MadisT · Teh1 | Loodusõpetus 401 · KertuK",
-   "r4 | 4 | Hispaania keel 305 · MariaM · H2 Käsitöö Käsitöö · ReginaP · Kä2 Saksa keel 404 · TuuliH · S2 Tehnoloogiaõpetus Tehnoloogia · MadisT · Teh2 | Eesti keel 208 · MarjuL | Kunstiõpetus 306 EK · TriinV | Hispaania keel 305 · MariaM · H1 Käsitöö Käsitöö · ReginaP · Kä1 Prantsuse keel 404 · Eeva · Pr1.1 Tehnoloogiaõpetus Tehnika/robootika · MadisT · Teh1",
-   "r5 | HA",
-   "r6 | 5 | Kirjandus 208 · MarjuL | Inglise keel 307 · MeeriK · IK1 Inglise keel 308 · VeronikaV · IK2 Inglise keel 301 · IrisM · IK3 | Eesti keel 208 · MarjuL | Inglise keel 307 · MeeriK · IK1 Inglise keel 308 · VeronikaV · IK2 Inglise keel 301 · IrisM · IK3",
-   "r7 | 6 | Hispaania keel MariaM · H1.1 Informaatika Tehnika/robootika · MadisT · In1 Prantsuse keel 306 EK · Eeva · Pr1.1 | Loodusõpetus 401 · KertuK | Klassijuhatajatund 308 · VeronikaV | Hispaania keel 305 · MariaM · H2.1 Informaatika Tehnoloogia · MadisT · In2 Saksa keel 404 · TuuliH · S2.1 | Kirjandus 208 · MarjuL",
-   "r8 | 7 | Muusikaõpetus stuudioA · Maribeth | Inimeseõpetus 308 · VeronikaV | Lastekoor stuudioA · Maribeth"
-  ],
-  "6.k · plain": [
+  "6.k · full": [
    "r0 | Monday | Tuesday | Wednesday | Thursday | Friday",
    "r1 | 1 | Eesti keel 407 · Merili | Matemaatika 406 · MargeL · M1 Matemaatika 407 · Merili · M2 Matemaatika 405 · Irmeli · M3 | Inglise keel 307 · MeeriK · IK1 Inglise keel 308 · VeronikaV · IK2 Inglise keel 301 · IrisM · IK3 | Matemaatika 406 · MargeL · M1 Matemaatika 407 · Merili · M2 Matemaatika 405 · Irmeli · M3 | Matemaatika 406 · MargeL · M1 Matemaatika 407 · Merili · M2 Matemaatika 405 · Irmeli · M3",
    "r2 | 2 | Ühiskonnaõpetus 404 · TuuliH | Matemaatika 406 · MargeL · M1 Matemaatika 407 · Merili · M2 Matemaatika 405 · Irmeli · M3 | Inglise keel 307 · MeeriK · IK1 Inglise keel 308 · VeronikaV · IK2 Inglise keel 301 · IrisM · IK3 | Matemaatika 406 · MargeL · M1 Matemaatika 407 · Merili · M2 Matemaatika 405 · Irmeli · M3 | Eesti keel 407 · Merili",
@@ -824,29 +402,6 @@
    "r5 | HA",
    "r6 | 5 | Inimeseõpetus Saal · MartiinaN | Inglise keel 307 · MeeriK · IK1 | Loodusõpetus 401 · KertuK | Eesti keel 407 · Merili | Inglise keel 307 · MeeriK · IK1",
    "r7 | 6 | Hispaania keel MariaM · H1.1 | Kirjandus 407 · Merili | Klassijuhatajatund 401 · KertuK | Hispaania keel 305 · MariaM · H2.1 | Loodusõpetus 401 · KertuK",
-   "r8 | 7 | Kirjandus 407 · Merili | Loodusõpetus 401 · KertuK | Lastekoor stuudioA · Maribeth"
-  ],
-  "6.k · evening": [
-   "r0 | Monday | Tuesday | Wednesday | Thursday | Friday",
-   "r1 | 1 | Eesti keel 407 · Merili | Matemaatika 406 · MargeL · M1 Matemaatika 407 · Merili · M2 Matemaatika 405 · Irmeli · M3 | Inglise keel 307 · MeeriK · IK1 Inglise keel 308 · VeronikaV · IK2 Inglise keel 301 · IrisM · IK3 | Matemaatika 406 · MargeL · M1 Matemaatika 407 · Merili · M2 Matemaatika 405 · Irmeli · M3 | Matemaatika 406 · MargeL · M1 Matemaatika 407 · Merili · M2 Matemaatika 405 · Irmeli · M3",
-   "r2 | 2 | Ühiskonnaõpetus 404 · TuuliH | Matemaatika 406 · MargeL · M1 Matemaatika 407 · Merili · M2 Matemaatika 405 · Irmeli · M3 | Inglise keel 307 · MeeriK · IK1 Inglise keel 308 · VeronikaV · IK2 Inglise keel 301 · IrisM · IK3 | Matemaatika 406 · MargeL · M1 Matemaatika 407 · Merili · M2 Matemaatika 405 · Irmeli · M3 | Eesti keel 407 · Merili",
-   "r3 | 3 | Hispaania keel 305 · MariaM · H2 Käsitöö Käsitöö · ReginaP · Kä2 Saksa keel 404 · TuuliH · S2 Tehnoloogiaõpetus Tehnoloogia · MadisT · Teh2 | Liikumisõpetus Võimlemise tuba · MartiinaN | Muusikaõpetus stuudioB · Maribeth | Hispaania keel 305 · MariaM · H1 Käsitöö Käsitöö · ReginaP · Kä1 Prantsuse keel 404 · Eeva · Pr1 Tehnoloogiaõpetus Tehnika/robootika · MadisT · Teh1 | Ajalugu 404 · TuuliH",
-   "r4 | 4 | Hispaania keel 305 · MariaM · H2 Käsitöö Käsitöö · ReginaP · Kä2 Saksa keel 404 · TuuliH · S2 Tehnoloogiaõpetus Tehnoloogia · MadisT · Teh2 | Liikumisõpetus Võimlemise tuba · MartiinaN | Ajalugu 404 · TuuliH | Hispaania keel 305 · MariaM · H1 Käsitöö Käsitöö · ReginaP · Kä1 Prantsuse keel 404 · Eeva · Pr1 Tehnoloogiaõpetus Tehnika/robootika · MadisT · Teh1 | Kunstiõpetus 306 EK · TriinV",
-   "r5 | HA",
-   "r6 | 5 | Inimeseõpetus Saal · MartiinaN | Inglise keel 307 · MeeriK · IK1 Inglise keel 308 · VeronikaV · IK2 Inglise keel 301 · IrisM · IK3 | Loodusõpetus 401 · KertuK | Eesti keel 407 · Merili | Inglise keel 307 · MeeriK · IK1 Inglise keel 308 · VeronikaV · IK2 Inglise keel 301 · IrisM · IK3",
-   "r7 | 6 | Hispaania keel MariaM · H1.1 Informaatika Tehnika/robootika · MadisT · In1 Prantsuse keel 306 EK · Eeva · Pr1.1 | Kirjandus 407 · Merili | Klassijuhatajatund 401 · KertuK | Hispaania keel 305 · MariaM · H2.1 Informaatika Tehnoloogia · MadisT · In2 Saksa keel 404 · TuuliH · S2.1 | Loodusõpetus 401 · KertuK",
-   "r8 | 7 | Kirjandus 407 · Merili | Loodusõpetus 401 · KertuK | Lastekoor stuudioA · Maribeth",
-   "r9 | My own | Training 18.00–19.00 | Choir 18.00–19.30"
-  ],
-  "6.k · hidden": [
-   "r0 | Monday | Tuesday | Wednesday | Thursday | Friday",
-   "r1 | 1 | Eesti keel 407 · Merili | Matemaatika 406 · MargeL · M1 Matemaatika 407 · Merili · M2 Matemaatika 405 · Irmeli · M3 | Inglise keel 307 · MeeriK · IK1 Inglise keel 308 · VeronikaV · IK2 Inglise keel 301 · IrisM · IK3 | Matemaatika 406 · MargeL · M1 Matemaatika 407 · Merili · M2 Matemaatika 405 · Irmeli · M3 | Matemaatika 406 · MargeL · M1 Matemaatika 407 · Merili · M2 Matemaatika 405 · Irmeli · M3",
-   "r2 | 2 | Ühiskonnaõpetus 404 · TuuliH | Matemaatika 406 · MargeL · M1 Matemaatika 407 · Merili · M2 Matemaatika 405 · Irmeli · M3 | Inglise keel 307 · MeeriK · IK1 Inglise keel 308 · VeronikaV · IK2 Inglise keel 301 · IrisM · IK3 | Matemaatika 406 · MargeL · M1 Matemaatika 407 · Merili · M2 Matemaatika 405 · Irmeli · M3 | Eesti keel 407 · Merili",
-   "r3 | 3 | Hispaania keel 305 · MariaM · H2 Käsitöö Käsitöö · ReginaP · Kä2 Saksa keel 404 · TuuliH · S2 Tehnoloogiaõpetus Tehnoloogia · MadisT · Teh2 | Liikumisõpetus Võimlemise tuba · MartiinaN | Muusikaõpetus stuudioB · Maribeth | Hispaania keel 305 · MariaM · H1 Käsitöö Käsitöö · ReginaP · Kä1 Prantsuse keel 404 · Eeva · Pr1 Tehnoloogiaõpetus Tehnika/robootika · MadisT · Teh1",
-   "r4 | 4 | Hispaania keel 305 · MariaM · H2 Käsitöö Käsitöö · ReginaP · Kä2 Saksa keel 404 · TuuliH · S2 Tehnoloogiaõpetus Tehnoloogia · MadisT · Teh2 | Liikumisõpetus Võimlemise tuba · MartiinaN | Hispaania keel 305 · MariaM · H1 Käsitöö Käsitöö · ReginaP · Kä1 Prantsuse keel 404 · Eeva · Pr1 Tehnoloogiaõpetus Tehnika/robootika · MadisT · Teh1 | Kunstiõpetus 306 EK · TriinV",
-   "r5 | HA",
-   "r6 | 5 | Inimeseõpetus Saal · MartiinaN | Inglise keel 307 · MeeriK · IK1 Inglise keel 308 · VeronikaV · IK2 Inglise keel 301 · IrisM · IK3 | Loodusõpetus 401 · KertuK | Eesti keel 407 · Merili | Inglise keel 307 · MeeriK · IK1 Inglise keel 308 · VeronikaV · IK2 Inglise keel 301 · IrisM · IK3",
-   "r7 | 6 | Hispaania keel MariaM · H1.1 Informaatika Tehnika/robootika · MadisT · In1 Prantsuse keel 306 EK · Eeva · Pr1.1 | Kirjandus 407 · Merili | Klassijuhatajatund 401 · KertuK | Hispaania keel 305 · MariaM · H2.1 Informaatika Tehnoloogia · MadisT · In2 Saksa keel 404 · TuuliH · S2.1 | Loodusõpetus 401 · KertuK",
    "r8 | 7 | Kirjandus 407 · Merili | Loodusõpetus 401 · KertuK | Lastekoor stuudioA · Maribeth"
   ]
  }

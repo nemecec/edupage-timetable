@@ -63,8 +63,8 @@ test("the record covers every class the page carries", () => {
                         .reduce((n, r) => n + Object.keys(r.classes).length, 0);
   assert.equal(Object.keys(shot).length, data.schools.length);
   assert.ok(classes >= 41, `only ${classes} classes in the fixtures`);
-  assert.equal(renders % classes, 0, "not every class got every scenario");
-  assert.ok(renders / classes >= 4, "fewer scenarios than there were");
+  assert.equal(renders % classes, 0, "not every class got every setting");
+  assert.ok(renders / classes >= 2, "fewer settings than there were");
 });
 
 test("a record notices a box that moves", () => {

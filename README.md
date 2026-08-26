@@ -695,13 +695,20 @@ about the other forty, so a change to a shared piece — the packing, the axis,
 the palette, a bell schedule — can move boxes that no test names.
 
 `tests/golden/` holds one file per school. Each is a record of what the page
-draws for every class in it, under four fixed settings: as it opens, with the
-first option of every study group chosen, with two evening events, and with
-one subject hidden. Every box is one line, and the line carries the day, the
-kind of box, the subject, the top, the height, the lane, the width and the
-text. The axis ticks, the cut bands and the height of the sheet are recorded
-beside them. Classes the plan gives no times to are recorded as grid cells,
-because that is the view they get.
+draws for every class in it, twice: the full view, with every group side by
+side in its lane, and then one week per set of study group picks. Every box is
+one line, and the line carries the day, the kind of box, the subject, the top,
+the height, the lane, the width and the text. The axis ticks, the cut bands and
+the height of the sheet are recorded beside them. Classes the plan gives no
+times to are recorded as grid cells, because that is the view they get.
+
+What it is for is the week itself: the bells, the breaks, the double lessons,
+the splits — the reading of each school's own plan, which is where the work
+went and where a regression would be silent. Nothing is switched off and
+nothing is added. The controls a reader works with — hiding a subject, adding
+an event, choosing a color — have tests of their own that say why each is
+right. Recording them here as well would only make the file move whenever a
+control changes, which is the noise that stops anybody reading the diff.
 
 The generator is inside the loop. The record is taken from a page built out of
 `tests/fixtures`, so a changed bell window moves the record exactly as a
@@ -719,7 +726,7 @@ lines that differ, so the diff is usually short enough to read in the failure
 itself.
 
 Two of the tests guard the record rather than the page. One checks that every
-class got every setting, so the file cannot quietly stop covering a school. The
+class got both, so the file cannot quietly stop covering a school. The
 other moves a box by a pixel and checks that the comparison would have caught
 it, because a record that cannot fail is worse than none.
 

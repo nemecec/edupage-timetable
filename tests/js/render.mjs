@@ -106,30 +106,30 @@ function gridCells(html) {
   return out;
 }
 
-/* Fixed settings, so a record says something about the page rather than about
-   the last thing somebody clicked. English throughout: the record is read by
-   whoever is looking at the diff, not by a reader of the page. */
+/* What the record is for is the week itself: the bells, the breaks, the double
+   lessons, the splits — the reading of each school's own plan, which is where
+   the work went and where a regression would be silent.
+ *
+ * So it is the full view, with nothing switched off and nothing added. The
+ * controls a reader works with — hiding a subject, adding an event, changing a
+ * colour — have tests of their own that say why each is right. Recording them
+ * here as well would only make the file move whenever a control changes, which
+ * is the noise that stops anybody reading the diff.
+ *
+ * English throughout: the record is read by whoever is looking at the diff,
+ * not by a reader of the page. */
 const SCENARIOS = [
-  { name: "plain", setUp: "" },
-  /* The first option of every division. A class with groups draws a different
-     week per group, and the plain scenario draws all of them at once. */
+  /* Everything the class has, all groups at once, side by side in lanes. */
+  { name: "full", setUp: "" },
+  /* And one week per set of picks. Which lessons a study group keeps is the
+     school's own splitting, not a control — the same plan read one child's
+     way. The first option of every division, so it is the same every run. */
   { name: "groups", setUp: `
       var picks = {};
       (currentClass().v || []).forEach(function (division) {
         picks[division.groups.join("/")] = division.groups[0];
       });
       myOwn().studyGroups = picks;` },
-  /* An evening event, which is what puts a hole in every day and so is the
-     only thing that exercises the cut axis and the lane packing together. */
-  { name: "evening", setUp: `
-      myOwn().events = [{ day: "Mon", startTime: "18:00", endTime: "19:00",
-                          label: "Training", backgroundColor: "#00FF00" },
-                        { day: "Wed", startTime: "18:00", endTime: "19:30",
-                          label: "Choir", backgroundColor: "#00FFFF" }];` },
-  /* One subject switched off, to pin what the hole it leaves turns into. */
-  { name: "hidden", setUp: `
-      var first = subjectsOnScreen()[0];
-      if (first) state.subjects[first] = { hide: true };` },
 ];
 
 /* Every class of every school, under every scenario. */

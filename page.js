@@ -3,6 +3,38 @@ const DATA = JSON.parse(document.getElementById("data").textContent);
 const SCHOOLS = DATA.schools;
 const KEY = "tt:" + DATA.edupage + ":" + DATA.year;
 
+/* Before anything else, because anything else can be what breaks.
+ *
+ * This used to sit at the bottom of the file. A fault near the top then took
+ * the whole script down with it — including the line that would have installed
+ * this — so the page came up blank and nobody was told. The one page-breaking
+ * fault this is for is exactly the one it could not see.
+ *
+ * `report` is a function declaration, so it is ready before its own line is
+ * reached, and it swallows anything that goes wrong inside it. */
+/* Globals a browser extension puts into every page it can reach. A wallet
+   extension failing to set window.ethereum has nothing to do with a timetable
+   and nothing here can fix it, so it is logged and not alarmed on. */
+const INJECTED = ["ethereum", "solana", "web3", "tronWeb", "keplr",
+                  "__firefox__", "webkit.messageHandlers"];
+
+/* One page, a handful of reports. A fault inside the drawing code fires on
+   every repaint, and a reporter that reports its own reporting never stops.
+
+   Here rather than beside the reporter, because a `const` is not readable
+   before its own line runs and the reporter's very first line reads these. A
+   fault early enough would otherwise throw inside the reporter, before the try
+   that guards it — and an early fault is the one worth hearing about. */
+const REPORT_CAP = 5;
+let reportsSent = 0;
+const reportsSeen = new Set();
+
+if (typeof window.addEventListener === "function") {
+  window.addEventListener("error", (ev) => report("error", ev.error || ev.message,
+    ev.filename ? ev.filename + ":" + ev.lineno + ":" + ev.colno : ""));
+  window.addEventListener("unhandledrejection", (ev) => report("rejection", ev.reason));
+}
+
 /* The saved settings, and the names they go by.
  *
  * Two rules the shape follows. Names match what the interface calls things, so
@@ -2288,12 +2320,6 @@ function scrubbed(value, key) {
   return value;
 }
 
-/* Globals a browser extension puts into every page it can reach. A wallet
-   extension failing to set window.ethereum has nothing to do with a timetable
-   and nothing here can fix it, so it is logged and not alarmed on. */
-const INJECTED = ["ethereum", "solana", "web3", "tronWeb", "keplr",
-                  "__firefox__", "webkit.messageHandlers"];
-
 /* Where a fault happened, with the address's own tail taken off. A browser
    reports the file it was in, and for an error in the page that file is the
    page — fragment and all, which is where every setting lives. `path` is sent
@@ -2302,37 +2328,53 @@ function faultPlace(at) {
   return String(at || "").split("#")[0].split("?")[0];
 }
 
-/* One page, a handful of reports. A fault inside the drawing code fires on
-   every repaint, and a reporter that reports its own reporting never stops. */
-const REPORT_CAP = 5;
-let reportsSent = 0;
-const reportsSeen = new Set();
+/* Whether a fault may leave this page at all.
+ *
+ * The site is served over https, so anything else is a copy somebody saved to
+ * disk — and a saved copy talks to nobody. A named rule rather than a line
+ * inside the reporter, so a test can say what it is standing in for. */
+function reportable() {
+  return location.protocol === "https:";
+}
 
 function report(what, error, at) {
   if (!DATA.report || reportsSent >= REPORT_CAP) return;
-  if (location.protocol !== "https:") return;   /* a saved copy talks to nobody */
+  if (!reportable()) return;
   try {
     const message = String((error && error.message) || error || "").slice(0, 300);
     const seen = what + "|" + message;
     if (reportsSeen.has(seen)) return;
     reportsSeen.add(seen);
     reportsSent++;
+    /* What every report carries, built from nothing but its own arguments.
+       A fault stops the script where it stands, and everything declared below
+       that point stays unreadable for the life of the page — so reaching for
+       any of it here threw inside the reporter and lost the whole report. The
+       fault worth hearing about most is the early one, and it was the one
+       least likely to be sent. */
     const body = {
       kind: "page-error",
       what: what,
       message: message,
       stack: String((error && error.stack) || "").slice(0, 1200),
-      /* Which file, and where in it. A browser hides all of this for a script
-         from another origin unless that script is loaded with crossorigin and
-         serves the header for it. */
-      where: faultPlace(at).slice(0, 300),
-      /* Where in the code, not where the reader is: the address carries the
-         settings, and the settings carry a name. */
-      path: location.pathname,
-      built: DATA.built || "",
-      agent: String(navigator.userAgent || "").slice(0, 200),
-      settings: scrubbed(slim(state)),
     };
+    /* Everything else is an improvement on that, and each is allowed to fail
+       without taking the report with it. */
+    const add = (name, get) => {
+      try {
+        body[name] = get();
+      } catch (e) { /* not readable here, so the report goes without it */ }
+    };
+    /* Which file, and where in it. A browser hides all of this for a script
+       from another origin unless that script is loaded with crossorigin and
+       serves the header for it. */
+    add("where", () => faultPlace(at).slice(0, 300));
+    /* Where in the code, not where the reader is: the address carries the
+       settings, and the settings carry a name. */
+    add("path", () => location.pathname);
+    add("built", () => DATA.built || "");
+    add("agent", () => String(navigator.userAgent || "").slice(0, 200));
+    add("settings", () => scrubbed(slim(state)));
     /* "Script error." with no stack and no file is a browser refusing to say
        anything about a script from another origin — an extension, or a
        third-party script of ours before it was loaded with crossorigin. It is
@@ -2413,12 +2455,6 @@ async function sendFeedback() {
     button.disabled = false;
   }
   saying = false;
-}
-
-if (typeof window.addEventListener === "function") {
-  window.addEventListener("error", (ev) => report("error", ev.error || ev.message,
-    ev.filename ? ev.filename + ":" + ev.lineno + ":" + ev.colno : ""));
-  window.addEventListener("unhandledrejection", (ev) => report("rejection", ev.reason));
 }
 
 renderLanguages();

@@ -260,6 +260,29 @@ class WholePage(unittest.TestCase):
         self.assertEqual(breaks, [("Vaba aeg", "11.50", "12.50"),
                                   ("Amps", "13.35", "13.55")])
 
+    def test_the_fifth_years_split_around_lunch(self):
+        """Two groups, opposite orders: one takes the language at 12.10 and
+        eats after, the other eats first and takes it at 12.55. Two rows on the
+        sheet, two periods in the timetable, so both are drawn — and a reader
+        who picks their group is left with their own lunch as the free hour
+        between the lesson and whatever is either side of it."""
+        school = next(s for s in self.data["schools"] if s["l"] == "TäheTERA")
+        cls = next(c for c in school["c"] if c["n"].strip() == "5.a")
+        for day in (0, 3):
+            with self.subTest(day=day):
+                first = {(e["p"], e["w"]) for e in cls["e"]
+                         if e["d"] == day and e["p"] in (5, 6) and not e["c"]}
+                self.assertEqual(first, {(5, "12.10–12.55"), (6, "12.55–13.40")})
+        # The two do not overlap, so nobody is shown in two places at once.
+        for day in (0, 3):
+            five = [e for e in cls["e"] if e["d"] == day and e["p"] == 5][0]
+            six = [e for e in cls["e"] if e["d"] == day and e["p"] == 6][0]
+            self.assertLessEqual(five["z"], six["a"])
+        # And no lunch band is drawn across the class, because it would be
+        # wrong for half of it. Only the morning Amps, which everybody shares.
+        names = {b["n"] for d in cls["h"].values() for b in d["b"]}
+        self.assertEqual(names, {"Amps"})
+
     def test_a_lesson_running_past_one_published_block_ends_where_it_ends(self):
         # LõunaTERA publishes blocks rather than lesson lengths. A lesson
         # covering two of them used to stop at the end of the first.

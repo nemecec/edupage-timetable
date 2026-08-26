@@ -170,13 +170,17 @@ period 5 `HA`, which reads as a break, and it is not one — it is the fifth
 years' language lesson. Only 5.a, 5.l and 5.t use it, on Monday and Thursday.
 For the other eleven classes it is empty, and there it really is the break.
 
-Two rows of that sheet fold a lesson and lunch into one block, and which comes
-first depends on the language group: `12.10-13.40 Hispaania keel 1 / Lõuna`
-against `12.05-13.40 Lõuna / Prantsuse / Saksa keel / Hispaania 2`. They are two
-different periods in the timetable, so both are drawn, side by side, at the
-times the sheet gives. Where lunch falls inside each is not published, so there
-is no named lunch for this school — only the morning `Amps`, which the sheet
-does place.
+Around midday the fifth years split, and the sheet writes it as two rows that
+each hold a lesson and lunch in the opposite order. The school gave the split:
+one group takes the language at **12.10-12.55** and eats after, the other eats
+first and takes it at **12.55-13.40**. Two rows, two periods in the timetable,
+so both are drawn.
+
+That is why this school has no named lunch, only the morning `Amps`. Lunch is a
+different hour for each group, and a band across the class would be wrong for
+half of it. It does not need one: a reader who picks their language group is
+left with their own lunch as the free time between that lesson and whatever
+sits either side, drawn by the same rule that finds any other gap.
 
 **LõunaTERA publishes fixed blocks instead.** There is no clock to run. Each
 block says which aSc periods it holds, and when it is:

@@ -532,11 +532,17 @@ BELLS = {
     # language lesson — 5.a, 5.l and 5.t use it, on Monday and Thursday, and
     # the other eleven classes leave it empty, where it really is the break.
     #
-    # Two rows of the sheet fold a lesson and lunch into one block, and which
-    # of the two comes first depends on the language group. The school writes
-    # them as one block and this follows, as it does for LõunaTERA. So there is
-    # no named lunch here: where it falls inside those blocks is not published.
-    # Source: "Tunniplaan 2026/27 5.a klass".
+    # Around midday the fifth years split. The sheet writes two rows, and each
+    # holds a lesson and lunch in the opposite order: one group takes the
+    # language at 12.10 and eats after, the other eats first and takes the
+    # language at 12.55. Two rows, two aSc periods, so both are drawn — and a
+    # reader who picks their language group sees only their own, with their own
+    # lunch showing up as the free time between it and the lesson either side.
+    #
+    # That is why there is no named lunch here. It is a different hour for each
+    # group, and a band drawn across the class would be wrong for half of them.
+    # Only the morning Amps is named, which is the same for everybody.
+    # Source: "Tunniplaan 2026/27 5.a klass", and the school on the split.
     "TäheTERA": {
         "name": "Tunniplaan",
         # The morning break, which the sheet calls Amps. It opens when the
@@ -551,8 +557,8 @@ BELLS = {
                 "classes": ["5.a"],
                 "days": {
                     (0,): [(1, 2, "9:00", "10:20"), (3, 1, "10:45", "11:30"),
-                           (4, 1, "11:35", "12:05"), (5, 1, "12:10", "13:40"),
-                           (6, 1, "12:05", "13:40"), (7, 1, "13:45", "14:30")],
+                           (4, 1, "11:35", "12:05"), (5, 1, "12:10", "12:55"),
+                           (6, 1, "12:55", "13:40"), (7, 1, "13:45", "14:30")],
                     (1,): [(1, 2, "9:00", "10:20"), (3, 2, "10:45", "12:20"),
                            (6, 1, "12:20", "13:35"), (7, 1, "13:45", "14:30")],
                     (2,): [(1, 2, "9:00", "10:20"), (3, 1, "10:45", "11:30"),
@@ -563,8 +569,8 @@ BELLS = {
                     # one of the two moved. An unused slot costs nothing; a
                     # missing one loses the lesson.
                     (3,): [(1, 1, "9:00", "9:45"), (2, 1, "9:50", "10:35"),
-                           (3, 2, "10:45", "12:05"), (5, 1, "12:10", "13:40"),
-                           (6, 1, "12:05", "13:40"), (7, 1, "13:45", "14:30"),
+                           (3, 2, "10:45", "12:05"), (5, 1, "12:10", "12:55"),
+                           (6, 1, "12:55", "13:40"), (7, 1, "13:45", "14:30"),
                            (8, 1, "14:35", "15:20")],
                     (4,): [(1, 1, "9:00", "9:45"), (2, 1, "9:50", "10:35"),
                            (3, 2, "10:45", "12:05"), (6, 1, "12:20", "13:35"),

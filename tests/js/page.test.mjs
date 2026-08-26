@@ -981,6 +981,106 @@ test("a lunch the page works out is drawn as the meal it is", () => {
   run(`delete currentSchool().lg; state = defaults(); myOwn().events = [];`);
 });
 
+test("the fault reporter is armed before anything can break", () => {
+  /* It used to be installed at the bottom of the file. A fault near the top
+     then took the whole script down with it, including the line that would
+     have installed this — so the page came up blank and nobody was told. The
+     one page-breaking fault it exists for was the one it could not see. */
+  const source = readFileSync(join(root, "page.js"), "utf8");
+  const armed = source.indexOf('addEventListener("error"');
+  assert.ok(armed > 0, "nothing listens for a fault");
+
+  /* Everything below runs at load and any of it can throw. All of it has to
+     come after the listener, or a fault in it is silent. */
+  for (const later of ["let state = defaults()", "applyShared(shared, state)",
+                       "function normalise", "renderLanguages()", "render()"]) {
+    const at = source.indexOf(later);
+    assert.ok(at > armed,
+              `${later} is above the error listener, so a fault in it is silent`);
+  }
+  /* What comes first is only what the listener itself needs: the page's data,
+     the storage key, and the reporter's own counters. Declarations, not work.
+     Every call up there is a chance to fail while nothing is watching, so
+     there are three, and all three are the browser's own. */
+  const before = source.slice(0, armed)
+    .replace(/\/\*[\s\S]*?\*\//g, "")          // block comments wrap without a *
+    .replace(/\/\/.*/g, "");
+  const allowed = ["JSON.parse", "document.getElementById", "Set",
+                   "if", "typeof"];   // keywords, not calls
+  for (const [, name] of before.matchAll(/([A-Za-z_$][\w$.]*)\s*\(/g)) {
+    assert.ok(allowed.includes(name),
+              `${name}() runs before anything is watching for a fault in it`);
+  }
+
+  // And the listener really is registered when the page loads.
+  assert.ok(json(`Object.keys(window.__on)`).includes("error"));
+  assert.ok(json(`Object.keys(window.__on)`).includes("unhandledrejection"));
+});
+
+test("what a browser stored is read back, and a fault reading it is reported", () => {
+  /* Three things can go wrong and only one of them is ours. One blanket catch
+     around all three is how a broken read went unnoticed while every
+     returning reader quietly lost their settings. */
+  const source = readFileSync(join(root, "page.js"), "utf8");
+  const block = source.slice(source.indexOf("let state = defaults();"),
+                             source.indexOf("function applyShared"));
+  assert.match(block, /report\("settings"/,
+               "a fault normalising stored settings is still swallowed");
+  assert.ok((block.match(/catch/g) || []).length >= 3,
+            "the three failures are still handled as one");
+});
+
+test("a link says which class it is about, and an old one still can", () => {
+  /* Which class the page opens on comes out of the school's own timetable, and
+     it moves when the school moves one. A link written without a class of its
+     own then showed a different week than the one that was shared. */
+  run(`state = defaults(); state.school = "68"; state.class = "8";
+       myOwn().studentName = "Eva";`);
+  const carried = json(`JSON.parse(unpackSettings(shareUrl().split("#")[1]))`);
+  assert.equal(carried.class, "8", "the link does not say which class");
+  assert.equal(carried.school, "68");
+
+  // A page with nothing chosen still has a clean address: no week to promise.
+  run(`state = defaults();`);
+  assert.ok(!json(`shareUrl()`).includes("#"), "an untouched page grew a link");
+
+  /* And a link written before that: no class, but one per-class bag, which
+     names the class it is about. */
+  const old = { teacherNameStyle: "full",
+                classes: { "68/8": { studentName: "Eva" } } };
+  run(`state = defaults(); state.school = "68"; state.class = "7";`);
+  const back = json(`applyShared(${JSON.stringify(old)}, state)`);
+  assert.equal(back.class, "8", "an old link showed the wrong class");
+  assert.equal(back.school, "68");
+  assert.equal(back.classes["68/8"].studentName, "Eva");
+
+  // A link that does say which class is never second-guessed.
+  const said = json(`applyShared(${JSON.stringify(
+    { class: "7", classes: { "68/8": { studentName: "Eva" } } })}, state)`);
+  assert.equal(said.class, "7", "a link that named a class was overruled");
+
+  /* Nor is one naming a class this page does not carry: the school it came
+     from is not this one, and switching to nothing draws nothing. */
+  const elsewhere = json(`applyShared(${JSON.stringify(
+    { classes: { "99/nope": { studentName: "Eva" } } })}, state)`);
+  assert.equal(elsewhere.class, "7");
+  assert.equal(elsewhere.school, "68");
+
+  // Two classes is not one class, so there is nothing to infer.
+  const both = json(`applyShared(${JSON.stringify(
+    { classes: { "68/8": { studentName: "A" }, "68/9": { studentName: "B" } } })}, state)`);
+  assert.equal(both.class, "7");
+  run(`state = defaults();`);
+});
+
+test("a class key splits on the school, not on the class name", () => {
+  /* A school number never holds a slash. A class name can. */
+  assert.deepEqual(json(`splitClassKey("68/8")`), ["68", "8"]);
+  assert.deepEqual(json(`splitClassKey("105/Maarja / Silva")`),
+                   ["105", "Maarja / Silva"]);
+  assert.deepEqual(json(`splitClassKey("nothing")`), ["nothing", ""]);
+});
+
 test("pasted settings are taken, or refused with a reason", () => {
   /* The one place a whole state arrives at once, and the one place a bad value
      could take the page down with it. It is typed or pasted by whoever has the

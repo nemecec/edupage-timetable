@@ -78,6 +78,17 @@ class InABrowser(unittest.TestCase):
         self.browser.eval("localStorage.clear()")
         self.browser.load(self.url, "document.body.innerHTML.length > 0")
 
+    def visit(self, fragment=""):
+        """A real load, fragment and all.
+
+        Going straight from the page to the page-plus-fragment changes only the
+        fragment, and a browser answers that without loading anything — so the
+        code that reads a link never runs and the test proves nothing. Going by
+        way of a blank page makes it a load again.
+        """
+        self.browser.load("about:blank", "true")
+        self.browser.load(self.url + fragment, "typeof render === 'function'")
+
     def js(self, expression):
         """Evaluate, with objects coming back as objects."""
         return json.loads(self.browser.eval(
@@ -351,6 +362,204 @@ class TheControls(InABrowser):
         self.assertEqual(got["lang"], "et")
         self.assertTrue(got["changed"], "the page did not change language")
         self.assertEqual(got["left"], 0, "a label came out empty in Estonian")
+
+
+class ArrivingWithSettings(InABrowser):
+    """The two ways a page opens with choices already made: a link somebody
+    shared, and a browser that was here before.
+
+    Both run before the first draw, at the very top of the file, and neither
+    can be reached from a stub — the stub has no address bar and no storage.
+    A fault there is a page that draws nothing at all, which is what a reader
+    following a link sees.
+    """
+
+    # A real link: gzipped, base64url, no school or class of its own, so it
+    # leans on the page's own opening choice. Two subjects renamed and six
+    # events, which is what somebody actually shares.
+    LINK = ("#z=H4sIAGL5jWoCA7WSyUoDQRCGXyWUlwgDOooS5hZcboqYAQ_ioWa6zHSmF-lFCMO8"
+            "Vl4gL2Z3S5DBPSF1abqW_6vqrg4cYd2QuUVJM7cUBAU8eyEgA-urBdXOQtHBdOGdIVJc"
+            "zeNVYEUiZN6gI4noeIvQ9xnUAq2lVHE-OZrEk15JRY3HDhguY41WUdyhcSWXkZefFPlx"
+            "8JFiH57T6KmwbudGe8UutNAmRA5YshDb9DBbr9YryRVBn20YpafPjKQ4YJx9w7hM9gvj"
+            "gWIXA0b-rjhgpMm2ZZSN3-Wt_sS4Nnw_c4zGLwbbsBteHv7M-2qm___NaOyIW2IB9hQA"
+            "daO1iGsdcu6MLq_up2FH-zfLGGdC8gIAAA")
+
+    def test_a_shared_link_draws_the_week_it_carries(self):
+        self.visit(self.LINK)
+        got = self.js(
+            "return {boxes: document.querySelectorAll('.ev').length,"
+            "        grid: document.getElementById('grid').innerHTML.length,"
+            "        events: myOwn().events.length,"
+            "        renamed: (state.subjects['Ajutreening'] || {}).label,"
+            "        teacher: state.teacherNameStyle,"
+            "        school: state.school, klass: state.class};")
+        self.assertGreater(got["boxes"], 0, "a shared link drew nothing at all")
+        self.assertGreater(got["grid"], 500)
+        self.assertEqual(got["events"], 6, "the events in the link were dropped")
+        self.assertEqual(got["renamed"], "Matemaatika")
+        self.assertEqual(got["teacher"], "full")
+        # It names no class of its own: when it was written, the class it is
+        # about was the one the page opened on, so there was nothing to write
+        # down. The school has since moved a timetable and the opening class
+        # moved with it. The link still says which class it is about, in the
+        # one per-class bag it carries, and that is the class shown.
+        self.assertEqual([got["school"], got["klass"]], ["68", "8"])
+        self.assertNotEqual(
+            got["klass"], self.js("return {c: DATA.initialClass};")["c"],
+            "this no longer proves anything: the opening class is 8 again")
+
+    def test_a_link_draws_even_with_nothing_stored(self):
+        """The reader following it has never been here. Storage is empty, and
+        the link is the whole of what the page knows."""
+        self.browser.eval("localStorage.clear()")
+        self.visit(self.LINK)
+        self.assertGreater(
+            self.js("return {n: document.querySelectorAll('.ev').length};")["n"], 0)
+
+    def test_what_a_browser_stored_is_read_back(self):
+        """Settings are written to storage on every change and read once at
+        load. A fault in that read is swallowed by the try around it, so the
+        page comes up looking fine and every choice is quietly gone."""
+        self.show("68", "8")
+        self.js("state.showRoom = false; state.teacherNameStyle = 'full';"
+                "state.subjects = {Matemaatika: {hide: true}};"
+                "myOwn().studentName = 'Eva'; save(); return {};")
+        stored = self.js("return {raw: localStorage.getItem(Object.keys(localStorage)[0])};")
+        self.assertIn("showRoom", stored["raw"], "nothing was written down")
+
+        self.visit()
+        back = self.js(
+            "return {room: state.showRoom, teacher: state.teacherNameStyle,"
+            "        hidden: (state.subjects.Matemaatika || {}).hide,"
+            "        name: myOwn().studentName, klass: state.class,"
+            "        boxes: document.querySelectorAll('.ev').length};")
+        self.assertEqual(back["room"], False, "a stored setting was thrown away")
+        self.assertEqual(back["teacher"], "full")
+        self.assertEqual(back["hidden"], True)
+        self.assertEqual(back["name"], "Eva")
+        self.assertEqual(back["klass"], "8")
+        self.assertGreater(back["boxes"], 0)
+
+    def test_a_fragment_that_is_not_ours_is_ignored_rather_than_fatal(self):
+        for junk in ("#z=not-base64!!", "#s=" + "A" * 40, "#something-else", "#"):
+            with self.subTest(fragment=junk):
+                self.visit(junk)
+                self.assertGreater(
+                    self.js("return {n: document.querySelectorAll('.ev').length};")["n"],
+                    0, "a fragment we did not write took the page down")
+
+
+class WhenItBreaks(InABrowser):
+    """The fault reporter, proved by breaking the page.
+
+    It used to be installed at the bottom of the file. A fault near the top
+    then took the whole script down with it, including the line that would
+    have installed the reporter — so the page came up blank and nobody was
+    told. The one page-breaking fault it exists for was the one it could not
+    see. This breaks the page on purpose and checks that a report goes out.
+    """
+
+    def broken_page(self, injected):
+        """A copy of the page with a fault written into it, high up.
+
+        Two things are stood in for. A page built here carries no endpoint —
+        that is set when publishing — so one is written in. And a page on disk
+        reports nothing at all, by design, so the rule that says so is made to
+        answer yes. Everything else is the real code, including the listener
+        this is about. Nothing is sent: fetch is replaced before the page runs.
+        """
+        with open(self.page, encoding="utf-8") as fh:
+            html = (fh.read()
+                    .replace('"report": ""', '"report": "/report"', 1)
+                    .replace('return location.protocol === "https:";',
+                             "return true;", 1))
+        # Straight after the listener is installed, which is where all the
+        # real code now lives. Before it, nothing could be reported and the
+        # test would be checking the fault it is meant to have fixed.
+        seam = 'addEventListener("unhandledrejection"'
+        end = html.index("\n", html.index("}", html.index(seam)))
+        hurt = html[:end] + "\n" + injected + html[end:]
+        path = self.page.replace(".html", "-broken.html")
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write(hurt)
+        return path
+
+    def load_watching(self, path):
+        """Load with fetch stubbed before the page's own script runs, so a
+        report posted during load is caught rather than sent."""
+        self.browser.call(
+            "Page.addScriptToEvaluateOnNewDocument",
+            source="window.__posted = [];"
+                   "window.fetch = function (url, options) {"
+                   "  window.__posted.push({url: String(url),"
+                   "    body: options && options.body});"
+                   "  return Promise.resolve({ok: true});"
+                   "};")
+        self.browser.load("about:blank", "true")
+        self.browser.load("file://" + path, "typeof window.__posted !== 'undefined'")
+        import time
+        time.sleep(1)          # the report is posted, not awaited
+        return self.js("return {posted: window.__posted,"
+                       "        drew: document.querySelectorAll('.ev').length};")
+
+    def test_a_fault_at_the_very_top_is_still_reported(self):
+        """The exact shape of the fault that got through: something thrown
+        while the script is still being evaluated, long before the last line."""
+        path = self.broken_page(
+            'throw new ReferenceError("deliberate: a constant read too early");')
+        try:
+            got = self.load_watching(path)
+        finally:
+            os.unlink(path)
+        self.assertTrue(got["posted"], "the page broke and nobody was told")
+        sent = json.loads(got["posted"][0]["body"])
+        self.assertEqual(sent["kind"], "page-error")
+        self.assertIn("deliberate", json.dumps(sent))
+        self.assertEqual(got["drew"], 0, "this test is no longer breaking the page")
+
+    def test_a_report_carries_the_shape_of_the_settings_and_not_the_values(self):
+        """Enough to see what the reader had, and nothing that says who they
+        are. Every string is replaced by X's of the same length."""
+        self.show("68", "8")
+        got = self.js(
+            "DATA.report = '/report'; reportable = function () { return true; };"
+            "window.__sent = null;"
+            "var real = window.fetch;"
+            "window.fetch = function (u, o) { window.__sent = o && o.body;"
+            "  return Promise.resolve({ok: true}); };"
+            "myOwn().studentName = 'Eva'; state.subjects = {Matemaatika: {label: 'Maths'}};"
+            "report('error', new Error('a deliberate fault'));"
+            "window.fetch = real;"
+            "return {body: window.__sent};")
+        self.assertTrue(got["body"], "nothing was posted")
+        sent = json.loads(got["body"])
+        self.assertEqual(sent["kind"], "page-error")
+        self.assertIn("a deliberate fault", json.dumps(sent))
+        blob = json.dumps(sent, ensure_ascii=False)
+        self.assertNotIn("Eva", blob, "the child's name went out")
+        self.assertNotIn("Maths", blob, "a name the reader typed went out")
+        self.assertIn("XXX", blob, "nothing was masked at all")
+        # And the shape survives, or the report says nothing about what broke.
+        self.assertIn("Matemaatika", blob, "the shape went out with the values")
+
+    def test_a_report_never_carries_the_address_it_came_from(self):
+        """The address holds the settings, and the settings can hold a child's
+        name. It is the one thing that must not ride along."""
+        self.show("68", "8")
+        got = self.js(
+            "DATA.report = '/report'; reportable = function () { return true; };"
+            "myOwn().studentName = 'Eva'; save();"
+            "window.__sent = null;"
+            "var real = window.fetch;"
+            "window.fetch = function (u, o) { window.__sent = o && o.body;"
+            "  return Promise.resolve({ok: true}); };"
+            "report('error', new Error('x'), location.href);"
+            "window.fetch = real;"
+            "return {body: window.__sent, href: location.href};")
+        sent = json.loads(got["body"])
+        blob = json.dumps(sent)
+        self.assertNotIn("#", blob, "the fragment rode along")
+        self.assertNotIn("z=", blob)
 
 
 class NothingReachesTheNetwork(InABrowser):

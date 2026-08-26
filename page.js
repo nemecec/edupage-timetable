@@ -276,6 +276,26 @@ function applyShared(shared, current) {
     merged.subjects = onlySubjects(
       Object.assign({}, current.subjects, shared.subjects));
   }
+  /* A link written before this page changed which class it opens on carries no
+     class of its own: at the time, the class it was about *was* the default,
+     so there was nothing to write down. The school then moved a timetable, the
+     default moved with it, and the link quietly showed the wrong week.
+
+     It still says which class it is about, though, in the one per-class bag it
+     carries. So where the link names exactly one class and does not say to
+     show one, that is the class to show. No guessing: a link never carries a
+     class it is not about. */
+  if (!shared.class && shared.classes && typeof shared.classes === "object") {
+    const named = Object.keys(shared.classes);
+    if (named.length === 1) {
+      const [school, klass] = splitClassKey(named[0]);
+      const has = (DATA.schools.find(x => x.n === school) || {}).c || [];
+      if (has.some(c => c.n === klass)) {
+        merged.school = school;
+        merged.class = klass;
+      }
+    }
+  }
   return merged;
 }
 
@@ -380,8 +400,18 @@ function changedFromDefaults() {
 function shareUrl() {
   const changed = changedFromDefaults();
   const bare = location.href.split("#")[0];
-  return Object.keys(changed).length
-    ? bare + "#" + packSettings(JSON.stringify(slim(changed))) : bare;
+  if (!Object.keys(changed).length) return bare;
+  /* Any link that carries anything carries the class too, even when it is the
+     one the page opens on today. Which class that is comes out of the
+     school's own timetable, and it moves when the school moves one — so a
+     link written without it showed the wrong week from the day that happened.
+     A few characters is a small price for a link that keeps its promise.
+
+     A page with nothing chosen still has a clean address: there is no week to
+     promise, so there is nothing to pin. */
+  changed.school = state.school;
+  changed.class = state.class;
+  return bare + "#" + packSettings(JSON.stringify(slim(changed)));
 }
 
 function readUrl() {
@@ -551,6 +581,13 @@ function currentClass() {
 function subjectFacts() { return currentSchool().sj || {}; }
 
 function classKey() { return currentSchool().n + "/" + currentClass().n; }
+
+/* The other way round. A school number never holds a slash and a class name
+   can, so the first one is the seam. */
+function splitClassKey(key) {
+  const at = String(key).indexOf("/");
+  return at < 0 ? [String(key), ""] : [key.slice(0, at), key.slice(at + 1)];
+}
 
 /* Which of a division's groups this reader is in, keyed by the choice on offer.
    The division's own id is aSc's ("*5:1") and means nothing to anyone. */

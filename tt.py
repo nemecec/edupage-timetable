@@ -1743,10 +1743,11 @@ PAGE = """<!DOCTYPE html>
   /* An outline rather than a fill, so a worked-out break does not look like
      one the school gave. Fifteen minutes is the shortest it is drawn at, and
      the padding comes off so the one line still fits. */
-  .ev.gap { border-style: dashed; border-color: #c3c9d1; padding: 0 5px; }
+  .ev.gap { border-style: dashed; border-color: #c3c9d1; padding: 0 5px;
+            display: flex; align-items: center; justify-content: center; }
   .ev.gap .what { font-weight: 500; font-size: 9.5px; line-height: 1.15;
                   text-align: center; white-space: nowrap; overflow: hidden;
-                  text-overflow: ellipsis; }
+                  text-overflow: ellipsis; width: 100%; }
   /* The stripes are translucent, so the color underneath shows through. A
      break is the reader's to recolor like any lesson, and the hatch is what
      still says "not a lesson". */

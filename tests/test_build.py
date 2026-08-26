@@ -205,6 +205,17 @@ class WholePage(unittest.TestCase):
         for e in taught:
             self.assertEqual(len(e["T"]), len(e["t"]))
 
+    def test_a_worked_out_break_centres_its_one_line(self):
+        """It has one line and a box that can be three hours tall. Left at the
+        top, the words float above a wide empty rectangle."""
+        page, _ = build()
+        rule = page.split(".ev.gap {", 1)[1].split("}", 1)[0]
+        for want in ("display: flex", "align-items: center", "justify-content: center"):
+            self.assertIn(want, rule, rule)
+        # The line has to fill the box for centring and the ellipsis to agree.
+        inner = page.split(".ev.gap .what {", 1)[1].split("}", 1)[0]
+        self.assertIn("width: 100%", inner, inner)
+
     def test_a_break_is_quiet_and_a_subject_is_not(self):
         """A break runs the full width of the day. Through the subject palette
         it came out a muddy beige and won every glance, which is backwards for

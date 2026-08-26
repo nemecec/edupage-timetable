@@ -32,6 +32,19 @@ jobs:
       - name: Check the page's JavaScript parses
         run: node --check page.js
 
+      # tests/test_browser.py drives a real Chrome, because a printed sheet and
+      # a pressed button are two things a stub cannot answer. The runner image
+      # carries Chrome; where it does not, those tests skip and the rest run.
+      - name: Name the browser
+        run: |
+          for candidate in google-chrome chromium-browser chromium; do
+            if command -v "$candidate" >/dev/null; then
+              echo "CHROME_BIN=$(command -v "$candidate")" >> "$GITHUB_ENV"
+              break
+            fi
+          done
+          echo "using ${CHROME_BIN:-whatever tests/cdp.py finds}"
+
       - name: Python tests
         run: python3 -m unittest discover -s tests -v
 

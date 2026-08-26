@@ -159,6 +159,25 @@ and a metric filter on that warning raises an alarm, so a plan that has moved
 on says so instead of quietly drawing last year's times. It earned its keep on
 the first run: it caught two lessons the transcription had missed.
 
+**TäheTERA publishes nothing to EduPage** — no day plan, no period times — so
+its classes fall back to the plain grid. A sheet arrived for one class of
+fourteen, and one class is what is encoded. The others are not guessable from
+it: 5.a alone has the fourth lesson ending at 12.05 on a Monday and 12.20 on a
+Wednesday, so a clock that looks regular is not one.
+
+The sheet did settle something for the whole school, though. EduPage labels
+period 5 `HA`, which reads as a break, and it is not one — it is the fifth
+years' language lesson. Only 5.a, 5.l and 5.t use it, on Monday and Thursday.
+For the other eleven classes it is empty, and there it really is the break.
+
+Two rows of that sheet fold a lesson and lunch into one block, and which comes
+first depends on the language group: `12.10-13.40 Hispaania keel 1 / Lõuna`
+against `12.05-13.40 Lõuna / Prantsuse / Saksa keel / Hispaania 2`. They are two
+different periods in the timetable, so both are drawn, side by side, at the
+times the sheet gives. Where lunch falls inside each is not published, so there
+is no named lunch for this school — only the morning `Amps`, which the sheet
+does place.
+
 **LõunaTERA publishes fixed blocks instead.** There is no clock to run. Each
 block says which aSc periods it holds, and when it is:
 

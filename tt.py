@@ -521,6 +521,58 @@ BELLS = {
             },
         ],
     },
+    # TäheTERA publishes nothing to EduPage — no day plan and no period times,
+    # so its classes fall back to the plain numbered grid. One class has sent
+    # its own sheet, and one class is what is encoded: the others are not
+    # guessable from it. 5.a alone has the fourth lesson ending at 12.05 on a
+    # Monday and 12.20 on a Wednesday, so a clock that looks regular is not.
+    #
+    # What the sheet does settle for the whole school: EduPage labels period 5
+    # "HA", which reads as a break, and it is not one. It is the fifth years'
+    # language lesson — 5.a, 5.l and 5.t use it, on Monday and Thursday, and
+    # the other eleven classes leave it empty, where it really is the break.
+    #
+    # Two rows of the sheet fold a lesson and lunch into one block, and which
+    # of the two comes first depends on the language group. The school writes
+    # them as one block and this follows, as it does for LõunaTERA. So there is
+    # no named lunch here: where it falls inside those blocks is not published.
+    # Source: "Tunniplaan 2026/27 5.a klass".
+    "TäheTERA": {
+        "name": "Tunniplaan",
+        # The morning break, which the sheet calls Amps. It opens when the
+        # morning's lessons stop, and that is 10.20 after a double and 10.35
+        # after two singles.
+        "gapName": "Amps",
+        "gapAtLeast": 10,
+        "gapAfter": "10:15",
+        "gapBefore": "10:40",
+        "bands": [
+            {
+                "classes": ["5.a"],
+                "days": {
+                    (0,): [(1, 2, "9:00", "10:20"), (3, 1, "10:45", "11:30"),
+                           (4, 1, "11:35", "12:05"), (5, 1, "12:10", "13:40"),
+                           (6, 1, "12:05", "13:40"), (7, 1, "13:45", "14:30")],
+                    (1,): [(1, 2, "9:00", "10:20"), (3, 2, "10:45", "12:20"),
+                           (6, 1, "12:20", "13:35"), (7, 1, "13:45", "14:30")],
+                    (2,): [(1, 2, "9:00", "10:20"), (3, 1, "10:45", "11:30"),
+                           (4, 1, "11:35", "12:20"), (6, 1, "12:20", "13:35"),
+                           (7, 1, "13:45", "14:30"), (8, 1, "14:35", "15:20")],
+                    # The eighth slot is on both days. The sheet puts the choir
+                    # on Thursday and the timetable now has it on Wednesday, so
+                    # one of the two moved. An unused slot costs nothing; a
+                    # missing one loses the lesson.
+                    (3,): [(1, 1, "9:00", "9:45"), (2, 1, "9:50", "10:35"),
+                           (3, 2, "10:45", "12:05"), (5, 1, "12:10", "13:40"),
+                           (6, 1, "12:05", "13:40"), (7, 1, "13:45", "14:30"),
+                           (8, 1, "14:35", "15:20")],
+                    (4,): [(1, 1, "9:00", "9:45"), (2, 1, "9:50", "10:35"),
+                           (3, 2, "10:45", "12:05"), (6, 1, "12:20", "13:35"),
+                           (7, 1, "13:45", "14:30")],
+                },
+            },
+        ],
+    },
     # LõunaTERA does not work the way ProTERA does. Its day plan is published as
     # fixed blocks rather than lesson lengths, the two grade bands run different
     # days, and the breaks — Puder, Lõuna/Õue, Hea aeg — are lessons in the
@@ -1210,10 +1262,18 @@ def collect(client, year, only, verbose):
             # the day plan does not cover — say the school moved a period, or
             # added one past the end of a published block. Such a lesson does
             # not appear at all. Say so rather than lose it in silence.
+            #
+            # Only for a class the plan claims. A school can have a sheet for
+            # one class and none for the others — TäheTERA has one of fourteen
+            # — and those others fall back to the plain grid on purpose. That
+            # is not a plan that has gone stale, and saying so nightly for
+            # thirteen classes would bury the one time it has.
             for c in classes:
+                covered = cfg and (not cfg.get("bands") or
+                                   any(band_slots(cfg, c["name"], d) for d in range(7)))
                 lost = [e for e in c["entries"]
                         if not e["part"] and e.get("startMin") is None]
-                if lost:
+                if lost and covered:
                     where = ", ".join(sorted({f"day {e['day']} period {e['period']}"
                                               for e in lost})[:4])
                     print(f"warning: {label} class {c['name'].strip()!r}: "

@@ -89,7 +89,7 @@ class WholePage(unittest.TestCase):
         # two periods is one box. Fewer rows than periods with a card, too —
         # SädeTERA has two lessons its own day plan leaves no room for, and the
         # build says so rather than drawing them at a guessed time.
-        self.assertEqual((len(rows), len(boxes)), (1903, 1563))
+        self.assertEqual((len(rows), len(boxes)), (1898, 1560))
         # 70 subject names, plus the five named breaks. A break is drawn and
         # recolored like a lesson, so it needs a color of its own.
         self.assertEqual(len(self.data["palette"]), 75)
@@ -310,13 +310,19 @@ class WholePage(unittest.TestCase):
                             self.assertIn(name, self.data["palette"])
 
     def test_the_right_schools_have_a_day_plan(self):
-        """Three of the four are timed: two from a hand-written day plan, and
-        SädeTERA from the period times it keeps in EduPage. TäheTERA has none
-        anywhere and gets the grid. If a bell config stopped matching, the
-        invariants below would pass by examining nothing at all."""
+        """All four are timed now, each from a plan copied off a published
+        sheet. TäheTERA is the thin one: a sheet arrived for one class of
+        fourteen, so that class is timed and the other thirteen keep the plain
+        grid. If a bell config stopped matching, the invariants below would
+        pass by examining nothing at all."""
         self.assertEqual({s["l"]: s["b"] for s in self.data["schools"]},
                          {"ProTERA ja TERA gümnaasium": True, "SädeTERA": True,
-                          "LõunaTERA": True, "TäheTERA": False})
+                          "LõunaTERA": True, "TäheTERA": True})
+        tahe = next(s for s in self.data["schools"] if s["l"] == "TäheTERA")
+        timed = [c["n"].strip() for c in tahe["c"]
+                 if any(e["a"] is not None for e in c["e"])]
+        self.assertEqual(timed, ["5.a"], "a class was timed from a sheet nobody sent")
+        self.assertEqual(len(tahe["c"]), 14)
 
     def test_sadetera_draws_the_day_plan_the_school_publishes(self):
         """It ran on a clock with fixed periods, and had to guess which lessons
@@ -373,16 +379,30 @@ class WholePage(unittest.TestCase):
         draws nothing at all. That happened: aSc calls one class "Silva " and the
         band table said "Silva".
         """
+        checked = 0
         for school in self.data["schools"]:
             if not school["b"]:
                 continue
+            cfg = tt.bell_config(school["l"], school["t"]) or {}
+            bands = cfg.get("bands")
+            # A school can publish a sheet for one class and none for the
+            # others — TäheTERA has one of fourteen — and the others fall back
+            # to the plain grid on purpose. Check the ones the plan names.
+            covered = ({name.strip() for band in bands for name in band["classes"]}
+                       if bands else {k["n"].strip() for k in school["c"]})
             for klass in school["c"]:
-                if klass["n"].strip() in MARKER_CLASSES:
-                    continue
+                name = klass["n"].strip()
                 timed = sum(1 for e in klass["e"] if e["a"] is not None)
-                with self.subTest(school=school["l"], klass=klass["n"]):
-                    self.assertEqual(timed, len(klass["e"]),
-                                     "lessons without a time are never drawn")
+                with self.subTest(school=school["l"], klass=name):
+                    if name in covered and name not in MARKER_CLASSES:
+                        checked += 1
+                        self.assertEqual(timed, len(klass["e"]),
+                                         "lessons without a time are never drawn")
+                    else:
+                        # All or nothing. Half a class is the shape the bug had.
+                        self.assertIn(timed, (0, len(klass["e"])),
+                                      "half of a class has times")
+        self.assertGreater(checked, 20, "the scan checked suspiciously few")
 
     def test_no_lesson_is_drawn_twice_in_the_same_place(self):
         """Two boxes in one place, same subject, same groups, is aSc's record of

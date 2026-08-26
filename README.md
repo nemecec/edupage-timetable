@@ -636,6 +636,12 @@ request fell through to the bucket.
 
 ## Telling us something
 
+The way in is a link in the subtitle, beside the source link — the line at the
+top where this page keeps its own business, and where somebody who is annoyed
+already is. A panel four down the settings stack is somewhere nobody scrolls to
+on purpose. The subtitle is rebuilt on every render, so the link is handled by
+one listener on the document rather than its own.
+
 The same endpoint takes a message from a reader. A panel on the page has a text
 box, a Send button, and a checkbox that attaches your settings. Tick it and the
 exact payload appears on screen, in full, before you press anything — the panel

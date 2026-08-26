@@ -155,6 +155,7 @@ STRINGS = {
         "settings.printed": ("The bottom right corner of the printed sheet "
                              "carries the same address, as a QR code."),
         "say": "Tell us what is wrong",
+        "say.link": "tell us",
         "say.intro": ("Something missing, or wrong, or hard to read? Write it "
                       "here. This is the one thing on this page that is sent "
                       "to us, so write only what you want us to read."),
@@ -267,6 +268,7 @@ STRINGS = {
         "settings.printed": ("Väljatrüki alumises paremas nurgas on sama "
                              "aadress QR-koodi kujul."),
         "say": "Anna teada, mis on valesti",
+        "say.link": "anna teada",
         "say.intro": ("Kas midagi on puudu, vale või raskesti loetav? Kirjuta "
                       "siia. See on ainus asi sellel lehel, mis meile "
                       "saadetakse, nii et kirjuta ainult seda, mida soovid, et "

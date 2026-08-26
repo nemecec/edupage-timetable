@@ -337,12 +337,17 @@ function sourceUrl(school) {
 function renderSubtitle(school) {
   const stamp = DATA.built ? esc(t("footer.built", DATA.built)) : "";
   const link = '<a href="' + esc(sourceUrl(school)) + '">' + esc(t("sourceLink")) + "</a>";
+  /* Beside the source link, because that is the line this page keeps its own
+     business on, and it is at the top where somebody who is annoyed already is.
+     A panel four down the stack is somewhere nobody scrolls to on purpose. */
+  const say = (DATA.report && !printing)
+    ? '<a href="#" id="sayLink">' + esc(t("say.link")) + "</a>" : "";
   /* school.v is the line the school configured to print under its own
      timetable — "Kehtivus: 24/08/2026-18/12/2026". Their text, so it stays in
      their language. The build drops it where they set a label and left it
      blank, so nothing shows a heading with nothing under it. */
   document.getElementById("subtitle").innerHTML =
-    [esc(school.t), esc(school.v), link, stamp].filter(Boolean).join(" · ") +
+    [esc(school.t), esc(school.v), link, say, stamp].filter(Boolean).join(" · ") +
     '<div class="unofficial">' + esc(t("footer.disclaimer")) + "</div>";
 }
 
@@ -1441,6 +1446,20 @@ function showShareFallback(url) {
 }
 
 /* Sharing is copying the address, since the address is the whole configuration. */
+/* The subtitle is rebuilt on every render, so the link cannot hold its own
+   listener. */
+document.addEventListener("click", (ev) => {
+  const hit = ev.target && ev.target.closest && ev.target.closest("#sayLink");
+  if (!hit) return;
+  ev.preventDefault();
+  const panel = document.getElementById("sayPanel");
+  if (!panel) return;
+  panel.open = true;
+  if (panel.scrollIntoView) panel.scrollIntoView({ behavior: "smooth", block: "center" });
+  const box = document.getElementById("sayText");
+  if (box && box.focus) box.focus();
+});
+
 for (const [id, event] of [["sayWithSettings", "change"], ["sayText", "input"]]) {
   const el = document.getElementById(id);
   if (el) el.addEventListener(event, refreshFeedbackPreview);

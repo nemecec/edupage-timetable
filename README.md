@@ -396,8 +396,17 @@ period grid, which needs no times.
   lesson over several periods repeats in every period it covers, and the
   continuation is dimmed. Where the school publishes period times, the headers
   show them.
-- **Display options** sets what each lesson box says. The teacher, the room, the
-  study group and the subject are independent of each other. The teacher and the
+- **Display options** is five sections, and each holds only what belongs to it.
+  The title, then what each lesson box says, then what the day shows, then what
+  the printout carries, then how lessons look. Three settings had drifted into
+  the lesson section that are not about a lesson at all: free time, which is a
+  box the page adds to the day where the school left a hole, and two that
+  change nothing until the sheet leaves the printer. A control under the wrong
+  heading is a control nobody finds, and a test now holds each one where it
+  belongs.
+
+  **For each lesson, show:** the teacher, the room, the study group and the
+  subject are independent of each other. The teacher and the
   subject each choose between the full name and the school's abbreviation.
 
   A teacher's name arrives family name first, which is how a school writes a
@@ -408,10 +417,10 @@ period grid, which needs no times.
   which one is not consistent — so each name is turned round on its own and the
   list is put back together with the separators it came with.
 
-  **The QR code on the printout** can be switched off. Some readers want the
-  sheet and not the corner. The address in the other corner stays either way:
-  the code goes to this reader's own timetable, and the address is where
-  anybody gets one of their own.
+  **On the printout:** the QR code can be switched off, and the paper edge is
+  the reader's to set. Some readers want the sheet and not the corner. The
+  address in the other corner stays either way: the code goes to this reader's
+  own timetable, and the address is where anybody gets one of their own.
   **Lesson colors** offers three answers for every subject: the generated
   palette, the school's own colors from aSc, or colors of your own. A click on
   any lesson in the timetable also recolors its subject. The text flips between

@@ -661,6 +661,53 @@ class Documentation(unittest.TestCase):
             # The button's own label goes in the hole, not a copy of the word.
             self.assertNotIn(data["strings"][lang]["share"], note, lang)
 
+    def test_every_display_setting_sits_under_the_right_heading(self):
+        """Three settings drifted into "For each lesson, show:" that are not
+        about a lesson at all — free time, which is a box the page adds to the
+        day, and two that change nothing until the sheet leaves the printer.
+        A control under the wrong heading is a control nobody finds."""
+        with open(os.path.join(ROOT, "tt.py"), encoding="utf-8") as fh:
+            page = fh.read()
+        panel = page[page.index('<details class="panel" id="displayPanel">'):
+                     page.index('<details class="panel" id="eventsPanel">')]
+        # Which heading each control falls under: the last one written above it.
+        where, heading = {}, ""
+        for kind, name in re.findall(
+                r'data-i18n="(\w+Heading)"|id="(show\w+|printMargin|\w*[Nn]ame)"', panel):
+            if kind:
+                heading = kind
+            elif name:
+                where.setdefault(name, heading)
+        want = {
+            "showStudentName": "titleHeading", "showSchoolName": "titleHeading",
+            "showClassName": "titleHeading",
+            "showTeacher": "showHeading", "showDuration": "showHeading",
+            "showRoom": "showHeading", "showGroup": "showHeading",
+            "showSubject": "showHeading",
+            "showGaps": "dayHeading",
+            "showQr": "printHeading", "printMargin": "printHeading",
+        }
+        for control, expected in want.items():
+            self.assertEqual(where.get(control), expected,
+                             f"{control} is under {where.get(control)!r}")
+
+    def test_a_heading_does_not_repeat_itself_in_its_own_labels(self):
+        """"On the printout:" followed by "QR code on the printout" says it
+        twice and reads as if the two were different things."""
+        _, data = build()
+        strings = data["strings"]
+        for lang, heading, labels in (
+                ("en", "printHeading", ("showQr", "printMargin")),
+                ("et", "printHeading", ("showQr", "printMargin"))):
+            words = set(re.findall(r"\w+", strings[lang][heading].lower()))
+            words.discard("on")
+            words.discard("the")
+            for label in labels:
+                said = set(re.findall(r"\w+", strings[lang][label].lower()))
+                self.assertFalse(words & said,
+                                 f"{lang} {label} repeats its own heading: "
+                                 f"{strings[lang][label]!r}")
+
     def test_cloudfront_and_the_report_function_agree_on_the_gate(self):
         """The function URL is open to the world and a header is the only
         thing between it and everybody. If the two spell it differently,

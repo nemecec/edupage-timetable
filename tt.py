@@ -78,12 +78,14 @@ STRINGS = {
         "display": "Display options",
         "advanced": "Save and restore settings",
         "showHeading": "For each lesson, show:",
+        "dayHeading": "In the day, show:",
+        "printHeading": "On the printout:",
         "showTeacher": "Teacher",
         "showRoom": "Room",
         "showGroup": "Study group",
         "showSubject": "Subject",
         "showDuration": "How long it lasts",
-        "printMargin": "Paper edge when printing",
+        "printMargin": "Paper edge",
         "printMargin.mm": "{0} mm",
         "showGaps": "Free time between lessons",
         "gap": "Break",
@@ -101,7 +103,7 @@ STRINGS = {
         "colLabel": "Label",
         "colShow": "Show",
         "colNote": "Second line",
-        "showQr": "QR code on the printout",
+        "showQr": "QR code",
         "nameLastFirst": "Kask Mari",
         "nameFirstLast": "Mari Kask",
         "link.unreadable": "This link carries settings that the page cannot read, "
@@ -209,12 +211,14 @@ STRINGS = {
         "display": "Kuvamise seaded",
         "advanced": "Seadete salvestamine ja taastamine",
         "showHeading": "Iga tunni juures näita:",
+        "dayHeading": "Päevas näita:",
+        "printHeading": "Väljatrükil:",
         "showTeacher": "Õpetaja",
         "showRoom": "Ruum",
         "showGroup": "Õpperühm",
         "showSubject": "Aine",
         "showDuration": "Kui kaua kestab",
-        "printMargin": "Paberi äär väljatrükil",
+        "printMargin": "Paberi äär",
         "printMargin.mm": "{0} mm",
         "showGaps": "Vaba aeg tundide vahel",
         "gap": "Paus",
@@ -232,7 +236,7 @@ STRINGS = {
         "colLabel": "Nimetus",
         "colShow": "Näita",
         "colNote": "Teine rida",
-        "showQr": "QR-kood väljatrükil",
+        "showQr": "QR-kood",
         "nameLastFirst": "Kask Mari",
         "nameFirstLast": "Mari Kask",
         "link.unreadable": "See link sisaldab seadeid, mida leht ei oska lugeda, "
@@ -2087,18 +2091,6 @@ PAGE = """<!DOCTYPE html>
             <span data-i18n="showDuration"></span></label>
         </div>
         <div class="line">
-          <label class="inline"><input type="checkbox" id="showGaps">
-            <span data-i18n="showGaps"></span></label>
-        </div>
-        <div class="line">
-          <label class="inline"><input type="checkbox" id="showQr">
-            <span data-i18n="showQr"></span></label>
-        </div>
-        <div class="line">
-          <label class="inline" for="printMargin"><span data-i18n="printMargin"></span></label>
-          <select id="printMargin"></select>
-        </div>
-        <div class="line">
           <label class="inline"><input type="checkbox" id="showRoom">
             <span data-i18n="showRoom"></span></label>
         </div>
@@ -2115,6 +2107,37 @@ PAGE = """<!DOCTYPE html>
             <label class="inline"><input type="radio" name="subjectNameStyle" value="short">
               <span data-i18n="subjectShort"></span></label>
           </span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Free time is not something a lesson says about itself. It is a box the
+       page adds to the day where the school left a hole, so it belongs to the
+       day and not to the lesson beside it. -->
+  <div class="row">
+    <div class="field" style="width:100%">
+      <label data-i18n="dayHeading"></label>
+      <div class="checklist">
+        <div class="line">
+          <label class="inline"><input type="checkbox" id="showGaps">
+            <span data-i18n="showGaps"></span></label>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Paper, not screen. Two settings that change nothing until the sheet
+       comes out of the printer, and neither belongs beside a lesson label. -->
+  <div class="row">
+    <div class="field" style="width:100%">
+      <label data-i18n="printHeading"></label>
+      <div class="checklist">
+        <div class="line">
+          <label class="inline"><input type="checkbox" id="showQr">
+            <span data-i18n="showQr"></span></label>
+        </div>
+        <div class="line">
+          <label class="inline" for="printMargin"><span data-i18n="printMargin"></span></label>
+          <select id="printMargin"></select>
         </div>
       </div>
     </div>

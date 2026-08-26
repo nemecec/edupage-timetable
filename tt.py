@@ -401,15 +401,13 @@ BELLS = {
     # changed plan looks like from here.
     "SädeTERA": {
         "name": "Päevakava",
-        # Between two blocks far enough apart to be a break rather than a
-        # corridor. The sheet calls the middle of the day this.
-        "gapName": "Lõuna + loovaeg",
         # When a class eats is where its lessons stop, so the band is read off
         # the plan. What makes a space lunch rather than a corridor is that it
         # is at least twenty minutes and starts in the middle of the day.
-        "gapAtLeast": 20,
-        "gapAfter": "12:00",
-        "gapBefore": "12:45",
+        "blockGaps": [
+            {"name": "Lõuna + loovaeg", "least": 20,
+             "after": "12:00", "before": "12:45"},
+        ],
         # And the sheet's own heading, for a day that stops before lunch and so
         # leaves no space to read.
         "lunch": ("12:00", "13:00"),
@@ -548,10 +546,15 @@ BELLS = {
         # The morning break, which the sheet calls Amps. It opens when the
         # morning's lessons stop, and that is 10.20 after a double and 10.35
         # after two singles.
-        "gapName": "Amps",
-        "gapAtLeast": 10,
-        "gapAfter": "10:15",
-        "gapBefore": "10:40",
+        # Amps opens when the morning's lessons stop, and that is 10.20 after
+        # a double and 10.35 after two singles. Lunch on the days without the
+        # language split is ten minutes between the last long block and the
+        # final lesson, which is what the sheet leaves room for.
+        "blockGaps": [
+            {"name": "Amps", "least": 10, "after": "10:15", "before": "10:40"},
+            {"name": "Lõuna", "least": 10, "after": "13:25", "before": "13:50",
+             "classes": ["5.a"]},
+        ],
         # Lunch here is whatever the language split leaves over, and that is a
         # different hour for each group. So it is not a band across the class:
         # it is the hole the reader's own lessons leave, and this says what to
@@ -699,7 +702,7 @@ def _minutes(text):
     return int(hour) * 60 + int(minute)
 
 
-def block_gaps(cfg, slots):
+def block_gaps(cfg, slots, class_name=""):
     """Lunch, on a day the school publishes as a list of blocks.
 
     A published plan lists lessons, not the spaces between them. Most of those
@@ -712,17 +715,29 @@ def block_gaps(cfg, slots):
     measure a space against. Those children still eat, so the school's own
     window is drawn instead, starting no earlier than the last lesson ends.
     """
-    name = (cfg or {}).get("gapName")
-    if not name or not slots:
+    windows = (cfg or {}).get("blockGaps") or []
+    if not windows or not slots:
         return []
-    least = cfg.get("gapAtLeast", 30)
-    opens, closes = _minutes(cfg.get("gapAfter", "0:00")), _minutes(cfg.get("gapBefore", "23:59"))
-    for i, (before, after) in enumerate(zip(slots, slots[1:]), start=1):
-        at = _minutes(before["end"].replace(".", ":"))
-        until = _minutes(after["start"].replace(".", ":"))
-        if until - at >= least and opens <= at < closes:
-            return [{"after": i, "name": name, "at": at, "until": until,
-                     "start": before["end"], "end": after["start"]}]
+    found = []
+    for window in windows:
+        # Which class eats when is a canteen decision, not a school-wide one,
+        # so a window can name the classes it belongs to.
+        wanted = window.get("classes")
+        if wanted and class_name.strip() not in [c.strip() for c in wanted]:
+            continue
+        least = window.get("least", 30)
+        opens = _minutes(window.get("after", "0:00"))
+        closes = _minutes(window.get("before", "23:59"))
+        for i, (before, after) in enumerate(zip(slots, slots[1:]), start=1):
+            at = _minutes(before["end"].replace(".", ":"))
+            until = _minutes(after["start"].replace(".", ":"))
+            if until - at >= least and opens <= at < closes:
+                found.append({"after": i, "name": window["name"], "at": at,
+                              "until": until, "start": before["end"],
+                              "end": after["start"]})
+                break
+    if found:
+        return found
 
     window = (cfg or {}).get("lunch")
     if not window:
@@ -731,7 +746,8 @@ def block_gaps(cfg, slots):
     at, until = max(_minutes(window[0]), ends), _minutes(window[1])
     if at >= until:
         return []                     # the day runs through it, so nobody stops
-    return [{"after": len(slots), "name": name, "at": at, "until": until,
+    # Only a school with one window has a fallback, so its name is the one.
+    return [{"after": len(slots), "name": windows[0]["name"], "at": at, "until": until,
              "start": _fmt_time(at), "end": _fmt_time(until)}]
 
 
@@ -1033,7 +1049,7 @@ def extract(result, class_name, n_periods=None, cfg=None, period_times=None):
                     for k in range(e["duration"])}
             slots = [s for s in published
                      if any(s["period"] + k in used for k in range(s["periods"]))]
-            breaks = block_gaps(cfg, slots)
+            breaks = block_gaps(cfg, slots, class_name)
         else:
             blocks = {(e["startPeriod"], e["duration"]) for e in entries
                       if e["day"] == day and e["part"] == 0}
@@ -1832,6 +1848,12 @@ PAGE = """<!DOCTYPE html>
   .ev .what.oneline .clock { font-weight: 400; opacity: .85;
                              font-variant-numeric: tabular-nums; }
   .ev.approx { border-style: dashed; border-width: 2px; }
+  /* Where the axis is cut. Everything above and below it is drawn to the same
+     scale; this band is not, and says so. */
+  .tlcut { position: absolute; left: 0; right: 0; z-index: 0; pointer-events: none;
+           border-top: 1px dashed #cdd3da; border-bottom: 1px dashed #cdd3da;
+           background: repeating-linear-gradient(135deg,
+             #fbfcfd 0 7px, #f2f4f6 7px 14px); }
   /* Worked out here, not published by the school, so it does not wear the
      school's hatch. An outline and nothing inside it: the lessons on either
      side already say when it starts and ends. */

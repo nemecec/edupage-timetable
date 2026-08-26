@@ -278,10 +278,36 @@ class WholePage(unittest.TestCase):
             five = [e for e in cls["e"] if e["d"] == day and e["p"] == 5][0]
             six = [e for e in cls["e"] if e["d"] == day and e["p"] == 6][0]
             self.assertLessEqual(five["z"], six["a"])
-        # And no lunch band is drawn across the class, because it would be
-        # wrong for half of it. Only the morning Amps, which everybody shares.
-        names = {b["n"] for d in cls["h"].values() for b in d["b"]}
-        self.assertEqual(names, {"Amps"})
+        # On these two days no lunch band is drawn across the class, because it
+        # would be wrong for half of it: each group eats around its own
+        # language slot. Only the morning Amps, which everybody shares.
+        for day in (0, 3):
+            with self.subTest(day=day):
+                self.assertEqual({b["n"] for b in cls["h"][str(day)]["b"]},
+                                 {"Amps"})
+
+    def test_the_short_days_keep_their_ten_minute_lunch(self):
+        """The days without the language split leave one gap between the last
+        long block and the closing lesson, and the sheet gives it no times.
+        Ten minutes is what fits, so ten minutes is what is drawn."""
+        school = next(s for s in self.data["schools"] if s["l"] == "TäheTERA")
+        cls = next(c for c in school["c"] if c["n"].strip() == "5.a")
+        for day in (1, 2, 4):
+            with self.subTest(day=day):
+                lunch = [b for b in cls["h"][str(day)]["b"] if b["n"] == "Lõuna"]
+                self.assertEqual([(b["s"], b["e"]) for b in lunch],
+                                 [("13.35", "13.45")])
+
+    def test_lunch_belongs_to_a_class_not_to_a_school(self):
+        """One canteen cannot seat everybody at once, so a school can name the
+        classes a band applies to. Only 5.a has published times, so only 5.a
+        is given the short lunch."""
+        school = next(s for s in self.data["schools"] if s["l"] == "TäheTERA")
+        for cls in school["c"]:
+            if cls["n"].strip() == "5.a":
+                continue
+            names = {b["n"] for d in cls["h"].values() for b in d["b"]}
+            self.assertNotIn("Lõuna", names, cls["n"])
 
     def test_only_the_school_that_leaves_lunch_to_arithmetic_says_so(self):
         """Three schools publish a lunch band. TäheTERA cannot: it is a

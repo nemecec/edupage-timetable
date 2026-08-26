@@ -456,9 +456,11 @@ period grid, which needs no times.
   Small links stay uncompressed, because gzip's header makes them longer. The
   page reads both forms.
 
-  A link this page wrote and cannot read is said out loud, above the filter. It
-  used to be dropped in silence: the timetable came up as the page opens, and
-  the reader believed that was what was shared. The usual cause is a link cut
+  A link this page wrote and cannot read is said out loud, above the filter,
+  and what it says is that the timetable below did not come from the link —
+  which is true whether the page fell back to its own defaults or to what this
+  browser had stored. It used to be dropped in silence, and the reader believed
+  what came up was what had been shared. The usual cause is a link cut
   short on its way through a chat window, which the reader can do something
   about — but only if they are told. A fragment that is not ours, an anchor
   somebody appended, is not a fault and says nothing. The notice is not

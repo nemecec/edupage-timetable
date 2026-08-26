@@ -100,10 +100,10 @@ STRINGS = {
         "customColors": "Colours of my own",
         "colLabel": "Label",
         "colShow": "Show",
-        "link.unreadable": "This link carries settings that the page cannot read. "
-                           "The timetable below is the one the page opens with. "
-                           "A link is often cut short when it is copied, so ask "
-                           "for the whole one again.",
+        "link.unreadable": "This link carries settings that the page cannot read, "
+                           "so the timetable below does not come from it. A link "
+                           "is often cut short when it is copied, so ask for the "
+                           "whole one again.",
         "colSubject": "Subject",
         "breaks.heading": "Longer breaks",
         "colBackground": "Background colour",
@@ -227,8 +227,8 @@ STRINGS = {
         "customColors": "Minu omad värvid",
         "colLabel": "Nimetus",
         "colShow": "Näita",
-        "link.unreadable": "See link sisaldab seadeid, mida leht ei oska lugeda. "
-                           "Allpool on tunniplaan sellisena, nagu leht avaneb. "
+        "link.unreadable": "See link sisaldab seadeid, mida leht ei oska lugeda, "
+                           "seega allolev tunniplaan ei tule sellest lingist. "
                            "Kopeerimisel jääb link sageli poolikuks, seega küsi "
                            "terve link uuesti.",
         "colSubject": "Õppeaine",

@@ -83,6 +83,8 @@ STRINGS = {
         "showGroup": "Study group",
         "showSubject": "Subject",
         "showDuration": "How long it lasts",
+        "printMargin": "Paper edge when printing",
+        "printMargin.mm": "{0} mm",
         "showGaps": "Free time between lessons",
         "gap": "Break",
         "dur.hour": "{0} hour",
@@ -204,6 +206,8 @@ STRINGS = {
         "showGroup": "Õpperühm",
         "showSubject": "Aine",
         "showDuration": "Kui kaua kestab",
+        "printMargin": "Paberi äär väljatrükil",
+        "printMargin.mm": "{0} mm",
         "showGaps": "Vaba aeg tundide vahel",
         "gap": "Paus",
         "dur.hour": "{0} tund",
@@ -1628,6 +1632,9 @@ PAGE = """<!DOCTYPE html>
      back. It is a week: one column a day, hanging from the morning down. -->
 <link rel="icon" href="__ICON__">
 <title>__TITLE__</title>
+<!-- An @page rule cannot be reached through a class or a custom property, so
+     the whole rule is rewritten here when the reader picks a margin. -->
+<style id="pagerule">@page { size: A4 landscape; margin: 5mm; }</style>
 <style>
   :root {
     --bg: #ffffff; --fg: #1b1d21; --muted: #6b7280;
@@ -1911,7 +1918,9 @@ PAGE = """<!DOCTYPE html>
   body.printview .count, body.printview .topbar { display: none; }
   body.printview #grid { width: 1054px; }          /* 297mm less two 9mm margins */
   body.printview #grid table { min-width: 0; }
-  @page { size: A4 landscape; margin: 9mm; }
+  /* The margin is written from the setting into #pagerule below. This copy is
+     what a browser gets if the script never runs. */
+  @page { size: A4 landscape; margin: 5mm; }
   @media print {
     /* Chrome leaves "Background graphics" off by default, which would drop
        every lesson color — and white-on-white text with it. */
@@ -2031,6 +2040,10 @@ PAGE = """<!DOCTYPE html>
         <div class="line">
           <label class="inline"><input type="checkbox" id="showGaps">
             <span data-i18n="showGaps"></span></label>
+        </div>
+        <div class="line">
+          <label class="inline" for="printMargin"><span data-i18n="printMargin"></span></label>
+          <select id="printMargin"></select>
         </div>
         <div class="line">
           <label class="inline"><input type="checkbox" id="showRoom">

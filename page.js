@@ -23,6 +23,12 @@ const defaults = () => ({
   showTeacher: true, teacherNameStyle: "short",
   showRoom: true, showGroup: true,
   showDuration: true, showGaps: true,
+
+  /* Millimetres of paper left blank around the sheet. Five is about as narrow
+     as a laser printer will take without clipping, and every millimetre saved
+     is a millimetre the timetable can use — which on a tight class is the
+     difference between a readable box and a cut line. */
+  printMargin: 5,
   showSubject: true, subjectNameStyle: "full",
 
   /* What every subject does unless it says otherwise. One question, three
@@ -163,7 +169,8 @@ function normalise(saved) {
   }
   for (const [key, allowed] of [["teacherNameStyle", ["short", "full"]],
                                 ["subjectNameStyle", ["short", "full"]],
-                                ["subjectColorStyle", ["palette", "school", "custom"]]]) {
+                                ["subjectColorStyle", ["palette", "school", "custom"]],
+                                ["printMargin", MARGINS]]) {
     if (!allowed.includes(out[key])) out[key] = base[key];
   }
   if (!DATA.languages.some(l => l[0] === out.lang)) out.lang = DATA.lang;
@@ -1176,10 +1183,20 @@ function bodyCell(cls, dayIdx, col, bucket) {
    entry there. So it is drawn and measured rather than guessed at from constants —
    the footer alone changes size with the QR code and the language, and a guess
    that was right once quietly stops being right. */
-const SHEET_H = 726;              // 210mm less two 9mm margins, at 96dpi
-const SHEET_BUDGET = SHEET_H - 8; /* a few pixels in hand: the print layout
-   rounds differently from the screen one, and landing exactly on the limit
-   means landing just past it. */
+/* What the reader can pick from. Three is enough: as narrow as a printer will
+   take, the usual, and roomy for a hole punch. */
+const MARGINS = [5, 9, 14];
+const MM = 96 / 25.4;             // CSS pixels per millimetre, at 96dpi
+
+/* A4 landscape is 210mm tall, less the margin at each end. */
+function sheetHeight() {
+  return Math.round(210 * MM - 2 * state.printMargin * MM);
+}
+/* A few pixels in hand: the print layout rounds differently from the screen
+   one, and landing exactly on the limit means landing just past it. */
+function sheetBudget() {
+  return sheetHeight() - 8;
+}
 
 /* The largest scale at which everything still fits, footer and all.
    `draw(scale)` puts the page together at that scale. The answer goes back to
@@ -1191,7 +1208,7 @@ function fitToSheet(draw, small, big) {
   const keep = grid.innerHTML;
   const fits = (scale) => {
     draw(scale);
-    return grid.getBoundingClientRect().height + footHeight() <= SHEET_BUDGET;
+    return grid.getBoundingClientRect().height + footHeight() <= sheetBudget();
   };
   let best = null;
   for (let step = 0; step < 9; step++) {
@@ -1605,6 +1622,14 @@ function bindChoice(name, key) {
 ["showStudentName", "showSchoolName", "showClassName",
  "showTeacher", "showRoom", "showGroup", "showSubject",
  "showDuration", "showGaps"].forEach(key => bindToggle(key, key));
+/* The one control that carries a number rather than a word. */
+document.getElementById("printMargin").addEventListener("change", (ev) => {
+  const mm = Number(ev.target.value);
+  if (!MARGINS.includes(mm)) return;
+  state.printMargin = mm;
+  save();
+  render();
+});
 bindChoice("teacherNameStyle", "teacherNameStyle");
 bindChoice("subjectNameStyle", "subjectNameStyle");
 bindChoice("subjectColorStyle", "subjectColorStyle");
@@ -1626,7 +1651,28 @@ function syncDisplayControls() {
   }
   document.getElementById("teacherChoice").classList.toggle("off", !state.showTeacher);
   document.getElementById("subjectChoice").classList.toggle("off", !state.showSubject);
+  renderMargins();
+  applyPageMargin();
+}
 
+/* One option per width the reader can pick. Built here rather than written in
+   the page, so the list and the values the settings accept cannot drift. */
+function renderMargins() {
+  const box = document.getElementById("printMargin");
+  const want = MARGINS.map(mm =>
+    '<option value="' + mm + '"' + (mm === state.printMargin ? " selected" : "") +
+    ">" + esc(t("printMargin.mm", mm)) + "</option>").join("");
+  if (box.innerHTML !== want) box.innerHTML = want;
+  box.value = String(state.printMargin);
+}
+
+/* An @page rule is not reachable through a class or a custom property, so the
+   whole rule is written out. The sheet the fitter measures against has to
+   agree with it, which is why both read the one setting. */
+function applyPageMargin() {
+  const rule = document.getElementById("pagerule");
+  const want = "@page { size: A4 landscape; margin: " + state.printMargin + "mm; }";
+  if (rule.textContent !== want) rule.textContent = want;
 }
 /* Clicking a lesson opens a color picker anchored under it. The input is a
    permanent hidden node, so nothing rebuilds it while the picker is open. */

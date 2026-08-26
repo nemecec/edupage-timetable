@@ -539,6 +539,7 @@ its own map of classes.
   "subjectNameStyle": "full",
   "showDuration": true,
   "showGaps": true,
+  "printMargin": 5,
 
   "subjectColorStyle": "school",
   "subjects": {
@@ -599,6 +600,14 @@ Some of these choices are not obvious:
   so the first letter of what is left takes it over: `Gümn programmeerimise
   algkursus` shows as `Programmeerimise algkursus`. Only the first letter — the
   words after it keep the school's own casing.
+- **The paper edge is the reader's to set.** Five millimetres, nine, or
+  fourteen for a hole punch. Five is the default and about as narrow as a laser
+  printer takes without clipping. Every millimetre saved is one the timetable
+  can use, and on a tight class that is the difference between a readable box
+  and a cut line. An `@page` rule cannot be reached through a class or a custom
+  property, so the whole rule is rewritten when the setting changes. The fitter
+  that scales a sheet to one page reads the same setting, or it would measure
+  against paper of a different size.
 - **Every row has a switch**, ticked to begin with. Not every subject in a
   timetable is every child's: a choir sits in the class's week and in nobody
   else's afternoon. Clearing the tick drops that row from the day and from the

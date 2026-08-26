@@ -1237,6 +1237,48 @@ test("a class key splits on the school, not on the class name", () => {
   assert.deepEqual(json(`splitClassKey("nothing")`), ["nothing", ""]);
 });
 
+test("the settings box follows the settings", () => {
+  /* It used to be filled once, when the panel was opened, and went stale under
+     every control touched afterwards. Not only a stale display: Apply reads
+     from this box, so pressing it put the older settings back — the button
+     undid the change instead of keeping it. */
+  run(`state = defaults(); state.lang = "en"; applyStrings();
+       state.school = "68"; state.class = "8";
+       document.getElementById("advancedPanel").open = true;
+       render();`);
+  const shown = () => JSON.parse(json(`document.getElementById("settingsText").value`));
+  assert.equal(shown().subjectColorStyle, json(`defaults().subjectColorStyle`));
+
+  run(`state.subjectColorStyle = "palette"; render();`);
+  assert.equal(shown().subjectColorStyle, "palette", "the box went stale");
+  assert.deepEqual(shown(), json(`slim(state)`), "the box is not what is stored");
+
+  // A closed panel is not written to: there is nothing there to read.
+  const closed = json(`document.getElementById("settingsText").value`);
+  run(`document.getElementById("advancedPanel").open = false;
+       state.showRoom = false; render();`);
+  assert.equal(json(`document.getElementById("settingsText").value`), closed,
+               "a closed panel was rewritten");
+
+  /* And not while somebody is typing into it. A reader pasting a backup is
+     mid-edit, and the box is where the paste lands. */
+  run(`document.getElementById("advancedPanel").open = true; render();
+       document.activeElement = document.getElementById("settingsText");
+       document.getElementById("settingsText").value = "half a paste";
+       state.showGroup = false; render();`);
+  assert.equal(json(`document.getElementById("settingsText").value`), "half a paste",
+               "a paste in progress was overwritten");
+
+  /* Opening the panel fills it whatever is in there, since a half-typed paste
+     is not something the reader can be in the middle of before it is open.
+     That is what the toggle listener does, in one line. */
+  run(`refreshSettingsBox(true);`);
+  assert.equal(shown().showGroup, false,
+               "opening the panel showed the old state");
+  assert.deepEqual(shown(), json(`slim(state)`));
+  run(`document.activeElement = null; state = defaults();`);
+});
+
 test("pasted settings are taken, or refused with a reason", () => {
   /* The one place a whole state arrives at once, and the one place a bad value
      could take the page down with it. It is typed or pasted by whoever has the

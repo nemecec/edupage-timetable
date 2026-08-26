@@ -254,6 +254,31 @@ class TheControls(InABrowser):
         self.assertFalse(got["drawn"], "a hidden subject was still drawn")
         self.assertTrue(got["msg"], "the panel said nothing")
 
+    def test_apply_keeps_a_change_made_while_the_panel_was_open(self):
+        """The box is filled from the settings, and Apply reads from the box.
+        Filled once when the panel opened, it went stale under every control
+        touched afterwards — so Apply put the older settings back, and the
+        button undid the change instead of keeping it."""
+        self.show("68", "8")
+        got = self.js(
+            "var panel = document.getElementById('advancedPanel');"
+            "panel.open = true; panel.dispatchEvent(new Event('toggle'));"
+            "var before = JSON.parse(document.getElementById('settingsText').value)"
+            "              .subjectColorStyle;"
+            # A control the reader touches with the panel already open.
+            "var radio = document.querySelector("
+            "  'input[name=subjectColorStyle][value=palette]');"
+            "radio.checked = true;"
+            "radio.dispatchEvent(new Event('change', {bubbles: true}));"
+            "var shown = JSON.parse(document.getElementById('settingsText').value)"
+            "             .subjectColorStyle;"
+            "document.getElementById('applySettings').dispatchEvent("
+            "  new MouseEvent('click', {bubbles: true}));"
+            "return {before: before, shown: shown, after: state.subjectColorStyle};")
+        self.assertEqual(got["before"], "custom", "the page no longer opens on custom")
+        self.assertEqual(got["shown"], "palette", "the box went stale")
+        self.assertEqual(got["after"], "palette", "Apply undid the change")
+
     def test_bad_text_in_the_backup_box_is_refused_without_breaking_the_page(self):
         self.show("68", "7")
         got = self.js(

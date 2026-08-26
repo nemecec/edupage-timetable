@@ -594,6 +594,14 @@ so a reader can tell which control each name belongs to. Everything that belongs
 to one class sits in that class's own subtree, rather than each setting keeping
 its own map of classes.
 
+The box is redrawn with the page, so it always shows what is stored. It used to
+be filled once, when the panel was opened, and went stale under every control
+touched afterwards. That was not only a stale display: **Apply** reads from the
+box, so pressing it put the older settings back and the button undid the change
+instead of keeping it. The one time the box is left alone is while it is being
+typed into — somebody pasting a backup is mid-edit, and the box is where the
+paste lands.
+
 ```json
 {
   "lang": "et",

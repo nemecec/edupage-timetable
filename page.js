@@ -499,6 +499,29 @@ function renderSubtitle(school) {
     '<div class="unofficial">' + esc(t("footer.disclaimer")) + "</div>";
 }
 
+/* The box holds the settings as they are stored, so it has to follow them.
+   It used to be filled once, when the panel was opened, and went stale under
+   every control the reader touched afterwards.
+ *
+ * That is not only a stale display. Apply reads from this box, so a reader who
+ * changed something with the panel open and then pressed Apply put the older
+ * settings back — the button undid the change instead of keeping it.
+ *
+ * Not while it is being typed into: somebody pasting a backup is mid-edit, and
+ * the events table leaves its rows alone for the same reason. `force` is the
+ * panel opening, where there is nothing yet to interrupt.
+ *
+ * Looked up by id rather than held in a constant, because this runs from the
+ * first draw and a constant is not readable before its own line. */
+function refreshSettingsBox(force) {
+  const panel = document.getElementById("advancedPanel");
+  const box = document.getElementById("settingsText");
+  if (!panel || !box || !panel.open) return;
+  if (!force && document.activeElement === box) return;
+  const want = JSON.stringify(slim(state), null, 2);
+  if (box.value !== want) box.value = want;
+}
+
 /* Said once, where the reader is looking, and in their own language — which
    is why it is written at render rather than when the link was read. */
 function showLinkFault() {
@@ -1503,6 +1526,7 @@ function render() {
 
   renderFooter(school);
   showLinkFault();
+  refreshSettingsBox();
   document.title = displayTitle(school, cls) || t("classN", cls.n);
   renderSubtitle(school);
 
@@ -1962,7 +1986,7 @@ document.getElementById("reset").addEventListener("click", () => {
 
 advancedPanel.addEventListener("toggle", () => {
   if (advancedPanel.open) {
-    settingsText.value = JSON.stringify(slim(state), null, 2);
+    refreshSettingsBox(true);
     settingsMsg.textContent = "";
   }
 });

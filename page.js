@@ -2009,6 +2009,20 @@ function scrubbed(value, key) {
   return value;
 }
 
+/* Globals a browser extension puts into every page it can reach. A wallet
+   extension failing to set window.ethereum has nothing to do with a timetable
+   and nothing here can fix it, so it is logged and not alarmed on. */
+const INJECTED = ["ethereum", "solana", "web3", "tronWeb", "keplr",
+                  "__firefox__", "webkit.messageHandlers"];
+
+/* Where a fault happened, with the address's own tail taken off. A browser
+   reports the file it was in, and for an error in the page that file is the
+   page — fragment and all, which is where every setting lives. `path` is sent
+   deliberately and this must not undo it. */
+function faultPlace(at) {
+  return String(at || "").split("#")[0].split("?")[0];
+}
+
 /* One page, a handful of reports. A fault inside the drawing code fires on
    every repaint, and a reporter that reports its own reporting never stops. */
 const REPORT_CAP = 5;
@@ -2032,7 +2046,7 @@ function report(what, error, at) {
       /* Which file, and where in it. A browser hides all of this for a script
          from another origin unless that script is loaded with crossorigin and
          serves the header for it. */
-      where: at ? String(at).slice(0, 300) : "",
+      where: faultPlace(at).slice(0, 300),
       /* Where in the code, not where the reader is: the address carries the
          settings, and the settings carry a name. */
       path: location.pathname,
@@ -2047,6 +2061,8 @@ function report(what, error, at) {
     if (!body.stack && !body.where && /^script error/i.test(body.message)) {
       body.opaque = 1;
     }
+    /* Injected by something the reader installed, not by this page. */
+    if (INJECTED.some(name => body.message.includes(name))) body.opaque = 1;
     /* keepalive, because a fault often arrives as the reader leaves. */
     fetch(DATA.report, {
       method: "POST", keepalive: true, mode: "same-origin",

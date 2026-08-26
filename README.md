@@ -648,7 +648,15 @@ Three decisions shape it, and all three come from what the page holds.
   truncates at 4000 bytes. See `scrubbed()` in `page.js`, and the test that
   fails if any typed word survives.
 - **The address is never sent.** The path is. The address carries the settings,
-  and the settings carry a name.
+  and the settings carry a name. That took two goes: the field naming the file
+  a fault happened in is the page's own address for an error in the page, and
+  it arrived with 269 characters of a reader's settings in it. Everything from
+  the `#` or the `?` comes off now, and a test holds it there.
+- **An error from something the reader installed is logged, not alarmed on.**
+  A wallet extension failing to set `window.ethereum` has nothing to do with a
+  timetable and nothing here can fix it. Neither can an error the browser will
+  not describe, which is what an injected script looks like when it is loaded
+  from somewhere else.
 
 Five reports per page load, one per distinct message. A fault inside the
 drawing code fires on every repaint, and a reporter that reports its own

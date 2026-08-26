@@ -792,6 +792,42 @@ test("a fault report carries the shape of the settings, not the words", () => {
   assert.equal(sent.path, "/t/");
 });
 
+test("a fault report never carries the address's own tail", () => {
+  /* A browser names the file the fault was in, and for an error in this page
+     that file is this page — fragment and all, which is where every setting
+     lives. One real report arrived with 269 characters of a reader's settings
+     in it. */
+  run(`DATA.report = "/report"; reportsSent = 0; reportsSeen.clear();
+       report("error", new Error("boom"),
+              "https://little.tools/timetable#z=H4sIAAAAsettings");`);
+  const sent = JSON.parse(json(`window.__posted`).body);
+  assert.equal(sent.where, "https://little.tools/timetable");
+  assert.ok(!JSON.stringify(sent).includes("H4sIA"), "the fragment went along");
+
+  // A query string is the same kind of tail.
+  run(`reportsSent = 0; reportsSeen.clear();
+       report("error", new Error("boom2"), "https://little.tools/t?k=v#frag");`);
+  assert.equal(JSON.parse(json(`window.__posted`).body).where, "https://little.tools/t");
+});
+
+test("a wallet extension's error is not this page's fault", () => {
+  /* window.ethereum comes from something the reader installed. It is logged,
+     because it did happen, and it does not wake anybody. */
+  run(`DATA.report = "/report"; reportsSent = 0; reportsSeen.clear();
+       report("error", new Error("undefined is not an object (evaluating " +
+              "'window.ethereum.selectedAddress = undefined')"),
+              "https://little.tools/timetable");`);
+  const sent = JSON.parse(json(`window.__posted`).body);
+  assert.equal(sent.opaque, 1, "an extension's error would have raised an alarm");
+
+  // A real fault in this page's own code still does.
+  run(`reportsSent = 0; reportsSeen.clear();
+       report("error", new Error("cannot read properties of null"),
+              "https://little.tools/timetable");`);
+  assert.ok(!("opaque" in JSON.parse(json(`window.__posted`).body)),
+            "a real fault was written off");
+});
+
 test("an error the browser will not describe is logged, not alarmed on", () => {
   /* A script from another origin gives "Script error." and nothing else. It
      came from the counter's script, and it is not something to be woken for. */

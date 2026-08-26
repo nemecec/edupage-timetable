@@ -627,6 +627,44 @@ class Documentation(unittest.TestCase):
         with open(os.path.join(ROOT, "tt.py"), encoding="utf-8") as fh:
             self.assertIn("the day plan has no time for", fh.read())
 
+    def test_the_vendored_code_is_the_code_that_was_vetted(self):
+        """Two libraries are copied into this repository and inlined into the
+        page, so whatever is in them runs in a reader's browser. These hashes
+        are of the files as checked against upstream — qrcode-generator 1.4.4
+        byte for byte, and fflate 0.8.2 byte for byte once the license this
+        repository prepends is taken off.
+
+        A changed byte here is either an upgrade nobody wrote down or somebody
+        else's idea. Either way it should not go out quietly.
+        """
+        import hashlib
+        expected = {
+            "qrcode-generator.js":
+                "18ae399f81182bc9de916e9c77b195df20cc58d6f2d55a62b085a299f1bf1780",
+            "fflate.js":
+                "eb598c2062fbdceb120c2513824aac9d86bf65169229493cf328833a80899b36",
+        }
+        for name, want in expected.items():
+            with self.subTest(library=name):
+                blob = open(os.path.join(ROOT, "vendor", name), "rb").read()
+                self.assertEqual(hashlib.sha256(blob).hexdigest(), want)
+
+    def test_the_page_runs_no_code_it_did_not_ship(self):
+        """Nothing in the page builds code out of a string, and nothing talks
+        to the network except the two calls this repository makes."""
+        page, _ = build()
+        for pattern, what in (
+                (r"(?<![A-Za-z_.$])eval\s*\(", "eval"),
+                (r"(?<![A-Za-z_.$])Function\s*\(", "the Function constructor"),
+                (r"XMLHttpRequest", "XMLHttpRequest"),
+                (r"WebSocket", "a WebSocket"),
+                (r"sendBeacon", "sendBeacon"),
+                (r"new\s+Image\s*\(", "an image beacon")):
+            with self.subTest(looking_for=what):
+                self.assertEqual(re.findall(pattern, page), [], what)
+        # Two fetches: the fault report and the message a reader writes.
+        self.assertEqual(len(re.findall(r"(?<![A-Za-z_.$])fetch\s*\(", page)), 2)
+
     def test_the_deploy_readme_counts_the_resources_correctly(self):
         counts = {n: len(self.resources(n))
                   for n in ("site.yaml", "dns.yaml", "cert.yaml")}

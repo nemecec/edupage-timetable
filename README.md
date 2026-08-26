@@ -728,6 +728,30 @@ all when there is no endpoint to post to.
 together, so the page can never post to a path nothing answers. That takes the
 feedback panel with it.
 
+## What runs in a reader's browser
+
+Two libraries are copied into `vendor/` and inlined, so whatever is in them
+runs on a reader's machine. A test pins the SHA-256 of each file. They were
+checked against upstream byte for byte — `qrcode-generator` 1.4.4 exactly, and
+`fflate` 0.8.2 exactly once the license this repository prepends is taken off.
+A changed byte is either an upgrade nobody wrote down or somebody else's idea,
+and either way it fails the build.
+
+A second test says the page builds no code out of a string — no `eval`, no
+`Function` constructor — and reaches the network in exactly two places, both
+of them calls this repository makes. No `XMLHttpRequest`, no `WebSocket`, no
+`sendBeacon`, no image pings.
+
+One script is loaded rather than inlined: the visit counter, from `gc.zgo.at`.
+The policy names that host exactly, so nothing else can be fetched and nothing
+can be sent anywhere unnamed. A page load makes two external requests and no
+others: that script, and the counter's own beacon.
+
+None of this stops a browser extension. An extension runs in the page whatever
+the policy says, which is where `window.ethereum` came from in a fault report.
+That is why an error naming an injected global is logged rather than alarmed
+on.
+
 The suite itself is checked by breaking things on purpose. A change is made to
 the generator or the page, and the tests must fail. Anything that can break in
 silence is a gap. The tests above were written from what such a pass turned up,

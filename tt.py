@@ -1423,6 +1423,9 @@ PAGE = """<!DOCTYPE html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Inline, so no browser asks for /favicon.ico and gets the 404 page
+     back. It is a week: five columns, the tallest in the middle. -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2016%2016'%3E%3Crect%20width='16'%20height='16'%20rx='3.5'%20fill='%231C53BA'/%3E%3Crect%20x='3'%20y='4'%20width='2'%20height='5'%20rx='1'%20fill='%23fff'%20opacity='.7'/%3E%3Crect%20x='6'%20y='4'%20width='2'%20height='8'%20rx='1'%20fill='%23fff'/%3E%3Crect%20x='9'%20y='4'%20width='2'%20height='6'%20rx='1'%20fill='%23fff'%20opacity='.85'/%3E%3Crect%20x='12'%20y='4'%20width='1.5'%20height='3.5'%20rx='.75'%20fill='%23fff'%20opacity='.55'/%3E%3C/svg%3E">
 <title>__TITLE__</title>
 <style>
   :root {

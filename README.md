@@ -634,6 +634,14 @@ refusal. The other half of that first failure was the path pattern. CloudFront
 matches it without a leading slash, so `/report` matched nothing and the
 request fell through to the bucket.
 
+## The icon
+
+Inline, as a `data:` URI, on all three pages — the timetable, the root and the
+404. Without one a browser asks for `/favicon.ico`, and there is nothing at
+that address, so it is handed the 404 page as an image and logs a failure. The
+icon is a week: five columns, the tallest in the middle. It costs 533 bytes and
+no request.
+
 ## Feedback
 
 The way in is a link in the subtitle, beside the source link — the line at the

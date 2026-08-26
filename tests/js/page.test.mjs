@@ -1099,6 +1099,51 @@ test("what a browser stored is read back, and a fault reading it is reported", (
             "the three failures are still handled as one");
 });
 
+test("a teacher's name can be turned round, however many names there are", () => {
+  /* A school writes a register family name first. Nobody says a name that way
+     out loud. Only the first word moves: a person can have more than one given
+     name, and the family name is the one at the front. */
+  run(`state = defaults(); state.teacherNameOrder = "first";`);
+  const turned = (text) => json(`teacherName(${JSON.stringify(text)})`);
+
+  assert.equal(turned("Kask Mari"), "Mari Kask");
+  assert.equal(turned("Kask Mari Liis"), "Mari Liis Kask", "a second given name moved");
+  assert.equal(turned("MargeL"), "MargeL", "a one-word name was taken apart");
+  assert.equal(turned(""), "");
+
+  /* One entry can hold several people, and which separator a school uses is
+     not consistent. Each name turns round on its own; the list comes back
+     with the separators it went in with. */
+  assert.equal(turned("Kask Mari / Tamm Jaan"), "Mari Kask / Jaan Tamm");
+  assert.equal(turned("Kask Mari, Tamm Jaan"), "Mari Kask, Jaan Tamm");
+  assert.equal(turned("Kask Mari; Tamm Jaan"), "Mari Kask; Jaan Tamm");
+  assert.equal(turned("Kask Mari/Tamm Jaan"), "Mari Kask/Jaan Tamm",
+               "a separator with no spaces lost them");
+  assert.equal(turned("Kask Mari / Peedu / Tamm Jaan"),
+               "Mari Kask / Peedu / Jaan Tamm");
+
+  // And left alone by default, which is how the timetable arrives.
+  run(`state.teacherNameOrder = "last";`);
+  assert.equal(turned("Kask Mari / Tamm Jaan"), "Kask Mari / Tamm Jaan");
+  assert.equal(json(`defaults().teacherNameOrder`), "last");
+  run(`state = defaults();`);
+});
+
+test("the name order reaches the boxes and the tooltip", () => {
+  run(`state = defaults(); state.lang = "en"; applyStrings();
+       state.school = "68"; state.class = "8"; state.teacherNameStyle = "full";`);
+  const draw = () => run(`renderTimeline(currentSchool(), currentClass(),
+                                         currentClass().e, [], 0)`);
+  const before = draw();
+  assert.match(before, /Mari Tamm/, "the harness teacher is not written as expected");
+
+  run(`state.teacherNameOrder = "first";`);
+  const after = draw();
+  assert.match(after, /Tamm Mari/, "the box kept the register order");
+  assert.match(after, /title="[^"]*Tamm Mari/, "the tooltip kept the register order");
+  run(`state = defaults();`);
+});
+
 test("the address in the corner stays when the code goes", () => {
   /* Some readers want the sheet and not the code. The address is where anybody
      gets a timetable of their own, so it is not part of that choice.

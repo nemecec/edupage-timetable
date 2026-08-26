@@ -101,6 +101,8 @@ STRINGS = {
         "colLabel": "Label",
         "colShow": "Show",
         "showQr": "QR code on the printout",
+        "nameLastFirst": "Kask Mari",
+        "nameFirstLast": "Mari Kask",
         "link.unreadable": "This link carries settings that the page cannot read, "
                            "so the timetable below does not come from it. A link "
                            "is often cut short when it is copied, so ask for the "
@@ -229,6 +231,8 @@ STRINGS = {
         "colLabel": "Nimetus",
         "colShow": "Näita",
         "showQr": "QR-kood väljatrükil",
+        "nameLastFirst": "Kask Mari",
+        "nameFirstLast": "Mari Kask",
         "link.unreadable": "See link sisaldab seadeid, mida leht ei oska lugeda, "
                            "seega allolev tunniplaan ei tule sellest lingist. "
                            "Kopeerimisel jääb link sageli poolikuks, seega küsi "
@@ -2068,6 +2072,12 @@ PAGE = """<!DOCTYPE html>
               <span data-i18n="nameFull"></span></label>
             <label class="inline"><input type="radio" name="teacherNameStyle" value="short">
               <span data-i18n="nameShort"></span></label>
+          </span>
+          <span class="choice" id="teacherOrder">
+            <label class="inline"><input type="radio" name="teacherNameOrder" value="last">
+              <span data-i18n="nameLastFirst"></span></label>
+            <label class="inline"><input type="radio" name="teacherNameOrder" value="first">
+              <span data-i18n="nameFirstLast"></span></label>
           </span>
         </div>
         <div class="line">

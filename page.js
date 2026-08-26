@@ -76,6 +76,10 @@ const defaults = () => ({
      difference between a readable box and a cut line. */
   printMargin: 5,
   showSubject: true, subjectNameStyle: "full",
+  /* A school writes a register family name first. Nobody says a name that way
+     out loud, so the reader can turn them round. "last" is how the timetable
+     arrives and stays the default. */
+  teacherNameOrder: "last",           // "last" | "first"
 
   /* What every subject does unless it says otherwise. One question, three
      answers. It was two checkboxes that quietly layered on each other. Nobody
@@ -233,6 +237,7 @@ function normalise(saved) {
   for (const [key, allowed] of [["teacherNameStyle", ["short", "full"]],
                                 ["subjectNameStyle", ["short", "full"]],
                                 ["subjectColorStyle", ["palette", "school", "custom"]],
+                                ["teacherNameOrder", ["last", "first"]],
                                 ["printMargin", MARGINS]]) {
     if (!allowed.includes(out[key])) out[key] = base[key];
   }
@@ -1084,7 +1089,8 @@ function tornEdge(width, shift, amp) {
       }
       const e = it.lesson, col = colorFor(e.s), info = subjectFacts()[e.s] || {};
       const meta = detailLine(e);
-      const tip = [subjectName(e, false), e.g.join("/"), e.T.join(" / "),
+      const tip = [subjectName(e, false), e.g.join("/"),
+                   teacherNames(e, "full").join(" / "),
                    e.r.join(" / "), when, e.u > 1 ? t("paired") : t("single"),
                    e.o ? t("noExactTime") : ""].filter(Boolean).join("\n");
       const name = lessonTitle(e);
@@ -1274,10 +1280,36 @@ function lessonTitle(e) {
 }
 
 /* Teacher names: the school's abbreviation, the full name, or neither. */
+/* One name, turned round: the first word goes to the end and the rest stays
+   where it is. A person can have more than one given name — "Kask Mari Liis"
+   is one family name and two given ones — so only the first word moves. A name
+   of one word is already whatever it is. */
+function turnedRound(name) {
+  const shape = /^(\s*)([\s\S]*?)(\s*)$/.exec(String(name));
+  const words = shape[2].split(/\s+/).filter(Boolean);
+  if (words.length < 2) return name;
+  return shape[1] + words.slice(1).join(" ") + " " + words[0] + shape[3];
+}
+
+/* One entry can hold several people. A school separates them with a slash, a
+   comma or a semicolon, and which one is not consistent. Each name is turned
+   round on its own and the list is put back together with the separators it
+   came with, so nothing about the list changes but the names in it. */
+function teacherName(text) {
+  if (state.teacherNameOrder !== "first") return text;
+  return String(text).split(/([/,;])/)
+    .map(part => (/^[/,;]$/.test(part) ? part : turnedRound(part)))
+    .join("");
+}
+
+function teacherNames(e, style) {
+  const names = (style || state.teacherNameStyle) === "full" ? e.T : e.t;
+  return (names || []).map(teacherName);
+}
+
 function teacherText(e) {
   if (!state.showTeacher) return "";
-  const names = state.teacherNameStyle === "full" ? e.T : e.t;
-  return (names || []).join(" / ");
+  return teacherNames(e).join(" / ");
 }
 
 /* What this class remembers, read-only. Reading must not write: creating the
@@ -1325,7 +1357,8 @@ function lessonHtml(e, time) {
   const meta = detailLine(e);
   const label = lessonTitle(e);
   const note = e.o ? t("noExactTime") : "";
-  const tip = [subjectName(e, false), e.g.join("/"), e.T.join(" / "), e.r.join(" / "),
+  const tip = [subjectName(e, false), e.g.join("/"),
+               teacherNames(e, "full").join(" / "), e.r.join(" / "),
                time, e.u > 1 ? t("paired") : t("single"), note]
               .filter(Boolean).join("\n");
   const col = colorFor(e.s);
@@ -1812,6 +1845,7 @@ document.getElementById("printMargin").addEventListener("change", (ev) => {
   render();
 });
 bindChoice("teacherNameStyle", "teacherNameStyle");
+bindChoice("teacherNameOrder", "teacherNameOrder");
 bindChoice("subjectNameStyle", "subjectNameStyle");
 bindChoice("subjectColorStyle", "subjectColorStyle");
 
@@ -1824,13 +1858,15 @@ function syncDisplayControls() {
                      "showDuration", "showGaps", "showQr"]) {
     document.getElementById(key).checked = !!state[key];
   }
-  for (const name of ["teacherNameStyle", "subjectNameStyle", "subjectColorStyle"]) {
+  for (const name of ["teacherNameStyle", "teacherNameOrder",
+                      "subjectNameStyle", "subjectColorStyle"]) {
     const key = name;
     document.querySelectorAll('input[name="' + name + '"]').forEach(radio => {
       radio.checked = radio.value === state[key];
     });
   }
   document.getElementById("teacherChoice").classList.toggle("off", !state.showTeacher);
+  document.getElementById("teacherOrder").classList.toggle("off", !state.showTeacher);
   document.getElementById("subjectChoice").classList.toggle("off", !state.showSubject);
   renderMargins();
   applyPageMargin();

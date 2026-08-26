@@ -400,6 +400,14 @@ period grid, which needs no times.
   study group and the subject are independent of each other. The teacher and the
   subject each choose between the full name and the school's abbreviation.
 
+  A teacher's name arrives family name first, which is how a school writes a
+  register and not how anybody says a name out loud. A second pair of buttons
+  turns them round. Only the first word moves: a person can have more than one
+  given name, and `Kask Mari Liis` is one family name and two given ones. One
+  entry can hold several people, separated by a slash, a comma or a semicolon —
+  which one is not consistent — so each name is turned round on its own and the
+  list is put back together with the separators it came with.
+
   **The QR code on the printout** can be switched off. Some readers want the
   sheet and not the corner. The address in the other corner stays either way:
   the code goes to this reader's own timetable, and the address is where
@@ -588,6 +596,7 @@ its own map of classes.
   "showGroup": true,
   "showSubject": true,
   "subjectNameStyle": "full",
+  "teacherNameOrder": "last",
   "showDuration": true,
   "showGaps": true,
   "showQr": true,

@@ -582,12 +582,20 @@ function colorFor(subject) {
   return own.textColor ? paint(base.bg) : base;
 }
 
+/* A row the reader has turned off. Not every subject in a timetable is every
+   child's: a choir sits in the class's week and in nobody else's afternoon.
+   Turning one off leaves the hole it made, which the day then reads as a
+   break or as time to go home, both of which are true. */
+function hidden(name) {
+  return ((state.subjects || {})[name] || {}).off === true;
+}
+
 /* An entry that says nothing is not worth keeping, in storage or in a link. */
 function tidySubjects() {
   for (const [subject, entry] of Object.entries(state.subjects || {})) {
     if (entry.style === state.subjectColorStyle) delete entry.style;
     if (!entry.label && !entry.style && !entry.backgroundColor &&
-        !entry.textColor) {
+        !entry.textColor && !entry.off) {
       delete state.subjects[subject];
     }
   }
@@ -699,7 +707,10 @@ function renderTimeline(school, cls, shown, mine, scale) {
       /* Every break the day plan gives this day. Whether one belongs on a
          short day is a question about the plan, so the generator answers it
          and this draws what it is given. */
-      for (const b of shape.b) perDay.get(i).push({ a: b.m, z: b.x, brk: b.n });
+      for (const b of shape.b) {
+        if (hidden(b.n)) continue;
+        perDay.get(i).push({ a: b.m, z: b.x, brk: b.n });
+      }
     }
   }
 
@@ -723,7 +734,7 @@ function renderTimeline(school, cls, shown, mine, scale) {
         }
         reach = Math.max(reach, item.z);
       }
-      for (const hole of holes) items.push(hole);
+      for (const hole of holes) if (!hidden(hole.gap)) items.push(hole);
     }
   }
 
@@ -1248,6 +1259,9 @@ function render() {
   const timeline = onTimeline();
   const shown = cls.e.filter(e => visible(e, picked, cls.v))
                      .filter(e => !timeline || !e.c);   // one box per lesson
+  /* The legend is given every row, so a subject turned off can be turned back
+     on. Everything that draws is given what is left. */
+  const drawn = shown.filter(e => !hidden(e.s));
   const parsed = readEvents(mine().events);
   document.getElementById("evwarn").textContent = parsed.errors.join("\n");
 
@@ -1256,10 +1270,10 @@ function render() {
 
   if (timeline) {
     document.getElementById("grid").innerHTML =
-      renderTimeline(school, cls, shown, parsed.events,
-                     printing ? fitTimeline(school, cls, shown, parsed.events) : 0);
+      renderTimeline(school, cls, drawn, parsed.events,
+                     printing ? fitTimeline(school, cls, drawn, parsed.events) : 0);
     document.getElementById("count").textContent =
-      t("lessonCount", shown.length) + (parsed.events.length ?
+      t("lessonCount", drawn.length) + (parsed.events.length ?
         " · " + t("mineCount", parsed.events.length) : "");
     if (!keepLegend) renderLegend(shown);
     return;
@@ -1267,7 +1281,7 @@ function render() {
 
   /* Only the grid reads this, and only the grid gets this far. */
   const bucket = new Map();
-  for (const e of shown) {
+  for (const e of drawn) {
     const k = e.d + ":p" + e.p;
     if (!bucket.has(k)) bucket.set(k, []);
     bucket.get(k).push(e);
@@ -1280,7 +1294,7 @@ function render() {
   /* Periods this class never reaches are dropped from the bottom, the way the
      timeline drops its trailing free slots. An empty period in the middle
      stays: it is a break, and the numbers either side of it say so. */
-  const lastUsed = Math.max(0, ...shown.map(e => e.p));
+  const lastUsed = Math.max(0, ...drawn.map(e => e.p));
   cols = cols.filter(col => col.p.n <= lastUsed);
   const dayIdx = daysWith(school, parsed.events);
   const anyMine = parsed.events.length > 0;
@@ -1312,8 +1326,8 @@ function render() {
 
   const total = cls.e.filter(e => !timeline || !e.c).length;
   document.getElementById("count").textContent =
-    t("slotsShown", shown.length, total) +
-    (shown.length === total ? " " + t("noFilter") : "") +
+    t("slotsShown", drawn.length, total) +
+    (drawn.length === total ? " " + t("noFilter") : "") +
     (parsed.events.length ? " · " + t("mineCount", parsed.events.length) : "") +
     (school.b ? "" : " · " + t("noBells"));
   if (!keepLegend) renderLegend(shown);
@@ -1381,9 +1395,13 @@ function renderLegend(shown) {
     /* One heading above the first break, so the two kinds do not read as one
        list. Five columns, because the table has five. */
     const head = (isBreak && name === breaks[0])
-      ? '<tr class="grouphead"><td colspan="5">' + esc(t("breaks.heading")) + "</td></tr>"
+      ? '<tr class="grouphead"><td colspan="6">' + esc(t("breaks.heading")) + "</td></tr>"
       : "";
-    return head + '<tr data-subject="' + esc(name) + '">' +
+    return head + '<tr data-subject="' + esc(name) + '"' +
+      (hidden(name) ? ' class="off"' : "") + ">" +
+      '<td class="show"><input type="checkbox" class="subjshow"' +
+        (hidden(name) ? "" : " checked") + ' aria-label="' +
+        esc(t("colShow")) + '"></td>' +
       '<td class="rowlabel">' + esc(shown) + "</td>" +
       '<td><input type="text" class="subjlabel" value="' + esc(own.label || "") +
         '" placeholder="' + esc(shown) + '"></td>' +
@@ -1423,7 +1441,17 @@ function refreshSubjectSample(name) {
                 isBreak ? breakLabel(name)
                         : lessonTitle(lesson || { s: name, S: 0 }),
                 (lesson ? detailLine(lesson) : []).join(" · "),
-                name === GAP || name === LUNCH ? "gap" : (isBreak ? "brk" : ""));
+                name === GAP ? "gap" : (isBreak ? "brk" : ""));
+}
+
+/* On or off for one row. The legend is rebuilt with the rest of the page, so
+   the row stays where it is and only its own look changes. */
+function setSubjectShown(name, on) {
+  const entry = state.subjects[name] || (state.subjects[name] = {});
+  if (on) delete entry.off; else entry.off = true;
+  tidySubjects();
+  save();
+  render();
 }
 
 /* A name of the reader's own for one subject or break. Empty means "use the
@@ -1459,7 +1487,12 @@ document.getElementById("legend").addEventListener("input", (e) => {
 
 document.getElementById("legend").addEventListener("change", (e) => {
   const name = subjectOf(e.target);
-  if (!name || e.target.type !== "radio") return;
+  if (!name) return;
+  if (e.target.classList.contains("subjshow")) {
+    setSubjectShown(name, e.target.checked);
+    return;
+  }
+  if (e.target.type !== "radio") return;
   const tr = e.target.closest("tr");
   if (e.target.name.startsWith("fg")) {
     setTextColor(name, e.target.value === "auto" ? "" : colorFor(name).fg, true);

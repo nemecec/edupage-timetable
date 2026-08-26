@@ -951,6 +951,63 @@ test("a hole in the middle of the day is called lunch where the school says so",
   assert.equal(json(`breakName("lunch")`), json(`t("gap")`));
 });
 
+test("a lunch the page works out is drawn as the meal it is", () => {
+  /* On the days a school publishes its lunch band the same meal was drawn as
+     a hatched band, and on the days it does not it came out as a dashed
+     corridor. One meal, two looks, and two rows in the table. */
+  run(`state = defaults(); state.lang = "en"; applyStrings();
+       state.school = "68"; state.class = "8";
+       currentSchool().lg = { n: "Break, and more", a: 600, z: 780, m: 30 };
+       myOwn().events = [{day: "Mon", startTime: "13:00", endTime: "14:00",
+                          label: "Dance", backgroundColor: "#00ff00"}];`);
+  const draw = () => run(`renderTimeline(currentSchool(), currentClass(),
+                                         currentClass().e, readEvents(myOwn().events).events, 0)`);
+  const html = draw();
+  // The class already has a published band of that name, so it is that band.
+  assert.ok(!html.includes('class="ev gap" data-subject="Break, and more"'),
+            "the meal was drawn as a corridor");
+  assert.equal(html.split('data-subject="Break, and more"').length - 1, 2,
+               "the worked-out meal is not filed with the published one");
+
+  // And one row in the table, not two.
+  run(`renderLegend(currentClass().e.filter(function (e) { return !e.c; }))`);
+  const rows = json(`document.getElementById("legend").innerHTML`);
+  assert.equal(rows.split('data-subject="Break, and more"').length - 1, 1);
+  assert.ok(!rows.includes('data-subject="lunch"'), "a second row for the same meal");
+
+  // A school whose lunch is never published keeps a row of its own.
+  run(`currentSchool().lg = { n: "Lounas", a: 600, z: 780, m: 30 };`);
+  assert.equal(json(`lunchKey()`), "lunch");
+  run(`delete currentSchool().lg; state = defaults(); myOwn().events = [];`);
+});
+
+test("a subject the reader does not take can be switched off", () => {
+  /* Not every subject in a timetable is every child's: a choir sits in the
+     class's week and in nobody else's afternoon. */
+  run(`state = defaults(); state.lang = "en"; applyStrings();
+       state.school = "68"; state.class = "8"; render();`);
+  const day = () => json(`document.getElementById("grid").innerHTML`);
+  assert.ok(day().includes("Matemaatika"), "nothing to switch off");
+
+  run(`setSubjectShown("Matemaatika", false);`);
+  assert.ok(!day().includes(">Matemaatika<"), "the subject is still drawn");
+
+  // Its row stays, unticked, or there is no way back.
+  const rows = json(`document.getElementById("legend").innerHTML`);
+  const row = rows.slice(rows.indexOf('data-subject="Matemaatika"'));
+  assert.ok(row.includes("subjshow"), "no switch on the row");
+  assert.ok(!row.slice(0, 200).includes("checked"), "the switch is still on");
+  assert.ok(rows.includes('data-subject="Matemaatika"'), "the row went with it");
+
+  // It rides in the settings, so a shared link carries it.
+  assert.equal(json(`state.subjects["Matemaatika"].off`), true);
+  run(`setSubjectShown("Matemaatika", true);`);
+  assert.ok(day().includes("Matemaatika"), "switching it back on did nothing");
+  assert.equal(json(`Object.keys(state.subjects)`).length, 0,
+               "an entry that says nothing was kept");
+  run(`state = defaults();`);
+});
+
 test("a sample looks like the thing it stands for", () => {
   /* Three kinds of row, three ways the day draws them. A sample that shows a
      hatched two-line box for something the day draws as a dashed one-liner is

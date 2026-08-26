@@ -97,6 +97,7 @@ STRINGS = {
         "schoolColors": "Colours from the timetable",
         "customColors": "Colours of my own",
         "colLabel": "Label",
+        "colShow": "Show",
         "colSubject": "Subject",
         "breaks.heading": "Longer breaks",
         "colBackground": "Background colour",
@@ -217,6 +218,7 @@ STRINGS = {
         "schoolColors": "Tunniplaani värvid",
         "customColors": "Minu omad värvid",
         "colLabel": "Nimetus",
+        "colShow": "Näita",
         "colSubject": "Õppeaine",
         "breaks.heading": "Pikemad vahetunnid",
         "colBackground": "Taustavärv",
@@ -1731,6 +1733,10 @@ PAGE = """<!DOCTYPE html>
   .evtable input[type=text] { width: 100%; }
   .evtable .evlabel { width: 99%; }
   .evtable .subjlabel { width: 11rem; }
+  .evtable td.show { text-align: center; width: 3rem; }
+  /* A row that draws nothing says so, and still reads well enough to find. */
+  .evtable tr.off td.rowlabel { color: #9aa1ab; text-decoration: line-through; }
+  .evtable tr.off .sample { opacity: .35; }
   /* A gap is not a lesson, so the two do not run together as one list. */
   .evtable tr.grouphead td { padding-top: 14px; font-size: 11px; font-weight: 600;
                              color: var(--muted); text-transform: uppercase;
@@ -2059,6 +2065,7 @@ PAGE = """<!DOCTYPE html>
         <div class="scroll">
           <table class="evtable">
             <thead><tr>
+              <th data-i18n="colShow"></th>
               <th data-i18n="colSubject"></th>
               <th data-i18n="colLabel"></th>
               <th data-i18n="colBackground"></th>

@@ -702,10 +702,20 @@ function renderTimeline(school, cls, shown, mine, scale) {
       const when = hhmm(it.a) + "–" + hhmm(it.z);
       if (it.brk) {
         const col = colorFor(it.brk);
+        /* A short break has room for one line, and the clock joins the name
+           on it rather than being dropped. Twenty minutes is a real break —
+           ProTERA's Amps is one, and so is a SädeTERA Tuesday lunch — and a
+           band with no times on it is the one thing a reader cannot work out
+           from the lessons either side. */
+        const label = breakLabel(it.brk);
+        const inside = height >= 30
+          ? '<div class="what">' + esc(label) + "</div>" +
+            '<div class="when">' + esc(when) + "</div>"
+          : '<div class="what oneline">' + esc(label) +
+            ' <span class="clock">' + esc(when) + "</span></div>";
         h += '<div class="ev brk" style="' + geom + "background-color:" + esc(col.bg) +
              ";color:" + esc(col.fg) + '" title="' + esc(it.brk + "\n" + when) +
-             '"><div class="what">' + esc(breakLabel(it.brk)) + "</div>" +
-             (height >= 30 ? '<div class="when">' + esc(when) + "</div>" : "") + "</div>";
+             '">' + inside + "</div>";
         continue;
       }
       const e = it.lesson, col = colorFor(e.s), info = subjectFacts()[e.s] || {};

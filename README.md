@@ -247,6 +247,10 @@ teacher and group. "Where there is room" is 46 pixels, which is exactly a
 its height less the border and the padding. The old threshold was 54, so a
 SädeTERA week, which is mostly 45-minute lessons, named no teachers at all.
 
+A break does the same: a twenty-minute band puts its name and its clock on one
+line rather than dropping the clock. The times either side of a break are the
+one thing a reader cannot work out from the lessons around it.
+
 Nothing in a box wraps past its bottom edge. The clock never wraps, the detail
 line is one line cut with an ellipsis, and the subject takes at most three
 lines — one in a box only tall enough for one. Before that, 104 boxes were

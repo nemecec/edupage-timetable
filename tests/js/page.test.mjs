@@ -842,6 +842,20 @@ test("the address bar holds the link the Share button copies", () => {
   assert.equal(json(`window.__address`), "https://example.test/t/");
 });
 
+test("a short break keeps its clock, on one line", () => {
+  /* A twenty-minute band has room for one line. Stacked, the clock was simply
+     dropped — and the times either side of a break are the one thing a reader
+     cannot work out from the lessons around it. ProTERA's Amps is twenty
+     minutes; a SädeTERA Tuesday lunch is twenty-five. */
+  run(`state.school = "68"; state.class = "8"; state.subjects = {};`);
+  const html = run(`renderTimeline(currentSchool(), currentClass(),
+                                   currentClass().e, [], 0)`);
+  const band = html.split('class="ev brk"')[1] || "";
+  assert.ok(band.includes("oneline"), "the band stacked its two lines");
+  assert.ok(band.includes("Break"), "no name on the band");
+  assert.ok(/10\.20.10\.30/.test(band), "no clock on the band: " + band.slice(0, 160));
+});
+
 test("the breaks come last, under a heading of their own", () => {
   /* A gap is a different kind of thing from a lesson, so the two do not read
      as one list. The harness break is named with a comma, which is how a

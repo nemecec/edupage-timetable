@@ -1852,10 +1852,10 @@ PAGE = """<!DOCTYPE html>
      — on paper only, never in a PDF. */
   .ev.brk { color: #6b7280; border-color: #e2e5ea; }
   .ev.brk .what { font-weight: 500; font-size: 11px; }
-  /* A ten-minute band. The padding comes off and the words shrink, because
-     the alternative is a line with its bottom sliced away. */
-  .ev.brk.tiny { padding: 0 5px; }
-  .ev.brk.tiny .what { font-size: 9px; line-height: 1.15; }
+  /* A ten-minute band, which at 1.8 pixels a minute is 18 tall. Barely room
+     for a line, so the padding thins rather than disappears. */
+  .ev.brk.tiny { padding: 1px 4px; }
+  .ev.brk.tiny .what { font-size: 10.5px; line-height: 1.2; }
   /* A personal event is drawn over the timetable, so it needs to be above it —
      but it should not look like a different kind of thing. It is a lesson in
      every visible respect, whichever way its text color was arrived at: the

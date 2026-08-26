@@ -277,10 +277,16 @@ teacher and group. "Where there is room" is 46 pixels, which is exactly a
 its height less the border and the padding. The old threshold was 54, so a
 SädeTERA week, which is mostly 45-minute lessons, named no teachers at all.
 
-A break does the same: a twenty-minute band puts its name and its clock on one
-line rather than dropping the clock, and a ten-minute one — TäheTERA has one
-between its second and third lessons — gives up its padding as well, because at
-that height the padding is the difference between a line and a cut line. The times either side of a break are the
+A break does the same: a short band puts its name and its clock on one line
+rather than dropping the clock.
+
+The day is drawn at **1.8 pixels a minute** on screen. It was 1.05, which put a
+ten-minute break under the height of one line of type — TäheTERA has one
+between its second and third lessons — and left the shortest bands to be
+squeezed until they were barely words. A page scrolls; a lesson that cannot be
+read does not get better further down. A day now runs 720 to 830 pixels rather
+than 430 to 490. Printing passes its own scale and is untouched, so the sheet
+still fits one page. The times either side of a break are the
 one thing a reader cannot work out from the lessons around it.
 
 Nothing in a box wraps past its bottom edge. The clock never wraps, the detail

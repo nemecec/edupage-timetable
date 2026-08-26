@@ -719,7 +719,11 @@ function renderTimeline(school, cls, shown, mine, scale) {
   const span = hi - lo;
   /* Pixels per minute. On screen a fixed, readable scale. On paper whatever
      fills the sheet, which the caller finds by measuring. */
-  const ppm = scale || 1.05;
+  /* Pixels per minute, on screen. It was 1.05, which put a ten-minute break
+     under the height of one line of type and left the shortest bands to be
+     squeezed. A page scrolls; a lesson that cannot be read does not get
+     better further down. Printing passes its own scale and is untouched. */
+  const ppm = scale || 1.8;
   const H = Math.round(span * ppm);
 
   /* Over the timetable rather than at the top of the page, and drawn the same

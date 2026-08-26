@@ -1072,13 +1072,13 @@ test("an hour where nothing happens is cut out of the axis", () => {
   const bodyHeight = (html) => Number(/class="tlbody" style="height:(\d+)px/.exec(html)[1]);
 
   const plain = draw();
-  assert.ok(!plain.includes("tlcut"), "a school day with no holes was cut");
+  assert.ok(!plain.includes("tlbreak"), "a school day with no holes was cut");
   const lesson = boxHeight(plain, "Matemaatika");
 
   run(`myOwn().events = [{day: "Mon", startTime: "18:00", endTime: "19:00",
                           label: "Training", backgroundColor: "#00ff00"}];`);
   const late = draw();
-  assert.equal(late.split('class="tlcut"').length - 1, 1, "no cut for the empty evening");
+  assert.equal(late.split('class="tlbreak"').length - 1, 1, "no cut for the empty evening");
 
   /* The lesson is the same height it was, and the event is drawn to the same
      scale: eighty minutes and sixty minutes, at the same pixels per minute. */

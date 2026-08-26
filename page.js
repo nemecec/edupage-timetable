@@ -815,13 +815,19 @@ function renderTimeline(school, cls, shown, mine, scale) {
     h += '<div class="' + cls2 + '" style="top:' + Math.round(y(t)) + 'px">' +
          esc(hhmm(t)) + "</div>";
   }
-  h += "</div>";
-  /* Say where the axis was cut, so nobody reads the gap as time. */
+  /* Say where the axis was cut, on the axis. A band across the days was drawn
+     here first, and it was wrong twice over: it wore the same hatch as a
+     break, so it read as one, and the day's own boxes are drawn over the top
+     of it — the worked-out break that fills the same hours hid it on every day
+     that had one, leaving stripes only on the days that did not. It also
+     covered the tick label at the top of the cut. A scale belongs beside the
+     scale. */
   for (const cut of cuts) {
-    h += '<div class="tlcut" style="top:' + Math.round(y(cut.a)) +
+    h += '<div class="tlbreak" style="top:' + Math.round(y(cut.a)) +
          "px;height:" + Math.round(cut.h) + 'px" title="' +
          esc(hhmm(cut.a) + "–" + hhmm(cut.z)) + '"></div>';
   }
+  h += "</div>";
 
   /* Where a box sits in its column. Lessons and breaks share the full width
      between them. A personal event is drawn afterwards, over the top, so it

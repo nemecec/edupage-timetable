@@ -1854,12 +1854,18 @@ PAGE = """<!DOCTYPE html>
   .ev .what.oneline .clock { font-weight: 400; opacity: .85;
                              font-variant-numeric: tabular-nums; }
   .ev.approx { border-style: dashed; border-width: 2px; }
-  /* Where the axis is cut. Everything above and below it is drawn to the same
-     scale; this band is not, and says so. */
-  .tlcut { position: absolute; left: 0; right: 0; z-index: 0; pointer-events: none;
-           border-top: 1px dashed #cdd3da; border-bottom: 1px dashed #cdd3da;
-           background: repeating-linear-gradient(135deg,
-             #fbfcfd 0 7px, #f2f4f6 7px 14px); }
+  /* Where the axis is cut: the two slanted strokes a broken scale is drawn
+     with, in the margin beside the clock. Nothing is drawn across the days.
+     A band there wore the same stripes as a break, and the day's own boxes
+     covered it, so it added confusion rather than reading as a scale. */
+  .tlbreak { position: absolute; right: 2px; width: 18px; pointer-events: none; }
+  .tlbreak::before, .tlbreak::after {
+    content: ""; position: absolute; left: 0; width: 18px; height: 0;
+    border-top: 1.5px solid #939aa4; transform: rotate(-22deg); }
+  /* Off the middle rather than off the ends, so the two strokes keep clear of
+     the clock either side of them however short the cut is. */
+  .tlbreak::before { top: calc(50% - 5px); }
+  .tlbreak::after { top: calc(50% + 5px); }
   /* Worked out here, not published by the school, so it does not wear the
      school's hatch. An outline and nothing inside it: the lessons on either
      side already say when it starts and ends. */

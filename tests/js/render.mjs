@@ -85,7 +85,7 @@ function timelineBoxes(html) {
     out.push(["axis", tick[1], "t" + tick[2], tick[3]].join(" | "));
   }
   for (const cut of html.matchAll(
-         /<div class="tlcut" style="top:(\d+)px;height:(\d+)px" title="([^"]*)"/g)) {
+         /<div class="tlbreak" style="top:(\d+)px;height:(\d+)px" title="([^"]*)"/g)) {
     out.push(["cut", "t" + cut[1], "h" + cut[2], text(cut[3])].join(" | "));
   }
   const height = /class="tlbody" style="height:(\d+)px/.exec(html);

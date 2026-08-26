@@ -82,6 +82,12 @@ STRINGS = {
         "showRoom": "Room",
         "showGroup": "Study group",
         "showSubject": "Subject",
+        "showDuration": "How long it lasts",
+        "showGaps": "Free time between lessons",
+        "gap": "Break",
+        "dur.hour": "{0} hour",
+        "dur.hours": "{0} hours",
+        "dur.min": "{0} min",
         "nameFull": "full name",
         "nameShort": "abbreviated",
         "subjectFull": "full name",
@@ -196,6 +202,12 @@ STRINGS = {
         "showRoom": "Ruum",
         "showGroup": "Õpperühm",
         "showSubject": "Aine",
+        "showDuration": "Kui kaua kestab",
+        "showGaps": "Vaba aeg tundide vahel",
+        "gap": "Paus",
+        "dur.hour": "{0} tund",
+        "dur.hours": "{0} tundi",
+        "dur.min": "{0} min",
         "nameFull": "täisnimi",
         "nameShort": "lühend",
         "subjectFull": "täisnimi",
@@ -1725,6 +1737,16 @@ PAGE = """<!DOCTYPE html>
   .ev .what.oneline .clock { font-weight: 400; opacity: .85;
                              font-variant-numeric: tabular-nums; }
   .ev.approx { border-style: dashed; border-width: 2px; }
+  /* Worked out here, not published by the school, so it does not wear the
+     school's hatch. An outline and nothing inside it: the lessons on either
+     side already say when it starts and ends. */
+  /* An outline rather than a fill, so a worked-out break does not look like
+     one the school gave. Fifteen minutes is the shortest it is drawn at, and
+     the padding comes off so the one line still fits. */
+  .ev.gap { border-style: dashed; border-color: #c3c9d1; padding: 0 5px; }
+  .ev.gap .what { font-weight: 500; font-size: 9.5px; line-height: 1.15;
+                  text-align: center; white-space: nowrap; overflow: hidden;
+                  text-overflow: ellipsis; }
   /* The stripes are translucent, so the color underneath shows through. A
      break is the reader's to recolor like any lesson, and the hatch is what
      still says "not a lesson". */
@@ -1865,6 +1887,14 @@ PAGE = """<!DOCTYPE html>
             <label class="inline"><input type="radio" name="teacherNameStyle" value="short">
               <span data-i18n="nameShort"></span></label>
           </span>
+        </div>
+        <div class="line">
+          <label class="inline"><input type="checkbox" id="showDuration">
+            <span data-i18n="showDuration"></span></label>
+        </div>
+        <div class="line">
+          <label class="inline"><input type="checkbox" id="showGaps">
+            <span data-i18n="showGaps"></span></label>
         </div>
         <div class="line">
           <label class="inline"><input type="checkbox" id="showRoom">

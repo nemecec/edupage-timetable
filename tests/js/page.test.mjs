@@ -842,6 +842,60 @@ test("the address bar holds the link the Share button copies", () => {
   assert.equal(json(`window.__address`), "https://example.test/t/");
 });
 
+test("how long a lesson lasts is spelled out, and an exact hour drops the minutes", () => {
+  run(`state = defaults(); state.lang = "en"; applyStrings();`);
+  assert.equal(json(`durationText(45)`), "45 min");
+  assert.equal(json(`durationText(60)`), "1 hour", "an exact hour kept its 0 min");
+  assert.equal(json(`durationText(80)`), "1 hour 20 min");
+  assert.equal(json(`durationText(120)`), "2 hours", "one and many read alike");
+  assert.equal(json(`durationText(135)`), "2 hours 15 min");
+  // Estonian counts one differently from many, so this cannot be an added s.
+  run(`state.lang = "et"; applyStrings();`);
+  assert.equal(json(`durationText(60)`), "1 tund");
+  assert.equal(json(`durationText(120)`), "2 tundi");
+
+  // On by default, and the switch takes it away without touching the clock.
+  run(`state = defaults(); state.lang = "en"; applyStrings();`);
+  assert.equal(json(`state.showDuration`), true);
+  assert.equal(json(`clockText(540, 620)`), "9.00–10.20 (1 hour 20 min)");
+  run(`state.showDuration = false;`);
+  assert.equal(json(`clockText(540, 620)`), "9.00–10.20");
+});
+
+test("a gap long enough to plan around is drawn, and belongs to the reader", () => {
+  /* Fifteen minutes is where a hole stops being a corridor. The point is
+     logistics: how long until the next thing. */
+  run(`state = defaults(); state.lang = "en"; applyStrings();
+       state.school = "68"; state.class = "8";`);
+  assert.equal(json(`state.showGaps`), true);
+
+  const draw = () => run(`renderTimeline(currentSchool(), currentClass(),
+                                         currentClass().e, readEvents(myOwn().events).events, 0)`);
+  // The harness day has a 10-minute hole, which is a corridor, not a gap.
+  assert.ok(!draw().includes('class="ev gap"'), "a ten-minute hole became a break");
+
+  // An event in the evening leaves hours of it, and that is worth saying.
+  run(`myOwn().events = [{day: "Mon", startTime: "17:15", endTime: "18:15",
+                          label: "Dance", backgroundColor: "#00ff00"}];`);
+  const html = draw();
+  const band = html.split('class="ev gap"')[1] || "";
+  assert.ok(band, "no gap before an evening event");
+  assert.match(band, /Break . 5 hours/, "wrong length: " + band.slice(0, 120));
+
+  // It is listed with the other breaks, so it can be renamed and recolored.
+  run(`renderLegend(currentClass().e.filter(function (e) { return !e.c; }))`);
+  const rows = json(`document.getElementById("legend").innerHTML`);
+  assert.ok(rows.includes('data-subject="gap"'), "the gap is not in the table");
+  run(`state.subjects = { gap: { label: "Waiting", backgroundColor: "#ffe0b2" } };`);
+  assert.match(draw(), /Waiting . 5 hours/, "a name of the reader's own was ignored");
+  assert.ok(draw().includes("#ffe0b2"), "a color of the reader's own was ignored");
+
+  // And the switch removes it.
+  run(`state.subjects = {}; state.showGaps = false;`);
+  assert.ok(!draw().includes('class="ev gap"'));
+  run(`state = defaults(); myOwn().events = [];`);
+});
+
 test("a short break keeps its clock, on one line", () => {
   /* A twenty-minute band has room for one line. Stacked, the clock was simply
      dropped — and the times either side of a break are the one thing a reader
@@ -875,7 +929,9 @@ test("the breaks come last, under a heading of their own", () => {
   assert.ok(rows[breakAt - 1].includes("grouphead"), "the heading sits above it");
   /* The day runs the long break first and the snack after it. Sorted by name
      the snack would come first, which is not how anybody reads a day. */
-  assert.deepEqual(names.slice(breakAt), ["Break, and more", "Amps"]);
+  /* The gap the page works out for itself comes after the school's own, and
+     is listed like them so it can be renamed and recolored. */
+  assert.deepEqual(names.slice(breakAt), ["Break, and more", "Amps", "gap"]);
   // Everything before the heading is a lesson.
   for (const row of rows.slice(0, breakAt - 1)) {
     assert.ok(subjectOf(row), "a row with no subject before the heading");

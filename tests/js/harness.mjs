@@ -30,7 +30,14 @@ const DATA = {
   edupage: "tera", year: 2026, initialSchool: "68", initialClass: "8",
   lang: "en", built: "", counts: false,
   languages: [["en", "English"], ["et", "Eesti"]],
-  strings: { en: { classN: "class {0}" }, et: { classN: "{0}. klass" } },
+  /* Only the strings a test reads back. Estonian counts one hour differently
+     from many, so both languages carry the duration words. */
+  strings: {
+    en: { classN: "class {0}", gap: "Break",
+          "dur.hour": "{0} hour", "dur.hours": "{0} hours", "dur.min": "{0} min" },
+    et: { classN: "{0}. klass", gap: "Paus",
+          "dur.hour": "{0} tund", "dur.hours": "{0} tundi", "dur.min": "{0} min" },
+  },
   palette: { Matemaatika: { bg: "#83EC9B", fg: "#14171A" },
              Kunst: { bg: "#F6C1ED", fg: "#14171A" } },
   schools: [{

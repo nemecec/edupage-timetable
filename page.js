@@ -22,6 +22,7 @@ const defaults = () => ({
   showStudentName: false, showSchoolName: true, showClassName: true,
   showTeacher: true, teacherNameStyle: "short",
   showRoom: true, showGroup: true,
+  showDuration: true, showGaps: true,
   showSubject: true, subjectNameStyle: "full",
 
   /* What every subject does unless it says otherwise. One question, three
@@ -507,6 +508,13 @@ function styleFor(subject) {
   return ((state.subjects || {})[subject] || {}).style || state.subjectColorStyle;
 }
 
+/* The worked-out break between two lessons. It is not a subject and no school
+   published it, so it needs a name of its own to be filed under — and it is
+   listed and recolored like any other break, because a reader who wants it in
+   their own words should not have to care where it came from. */
+const GAP = "gap";
+const GAP_COLOR = { bg: "#F7F8FA", fg: "#6b7280" };
+
 function colorFor(subject) {
   const own = (state.subjects || {})[subject] || {};
   const style = own.style || state.subjectColorStyle;
@@ -521,7 +529,8 @@ function colorFor(subject) {
     const bg = (subjectFacts()[subject] || {}).color;
     if (bg) return paint(bg);
   }
-  const base = DATA.palette[subject] || { bg: "#EEEEEE", fg: "#14171A" };
+  const base = DATA.palette[subject] ||
+    (subject === GAP ? GAP_COLOR : { bg: "#EEEEEE", fg: "#14171A" });
   return own.textColor ? paint(base.bg) : base;
 }
 
@@ -646,6 +655,28 @@ function renderTimeline(school, cls, shown, mine, scale) {
     }
   }
 
+  /* The holes in a day, once everything drawn on it is laid end to end: the
+     lessons, the school's own breaks, and whatever the reader added. Fifteen
+     minutes is where a hole stops being a corridor and starts being time you
+     can plan around — walking somewhere, or waiting.
+
+     Only where nothing already fills it. A school that names its breaks has
+     said what that time is for, and this does not say it again. */
+  if (state.showGaps) {
+    for (const [day, items] of perDay) {
+      const busy = items.filter(x => typeof x.a === "number" && typeof x.z === "number")
+                        .slice().sort((p, q) => p.a - q.a);
+      if (busy.length < 2) continue;
+      const holes = [];
+      let reach = busy[0].z;
+      for (const item of busy.slice(1)) {
+        if (item.a - reach >= 15) holes.push({ a: reach, z: item.a, gap: true });
+        reach = Math.max(reach, item.z);
+      }
+      for (const hole of holes) items.push(hole);
+    }
+  }
+
   const all = [].concat(...[...perDay.values()]);
   if (!all.length) return '<p style="color:#6b7280">' + esc(t("nothing")) + "</p>";
   let lo = Math.min(...all.map(x => x.a)), hi = Math.max(...all.map(x => x.z));
@@ -699,7 +730,19 @@ function renderTimeline(school, cls, shown, mine, scale) {
     for (const it of pack(items.filter(x => !x.mine))) {
       const height = Math.max(14, Math.round((it.z - it.a) * ppm) - 1);
       const geom = place(it, 0);
-      const when = hhmm(it.a) + "–" + hhmm(it.z);
+      const when = clockText(it.a, it.z);
+      if (it.gap) {
+        /* Worked out here rather than published, so it says only the one thing
+           the lessons around it do not: how long it is. The outline is what
+           says it was inferred; the color is the reader's like any other. */
+        const col = colorFor(GAP), how = durationText(it.z - it.a);
+        h += '<div class="ev gap" data-subject="' + esc(GAP) + '" style="' + geom +
+             "background-color:" + esc(col.bg) + ";color:" + esc(col.fg) +
+             '" title="' + esc(breakLabel(GAP) + " " + how) +
+             '"><div class="what">' + esc(breakLabel(GAP)) + " · " + esc(how) +
+             "</div></div>";
+        continue;
+      }
       if (it.brk) {
         const col = colorFor(it.brk);
         /* A short break has room for one line, and the clock joins the name
@@ -758,7 +801,7 @@ function renderTimeline(school, cls, shown, mine, scale) {
     for (const it of pack(items.filter(x => x.mine))) {
       const over = base.some(x => x.a < it.z && it.a < x.z);
       const height = Math.max(14, Math.round((it.z - it.a) * ppm) - 1);
-      const when = hhmm(it.a) + "–" + hhmm(it.z);
+      const when = clockText(it.a, it.z);
       const fg = eventFg(it);
       /* A twenty-minute box has room for one line, so the time joins the label
          rather than pushing it out of sight. */
@@ -833,6 +876,24 @@ function onTimeline() {
      no times, than nothing at all. */
   return currentClass().e.some(e => e.a != null);
 }
+/* "1 tund 20 min". An exact hour drops the minutes, and under an hour there
+   are no hours to drop. Estonian counts one differently from many, so the
+   hours come from two strings rather than one with an s stuck on. */
+function durationText(minutes) {
+  const hours = Math.floor(minutes / 60), rest = minutes % 60;
+  const parts = [];
+  if (hours) parts.push(hours === 1 ? t("dur.hour", hours) : t("dur.hours", hours));
+  if (rest || !hours) parts.push(t("dur.min", rest));
+  return parts.join(" ");
+}
+
+/* The clock, and how long that is. Subtracting one from the other is work a
+   reader should not have to do to find out whether a lesson is a single. */
+function clockText(from, to) {
+  const when = hhmm(from) + "–" + hhmm(to);
+  return state.showDuration ? when + " (" + durationText(to - from) + ")" : when;
+}
+
 /* What goes on a lesson's second line: room, teacher and group are each
    independently switchable, so the box can be as dense or as bare as wanted. */
 function detailLine(e) {
@@ -853,9 +914,16 @@ function detailLine(e) {
 /* A break carries its own name, and the reader can rename it like a subject.
    The school writes some of them as a list — "Söömine, tiimitund, vaba aeg" —
    and only the part before the comma fits a box. */
+/* What a break is called before the reader renames it. The gap's name follows
+   the interface language, since nobody wrote it down in a timetable; every
+   other one is the school's word, cut at the first comma where the school
+   wrote a list of what the break is for. */
+function breakName(name) {
+  return name === GAP ? t("gap") : String(name).split(",")[0];
+}
+
 function breakLabel(name) {
-  const own = ((state.subjects || {})[name] || {}).label;
-  return own || String(name).split(",")[0];
+  return ((state.subjects || {})[name] || {}).label || breakName(name);
 }
 
 /* The school's own word for a subject, without the prefix its own timetable
@@ -1198,7 +1266,7 @@ function renderLegend(shown) {
        as a placeholder, so one word can be changed without retyping the rest,
        and an empty field means "use the school's" — the same bargain the title
        fields make. */
-    const shown = isBreak ? String(name).split(",")[0] : plainSubject(name);
+    const shown = isBreak ? breakName(name) : plainSubject(name);
     /* One heading above the first break, so the two kinds do not read as one
        list. Five columns, because the table has five. */
     const head = (isBreak && name === breaks[0])
@@ -1381,7 +1449,8 @@ function bindChoice(name, key) {
   });
 }
 ["showStudentName", "showSchoolName", "showClassName",
- "showTeacher", "showRoom", "showGroup", "showSubject"].forEach(key => bindToggle(key, key));
+ "showTeacher", "showRoom", "showGroup", "showSubject",
+ "showDuration", "showGaps"].forEach(key => bindToggle(key, key));
 bindChoice("teacherNameStyle", "teacherNameStyle");
 bindChoice("subjectNameStyle", "subjectNameStyle");
 bindChoice("subjectColorStyle", "subjectColorStyle");
@@ -1391,7 +1460,8 @@ bindChoice("subjectColorStyle", "subjectColorStyle");
    when that something is switched off. */
 function syncDisplayControls() {
   for (const key of ["showStudentName", "showSchoolName", "showClassName",
-                     "showTeacher", "showRoom", "showGroup", "showSubject"]) {
+                     "showTeacher", "showRoom", "showGroup", "showSubject",
+                     "showDuration", "showGaps"]) {
     document.getElementById(key).checked = !!state[key];
   }
   for (const name of ["teacherNameStyle", "subjectNameStyle", "subjectColorStyle"]) {
@@ -1636,6 +1706,9 @@ function breaksOnScreen() {
   for (const e of currentClass().e) {
     if (e.B) note(e.s, typeof e.a === "number" ? e.a : 0);
   }
+  /* And the one this page works out for itself, so it can be renamed and
+     recolored like the rest. Last, because it is the least of them. */
+  if (state.showGaps) note(GAP, 24 * 60);
   return [...first.keys()].sort((p, q) => first.get(p) - first.get(q));
 }
 

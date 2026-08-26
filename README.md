@@ -71,7 +71,7 @@ The script needs the Python 3 standard library and nothing else. There is no
 pip install and no browser.
 
 For `tera` in 2026 the result is 4 schools, 41 classes and about 1,900 lesson
-slots, in a file of about 600 KB. That is 75 KB over the wire, because it
+slots, in a file of about 600 KB. That is 88 KB over the wire, because it
 compresses well.
 
     python3 -m unittest discover -s tests     # the generator
@@ -408,6 +408,22 @@ period grid, which needs no times.
   scales itself to fill exactly one sheet. The scale is measured, not guessed.
   The colors survive even with Chrome's "Background graphics" unticked, which is
   its default, because the page forces `print-color-adjust: exact`.
+- **How long a lesson lasts** is written beside its clock: `9.50–11.10 (1 hour
+  20 min)`. Subtracting one time from the other is work a reader should not
+  have to do to find out whether a lesson is a single. An exact hour drops the
+  minutes, and Estonian counts one differently from many, so the hours come
+  from two strings rather than one with an `s` stuck on.
+- **A gap of fifteen minutes or more** is drawn as a break of its own, saying
+  only how long it is — the lessons either side already say when it starts and
+  ends. Fifteen minutes is where a hole stops being a corridor and becomes time
+  you can plan around. It counts the whole day: the lessons, the school's own
+  breaks and the reader's own events, so the hours between the last lesson and
+  a training session in the evening show up too.
+
+  It is worked out here rather than published, so it wears an outline instead
+  of the hatch a school's own break wears. It is still listed in the subject
+  table with the other breaks, under the key `gap`, and can be renamed and
+  recolored like any of them.
 - **The plain grid** — what a school with no times at all gets — runs weekdays
   across the top and periods down the side, the same way round as the timeline.
   It used to be transposed, so the two views of one week read differently.
@@ -466,6 +482,8 @@ its own map of classes.
   "showGroup": true,
   "showSubject": true,
   "subjectNameStyle": "full",
+  "showDuration": true,
+  "showGaps": true,
 
   "subjectColorStyle": "school",
   "subjects": {

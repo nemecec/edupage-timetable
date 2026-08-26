@@ -628,10 +628,12 @@ class Documentation(unittest.TestCase):
         with open(os.path.join(ROOT, "deploy", "site.yaml"), encoding="utf-8") as fh:
             template = fh.read()
         self.assertIn('report.get("kind") not in ("page-error", "feedback")', template)
-        for kind, metric in (("page-error", "PageErrors"), ("feedback", "Feedback")):
-            with self.subTest(kind=kind):
-                self.assertIn("FilterPattern: '{ $.kind = \"%s\" }'" % kind, template)
-                self.assertIn("MetricName: %s" % metric, template)
+        self.assertIn(
+            'FilterPattern: \'{ $.kind = "page-error" && $.opaque NOT EXISTS }\'',
+            template, "an unreadable error should not wake anybody")
+        self.assertIn('FilterPattern: \'{ $.kind = "feedback" }\'', template)
+        for metric in ("PageErrors", "Feedback"):
+            self.assertIn("MetricName: %s" % metric, template)
         # And the page has somewhere to write, in both languages.
         page, data = build()
         self.assertIn('id="sayText"', page)

@@ -1892,7 +1892,7 @@ const REPORT_CAP = 5;
 let reportsSent = 0;
 const reportsSeen = new Set();
 
-function report(what, error) {
+function report(what, error, at) {
   if (!DATA.report || reportsSent >= REPORT_CAP) return;
   if (location.protocol !== "https:") return;   /* a saved copy talks to nobody */
   try {
@@ -1906,6 +1906,10 @@ function report(what, error) {
       what: what,
       message: message,
       stack: String((error && error.stack) || "").slice(0, 1200),
+      /* Which file, and where in it. A browser hides all of this for a script
+         from another origin unless that script is loaded with crossorigin and
+         serves the header for it. */
+      where: at ? String(at).slice(0, 300) : "",
       /* Where in the code, not where the reader is: the address carries the
          settings, and the settings carry a name. */
       path: location.pathname,
@@ -1913,6 +1917,13 @@ function report(what, error) {
       agent: String(navigator.userAgent || "").slice(0, 200),
       settings: scrubbed(slim(state)),
     };
+    /* "Script error." with no stack and no file is a browser refusing to say
+       anything about a script from another origin — an extension, or a
+       third-party script of ours before it was loaded with crossorigin. It is
+       not readable and not actionable, so it is logged and not alarmed on. */
+    if (!body.stack && !body.where && /^script error/i.test(body.message)) {
+      body.opaque = 1;
+    }
     /* keepalive, because a fault often arrives as the reader leaves. */
     fetch(DATA.report, {
       method: "POST", keepalive: true, mode: "same-origin",
@@ -1987,7 +1998,8 @@ async function sendFeedback() {
 }
 
 if (typeof window.addEventListener === "function") {
-  window.addEventListener("error", (ev) => report("error", ev.error || ev.message));
+  window.addEventListener("error", (ev) => report("error", ev.error || ev.message,
+    ev.filename ? ev.filename + ":" + ev.lineno + ":" + ev.colno : ""));
   window.addEventListener("unhandledrejection", (ev) => report("rejection", ev.reason));
 }
 

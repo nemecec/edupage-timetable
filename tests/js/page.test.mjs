@@ -768,6 +768,23 @@ test("a fault report carries the shape of the settings, not the words", () => {
   assert.equal(sent.path, "/t/");
 });
 
+test("an error the browser will not describe is logged, not alarmed on", () => {
+  /* A script from another origin gives "Script error." and nothing else. It
+     came from the counter's script, and it is not something to be woken for. */
+  run(`DATA.report = "/report"; reportsSent = 0; reportsSeen.clear();
+       window.__posted = null; report("error", "Script error.", "");`);
+  const opaque = JSON.parse(json(`window.__posted`).body);
+  assert.equal(opaque.opaque, 1);
+  assert.equal(opaque.where, "");
+
+  // One that says where it happened is a real one, and is not marked.
+  run(`reportsSent = 0; reportsSeen.clear(); window.__posted = null;
+       report("error", new Error("boom"), "https://little.tools/timetable/:12:3");`);
+  const real = JSON.parse(json(`window.__posted`).body);
+  assert.ok(!("opaque" in real), "a readable error was written off as opaque");
+  assert.equal(real.where, "https://little.tools/timetable/:12:3");
+});
+
 test("one fault is reported once, and a storm has a ceiling", () => {
   run(`DATA.report = "/report"; reportsSent = 0; reportsSeen.clear();
        window.__posted = null;

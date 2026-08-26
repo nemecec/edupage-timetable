@@ -1976,7 +1976,12 @@ def pick_initial(schools, want_school, want_class):
 # The script is only in the file when a site is named at build time, so a local
 # build makes no third-party request at all.
 GOATCOUNTER = ('<script>window.goatcounter = {{no_onload: true, referrer: ""}};</script>'
-               '<script id="gc" data-goatcounter="https://{site}.goatcounter.com/count"'
+               # crossorigin, because without it a browser hides everything
+               # about an error in a script from another origin: the message
+               # becomes "Script error." and the stack is empty. gc.zgo.at
+               # sends access-control-allow-origin, so this costs nothing.
+               '<script id="gc" crossorigin="anonymous"'
+               ' data-goatcounter="https://{site}.goatcounter.com/count"'
                ' async src="https://gc.zgo.at/count.js"></script>')
 
 

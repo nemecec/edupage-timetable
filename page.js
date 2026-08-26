@@ -717,14 +717,51 @@ function renderTimeline(school, cls, shown, mine, scale) {
   let lo = Math.min(...all.map(x => x.a)), hi = Math.max(...all.map(x => x.z));
   lo = Math.floor(lo / 30) * 30; hi = Math.ceil(hi / 30) * 30;
   const span = hi - lo;
-  /* Pixels per minute. On screen a fixed, readable scale. On paper whatever
-     fills the sheet, which the caller finds by measuring. */
-  /* Pixels per minute, on screen. It was 1.05, which put a ten-minute break
-     under the height of one line of type and left the shortest bands to be
-     squeezed. A page scrolls; a lesson that cannot be read does not get
-     better further down. Printing passes its own scale and is untouched. */
+  /* Pixels per minute. On screen a fixed, readable scale — it was 1.05, which
+     put a ten-minute break under the height of one line of type. On paper
+     whatever fills the sheet, which the caller finds by measuring. */
   const ppm = scale || 1.8;
-  const H = Math.round(span * ppm);
+
+  /* An hour where every day is empty is worth a fraction of an hour of
+     lessons. A training session at six in the evening otherwise pushes the
+     whole afternoon off the screen, and the emptiness it pushes it with says
+     nothing. So the axis is cut there: the same scale everywhere anything
+     happens, and a marked band where nothing does.
+
+     Nothing else changes to make room. A lesson keeps the height it earns,
+     because the alternative is squeezing what a reader came to read. */
+  const CUT_AFTER = 45, CUT_RATE = 6, CUT_MIN = 26, CUT_MAX = 64;
+  const cuts = [];
+  {
+    /* Not the worked-out breaks. Those were put there to fill the holes, and
+       a hole filled by one is still a stretch where no lesson happens. */
+    const spans = all.filter(x => typeof x.a === "number" && !x.gap)
+                     .map(x => [x.a, x.z]).sort((p, q) => p[0] - q[0]);
+    let reach = lo;
+    for (const [a, z] of spans) {
+      if (a - reach >= CUT_AFTER) cuts.push({ a: reach, z: a });
+      reach = Math.max(reach, z);
+    }
+    if (hi - reach >= CUT_AFTER) cuts.push({ a: reach, z: hi });
+    for (const cut of cuts) {
+      const full = (cut.z - cut.a) * ppm;
+      cut.h = Math.max(CUT_MIN, Math.min(CUT_MAX, full / CUT_RATE));
+      cut.saved = full - cut.h;
+    }
+  }
+
+  /* Minutes to pixels, with every cut before that minute taken out. */
+  const y = (t) => {
+    let out = (t - lo) * ppm;
+    for (const cut of cuts) {
+      if (t <= cut.a) break;
+      out -= (Math.min(t, cut.z) - cut.a) * ppm;
+      if (t >= cut.z) out += cut.h;
+      else out += cut.h * ((t - cut.a) / (cut.z - cut.a));
+    }
+    return out;
+  };
+  const H = Math.round(y(hi));
 
   /* Over the timetable rather than at the top of the page, and drawn the same
      way on screen as on paper. Whatever is typed into the title fields shows
@@ -742,11 +779,20 @@ function renderTimeline(school, cls, shown, mine, scale) {
   h += '<div class="tlbody" style="height:' + (H + 20) + 'px">';
   h += '<div class="tlaxis">';
   for (let t = lo; t <= hi; t += 30) {
+    /* Inside a cut the labels would sit on top of each other and claim a
+       precision the axis no longer has. */
+    if (cuts.some(cut => t > cut.a && t < cut.z)) continue;
     const cls2 = t % 60 === 0 ? "t hour" : "t";
-    h += '<div class="' + cls2 + '" style="top:' + Math.round((t - lo) * ppm) + 'px">' +
+    h += '<div class="' + cls2 + '" style="top:' + Math.round(y(t)) + 'px">' +
          esc(hhmm(t)) + "</div>";
   }
   h += "</div>";
+  /* Say where the axis was cut, so nobody reads the gap as time. */
+  for (const cut of cuts) {
+    h += '<div class="tlcut" style="top:' + Math.round(y(cut.a)) +
+         "px;height:" + Math.round(cut.h) + 'px" title="' +
+         esc(hhmm(cut.a) + "–" + hhmm(cut.z)) + '"></div>';
+  }
 
   /* Where a box sits in its column. Lessons and breaks share the full width
      between them. A personal event is drawn afterwards, over the top, so it
@@ -758,8 +804,8 @@ function renderTimeline(school, cls, shown, mine, scale) {
   const place = (it, inset) => {
     const lanes = it._lanes || 1, lane = it._lane || 0;
     const each = (100 - inset) / lanes;
-    return "top:" + Math.round((it.a - lo) * ppm) +
-           "px;height:" + Math.max(14, Math.round((it.z - it.a) * ppm) - 1) +
+    return "top:" + Math.round(y(it.a)) +
+           "px;height:" + Math.max(14, Math.round(y(it.z) - y(it.a)) - 1) +
            "px;left:calc(" + (inset + lane * each) + "% + 2px);width:calc(" + each + "% - 4px);";
   };
 
@@ -767,7 +813,7 @@ function renderTimeline(school, cls, shown, mine, scale) {
     h += '<div class="tlcol">';
     const items = perDay.get(i);
     for (const it of pack(items.filter(x => !x.mine))) {
-      const height = Math.max(14, Math.round((it.z - it.a) * ppm) - 1);
+      const height = Math.max(14, Math.round(y(it.z) - y(it.a)) - 1);
       const geom = place(it, 0);
       const when = clockText(it.a, it.z);
       if (it.gap) {
@@ -843,7 +889,7 @@ function renderTimeline(school, cls, shown, mine, scale) {
     const base = items.filter(x => !x.mine);
     for (const it of pack(items.filter(x => x.mine))) {
       const over = base.some(x => x.a < it.z && it.a < x.z);
-      const height = Math.max(14, Math.round((it.z - it.a) * ppm) - 1);
+      const height = Math.max(14, Math.round(y(it.z) - y(it.a)) - 1);
       const when = clockText(it.a, it.z);
       const fg = eventFg(it);
       /* A twenty-minute box has room for one line, so the time joins the label

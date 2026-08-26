@@ -992,6 +992,45 @@ test("the hatch carries no transparency onto the paper", () => {
   assert.match(band, /repeating-linear-gradient/, "the band has no hatch of its own");
 });
 
+test("an hour where nothing happens is cut out of the axis", () => {
+  /* An evening event otherwise pushes the whole afternoon off the screen, and
+     the emptiness it pushes it with says nothing. So the empty stretch is
+     drawn short and marked, and everything with something in it keeps the
+     scale it had. */
+  run(`state = defaults(); state.lang = "en"; applyStrings();
+       state.school = "68"; state.class = "8"; myOwn().events = [];`);
+  const draw = () => run(`renderTimeline(currentSchool(), currentClass(),
+                                         currentClass().e, readEvents(myOwn().events).events, 0)`);
+  const boxHeight = (html, name) => {
+    const at = html.indexOf(">" + name + "<");
+    const box = html.lastIndexOf("height:", at);
+    return Number(/height:([\d.]+)px/.exec(html.slice(box))[1]);
+  };
+  const bodyHeight = (html) => Number(/class="tlbody" style="height:(\d+)px/.exec(html)[1]);
+
+  const plain = draw();
+  assert.ok(!plain.includes("tlcut"), "a school day with no holes was cut");
+  const lesson = boxHeight(plain, "Matemaatika");
+
+  run(`myOwn().events = [{day: "Mon", startTime: "18:00", endTime: "19:00",
+                          label: "Training", backgroundColor: "#00ff00"}];`);
+  const late = draw();
+  assert.equal(late.split('class="tlcut"').length - 1, 1, "no cut for the empty evening");
+
+  /* The lesson is the same height it was, and the event is drawn to the same
+     scale: eighty minutes and sixty minutes, at the same pixels per minute. */
+  assert.equal(boxHeight(late, "Matemaatika"), lesson, "a lesson was squeezed");
+  const perMinute = (px, minutes) => Math.round((px / minutes) * 10) / 10;
+  assert.equal(perMinute(boxHeight(late, "Training"), 60),
+               perMinute(lesson, 80), "the event lost its scale");
+
+  /* And the cut is worth having: the empty stretch costs a fraction of what it
+     would, so the sheet grows by far less than the hours added to it. */
+  const grew = bodyHeight(late) - bodyHeight(plain);
+  assert.ok(grew > 0 && grew < 200, "the evening cost " + grew + "px");
+  run(`state = defaults(); myOwn().events = [];`);
+});
+
 test("a short break keeps its clock, on one line", () => {
   /* A twenty-minute band has room for one line. Stacked, the clock was simply
      dropped — and the times either side of a break are the one thing a reader

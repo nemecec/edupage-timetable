@@ -639,8 +639,8 @@ request fell through to the bucket.
 Inline, as a `data:` URI, on all three pages — the timetable, the root and the
 404. Without one a browser asks for `/favicon.ico`, and there is nothing at
 that address, so it is handed the 404 page as an image and logs a failure. The
-icon is a week: five columns, the tallest in the middle. It costs 533 bytes and
-no request.
+icon is a week: five columns, one a day, tall at both ends and dipping between,
+so the shape survives being shrunk. It costs 607 bytes and no request.
 
 ## Feedback
 

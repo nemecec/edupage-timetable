@@ -421,7 +421,9 @@ period grid, which needs no times.
   a training session in the evening show up too.
 
   It is worked out here rather than published, so it wears an outline instead
-  of the hatch a school's own break wears. It is still listed in the subject
+  of the hatch a school's own break wears — in the subject table as well as in
+  the day, because a sample that does not look like the thing it stands for is
+  worth less than no sample. It is still listed in the subject
   table with the other breaks, under the key `gap`, and can be renamed and
   recolored like any of them.
 - **The plain grid** — what a school with no times at all gets — runs weekdays
@@ -550,7 +552,10 @@ Some of these choices are not obvious:
   them: the midday hour first, the afternoon snack after it.
 
   A break keeps its diagonal hatch, which is what says "not a lesson". The
-  stripes are translucent, so the color underneath shows through. The default
+  stripes are white at two strengths rather than white against black: the dark
+  half of the old pair sat under the words, and a twenty-minute band writes its
+  name and clock straight across them. Worst-case contrast goes from 6.3:1 to
+  7.3:1. The stripes are translucent, so the color underneath shows through. The default
   color is a quiet grey rather than one from the subject palette. A break runs
   the full width of the day, so a palette color wins every glance, which is
   backwards for a gap. Each row says what that subject

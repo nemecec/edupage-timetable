@@ -1750,8 +1750,11 @@ PAGE = """<!DOCTYPE html>
   /* The stripes are translucent, so the color underneath shows through. A
      break is the reader's to recolor like any lesson, and the hatch is what
      still says "not a lesson". */
+  /* White at two strengths rather than white against black. The dark half of
+     the old pair sat under the words, and a twenty-minute band writes its
+     name and clock straight across them. */
   .ev.brk { background-image: repeating-linear-gradient(135deg,
-              rgba(255,255,255,.42) 0 6px, rgba(0,0,0,.05) 6px 12px);
+              rgba(255,255,255,.62) 0 6px, rgba(255,255,255,.22) 6px 12px);
             color: #6b7280; border-color: #e2e5ea; }
   .ev.brk .what { font-weight: 500; font-size: 11px; }
   /* A personal event is drawn over the timetable, so it needs to be above it —

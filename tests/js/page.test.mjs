@@ -646,8 +646,8 @@ test("a break is renamed and recolored like a subject", () => {
 test("a break keeps its hatch when it takes a color", () => {
   /* The stripes say "not a lesson". They are translucent now, so a color can
      sit under them, and the sample in the table wears the same class. */
-  const hatched = json(`sampleBox("#123456", "#fff", "9.00–9.45", "Free time", "", true)`);
-  const plain = json(`sampleBox("#123456", "#fff", "9.00–9.45", "Maths", "", false)`);
+  const hatched = json(`sampleBox("#123456", "#fff", "9.00–9.45", "Free time", "", "brk")`);
+  const plain = json(`sampleBox("#123456", "#fff", "9.00–9.45", "Maths", "", "")`);
   assert.match(hatched, /class="ev brk"/);
   assert.doesNotMatch(plain, /brk/);
   // The color is named on its own, or the shorthand wipes the stripes out.
@@ -894,6 +894,24 @@ test("a gap long enough to plan around is drawn, and belongs to the reader", () 
   run(`state.subjects = {}; state.showGaps = false;`);
   assert.ok(!draw().includes('class="ev gap"'));
   run(`state = defaults(); myOwn().events = [];`);
+});
+
+test("a sample looks like the thing it stands for", () => {
+  /* Three kinds of row, three ways the day draws them. A sample that shows a
+     hatched two-line box for something the day draws as a dashed one-liner is
+     worth less than no sample. */
+  run(`state = defaults(); state.lang = "en"; applyStrings();
+       state.school = "68"; state.class = "8";
+       renderLegend(currentClass().e.filter(function (e) { return !e.c; }));`);
+  const row = (name) => {
+    const html = json(`document.getElementById("legend").innerHTML`);
+    const at = html.indexOf('data-subject="' + name + '"');
+    return at < 0 ? "" : html.slice(at, at + 1400);
+  };
+  assert.match(row("gap"), /class="ev gap"/, "the gap sample is not drawn as a gap");
+  assert.match(row("gap"), /Break . 45 min/, "the gap sample lost its length");
+  assert.ok(!/class="ev gap"/.test(row("Matemaatika")), "a lesson drawn as a gap");
+  assert.match(row("Break, and more"), /class="ev brk"/, "a break lost its hatch");
 });
 
 test("a short break keeps its clock, on one line", () => {

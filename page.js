@@ -1284,7 +1284,7 @@ function renderLegend(shown) {
                   isBreak ? breakLabel(name)
                           : lessonTitle(example[name] || { s: name, S: 0 }),
                   (example[name] ? detailLine(example[name]) : []).join(" · "),
-                  isBreak) +
+                  name === GAP ? "gap" : (isBreak ? "brk" : "")) +
       "</tr>";
   }).join("");
 }
@@ -1311,7 +1311,8 @@ function refreshSubjectSample(name) {
   refreshSample(row, col.bg, col.fg, sampleWhen("9:00"),
                 isBreak ? breakLabel(name)
                         : lessonTitle(lesson || { s: name, S: 0 }),
-                (lesson ? detailLine(lesson) : []).join(" · "), isBreak);
+                (lesson ? detailLine(lesson) : []).join(" · "),
+                name === GAP ? "gap" : (isBreak ? "brk" : ""));
 }
 
 /* A name of the reader's own for one subject or break. Empty means "use the
@@ -1736,17 +1737,23 @@ const swatch = (cls, value) =>
    it — same classes, same three lines. Reading a hex code and imagining the
    result is the part nobody can do. This shows it. Sized as a 45-minute lesson,
    which is the common case and tall enough for all three lines. */
-function sampleBox(bg, fg, when, label, meta, hatched) {
+/* `kind` is what the day would draw this as: a lesson, one of the school's
+   breaks, or a gap this page worked out. A sample that does not look like the
+   thing it stands for is worth less than no sample. */
+function sampleBox(bg, fg, when, label, meta, kind) {
   const style = "background-color:" + esc(bg) + ";color:" + esc(fg);
-  return '<div class="ev' + (hatched ? " brk" : "") + '" style="' + style + '">' +
-    '<div class="when">' + esc(when) + "</div>" +
-    '<div class="what">' + esc(label) + "</div>" +
-    (meta ? '<div class="who2">' + esc(meta) + "</div>" : "") + "</div>";
+  const body = kind === "gap"
+    ? '<div class="what">' + esc(label) + " · " + esc(durationText(45)) + "</div>"
+    : '<div class="when">' + esc(when) + "</div>" +
+      '<div class="what">' + esc(label) + "</div>" +
+      (meta ? '<div class="who2">' + esc(meta) + "</div>" : "");
+  return '<div class="ev' + (kind ? " " + kind : "") + '" style="' + style + '">' +
+    body + "</div>";
 }
 
-function previewCell(bg, fg, when, label, meta, hatched) {
+function previewCell(bg, fg, when, label, meta, kind) {
   return '<td><div class="sample">' +
-    sampleBox(bg, fg, when, label, meta, hatched) + "</div></td>";
+    sampleBox(bg, fg, when, label, meta, kind) + "</div></td>";
 }
 
 /* Just the one cell, redrawn where it stands.
@@ -1755,9 +1762,9 @@ function previewCell(bg, fg, when, label, meta, hatched) {
    interrupted, and the legend is skipped by `paint` so an open color panel is
    not torn away. Both of those are right, and both meant the sample sat there
    showing the color before last. */
-function refreshSample(tr, bg, fg, when, label, meta, hatched) {
+function refreshSample(tr, bg, fg, when, label, meta, kind) {
   const host = tr && tr.querySelector(".sample");
-  if (host) host.innerHTML = sampleBox(bg, fg, when, label, meta, hatched);
+  if (host) host.innerHTML = sampleBox(bg, fg, when, label, meta, kind);
 }
 
 /* The color cells, shared by both tables so the two read the same way. */

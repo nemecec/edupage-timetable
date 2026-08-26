@@ -154,7 +154,7 @@ STRINGS = {
                            "right corner."),
         "settings.printed": ("The bottom right corner of the printed sheet "
                              "carries the same address, as a QR code."),
-        "say": "Send us feedback",
+        "say": "Feedback",
         "say.link": "feedback",
         "say.intro": ("Anything you want to say about this page: what is "
                       "missing, what is wrong, what can be better, or that it "
@@ -268,7 +268,7 @@ STRINGS = {
                            "kasutades üleval paremas nurgas asuvat nuppu {0}."),
         "settings.printed": ("Väljatrüki alumises paremas nurgas on sama "
                              "aadress QR-koodi kujul."),
-        "say": "Saada tagasisidet",
+        "say": "Tagasiside",
         "say.link": "tagasiside",
         "say.intro": ("Kõik, mida soovid selle lehe kohta öelda: mis on puudu, "
                       "mis on valesti, mida saaks paremaks teha, või et kõik "

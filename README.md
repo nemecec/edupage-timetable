@@ -399,6 +399,11 @@ period grid, which needs no times.
 - **Display options** sets what each lesson box says. The teacher, the room, the
   study group and the subject are independent of each other. The teacher and the
   subject each choose between the full name and the school's abbreviation.
+
+  **The QR code on the printout** can be switched off. Some readers want the
+  sheet and not the corner. The address in the other corner stays either way:
+  the code goes to this reader's own timetable, and the address is where
+  anybody gets one of their own.
   **Lesson colors** offers three answers for every subject: the generated
   palette, the school's own colors from aSc, or colors of your own. A click on
   any lesson in the timetable also recolors its subject. The text flips between
@@ -585,6 +590,7 @@ its own map of classes.
   "subjectNameStyle": "full",
   "showDuration": true,
   "showGaps": true,
+  "showQr": true,
   "printMargin": 5,
 
   "subjectColorStyle": "school",

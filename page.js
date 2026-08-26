@@ -65,6 +65,10 @@ const defaults = () => ({
   showTeacher: true, teacherNameStyle: "short",
   showRoom: true, showGroup: true,
   showDuration: true, showGaps: true,
+  /* The code in the corner of the printed sheet. Some readers want the sheet
+     and not the corner. The address in the other corner stays either way:
+     that is where anybody gets a timetable of their own. */
+  showQr: true,
 
   /* Millimetres of paper left blank around the sheet. Five is about as narrow
      as a laser printer will take without clipping, and every millimetre saved
@@ -513,7 +517,7 @@ function renderFooter(school) {
      size. Then the corner is empty. Printing the address as text instead was
      worse than nothing: an address too long for a code is far too long to type,
      and it filled the corner with characters nobody would ever read. */
-  const link = printing ? shareUrl() : "";
+  const link = (printing && state.showQr) ? shareUrl() : "";
   const code = link ? qrSvg(link, "36mm") : "";
   const corner = code ? '<div class="qrbox">' + code +
                         '<div class="qrhint">' + esc(t("qrHint")) + "</div></div>"
@@ -1798,7 +1802,7 @@ function bindChoice(name, key) {
 }
 ["showStudentName", "showSchoolName", "showClassName",
  "showTeacher", "showRoom", "showGroup", "showSubject",
- "showDuration", "showGaps"].forEach(key => bindToggle(key, key));
+ "showDuration", "showGaps", "showQr"].forEach(key => bindToggle(key, key));
 /* The one control that carries a number rather than a word. */
 document.getElementById("printMargin").addEventListener("change", (ev) => {
   const mm = Number(ev.target.value);
@@ -1817,7 +1821,7 @@ bindChoice("subjectColorStyle", "subjectColorStyle");
 function syncDisplayControls() {
   for (const key of ["showStudentName", "showSchoolName", "showClassName",
                      "showTeacher", "showRoom", "showGroup", "showSubject",
-                     "showDuration", "showGaps"]) {
+                     "showDuration", "showGaps", "showQr"]) {
     document.getElementById(key).checked = !!state[key];
   }
   for (const name of ["teacherNameStyle", "subjectNameStyle", "subjectColorStyle"]) {

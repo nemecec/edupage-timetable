@@ -100,6 +100,7 @@ STRINGS = {
         "customColors": "Colours of my own",
         "colLabel": "Label",
         "colShow": "Show",
+        "showQr": "QR code on the printout",
         "link.unreadable": "This link carries settings that the page cannot read, "
                            "so the timetable below does not come from it. A link "
                            "is often cut short when it is copied, so ask for the "
@@ -227,6 +228,7 @@ STRINGS = {
         "customColors": "Minu omad värvid",
         "colLabel": "Nimetus",
         "colShow": "Näita",
+        "showQr": "QR-kood väljatrükil",
         "link.unreadable": "See link sisaldab seadeid, mida leht ei oska lugeda, "
                            "seega allolev tunniplaan ei tule sellest lingist. "
                            "Kopeerimisel jääb link sageli poolikuks, seega küsi "
@@ -2075,6 +2077,10 @@ PAGE = """<!DOCTYPE html>
         <div class="line">
           <label class="inline"><input type="checkbox" id="showGaps">
             <span data-i18n="showGaps"></span></label>
+        </div>
+        <div class="line">
+          <label class="inline"><input type="checkbox" id="showQr">
+            <span data-i18n="showQr"></span></label>
         </div>
         <div class="line">
           <label class="inline" for="printMargin"><span data-i18n="printMargin"></span></label>

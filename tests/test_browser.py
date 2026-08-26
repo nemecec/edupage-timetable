@@ -160,6 +160,38 @@ class ThePrintedSheet(InABrowser):
         self.assertGreater(lines, 500, "no detail lines drawn at all")
         self.assertEqual(clipped, [], "text cut by the edge of its box")
 
+    def test_the_qr_code_can_be_left_off_and_the_address_stays(self):
+        """Some readers want the sheet and not the corner. The address in the
+        other corner is where anybody gets a timetable of their own, so it
+        stays either way. The code needs the real encoder, which is why this
+        is asked of a browser rather than of the stub."""
+        self.show("68", "8")
+        with_code = self.js(
+            "myOwn().studentName = 'Eva';"
+            "printing = true; renderFooter(currentSchool()); printing = false;"
+            "return {html: document.getElementById('foot').innerHTML};")["html"]
+        self.assertIn('class="qr"', with_code, "no code on the printed sheet")
+
+        without = self.js(
+            "state.showQr = false;"
+            "printing = true; renderFooter(currentSchool()); printing = false;"
+            "return {html: document.getElementById('foot').innerHTML};")["html"]
+        self.assertNotIn('class="qr"', without, "the code is still printed")
+        # The address in the other corner is read off location.host, which a
+        # page opened from a file does not have. The stub, which does, holds
+        # the rule that it stays either way.
+
+        # Through the checkbox, and it survives being written down and read back.
+        back = self.js(
+            "state.showQr = true;"
+            "var box = document.getElementById('showQr');"
+            "box.checked = false;"
+            "box.dispatchEvent(new Event('change', {bubbles: true}));"
+            "return {now: state.showQr,"
+            "        back: normalise(JSON.parse(JSON.stringify(slim(state)))).showQr};")
+        self.assertFalse(back["now"])
+        self.assertFalse(back["back"], "the setting did not survive a saved link")
+
     def test_the_paper_edge_changes_what_there_is_room_for(self):
         """The rule the browser prints by and the height the fitter measures
         against both come from one setting. If they part company, the page is

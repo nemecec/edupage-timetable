@@ -121,9 +121,12 @@ function element() {
   return node;
 }
 
-export function load() {
+/* The two schools above are enough to exercise every path. A caller with the
+   real thing — the golden test builds one from the checked-in fixtures — hands
+   it in here instead, and gets the same stubbed browser around it. */
+export function load(dataOverride) {
   const data = element();
-  data.textContent = JSON.stringify(DATA);
+  data.textContent = JSON.stringify(dataOverride || DATA);
   /* One node per id, as a document has. Handing back a fresh stub each time
      meant everything written to an element went to a throwaway and could never
      be read back — so no test could look at what was rendered. */

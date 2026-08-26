@@ -688,6 +688,43 @@ both the timeline and the fallback grid really run. The tests cover the reader
 for saved events, the settings normalizer, the share link written and read back,
 the calendar packing, and the escaping.
 
+### The golden records
+
+Both suites above pin one rule on one class. Between them they say nothing
+about the other forty, so a change to a shared piece — the packing, the axis,
+the palette, a bell schedule — can move boxes that no test names.
+
+`tests/golden/` holds one file per school. Each is a record of what the page
+draws for every class in it, under four fixed settings: as it opens, with the
+first option of every study group chosen, with two evening events, and with
+one subject hidden. Every box is one line, and the line carries the day, the
+kind of box, the subject, the top, the height, the lane, the width and the
+text. The axis ticks, the cut bands and the height of the sheet are recorded
+beside them. Classes the plan gives no times to are recorded as grid cells,
+because that is the view they get.
+
+The generator is inside the loop. The record is taken from a page built out of
+`tests/fixtures`, so a changed bell window moves the record exactly as a
+changed renderer does. A build takes about a fifth of a second, and the whole
+comparison runs in well under one.
+
+When a change is meant to move boxes:
+
+    node tests/js/update-golden.mjs
+
+Then read the diff before committing it. A record updated without reading the
+diff is worth nothing: the value of the file is that somebody looked at what
+moved. The failure names the school, the class, the setting and the first few
+lines that differ, so the diff is usually short enough to read in the failure
+itself.
+
+Two of the tests guard the record rather than the page. One checks that every
+class got every setting, so the file cannot quietly stop covering a school. The
+other moves a box by a pixel and checks that the comparison would have caught
+it, because a record that cannot fail is worse than none.
+
+### Escaping
+
 The escaping test pushes hostile text through every channel that carries it.
 Those channels are the school's own subject, teacher, room, day and class names,
 and everything the reader can type. The test then checks the rendered markup in

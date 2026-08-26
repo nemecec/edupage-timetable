@@ -673,6 +673,21 @@ the vendored library or the deployment. Neither suite touches the network.
 `tests/fixtures` holds frozen answers from the school's own API, so a build
 takes a moment. CI never spends the rate limit that the nightly publish needs.
 
+Measured, rather than guessed at:
+
+| | covered |
+| --- | --- |
+| `page.js` | 96% of code lines |
+| `tt.py` | 89% of statements |
+| `deploy/publish.py` | 97% |
+| `deploy/lambda_function.py` | 100% |
+
+The `page.js` figure is the two runs together: 87% under the stub, 87% in a
+real browser, and different 87% each time. The stub reaches the reasoning and
+the browser reaches the wiring, and neither reaches the other. What is left is
+mostly the clipboard, which a page opened from a file cannot use, and the
+posting of a fault report, which would leave the machine.
+
 The Python tests cover the reasoning the generator does for itself. That is the
 bell clock against the printed Päevaplaan, LõunaTERA's published blocks, the
 rules about which lessons merge, and the color palette. For the palette they
@@ -696,6 +711,42 @@ browser. The fixture holds two schools, one with a day plan and one without, so
 both the timeline and the fallback grid really run. The tests cover the reader
 for saved events, the settings normalizer, the share link written and read back,
 the calendar packing, and the escaping.
+
+A stub has no DOM to click through, so the decisions the controls make are
+named functions rather than the bodies of listeners: `applySettingsText`,
+`resetSettings`, `editEvent`, `eventFieldFor`. Each takes plain values and
+hands back a plain answer, and each has a test of its own. The listener beside
+it is then two lines, which is about as much as can be checked by reading.
+
+Doing that found two faults on the spot. A reset read `klass` off the state,
+which has no such key — the state calls it `class` — so it dropped the reader
+back to the class the page opens on. And `hide` never survived being written
+down and read back, because the settings reader keeps only the fields it knows
+and nobody had added that one. Both had gone unnoticed because a listener
+cannot be reached from a stub.
+
+### The browser tests
+
+`tests/test_browser.py` drives a real Chrome over the DevTools protocol, with
+no automation framework and nothing to install. It is where the two questions a
+stub cannot answer are asked: does the printed sheet fit, and does pressing
+something do what it says.
+
+Every class is laid out at print scale and measured against A4 landscape less
+the reader's margin, and every box is checked for text cut off by its own edge.
+Both were run by hand before, from a script that lived outside the repository —
+which is verification that disappears when the terminal is closed. The first
+run of the checked-in version found a real fault: a ten-minute break, scaled
+down to fit a full week onto one sheet, came out three pixels shorter than the
+line of type inside it.
+
+The rest of the file presses things: Share, Apply, Reset, the subject switches,
+the whole event editor from the add button to the drop button, a display
+switch, a study group, the language. It also checks that the page asks the
+network for nothing, on screen and while printing.
+
+Without a browser these tests skip rather than fail, so a checkout with no
+Chrome still runs everything else. `CHROME_BIN` names one.
 
 ### The golden records
 
@@ -738,6 +789,34 @@ Two of the tests guard the record rather than the page. One checks that every
 class got both, so the file cannot quietly stop covering a school. The
 other moves a box by a pixel and checks that the comparison would have caught
 it, because a record that cannot fail is worse than none.
+
+### Escaping
+
+### Talking to EduPage
+
+`tests/test_client.py` replaces `urlopen` and `sleep` for the length of a test,
+so a backoff of eighty-five seconds costs nothing and no socket is opened. It
+covers the parts that only a bad night reaches: a rate limit waited out, a
+broken server given up on, a refusal not retried at all, a lapsed session that
+answers with a login page and HTTP 200, and a half-written cache file fetched
+again rather than kept for ever.
+
+That last one found a fault too. A run stopped between writing the cache beside
+its place and moving it in left the part file behind, in a directory that is
+checked in.
+
+### The publisher
+
+`tests/test_publish.py` stands the bucket up as a dictionary and CloudFront as
+a list. It covers what reaches the site and what does not: the first run, a
+page that only moved its build stamp, a page that lost a school and is
+refused, the override for when a school really has closed, and the pages around
+the timetable, which go up on every run so an edit to either reaches the site
+on a quiet day. Both stores are driven against a fake `subprocess` and a fake
+client, so the content type and the cache rule are read off the calls they
+would have made — and the two paths are checked against each other, since a
+header set on one and not the other is a page that behaves differently
+depending on where it was published from.
 
 ### Escaping
 

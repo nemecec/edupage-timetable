@@ -1152,8 +1152,22 @@ def merge_blocks(entries):
         blocks.setdefault((e["day"], e["slot"]), []).append(e)
 
     for (day, slot), here in sorted(blocks.items()):
-        if len(here) == 1 or any(x["groups"] for x in here):
+        if len(here) == 1:
             out.extend(here)
+            continue
+        if any(x["groups"] for x in here):
+            # A block the class splits across. Two groups at once are two
+            # boxes side by side, which is the point of a group — but one
+            # group taking the same subject on both halves of the block is one
+            # lesson, and it was drawn beside itself. TäheTERA 5.a has English
+            # on both periods of a Tuesday block, once for each of its three
+            # groups, and every group saw two of itself.
+            split = {}
+            for x in here:
+                split.setdefault((x["subject"], tuple(x["groups"])), []).append(x)
+            for run in split.values():
+                one = len(run) > 1 and len({x["startPeriod"] for x in run}) == len(run)
+                out.append(_one_box(run)) if one else out.extend(run)
             continue
         starts = {x["startPeriod"] for x in here}
         if len(starts) == len(here):
@@ -1838,6 +1852,10 @@ PAGE = """<!DOCTYPE html>
      — on paper only, never in a PDF. */
   .ev.brk { color: #6b7280; border-color: #e2e5ea; }
   .ev.brk .what { font-weight: 500; font-size: 11px; }
+  /* A ten-minute band. The padding comes off and the words shrink, because
+     the alternative is a line with its bottom sliced away. */
+  .ev.brk.tiny { padding: 0 5px; }
+  .ev.brk.tiny .what { font-size: 9px; line-height: 1.15; }
   /* A personal event is drawn over the timetable, so it needs to be above it —
      but it should not look like a different kind of thing. It is a lesson in
      every visible respect, whichever way its text color was arrived at: the

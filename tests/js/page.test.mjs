@@ -988,7 +988,7 @@ test("the hatch carries no transparency onto the paper", () => {
   run(`state = defaults(); state.school = "68"; state.class = "8";`);
   const html = run(`renderTimeline(currentSchool(), currentClass(),
                                    currentClass().e, [], 0)`);
-  const band = html.split('class="ev brk"')[1].slice(0, 400);
+  const band = html.split('class="ev brk')[1].slice(0, 400);
   assert.match(band, /repeating-linear-gradient/, "the band has no hatch of its own");
 });
 
@@ -1000,8 +1000,11 @@ test("a short break keeps its clock, on one line", () => {
   run(`state.school = "68"; state.class = "8"; state.subjects = {};`);
   const html = run(`renderTimeline(currentSchool(), currentClass(),
                                    currentClass().e, [], 0)`);
-  const band = html.split('class="ev brk"')[1] || "";
+  const band = html.split('class="ev brk')[1] || "";
   assert.ok(band.includes("oneline"), "the band stacked its two lines");
+  /* The harness band is ten minutes, the shortest anything is written in.
+     There the padding is the difference between a line and a cut line. */
+  assert.match(band, /^ tiny/, "a ten-minute band kept its padding");
   assert.ok(band.includes("Break"), "no name on the band");
   assert.ok(/10\.20.10\.30/.test(band), "no clock on the band: " + band.slice(0, 160));
 });

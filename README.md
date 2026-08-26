@@ -278,7 +278,9 @@ its height less the border and the padding. The old threshold was 54, so a
 SädeTERA week, which is mostly 45-minute lessons, named no teachers at all.
 
 A break does the same: a twenty-minute band puts its name and its clock on one
-line rather than dropping the clock. The times either side of a break are the
+line rather than dropping the clock, and a ten-minute one — TäheTERA has one
+between its second and third lessons — gives up its padding as well, because at
+that height the padding is the difference between a line and a cut line. The times either side of a break are the
 one thing a reader cannot work out from the lessons around it.
 
 Nothing in a box wraps past its bottom edge. The clock never wraps, the detail

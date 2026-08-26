@@ -89,7 +89,7 @@ class WholePage(unittest.TestCase):
         # two periods is one box. Fewer rows than periods with a card, too —
         # SädeTERA has two lessons its own day plan leaves no room for, and the
         # build says so rather than drawing them at a guessed time.
-        self.assertEqual((len(rows), len(boxes)), (1898, 1560))
+        self.assertEqual((len(rows), len(boxes)), (1891, 1553))
         # 70 subject names, plus the five named breaks. A break is drawn and
         # recolored like a lesson, so it needs a color of its own.
         self.assertEqual(len(self.data["palette"]), 75)
@@ -292,6 +292,30 @@ class WholePage(unittest.TestCase):
                          {"n": "Lõuna", "a": 12 * 60, "z": 13 * 60, "m": 30})
         for name in ("ProTERA ja TERA gümnaasium", "SädeTERA", "LõunaTERA"):
             self.assertEqual(window[name], 0, name)
+
+    def test_a_group_that_has_a_block_to_itself_gets_one_box(self):
+        """Two groups at once are two boxes side by side, which is the point of
+        a group. One group taking the same subject on both halves of a block is
+        one lesson, and it was drawn beside itself: 5.a has English on both
+        periods of a Tuesday block, once for each of its three groups, and
+        every group saw two of itself."""
+        school = next(s for s in self.data["schools"] if s["l"] == "TäheTERA")
+        cls = next(c for c in school["c"] if c["n"].strip() == "5.a")
+        for day, when, subject, groups in (
+                (1, "10.45–12.20", "Inglise keel", {"IK1", "IK2", "IK3"}),
+                (3, "10.45–12.05", "Matemaatika", {"Mat 1", "Mat 2", "Mat 3", "Mat 4"})):
+            with self.subTest(day=day, subject=subject):
+                boxes = [e for e in cls["e"]
+                         if e["d"] == day and not e["c"] and e["p"] in (3, 4)]
+                # One per group, not two, and each spans the whole block.
+                self.assertEqual(len(boxes), len(groups))
+                self.assertEqual({g for e in boxes for g in e["g"]}, groups)
+                for e in boxes:
+                    self.assertEqual((e["w"], e["u"], e["s"]), (when, 2, subject))
+        # Two different subjects on one period still sit side by side.
+        monday = [e for e in cls["e"] if e["d"] == 0 and not e["c"] and e["p"] == 6]
+        self.assertEqual({e["s"] for e in monday},
+                         {"Hispaania keel", "Prantsuse keel", "Saksa keel"})
 
     def test_a_lesson_running_past_one_published_block_ends_where_it_ends(self):
         # LõunaTERA publishes blocks rather than lesson lengths. A lesson

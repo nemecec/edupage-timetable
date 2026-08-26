@@ -544,7 +544,22 @@ const GAP_COLOR = { bg: "#F7F8FA", fg: "#6b7280" };
 function gapKind(from, to) {
   const rule = currentSchool().lg;
   if (!rule) return GAP;
-  return (to - from >= rule.m && from >= rule.a && from < rule.z) ? LUNCH : GAP;
+  return (to - from >= rule.m && from >= rule.a && from < rule.z)
+    ? lunchKey() : GAP;
+}
+
+/* What the worked-out lunch is filed under. Where the class also has a
+   published band of that name — TäheTERA prints one on the days without the
+   language split — the two are the same meal, so they are one row in the
+   table, one color and one name. Only a class whose lunch is never published
+   gets a key of its own. */
+function lunchKey() {
+  const name = (currentSchool().lg || {}).n;
+  if (!name) return LUNCH;
+  for (const day of Object.values(currentClass().h || {})) {
+    for (const band of (day.b || [])) if (band.n === name) return name;
+  }
+  return LUNCH;
 }
 
 function colorFor(subject) {
@@ -816,7 +831,7 @@ function renderTimeline(school, cls, shown, mine, scale) {
       const height = Math.max(14, Math.round(y(it.z) - y(it.a)) - 1);
       const geom = place(it, 0);
       const when = clockText(it.a, it.z);
-      if (it.gap) {
+      if (it.gap === GAP) {
         /* Worked out here rather than published, so it says only the one thing
            the lessons around it do not: how long it is. The outline is what
            says it was inferred; the color is the reader's like any other. */
@@ -828,14 +843,18 @@ function renderTimeline(school, cls, shown, mine, scale) {
              "</div></div>";
         continue;
       }
-      if (it.brk) {
-        const col = colorFor(it.brk);
+      /* A worked-out lunch is still lunch. Drawn as a corridor it read as
+         one, and on the days the school does publish the band the very same
+         meal was drawn as a band. Same meal, same box. */
+      const band = it.brk || (it.gap && it.gap !== GAP ? it.gap : "");
+      if (band) {
+        const col = colorFor(band);
         /* A short break has room for one line, and the clock joins the name
            on it rather than being dropped. Twenty minutes is a real break —
            ProTERA's Amps is one, and so is a SädeTERA Tuesday lunch — and a
            band with no times on it is the one thing a reader cannot work out
            from the lessons either side. */
-        const label = breakLabel(it.brk);
+        const label = breakLabel(band);
         const inside = height >= 30
           ? '<div class="what">' + esc(label) + "</div>" +
             '<div class="when">' + esc(when) + "</div>"
@@ -846,8 +865,9 @@ function renderTimeline(school, cls, shown, mine, scale) {
            the padding is the difference between a line and a cut line. */
         h += '<div class="ev brk' + (height < 22 ? " tiny" : "") + '" style="' +
              geom + "background-color:" + esc(col.bg) +
-             ";color:" + esc(col.fg) + ";" + hatch(col.bg) + '" title="' +
-             esc(it.brk + "\n" + when) + '">' + inside + "</div>";
+             ";color:" + esc(col.fg) + ";" + hatch(col.bg) +
+             '" data-subject="' + esc(band) + '" title="' +
+             esc(breakName(band) + "\n" + when) + '">' + inside + "</div>";
         continue;
       }
       const e = it.lesson, col = colorFor(e.s), info = subjectFacts()[e.s] || {};
@@ -1375,7 +1395,7 @@ function renderLegend(shown) {
                   isBreak ? breakLabel(name)
                           : lessonTitle(example[name] || { s: name, S: 0 }),
                   (example[name] ? detailLine(example[name]) : []).join(" · "),
-                  name === GAP || name === LUNCH ? "gap" : (isBreak ? "brk" : "")) +
+                  name === GAP ? "gap" : (isBreak ? "brk" : "")) +
       "</tr>";
   }).join("");
 }
@@ -1802,7 +1822,7 @@ function breaksOnScreen() {
      recolored like the rest. Last, because it is the least of them. */
   if (state.showGaps) {
     note(GAP, 24 * 60);
-    if (currentSchool().lg) note(LUNCH, 24 * 60 + 1);
+    if (currentSchool().lg) note(lunchKey(), 24 * 60 + 1);
   }
   return [...first.keys()].sort((p, q) => first.get(p) - first.get(q));
 }

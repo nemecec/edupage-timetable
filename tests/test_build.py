@@ -784,11 +784,11 @@ class Documentation(unittest.TestCase):
         page, _ = build()
         raw, wire = len(page.encode("utf-8")), len(gzip.compress(page.encode("utf-8"), 9))
         # Within a tolerance, since the school's own data moves it about.
-        self.assertLess(abs(raw / 1024 - 600), 60, "%.0f KB raw" % (raw / 1024))
-        self.assertLess(abs(wire / 1024 - 88), 12, "%.0f KB over the wire" % (wire / 1024))
+        self.assertLess(abs(raw / 1024 - 660), 60, "%.0f KB raw" % (raw / 1024))
+        self.assertLess(abs(wire / 1024 - 91), 12, "%.0f KB over the wire" % (wire / 1024))
         for name in ("README.md", os.path.join("deploy", "README.md")):
             with open(os.path.join(ROOT, name), encoding="utf-8") as fh:
-                self.assertIn("88 KB", fh.read(), name)
+                self.assertIn("91 KB", fh.read(), name)
 
     def test_the_interface_is_british_and_the_code_is_american(self):
         """Two spellings, each in its own place.

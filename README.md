@@ -71,7 +71,7 @@ The script needs the Python 3 standard library and nothing else. There is no
 pip install and no browser.
 
 For `tera` in 2026 the result is 4 schools, 41 classes and about 1,900 lesson
-slots, in a file of about 600 KB. That is 88 KB over the wire, because it
+slots, in a file of about 660 KB. That is 91 KB over the wire, because it
 compresses well.
 
     python3 -m unittest discover -s tests     # the generator
@@ -176,18 +176,32 @@ one group takes the language at **12.10-12.55** and eats after, the other eats
 first and takes it at **12.55-13.40**. Two rows, two periods in the timetable,
 so both are drawn.
 
-So this school publishes no lunch band, only the morning `Amps`. Lunch is a
+On Monday and Thursday, then, the school publishes no lunch band. Lunch is a
 different hour for each group, and a band across the class would be wrong for
 half of it. It does not need one: a reader who picks their language group is
 left with their own lunch as the free time around that lesson, found by the
 same rule that finds any other gap.
 
-A gap found that way says what it is. The school gives a window — midday, at
-least half an hour — and a hole that fits it is drawn as `Lõuna` rather than
-the generic `Paus`. Fifteen minutes between two lessons is not a meal, and a
-free hour in the morning is not one either. The two are listed separately in
-the subject table, so each can be renamed and recolored on its own, and a
-school that names no window goes on saying `Paus`.
+The other three days do not split, and there the sheet leaves ten minutes
+between the last long block and the closing lesson. It gives that row no
+times, so ten minutes is what is drawn.
+
+A gap found by the same rule says what it is. The school gives a window —
+midday, at least half an hour — and a hole that fits it is drawn as `Lõuna`
+rather than the generic `Paus`. Fifteen minutes between two lessons is not a
+meal, and a free hour in the morning is not one either. A school that names no
+window goes on saying `Paus`.
+
+Where the class also has a published band of that name, the two are the same
+meal, so they are one row in the subject table, one color and one name — and
+the worked-out one is drawn as a hatched band like the published one, because
+Monday's lunch and Tuesday's lunch are the same thing. Only a class whose
+lunch is never published gets a row of its own, under the key `lunch`.
+
+Which class eats when is a canteen decision, not a school-wide one. A school
+can name more than one break window, and a window can name the classes it
+belongs to, so the ten-minute band is 5.a's alone until the other sheets
+arrive.
 
 **LõunaTERA publishes fixed blocks instead.** There is no clock to run. Each
 block says which aSc periods it holds, and when it is:
@@ -458,12 +472,13 @@ period grid, which needs no times.
   breaks and the reader's own events, so the hours between the last lesson and
   a training session in the evening show up too.
 
-  It is worked out here rather than published, so it wears an outline instead
-  of the hatch a school's own break wears — in the subject table as well as in
-  the day, because a sample that does not look like the thing it stands for is
-  worth less than no sample. It is still listed in the subject
+  A plain gap is worked out here rather than published, so it wears an outline
+  instead of the hatch a school's own break wears — in the subject table as
+  well as in the day, because a sample that does not look like the thing it
+  stands for is worth less than no sample. It is still listed in the subject
   table with the other breaks, under the key `gap`, and can be renamed and
-  recolored like any of them.
+  recolored like any of them. A hole the school's window says is lunch is the
+  exception: it is a meal, and it is drawn as one.
 - **The plain grid** — what a school with no times at all gets — runs weekdays
   across the top and periods down the side, the same way round as the timeline.
   It used to be transposed, so the two views of one week read differently.

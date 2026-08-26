@@ -1707,17 +1707,30 @@ document.getElementById("lang").addEventListener("change", (ev) => {
   save(); applyStrings(); renderDivisions(); render();
 });
 
-document.getElementById("reset").addEventListener("click", () => {
-  const { school, klass, lang } = state;
-  state = Object.assign(defaults(), { school, klass, lang });
+/* Everything back to how the page opens, except where the reader is: clearing
+   the colors is not a request to be sent to another class.
+
+   It used to read `klass` off the state, which has no such key — the state
+   calls it `class`. So a reset dropped the reader back to the class the page
+   opens on, and left an undefined `klass` behind in the settings. The button
+   had no test, which is how that survived.
+
+   Hands back what the backup box should now show. */
+function resetSettings() {
+  const { school, class: klass, lang } = state;
+  state = Object.assign(defaults(), { school, class: klass, lang });
   save();
+  renderDivisions(); syncPerClassInputs(); render();
+  return JSON.stringify(slim(state), null, 2);
+}
+
+document.getElementById("reset").addEventListener("click", () => {
   /* The backup box sits in this same panel, a few centimetres from this button,
      and is only refilled when the panel is opened. Left alone it still shows
      everything that was just cleared. A press of Apply beside it then puts
      all of it back, the child's name included. */
-  settingsText.value = JSON.stringify(slim(state), null, 2);
+  settingsText.value = resetSettings();
   settingsMsg.textContent = "";
-  renderDivisions(); syncPerClassInputs(); render();
 });
 
 advancedPanel.addEventListener("toggle", () => {
@@ -1790,25 +1803,35 @@ document.getElementById("copySettings").addEventListener("click", async () => {
     settingsMsg.textContent = t("settings.selected");
   }
 });
-document.getElementById("applySettings").addEventListener("click", () => {
+/* A whole state arriving at once, typed or pasted by whoever has the page
+   open. It is the one place where one bad value could take the page down with
+   it, so it is a named function rather than the body of a button: a test can
+   hand it anything, and does.
+
+   Hands back the line to show under the box. */
+function applySettingsText(text) {
   let incoming;
   try {
-    incoming = JSON.parse(settingsText.value);
+    incoming = JSON.parse(text);
   } catch (e) {
-    settingsMsg.textContent = t("settings.badJson", e.message);
-    return;
+    return t("settings.badJson", e.message);
   }
   if (!incoming || typeof incoming !== "object" || Array.isArray(incoming)) {
-    settingsMsg.textContent = t("settings.notObject");
-    return;
+    return t("settings.notObject");
   }
   state = normalise(incoming);
+  /* A school or a class this page does not carry — an older link, or another
+     school's file — would leave the page with nothing at all to draw. */
   if (!SCHOOLS.some(x => x.n === state.school)) state.school = DATA.initialSchool;
   if (!currentSchool().c.some(c => c.n === state.class)) state.class = currentSchool().c[0].n;
   save();
   renderLanguages(); renderSchools(); renderClasses();
   applyStrings(); renderDivisions(); syncPerClassInputs(); render();
-  settingsMsg.textContent = t("settings.applied");
+  return t("settings.applied");
+}
+
+document.getElementById("applySettings").addEventListener("click", () => {
+  settingsMsg.textContent = applySettingsText(settingsText.value);
 });
 
 /* Text fields keep the state up to date on every keystroke but only repaint on
@@ -2027,15 +2050,37 @@ function renderEvents() {
   evRows.innerHTML = mine().events.map(eventRow).join("");
 }
 
+/* One event changed and written down. Takes a number rather than a row, so
+   what it does can be checked without a table to click on. */
+function editEvent(index, change) {
+  const ev = myOwn().events[index];
+  if (!ev) return null;
+  change(ev);
+  tidy();
+  save();
+  return ev;
+}
+
+/* Which field of an event a control in the row writes to. A table rather than
+   a chain of branches: a control added to the row with no field behind it then
+   shows up as a missing entry, not as a control that quietly does nothing. */
+const EVENT_FIELDS = { evday: "day", evstart: "startTime", evend: "endTime",
+                       evlabel: "label" };
+
+function eventFieldFor(className) {
+  for (const name of String(className).split(/\s+/)) {
+    if (EVENT_FIELDS[name]) return EVENT_FIELDS[name];
+  }
+  return "";
+}
+
 /* One place where a row writes back, so every control behaves the same. */
 function rowChanged(tr, change) {
-  const list = myOwn().events;
-  const ev = list[+tr.dataset.i];
+  const ev = editEvent(+tr.dataset.i, change);
   if (!ev) return;
-  change(ev);
   const fg = ev.textColor || readable(ev.backgroundColor);
   refreshSample(tr, ev.backgroundColor, fg, sampleWhen(ev.startTime), ev.label, "");
-  tidy(); save(); paint();
+  paint();
 }
 
 /* Touching a control picks the radio it sits beside. Otherwise the swatch under
@@ -2050,9 +2095,8 @@ evRows.addEventListener("input", (e) => {
   const tr = e.target.closest("tr");
   if (!tr) return;
   const cls = e.target.classList;
-  if (cls.contains("evstart")) rowChanged(tr, ev => { ev.startTime = e.target.value; });
-  else if (cls.contains("evend")) rowChanged(tr, ev => { ev.endTime = e.target.value; });
-  else if (cls.contains("evlabel")) rowChanged(tr, ev => { ev.label = e.target.value; });
+  const field = eventFieldFor(e.target.className);
+  if (field) rowChanged(tr, ev => { ev[field] = e.target.value; });
   else if (cls.contains("bgpick")) {
     choose(tr, "bg", "own");
     rowChanged(tr, ev => { ev.backgroundColor = e.target.value; });
@@ -2066,7 +2110,8 @@ evRows.addEventListener("change", (e) => {
   const tr = e.target.closest("tr");
   if (!tr) return;
   const cls = e.target.classList, target = e.target;
-  if (cls.contains("evday")) { rowChanged(tr, ev => { ev.day = target.value; }); return; }
+  const field = eventFieldFor(target.className);
+  if (field) { rowChanged(tr, ev => { ev[field] = target.value; }); return; }
 
   if (cls.contains("evlike")) {
     choose(tr, "bg", "subject");

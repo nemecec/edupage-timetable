@@ -981,6 +981,82 @@ test("a lunch the page works out is drawn as the meal it is", () => {
   run(`delete currentSchool().lg; state = defaults(); myOwn().events = [];`);
 });
 
+test("pasted settings are taken, or refused with a reason", () => {
+  /* The one place a whole state arrives at once, and the one place a bad value
+     could take the page down with it. It is typed or pasted by whoever has the
+     page open, so it is untrusted like a link is. */
+  run(`state = defaults(); state.lang = "en"; applyStrings();`);
+  const apply = (text) => json(`applySettingsText(${JSON.stringify(text)})`);
+
+  assert.match(apply("{not json"), /JSON|json/i, "bad JSON said nothing useful");
+  assert.equal(apply("[1, 2]"), json(`t("settings.notObject")`), "a list was taken");
+  assert.equal(apply("null"), json(`t("settings.notObject")`), "null was taken");
+  assert.equal(apply('"a string"'), json(`t("settings.notObject")`));
+  // And the page is still standing after each of them.
+  assert.equal(json(`state.school`), json(`DATA.initialSchool`));
+
+  assert.equal(apply('{"showRoom": false}'), json(`t("settings.applied")`));
+  assert.equal(json(`state.showRoom`), false);
+
+  /* A school or a class this page does not carry — an older link, or another
+     school's file — would otherwise leave it with nothing at all to draw. */
+  apply('{"school": "no such school", "class": "no such class"}');
+  assert.equal(json(`state.school`), json(`DATA.initialSchool`));
+  assert.equal(json(`state.class`), json(`currentSchool().c[0].n`));
+  assert.ok(json(`currentClass()`), "the page was left with nothing to draw");
+  run(`state = defaults();`);
+});
+
+test("a reset keeps the reader where they are", () => {
+  /* Clearing the colours is not a request to be sent to another class. This
+     used to read `klass` off the state, which has no such key — the state
+     calls it `class` — so a reset dropped the reader back to the class the
+     page opens on. */
+  run(`state = defaults(); state.lang = "en"; applyStrings();
+       state.school = "68"; state.class = "8";
+       state.showRoom = false; state.subjects = { Matemaatika: { hide: true } };
+       myOwn().studentName = "Eva";`);
+  const shown = json(`resetSettings()`);
+
+  assert.equal(json(`state.class`), "8", "the reset moved the reader");
+  assert.equal(json(`state.school`), "68");
+  assert.equal(json(`state.lang`), "en", "the reset changed the language");
+  assert.equal(json(`state.showRoom`), true, "a display setting survived");
+  assert.deepEqual(json(`state.subjects`), {}, "a hidden subject survived");
+  assert.equal(json(`myOwn().studentName`), "", "the child's name survived");
+  assert.ok(!("klass" in JSON.parse(shown)), "an undefined klass was written down");
+
+  /* And the box beside the button shows what is now stored, not what was
+     cleared — a press of Apply there would put all of it back otherwise. */
+  assert.deepEqual(JSON.parse(shown), json(`slim(state)`));
+  run(`state = defaults();`);
+});
+
+test("one control in an event row writes to one field of the event", () => {
+  /* A table rather than a chain of branches, so a control added to the row
+     with no field behind it shows up as a missing entry rather than as a
+     control that quietly does nothing. */
+  run(`state = defaults(); state.school = "68"; state.class = "8";
+       myOwn().events = [{day: "Mon", startTime: "17:15", endTime: "18:15",
+                          label: "Dance", backgroundColor: "#F6F2C1"}];`);
+  assert.equal(json(`eventFieldFor("evstart")`), "startTime");
+  assert.equal(json(`eventFieldFor("evend")`), "endTime");
+  assert.equal(json(`eventFieldFor("evlabel")`), "label");
+  assert.equal(json(`eventFieldFor("evday")`), "day");
+  // Real markup carries more than one class on a control.
+  assert.equal(json(`eventFieldFor("wide evlabel typed")`), "label");
+  // And a control that writes to nothing says so rather than guessing.
+  assert.equal(json(`eventFieldFor("bgpick")`), "");
+  assert.equal(json(`eventFieldFor("")`), "");
+
+  run(`editEvent(0, function (ev) { ev.label = "Karate"; })`);
+  assert.equal(json(`myOwn().events[0].label`), "Karate");
+  // A row number with no event behind it is a no-op, not a crash.
+  assert.equal(json(`editEvent(9, function (ev) { ev.label = "x"; })`), null);
+  assert.equal(json(`myOwn().events.length`), 1);
+  run(`state = defaults(); myOwn().events = [];`);
+});
+
 test("a subject the reader does not take can be switched off", () => {
   /* Not every subject in a timetable is every child's: a choir sits in the
      class's week and in nobody else's afternoon. */

@@ -1821,14 +1821,36 @@ document.getElementById("evadd").addEventListener("click", () => {
 
 /* Printing is a moment, not a setting: lay the page out for paper, print it,
    put it back. Nothing about it is worth remembering between visits. */
-document.getElementById("doprint").addEventListener("click", () => {
+/* Cmd+P has to give the same sheet as the button. It used to give a different
+   one: the print stylesheet applied, but nothing had switched the page into
+   print mode, so there was no QR code, no scaling to the sheet, and the screen
+   footer. Both paths go through here now. */
+function enterPrint() {
+  if (printing) return;
   printing = true;
+  render();
+}
+
+function leavePrint() {
+  if (!printing) return;
+  printing = false;
+  render();
+}
+
+if (typeof window.addEventListener === "function") {
+  window.addEventListener("beforeprint", enterPrint);
+  window.addEventListener("afterprint", leavePrint);
+}
+
+document.getElementById("doprint").addEventListener("click", () => {
+  /* Still done by hand as well. A browser too old for beforeprint would
+     otherwise print the screen, and where the event does fire this is a
+     no-op — that is what the guards in the two are for. */
+  enterPrint();
   try {
-    render();
     window.print();
   } finally {
-    printing = false;
-    render();
+    leavePrint();
   }
 });
 

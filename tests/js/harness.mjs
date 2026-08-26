@@ -140,7 +140,12 @@ export function load() {
       addEventListener() {},
     },
     location: { href: "https://example.test/t/", pathname: "/t/", hash: "", search: "",
-                protocol: "https:" },
+                protocol: "https:", host: "example.test" },
+    /* Window listeners are kept rather than dropped, so a test can fire one.
+       beforeprint is the whole reason: it is how Cmd+P reaches the page. */
+    addEventListener(name, fn) { (context.__on[name] = context.__on[name] || []).push(fn); },
+    removeEventListener() {},
+    print() { context.__printed = true; },
     /* What the fault reporter posts. Recorded rather than sent, so a test can
        read every byte that would have left the browser. */
     fetch: (url, options) => {
@@ -171,6 +176,7 @@ export function load() {
        compressed form the page will actually write and read. */
     Uint8Array, Uint16Array, Uint32Array, Int32Array, ArrayBuffer, DataView,
   };
+  context.__on = {};
   context.window = context;
   createContext(context);
   runInContext(readFileSync(join(root, "vendor", "fflate.js"), "utf8"), context,

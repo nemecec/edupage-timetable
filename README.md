@@ -403,6 +403,12 @@ period grid, which needs no times.
   It used to be transposed, so the two views of one week read differently.
   Periods the class never reaches are dropped from the bottom; an empty one in
   the middle stays, because it is a break and the numbers either side say so.
+- **Printing** goes through one path, whether it starts at the button or at
+  Cmd+P. The stylesheet applies either way, but only the button used to switch
+  the page into print mode, so the keyboard shortcut printed a sheet with no QR
+  code, no scaling and the screen's footer. A `beforeprint` listener does that
+  now; the button still does it by hand as well, for a browser too old to fire
+  the event, and both are guarded so neither renders twice.
 - **The printed sheet** carries the date the data was read and a QR code of the
   link, captioned *Edit it here*. A sheet on the fridge can then be picked back
   up on a phone with every choice still on it. Past about 2 kB no code holds the

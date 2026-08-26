@@ -655,6 +655,30 @@ test("a break keeps its hatch when it takes a color", () => {
   assert.doesNotMatch(hatched, /background:#/);
 });
 
+test("Cmd+P prepares the sheet, the same as the button does", () => {
+  /* The print stylesheet applies either way. What did not happen on Cmd+P was
+     the page switching into print mode, so the sheet went out with no QR code,
+     no scaling, and the footer the screen uses. */
+  const fire = (name) => run(
+    `(window.__on[${JSON.stringify(name)}] || []).forEach(function (f) { f(); })`);
+
+  assert.equal(json(`printing`), false);
+  fire("beforeprint");
+  assert.equal(json(`printing`), true, "the page did not enter print mode");
+  fire("afterprint");
+  assert.equal(json(`printing`), false, "the page stayed in print mode");
+
+  // Firing it twice is not two renders, and it does not strand the page.
+  fire("beforeprint");
+  fire("beforeprint");
+  assert.equal(json(`printing`), true);
+  fire("afterprint");
+  fire("afterprint");
+  assert.equal(json(`printing`), false);
+  assert.ok(json(`typeof enterPrint === "function" && typeof leavePrint === "function"`),
+            "the button and the event share one path");
+});
+
 test("a link too long for a code leaves the corner empty", () => {
   /* It used to print the address as text instead. An address too long for a
      code is far too long for anybody to type, so that filled the corner with

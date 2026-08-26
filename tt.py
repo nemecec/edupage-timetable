@@ -154,6 +154,17 @@ STRINGS = {
                            "right corner."),
         "settings.printed": ("The bottom right corner of the printed sheet "
                              "carries the same address, as a QR code."),
+        "say": "Tell us what is wrong",
+        "say.intro": ("Something missing, or wrong, or hard to read? Write it "
+                      "here. This is the one thing on this page that is sent "
+                      "to us, so write only what you want us to read."),
+        "say.placeholder": "What did you expect to see?",
+        "say.withSettings": "Send my settings too, so we can see what you see",
+        "say.shown": "This is what is sent with your message:",
+        "say.send": "Send",
+        "say.sent": "Sent. Thank you.",
+        "say.failed": "That did not go. Please try again later.",
+        "say.empty": "Write something first.",
         "settings.copy": "Copy to clipboard",
         "settings.apply": "Apply pasted settings",
         "settings.copied": "Copied to clipboard.",
@@ -255,6 +266,18 @@ STRINGS = {
                            "kasutades üleval paremas nurgas asuvat nuppu {0}."),
         "settings.printed": ("Väljatrüki alumises paremas nurgas on sama "
                              "aadress QR-koodi kujul."),
+        "say": "Anna teada, mis on valesti",
+        "say.intro": ("Kas midagi on puudu, vale või raskesti loetav? Kirjuta "
+                      "siia. See on ainus asi sellel lehel, mis meile "
+                      "saadetakse, nii et kirjuta ainult seda, mida soovid, et "
+                      "me loeksime."),
+        "say.placeholder": "Mida sa ootasid, et näed?",
+        "say.withSettings": "Saada ka minu seaded, et näeksime sedasama mida sina",
+        "say.shown": "Koos sõnumiga saadetakse see:",
+        "say.send": "Saada",
+        "say.sent": "Saadetud. Aitäh!",
+        "say.failed": "Saatmine ebaõnnestus. Palun proovi hiljem uuesti.",
+        "say.empty": "Kirjuta kõigepealt midagi.",
         "settings.copy": "Kopeeri lõikelauale",
         "settings.apply": "Rakenda kleebitud seaded",
         "settings.copied": "Kopeeritud lõikelauale.",
@@ -1544,6 +1567,13 @@ PAGE = """<!DOCTYPE html>
   textarea { font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; width: 100%;
              padding: 6px 8px; border: 1px solid var(--line); border-radius: 5px;
              resize: vertical; }
+  /* Exactly what leaves the browser, in the same monospace the settings box
+     uses. Nothing is sent that is not on screen here first. */
+  .shown { font: 11px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
+           background: var(--panel); border: 1px solid var(--line);
+           border-radius: 5px; padding: 6px 8px; margin: 4px 0 0;
+           max-height: 190px; overflow: auto; white-space: pre-wrap;
+           word-break: break-word; }
   .evwarn { font-size: 12px; color: #a33; margin-top: 5px; white-space: pre-line; }
   details.panel { padding: 0; }
   details.panel > summary { padding: 12px 16px; cursor: pointer; font-size: 13px;
@@ -1819,6 +1849,26 @@ PAGE = """<!DOCTYPE html>
     </div>
     <button id="evadd" class="addrow" data-i18n="events.add"></button>
     <div class="evwarn" id="evwarn"></div>
+  </div>
+</details>
+
+<details class="panel" id="sayPanel">
+  <summary data-i18n="say"></summary>
+  <div class="field" style="width:100%;margin-top:12px">
+    <p class="sub help" data-i18n="say.intro"></p>
+    <textarea id="sayText" rows="4" data-i18n-ph="say.placeholder"></textarea>
+  </div>
+  <div class="field" style="width:100%;margin-top:8px">
+    <label class="pick"><input type="checkbox" id="sayWithSettings">
+      <span data-i18n="say.withSettings"></span></label>
+    <div id="sayPreview" hidden>
+      <p class="sub help" data-i18n="say.shown"></p>
+      <pre class="shown" id="sayShown"></pre>
+    </div>
+  </div>
+  <div class="row" style="margin-top:8px;padding-top:0;border-top:none">
+    <button id="saySend" data-i18n="say.send"></button>
+    <span class="evwarn" id="sayMsg"></span>
   </div>
 </details>
 

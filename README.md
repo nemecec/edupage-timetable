@@ -634,8 +634,26 @@ refusal. The other half of that first failure was the path pattern. CloudFront
 matches it without a leading slash, so `/report` matched nothing and the
 request fell through to the bucket.
 
+## Telling us something
+
+The same endpoint takes a message from a reader. A panel on the page has a text
+box, a Send button, and a checkbox that attaches your settings. Tick it and the
+exact payload appears on screen, in full, before you press anything — the panel
+shows `JSON.stringify(feedbackPayload(), null, 2)` and sends that same object,
+which a test holds to.
+
+Those settings are **not** scrubbed, unlike a fault report. The reader asked for
+them to go and can read every character of what goes, a child's name among them.
+That is the difference between a report the page sends by itself and a message
+somebody chose to write.
+
+A second metric filter counts these apart from faults, so the mail says which
+arrived. The message is capped at 2000 characters, and the panel is not drawn at
+all when there is no endpoint to post to.
+
 `REPORT_ERRORS=no` in `site.conf` switches off the endpoint and the posting
-together, so the page can never post to a path nothing answers.
+together, so the page can never post to a path nothing answers. That takes the
+feedback panel with it.
 
 The suite itself is checked by breaking things on purpose. A change is made to
 the generator or the page, and the tests must fail. Anything that can break in

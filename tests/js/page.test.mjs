@@ -686,6 +686,49 @@ test("a subject shows the school's word for it, without the school's prefix", ()
   assert.equal(json(`subjectLabel("Kunst", false)`), "Kunst");
 });
 
+test("the feedback panel sends exactly what it shows", () => {
+  /* The one thing on this page that carries the reader's own words on
+     purpose. What they are shown before pressing Send has to be what goes. */
+  run(`state = defaults(); state.school = "68"; state.class = "8";
+       myOwn().studentName = "Eva";
+       document.getElementById("sayText").value = "Puder is hidden";
+       document.getElementById("sayWithSettings").checked = true;
+       refreshFeedbackPreview();`);
+  const shown = json(`document.getElementById("sayShown").textContent`);
+  assert.equal(shown, json(`JSON.stringify(feedbackPayload(), null, 2)`));
+  assert.equal(json(`document.getElementById("sayPreview").hidden`), false);
+  const body = JSON.parse(shown);
+  assert.equal(body.kind, "feedback");
+  assert.equal(body.text, "Puder is hidden");
+  assert.equal(body.school, "68");
+  /* Not scrubbed. They asked for their settings to go and can read every
+     character of what goes, this name among them. */
+  assert.equal(body.settings.classes["68/8"].studentName, "Eva");
+
+  // Unchecked, the settings are not in it at all.
+  run(`document.getElementById("sayWithSettings").checked = false;
+       refreshFeedbackPreview();`);
+  assert.equal(json(`document.getElementById("sayPreview").hidden`), true);
+  assert.ok(!("settings" in JSON.parse(json(`JSON.stringify(feedbackPayload())`))),
+            "the settings went without being asked for");
+});
+
+test("feedback with nothing written is not sent", async () => {
+  run(`DATA.report = "/report"; window.__posted = null;
+       document.getElementById("sayText").value = "   ";
+       document.getElementById("sayMsg").textContent = "";`);
+  await run(`sendFeedback()`);
+  assert.equal(json(`window.__posted`), null);
+  assert.equal(json(`document.getElementById("sayMsg").textContent`),
+               json(`t("say.empty")`));
+});
+
+test("a very long message is cut before it leaves", () => {
+  run(`document.getElementById("sayText").value = "x".repeat(5000);
+       document.getElementById("sayWithSettings").checked = false;`);
+  assert.equal(json(`feedbackPayload().text.length`), 2000);
+});
+
 test("a fault report carries the shape of the settings, not the words", () => {
   /* The whole reason a report is allowed to carry the settings at all. Every
      one of these strings is something a reader typed. */

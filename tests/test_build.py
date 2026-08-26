@@ -622,16 +622,35 @@ class Documentation(unittest.TestCase):
         self.assertIn("Reporting", arms)
         self.assertEqual(arms.count("'self'"), 2, "one per counting case")
 
+    def test_the_endpoint_takes_both_kinds_and_counts_them_apart(self):
+        """A fault and a message from a reader go the same way, and want
+        different treatment at the other end."""
+        with open(os.path.join(ROOT, "deploy", "site.yaml"), encoding="utf-8") as fh:
+            template = fh.read()
+        self.assertIn('report.get("kind") not in ("page-error", "feedback")', template)
+        for kind, metric in (("page-error", "PageErrors"), ("feedback", "Feedback")):
+            with self.subTest(kind=kind):
+                self.assertIn("FilterPattern: '{ $.kind = \"%s\" }'" % kind, template)
+                self.assertIn("MetricName: %s" % metric, template)
+        # And the page has somewhere to write, in both languages.
+        page, data = build()
+        self.assertIn('id="sayText"', page)
+        self.assertIn('id="sayWithSettings"', page)
+        for lang in ("en", "et"):
+            for key in ("say", "say.intro", "say.withSettings", "say.shown",
+                        "say.send", "say.sent", "say.failed", "say.empty"):
+                self.assertIn(key, data["strings"][lang], (lang, key))
+
     def test_the_deploy_readme_counts_the_resources_correctly(self):
         counts = {n: len(self.resources(n))
                   for n in ("site.yaml", "dns.yaml", "cert.yaml")}
-        self.assertEqual(counts, {"site.yaml": 26, "dns.yaml": 2, "cert.yaml": 1})
+        self.assertEqual(counts, {"site.yaml": 28, "dns.yaml": 2, "cert.yaml": 1})
         with open(os.path.join(ROOT, "deploy", "README.md"), encoding="utf-8") as fh:
             readme = fh.read()
         # The words, not their capitalisation: the sentence around them is
         # free to be reworded.
-        self.assertIn("twenty-nine resources", readme.lower())
-        self.assertIn("twenty-six in `site.yaml`", readme)
+        self.assertIn("thirty-one resources", readme.lower())
+        self.assertIn("twenty-eight in `site.yaml`", readme)
 
     def test_the_size_the_readmes_quote_is_the_size_it_is(self):
         import gzip

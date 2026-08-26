@@ -1441,6 +1441,19 @@ function showShareFallback(url) {
 }
 
 /* Sharing is copying the address, since the address is the whole configuration. */
+for (const [id, event] of [["sayWithSettings", "change"], ["sayText", "input"]]) {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener(event, refreshFeedbackPreview);
+}
+{
+  const send = document.getElementById("saySend");
+  if (send) send.addEventListener("click", sendFeedback);
+  /* No endpoint, nowhere to send: the panel would be a box that swallows what
+     somebody took the trouble to write. */
+  const panel = document.getElementById("sayPanel");
+  if (panel && !DATA.report) panel.hidden = true;
+}
+
 document.getElementById("share").addEventListener("click", async () => {
   const button = document.getElementById("share");
   try {
@@ -1888,6 +1901,70 @@ function report(what, error) {
       body: JSON.stringify(body).slice(0, 4000),
     }).catch(() => {});
   } catch (e) { /* the reporter is the last thing allowed to break the page */ }
+}
+
+/* ------------------------------------------------------------ feedback -- */
+
+/* What the reader typed, and their settings if they asked for those to go too.
+   This is the one thing on the page that carries the reader's own words on
+   purpose, so the panel shows the payload before it is sent — and shows this
+   exact object, not a description of it. */
+const SAY_CAP = 2000;
+
+function feedbackPayload() {
+  const text = (document.getElementById("sayText") || {}).value || "";
+  const withSettings = !!(document.getElementById("sayWithSettings") || {}).checked;
+  const cls = currentClass();
+  const body = {
+    kind: "feedback",
+    text: text.slice(0, SAY_CAP),
+    school: state.school,
+    class: state.class,
+    lang: state.lang,
+    built: DATA.built || "",
+    agent: String(navigator.userAgent || "").slice(0, 200),
+  };
+  /* Their settings as they are, not scrubbed: they asked for them to go, and
+     they can read every character of what goes before they press Send. */
+  if (withSettings) body.settings = slim(state);
+  return body;
+}
+
+function refreshFeedbackPreview() {
+  const box = document.getElementById("sayPreview");
+  const shown = document.getElementById("sayShown");
+  if (!box || !shown) return;
+  const on = !!(document.getElementById("sayWithSettings") || {}).checked;
+  box.hidden = !on;
+  if (on) shown.textContent = JSON.stringify(feedbackPayload(), null, 2);
+}
+
+let saying = false;
+
+async function sendFeedback() {
+  const button = document.getElementById("saySend");
+  const note = document.getElementById("sayMsg");
+  const body = feedbackPayload();
+  if (!body.text.trim()) { note.textContent = t("say.empty"); return; }
+  if (saying || !DATA.report) return;
+  saying = true;
+  button.disabled = true;
+  note.textContent = "";
+  try {
+    const answer = await fetch(DATA.report, {
+      method: "POST", mode: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!answer.ok) throw new Error(String(answer.status));
+    note.textContent = t("say.sent");
+    document.getElementById("sayText").value = "";
+    refreshFeedbackPreview();
+  } catch (e) {
+    note.textContent = t("say.failed");
+    button.disabled = false;
+  }
+  saying = false;
 }
 
 if (typeof window.addEventListener === "function") {

@@ -780,6 +780,9 @@ function styleFor(subject) {
    published it, so it needs a name of its own to be filed under — and it is
    listed and recolored like any other break, because a reader who wants it in
    their own words should not have to care where it came from. */
+/* How long a hole has to be before it is worth drawing. */
+const GAP_AT_LEAST = 10;
+
 const GAP = "gap";
 /* The same thing at the middle of the day, where the school says a hole that
    size is lunch. It is worked out the same way and drawn the same way; it just
@@ -1049,9 +1052,11 @@ function renderTimeline(school, cls, shown, mine, scale) {
   }
 
   /* The holes in a day, once everything drawn on it is laid end to end: the
-     lessons, the school's own breaks, and whatever the reader added. Fifteen
+     lessons, the school's own breaks, and whatever the reader added. Ten
      minutes is where a hole stops being a corridor and starts being time you
-     can plan around — walking somewhere, or waiting.
+     can plan around — walking somewhere, or waiting. It was fifteen while a
+     ten-minute box could not hold a line of type; a box that gives its type
+     back until it fits can, so the shorter holes are drawn now too.
 
      Only where nothing already fills it. A school that names its breaks has
      said what that time is for, and this does not say it again. */
@@ -1063,7 +1068,7 @@ function renderTimeline(school, cls, shown, mine, scale) {
       const holes = [];
       let reach = busy[0].z;
       for (const item of busy.slice(1)) {
-        if (item.a - reach >= 15) {
+        if (item.a - reach >= GAP_AT_LEAST) {
           holes.push({ a: reach, z: item.a, gap: gapKind(reach, item.a) });
         }
         reach = Math.max(reach, item.z);

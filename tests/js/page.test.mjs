@@ -912,8 +912,23 @@ test("a gap long enough to plan around is drawn, and belongs to the reader", () 
 
   const draw = () => run(`renderTimeline(currentSchool(), currentClass(),
                                          currentClass().e, readEvents(myOwn().events).events, 0)`);
-  // The harness day has a 10-minute hole, which is a corridor, not a gap.
-  assert.ok(!draw().includes('class="ev gap"'), "a ten-minute hole became a break");
+  /* The harness day has nothing loose in it: the school's own break fills the
+     one space between its lessons, and a school that names a break has said
+     what that time is for. */
+  assert.ok(!draw().includes('class="ev gap"'), "a filled space became a break");
+
+  /* Ten minutes is where a hole starts being worth drawing. It was fifteen
+     while a box that short could not hold a line of type. The harness day runs
+     to 12.10, its longest lesson and all, so an event says where the next
+     thing is and the hole between them is exact. */
+  run(`myOwn().events = [{day: "Mon", startTime: "12:19", endTime: "13:00",
+                          label: "Nine", backgroundColor: "#00ff00"}];`);
+  assert.ok(!draw().includes('class="ev gap"'), "nine minutes is still a corridor");
+  run(`myOwn().events = [{day: "Mon", startTime: "12:20", endTime: "13:00",
+                          label: "Ten", backgroundColor: "#00ff00"}];`);
+  assert.match(draw(), /Break . 10 min/, "ten minutes was not drawn");
+  assert.equal(json(`GAP_AT_LEAST`), 10);
+  run(`myOwn().events = [];`);
 
   // An event in the evening leaves hours of it, and that is worth saying.
   run(`myOwn().events = [{day: "Mon", startTime: "17:15", endTime: "18:15",

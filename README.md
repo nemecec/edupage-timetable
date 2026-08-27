@@ -568,8 +568,10 @@ period grid, which needs no times.
   from two strings rather than one with an `s` stuck on.
 - **A gap of fifteen minutes or more** is drawn as a break of its own, saying
   only how long it is — the lessons either side already say when it starts and
-  ends. Fifteen minutes is where a hole stops being a corridor and becomes time
-  you can plan around. It counts the whole day: the lessons, the school's own
+  ends. Ten minutes is where a hole stops being a corridor and becomes time you
+  can plan around. It was fifteen while a box that short could not hold a line
+  of type; a box that gives its type back until it fits can, so the shorter
+  holes are drawn now too. It counts the whole day: the lessons, the school's own
   breaks and the reader's own events, so the hours between the last lesson and
   a training session in the evening show up too.
 

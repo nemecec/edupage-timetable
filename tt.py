@@ -1275,7 +1275,8 @@ def extract(result, class_name, n_periods=None, cfg=None, period_times=None,
 
     return {
         "name": cls["name"],
-        # Which year, where the school says. Only the day plan reads it.
+        # Which year, where the school says. Read by the day plan, and shown
+        # to a reader whose school leaves the year out of the name.
         "grade": grade,
         "divisions": divisions,
         "subjects": sorted({e["subject"] for e in entries}),
@@ -1411,6 +1412,16 @@ def label_divisions(divisions, entries):
             div["label"] = " / ".join(ranked)
         else:
             div["label"] = ", ".join(ranked[:2]) + " …"
+
+
+def _year_first(grade, name):
+    """The name with the year in front, or nothing if it is there already."""
+    if not grade:
+        return ""
+    name = name.strip()
+    if re.match(r"\s*0*%d\D" % grade, name) or name == str(grade):
+        return ""
+    return "%d. %s" % (grade, name)
 
 
 def collect(client, year, only, verbose):
@@ -1737,6 +1748,18 @@ def compact(schools):
                    if school.get("lunchGap") else 0),
             "c": [{
                 "n": cls["name"],
+                # What to call it, when that is not the name itself. A school
+                # that names a class after its teacher says the year in the
+                # order of its list rather than in the name, and "Maarja" alone
+                # leaves a reader counting rows to find out which one it is.
+                # Only where the name is silent about it: most schools open the
+                # name with the year, and "7. 7" says it twice.
+                #
+                # The name itself stays as it is. It is what a shared link
+                # carries and what a reader's own settings are filed under, and
+                # renaming it would drop both.
+                **({"d": _year_first(cls["grade"], cls["name"])}
+                   if _year_first(cls["grade"], cls["name"]) else {}),
                 "v": [{"id": d["id"], "groups": d["groups"], "l": d["label"],
                        "sj": d["subjects"]}
                       for d in cls["divisions"]],
@@ -2454,6 +2477,25 @@ def _same_name(a, b):
     return (a or "").strip().casefold() == (b or "").strip().casefold()
 
 
+def _class_named(classes, want):
+    """The class --class asks for, by its name or by the year in front of it.
+
+    A school that names its classes after their teacher is listed with the year
+    said as well, and that is the only form anybody has seen. Asking for
+    "1. Maarja" and being told there is no such class would be a poor joke.
+    """
+    return next((c for c in classes
+                 if _same_name(c["name"], want)
+                 or _same_name(_year_first(c.get("grade"), c["name"]), want)),
+                None)
+
+
+def _class_list(classes):
+    """The names to offer when --class matched none of them."""
+    return ", ".join(_year_first(c.get("grade"), c["name"]) or c["name"]
+                     for c in classes)
+
+
 def school_year(today=None):
     """aSc names a school year by the calendar year it starts in.
 
@@ -2480,20 +2522,18 @@ def pick_initial(schools, want_school, want_class):
         school = hit
     klass = school["classes"][0]["name"]
     if want_class:
-        hit = next((c for c in school["classes"]
-                    if _same_name(c["name"], want_class)), None)
+        hit = _class_named(school["classes"], want_class)
         if not hit:
             # The class can live in another timetable. Find it there instead.
             # Only when no school was named. --school pins the search, and a
             # search in a different timetable ignores what was asked for.
             for other in schools if not want_school else []:
-                match = next((c for c in other["classes"]
-                              if _same_name(c["name"], want_class)), None)
+                match = _class_named(other["classes"], want_class)
                 if match:
                     return other["ttNum"], match["name"]
             raise SystemExit(
                 f"Class {want_class!r} not in {school['label']!r}. Available: "
-                + ", ".join(c["name"] for c in school["classes"]))
+                + _class_list(school["classes"]))
         klass = hit["name"]
     return school["ttNum"], klass
 

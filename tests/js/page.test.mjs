@@ -519,6 +519,30 @@ test("nothing empty is written down", () => {
   assert.deepEqual(back.classes["68/8"].studyGroups, {});
 });
 
+test("a class is offered under its label and filed under its name", () => {
+  /* A school that names its classes after their teacher carries a label saying
+     the year as well. The reader picks the label, but everything the page files
+     under a class — the link, their own settings, the visit count — has to keep
+     using the name, or a label added later loses all of it. */
+  const own = load();
+  const pick = (expression) =>
+    JSON.parse(own(`JSON.stringify(${expression})`));
+  own(`currentSchool().c[0].d = "1. Maarja"; renderClasses();`);
+  const html = pick(`document.getElementById("klass").innerHTML`);
+  const first = html.split("</option>")[0];
+  assert.match(first, />1\. Maarja$/, "the picker did not show the label");
+  assert.match(first, new RegExp('value="' + pick(`currentSchool().c[0].n`) + '"'),
+               "the picker did not carry the name");
+  // And the key the settings are filed under is the name, label or no label.
+  assert.doesNotMatch(pick(`classKey()`), /1\. Maarja/);
+});
+
+test("a class with no label of its own is called by its name", () => {
+  assert.equal(json(`classLabel({n: "8"})`), "8");
+  assert.equal(json(`classLabel({n: "8", d: ""})`), "8");
+  assert.equal(json(`classLabel(null)`), "");
+});
+
 test("the two swatches in a legend row set different things", () => {
   /* Both are input[type=color] in the same row, and a handler bound by that
      alone caught the text one as well — picking a text color rewrote the

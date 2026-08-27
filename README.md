@@ -238,6 +238,13 @@ So the two bands below are named by year rather than by a list of teachers. A
 school renames a class when its teacher changes, and a list of names here would
 quietly stop covering it — a class with no times draws nothing at all.
 
+The year is shown as well, so the class picker offers `1. Maarja` rather than
+`Maarja` alone. Only the label carries it. The name stays as the school writes
+it, because that is what a shared link names and what a reader's own settings —
+hidden subjects, added events, group picks — are filed under, and renaming it
+would drop both. `--class` takes either form. Everywhere else the name already
+opens with the year, and no label is added: `7. 7` says it twice.
+
 Two grade bands run different days. The breaks — Puder, Lõuna/Õue, Hea aeg —
 are lessons in the timetable rather than gaps between lessons, with a
 supervisor and a length. The school says which subjects those are, and the page

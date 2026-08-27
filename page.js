@@ -796,7 +796,7 @@ function titleParts(school, cls) {
   return {
     student: mine().studentName.trim(),
     school: mine().schoolName.trim() || school.l,
-    klass: mine().className.trim() || t("classN", cls.n),
+    klass: mine().className.trim() || t("classN", classLabel(cls)),
   };
 }
 
@@ -872,6 +872,13 @@ function currentClass() {
 function subjectFacts() { return currentSchool().sj || {}; }
 
 function classKey() { return currentSchool().n + "/" + currentClass().n; }
+
+/* What to call a class, which is not always its name. A school that names its
+   classes after their teacher says the year in the order of its list, so the
+   built page carries a label saying both. Everything that files something under
+   a class — the link, the reader's own settings, the visit count — keeps using
+   the name, so a label added or corrected later loses nobody's settings. */
+function classLabel(cls) { return (cls && cls.d) || (cls && cls.n) || ""; }
 
 /* The other way round. A school number never holds a slash and a class name
    can, so the first one is the seam. */
@@ -1856,7 +1863,7 @@ function render() {
   showLinkFault();
   showLinkClash();
   refreshSettingsBox();
-  document.title = displayTitle(school, cls) || t("classN", cls.n);
+  document.title = displayTitle(school, cls) || t("classN", classLabel(cls));
   renderSubtitle(school);
 
   const picked = mine().studyGroups;
@@ -2134,7 +2141,7 @@ function renderClasses() {
   const sel = document.getElementById("klass");
   sel.innerHTML = currentSchool().c.map(c =>
     '<option value="' + esc(c.n) + '"' + (c.n === currentClass().n ? " selected" : "") +
-    ">" + esc(c.n) + "</option>").join("");
+    ">" + esc(classLabel(c)) + "</option>").join("");
 }
 
 function renderDivisions() {
@@ -2540,7 +2547,7 @@ function syncPerClassInputs() {
   }
   if (document.activeElement !== className) {
     className.value = here.className;
-    className.placeholder = t("classN", cls.n);
+    className.placeholder = t("classN", classLabel(cls));
   }
   renderEvents();
 }

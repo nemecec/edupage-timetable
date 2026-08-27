@@ -201,6 +201,30 @@ class WholePage(unittest.TestCase):
         for e in taught:
             self.assertEqual(len(e["T"]), len(e["t"]))
 
+    def test_a_teacher_named_class_is_offered_with_its_year(self):
+        """LõunaTERA names its classes after their teacher, so the built page
+        carries a label saying the year as well. The name itself must not move:
+        a shared link names the class, and the reader's own settings — hidden
+        subjects, added events, group picks — are filed under it."""
+        school = next(s for s in self.data["schools"] if s["l"] == "LõunaTERA")
+        self.assertEqual([c["n"] for c in school["c"]],
+                         ["Maarja", "Heliis", "Mari-Liis", "Cathleen", "Silva ",
+                          "Elis", "Kateriine", "Juta", "Katrin", "Joanna",
+                          "Sille"])
+        self.assertEqual([c["d"] for c in school["c"]],
+                         ["1. Maarja", "2. Heliis", "2. Mari-Liis",
+                          "3. Cathleen", "3. Silva", "4. Elis", "4. Kateriine",
+                          "5. Juta", "5. Katrin", "6. Joanna", "6. Sille"])
+
+    def test_a_school_whose_names_say_the_year_is_offered_as_it_writes_them(self):
+        """Everywhere else the name opens with the year, and a second label
+        would only say it twice."""
+        for school in self.data["schools"]:
+            if school["l"] == "LõunaTERA":
+                continue
+            labelled = [c["n"] for c in school["c"] if c.get("d")]
+            self.assertEqual(labelled, [], school["l"])
+
     def test_a_worked_out_break_centres_its_one_line(self):
         """It has one line and a box that can be three hours tall. Left at the
         top, the words float above a wide empty rectangle."""
@@ -908,6 +932,19 @@ class Selection(unittest.TestCase):
         # Not the first school in the list, or ignoring --school would pass.
         _, data = build("--school", "LõunaTERA", "--class", "Maarja")
         self.assertEqual((data["initialSchool"], data["initialClass"]), ("105", "Maarja"))
+
+    def test_a_class_can_be_asked_for_by_the_year_in_front_of_it(self):
+        """The year form is the only one anybody has seen on the page, so it is
+        the one they will type. Both reach the same class."""
+        _, plain = build("--school", "LõunaTERA", "--class", "Maarja")
+        _, with_year = build("--school", "LõunaTERA", "--class", "1. Maarja")
+        self.assertEqual(with_year["initialClass"], "Maarja")
+        self.assertEqual(plain["initialClass"], with_year["initialClass"])
+
+    def test_a_class_that_is_in_no_timetable_is_reported_with_the_years(self):
+        with self.assertRaises(Exception) as caught:
+            build("--school", "LõunaTERA", "--class", "9. Nobody")
+        self.assertIn("1. Maarja", str(caught.exception))
 
     def test_naming_only_a_school_opens_that_school(self):
         # With no class to fall back on, this can only pass if --school is read.

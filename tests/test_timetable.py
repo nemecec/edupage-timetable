@@ -131,6 +131,23 @@ class PublishedBlocks(unittest.TestCase):
         self.assertEqual(markers, set())
         self.assertEqual(grades, {"7": 7, "8": 8, "5.a": 5, "6. S": 6})
 
+    def test_a_teacher_named_class_is_labelled_with_its_year(self):
+        """The year the school states in its list order, said in the name a
+        reader sees, because "Maarja" alone leaves them counting rows."""
+        self.assertEqual(tt._year_first(1, "Maarja"), "1. Maarja")
+        # The trailing space aSc hands back belongs to the name, not the label.
+        self.assertEqual(tt._year_first(3, "Silva "), "3. Silva")
+
+    def test_a_name_that_already_says_the_year_is_left_alone(self):
+        """Most schools open the name with the year. "7. 7" says it twice."""
+        for grade, name in [(7, "7"), (5, "5.a"), (6, "6. S"), (1, "1.i"),
+                            (2, "2. klass")]:
+            self.assertEqual(tt._year_first(grade, name), "")
+
+    def test_a_class_in_no_year_is_left_alone(self):
+        """The gymnasium classes are in no year the day plan knows."""
+        self.assertEqual(tt._year_first(None, "G1B"), "")
+
     def test_a_class_in_no_year_gets_nothing(self):
         self.assertIsNone(tt.band_slots(self.cfg, "Nobody", 0, None))
 

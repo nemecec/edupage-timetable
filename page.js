@@ -367,6 +367,55 @@ function linkOnly(shared, current) {
   return applyShared(shared, base);
 }
 
+/* Whether the link says anything this browser does not already say.
+ *
+ * Not a comparison of two whole states. Storage keeps every setting, including
+ * the ones that were the page's own answer on the day they were saved — so the
+ * moment a default moves, no stored copy can ever match a link again, and a
+ * reader opening their own bookmark a month later would be asked about a
+ * setting neither they nor the sender ever chose.
+ *
+ * Only the keys the link actually names are compared. Those are the only ones
+ * there is anything to choose between: on everything else the link is silent,
+ * and silence is not a disagreement. Which week is on screen is compared too,
+ * however the link came to name it, because that is the one thing a reader
+ * would notice immediately.
+ *
+ * A shallow value-by-value check and no more. What it is for is the common
+ * case, not every case: where it says yes and there was nothing to ask, the
+ * reader is asked one question they can answer in a click. */
+function linkDisagrees(shared, mine, theirs) {
+  const said = (value) => JSON.stringify(value === undefined ? null : value);
+  const differs = (key) => said(mine[key]) !== said(theirs[key]);
+
+  /* Which week. `linkOnly` can work this out from the one class the link
+     carries even where the link never names it outright. */
+  if (differs("school") || differs("class")) return true;
+
+  for (const key of Object.keys(shared || {})) {
+    if (key === "classes" || key === "subjects") continue;
+    if (differs(key)) return true;
+  }
+  /* A subject the link renames or recolors, where this browser has its own
+     answer for the same subject. The whole entry, because that is what one
+     replaces: the link's colors do not land on top of the reader's name. */
+  for (const name of Object.keys((shared || {}).subjects || {})) {
+    if (said((mine.subjects || {})[name]) !==
+        said((theirs.subjects || {})[name])) return true;
+  }
+  /* And a class the link carries, field by field — but only the fields it
+     carries. A link that names a child says nothing about that child's
+     after-school events. */
+  for (const key of Object.keys((shared || {}).classes || {})) {
+    const ours = (mine.classes || {})[key] || {};
+    const sent = (theirs.classes || {})[key] || {};
+    for (const field of Object.keys((shared.classes[key] || {}))) {
+      if (said(ours[field]) !== said(sent[field])) return true;
+    }
+  }
+  return false;
+}
+
 function applyShared(shared, current) {
   const merged = normalise(Object.assign({}, current, shared));
   /* Classes merge rather than replace: a link for one class must not wipe what
@@ -419,8 +468,7 @@ function applyShared(shared, current) {
     cameSetUp = true;
     const merged = applyShared(shared, state);
     const theirs = linkOnly(shared, state);
-    const same = (a, b) => JSON.stringify(slim(a)) === JSON.stringify(slim(b));
-    if (stash && !same(stash, theirs)) {
+    if (stash && linkDisagrees(shared, stash, theirs)) {
       /* Two answers and no way to tell which was meant. The link's is shown,
          and the question is put where the reader can see it. Nothing is
          written down until they answer, so "keep mine" is still on the table

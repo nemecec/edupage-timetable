@@ -523,8 +523,21 @@ period grid, which needs no times.
   sharing one child's timetable does not hand over a sibling's name. The
   fragment never leaves the browser.
 
-  **A link and a browser that disagree are put to the reader.** Both are real
-  answers and neither is obviously right: a link carries only what differs from
+  **A link and a browser that disagree are put to the reader.** Only what the
+  link actually names is compared, and only that. Storage keeps every setting,
+  including the ones that were the page's own answer on the day they were
+  saved — so the moment a default moves, no stored copy can match a link again,
+  and a reader opening their own bookmark a month later would be asked about a
+  setting neither they nor the sender ever chose. On everything the link is
+  silent about there is nothing to choose, so silence is not a disagreement.
+  Which week is on screen is compared too, however the link came to name it,
+  because that is the one thing a reader would notice at once.
+
+  It is a shallow value-by-value check and no more. What it is for is the
+  common case; where it says yes and there was nothing to ask, the reader is
+  asked one question they can answer in a click.
+
+  Both answers are real and neither is obviously right: a link carries only what differs from
   the defaults, so anything the sender left alone is simply absent from it, and
   filling those gaps in from the reader's own settings is as defensible as
   resetting them. The link's are shown, because following one is a request to

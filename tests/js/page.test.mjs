@@ -1322,6 +1322,52 @@ test("the link on its own keeps other classes but not this one's leftovers", () 
   run(`state = defaults();`);
 });
 
+test("only what the link names counts as a disagreement", () => {
+  /* Storage keeps every setting, including the ones that were the page's own
+     answer on the day they were saved. So the moment a default moves, no
+     stored copy can match a link again — and a reader opening their own
+     bookmark a month later would be asked about a setting neither they nor the
+     sender ever chose. Only what the link says is compared. */
+  const asks = (mine, sent) => json(`(function () {
+    state = defaults();
+    ${mine}
+    var theirs = linkOnly(${JSON.stringify(sent)}, state);
+    return linkDisagrees(${JSON.stringify(sent)}, state, theirs);
+  })()`);
+
+  /* The class the harness carries. It has to be a real one: the per-class bag
+     is filed under the class on screen, and asking for one that is not there
+     files it somewhere else. */
+  const here = `state.school = "68"; state.class = "8";`;
+
+  // Quiet: the link says nothing this browser does not already say.
+  assert.equal(asks(here + `state.nameSize = "115";`, { class: "8" }), false,
+               "a default that moved since was called a disagreement");
+  assert.equal(asks(here, { class: "8" }), false, "the same link asked again");
+  assert.equal(asks(here + `state.subjects = {Ajalugu: {label: "X"}};`,
+                    { class: "8" }), false,
+               "a colour of my own the link never mentions");
+  assert.equal(asks(here + `myOwn().studentName = "Karen";
+                            myOwn().events = [{day: "Mon", startTime: "16:00",
+                              endTime: "17:00", label: "K",
+                              backgroundColor: "#DDDDDD"}];`,
+                    { class: "8", classes: { "68/8": { studentName: "Karen" } } }),
+               false, "my own events, which the link never mentions");
+
+  // Asked: the link and this browser both say something, and it is not the same.
+  assert.equal(asks(here, { class: "7" }), true,
+               "a link for another class went through in silence");
+  assert.equal(asks(here + `state.subjects = {Matemaatika: {label: "MINE"}};`,
+                    { class: "8", subjects: { Matemaatika: { label: "THEIRS" } } }),
+               true, "two names for one subject");
+  assert.equal(asks(here + `myOwn().studentName = "Karen";`,
+                    { class: "8", classes: { "68/8": { studentName: "Kaarel" } } }),
+               true, "two children in one class");
+  assert.equal(asks(here, { class: "8", showRoom: false }), true,
+               "a switch the link turns off and this browser has on");
+  run(`state = defaults();`);
+});
+
 test("a link and a browser that disagree are put to the reader", () => {
   /* Two answers and no way to tell which was meant. The link's is shown, and
      nothing of the reader's is written down until they say. */
@@ -1332,7 +1378,7 @@ test("a link and a browser that disagree are put to the reader", () => {
                "the two answers are not kept for the reader to pick from");
   /* The save is inside the branch where there is nothing to ask, and only
      there: saving first is what would make "keep mine" impossible. */
-  const asked = block.slice(block.indexOf("if (stash && !same("));
+  const asked = block.slice(block.indexOf("if (stash && linkDisagrees("));
   assert.ok(!asked.slice(0, asked.indexOf("} else {")).includes("localStorage.setItem"),
             "the reader's own settings were written over before they answered");
   assert.match(asked, /\} else \{[\s\S]*localStorage\.setItem/,

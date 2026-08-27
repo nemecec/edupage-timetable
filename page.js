@@ -81,9 +81,9 @@ const defaults = () => ({
      subject name is what a reader looks for first, so "automatic" already asks
      for it a little larger than the rest — and where a box has no room for
      that, the box gets what the page has always drawn instead. */
-  timeFace: "auto", timeSize: "auto",
-  nameFace: "auto", nameSize: "auto",
-  detailFace: "auto", detailSize: "auto",
+  timeFace: "sans", timeSize: "100",
+  nameFace: "sans", nameSize: "115",
+  detailFace: "sans", detailSize: "100",
   /* A school writes a register family name first. Nobody says a name that way
      out loud, so the reader can turn them round. "last" is how the timetable
      arrives and stays the default. */
@@ -146,24 +146,29 @@ const STYLES = ["palette", "school", "custom"];
 /* Typefaces the page can promise. Nothing is fetched — a page that asks for a
    font from somewhere else is a page that does not open on a train — so these
    are the three families every system has, under the names a reader would use
-   rather than the stacks they resolve to. */
-const FACES = ["auto", "sans", "serif", "mono"];
+   rather than the stacks they resolve to.
+ *
+ * There is no "automatic" among them, because there would be nothing automatic
+ * about it: it would resolve to the page's own font, which is the first of the
+ * three. A fourth entry that draws exactly like one of the other three is a
+ * choice that is not one. The page's own is simply the one selected. */
+const FACES = ["sans", "serif", "mono"];
 const FACE_STACK = {
-  auto: "inherit",
   sans: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif',
   serif: 'Georgia, "Times New Roman", Times, serif',
   mono: 'ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace',
 };
 
-/* How much larger than the page's own size, as a percentage. A scale rather
-   than a size in pixels: the three lines are not the same size to begin with,
-   and a printed sheet is drawn smaller than the screen, so a number of pixels
-   would mean something different in each of the six places it landed. */
-const SIZES = ["auto", "90", "100", "110", "125", "150"];
-
-/* What "automatic" asks for. The name is the thing a reader looks for first,
-   and it was set at the same weight as the clock beside it. */
-const AUTO_GROW = { time: 1, name: 1.15, detail: 1 };
+/* How large, as a percentage of the size the page has always drawn. A scale
+   rather than a size in pixels: the three lines are not the same size to begin
+   with, and a printed sheet is drawn smaller than the screen, so a number of
+   pixels would mean something different in each of the six places it landed.
+ *
+ * No "automatic" here either. What the page chooses is a value on this list,
+ * and it is the one selected: 115 for the name, which a reader looks for first
+ * and which used to be set at nearly the size of the clock beside it, and 100
+ * for the two lines that were already the size they should be. */
+const SIZES = ["90", "100", "115", "125", "150"];
 
 const MARGINS = [5, 9, 14];
 /* The clock strip is this wide, and the tear is drawn across it. The
@@ -912,11 +917,10 @@ function daysWith(school, mine) {
   return idx.sort((a, b) => a - b);
 }
 
-/* What the reader asked for, as a number. "automatic" is what the page would
-   have chosen; anything else is a percentage of the page's own size. */
+/* What was asked for, as a number: a percentage of the size the page has
+   always drawn for that line. */
 function askedGrow(role) {
-  const said = state[role + "Size"];
-  return said === "auto" ? AUTO_GROW[role] : Number(said) / 100;
+  return Number(state[role + "Size"]) / 100;
 }
 
 /* The sizes the page has always drawn, per line, before anybody asked for
@@ -2071,7 +2075,7 @@ function applyFaces() {
   if (!root || !root.style || !root.style.setProperty) return;
   for (const role of ["time", "name", "detail"]) {
     root.style.setProperty("--face-" + role,
-                           FACE_STACK[state[role + "Face"]] || "inherit");
+                           FACE_STACK[state[role + "Face"]] || FACE_STACK.sans);
   }
   /* The grid has no box to measure against, so it takes the asked size as it
      stands: a table cell grows with what is in it and can cut nothing. */
@@ -2089,9 +2093,8 @@ function renderFonts() {
     if (!faces || !sizes) continue;
     fillOptions(faces, FACES.map(face => [face, t("face." + face)]),
                 state[role + "Face"]);
-    fillOptions(sizes, SIZES.map(size =>
-      [size, size === "auto" ? t("size.auto") : t("size.percent", size)]),
-      state[role + "Size"]);
+    fillOptions(sizes, SIZES.map(size => [size, t("size.percent", size)]),
+                state[role + "Size"]);
   }
 }
 

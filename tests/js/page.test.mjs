@@ -1233,15 +1233,30 @@ test("a typeface is one of the three every machine has", () => {
   run(`state = defaults();`);
   const stacks = json(`FACE_STACK`);
   assert.deepEqual(Object.keys(stacks).sort(), json(`FACES`).slice().sort());
-  assert.equal(stacks.auto, "inherit");
   for (const [name, stack] of Object.entries(stacks)) {
     assert.ok(!/https?:|url\(|@import/.test(stack),
               `${name} reaches outside the page: ${stack}`);
   }
+
+  /* And no "automatic" among them. It would resolve to the page's own font,
+     which is the first of the three, so it would be a fourth entry that draws
+     exactly like one of the other three — a choice that is not one. The page's
+     own is simply the one selected. */
+  assert.ok(!json(`FACES`).includes("auto"), "a choice that is not a choice");
+  assert.equal(json(`defaults().nameFace`), "sans");
+  assert.ok(!json(`SIZES`).includes("auto"), "the same for the size");
+  assert.ok(json(`SIZES`).includes(json(`defaults().nameSize`)),
+            "the size the page chooses is not on the list it offers");
+  assert.ok(json(`SIZES`).includes(json(`defaults().timeSize`)));
+
   // A face this page does not know is refused rather than written out.
-  assert.equal(json(`normalise({nameFace: "Comic Sans"}).nameFace`), "auto");
-  assert.equal(json(`normalise({nameSize: "900"}).nameSize`), "auto");
+  assert.equal(json(`normalise({nameFace: "Comic Sans"}).nameFace`), "sans");
+  assert.equal(json(`normalise({nameSize: "900"}).nameSize`), "115");
   assert.equal(json(`normalise({nameFace: "serif"}).nameFace`), "serif");
+  /* A link written before this list lost its "automatic" still opens, and on
+     the same typeface it drew then. */
+  assert.equal(json(`normalise({nameFace: "auto"}).nameFace`), "sans");
+  assert.equal(json(`normalise({nameSize: "auto"}).nameSize`), "115");
 });
 
 test("the tear is drawn the width of the strip it tears", () => {

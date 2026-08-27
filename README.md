@@ -420,12 +420,21 @@ period grid, which needs no times.
   **Type in a lesson box** is three settings, one per kind of line: the subject
   name, the clock, and the room and teacher. Each takes a typeface and a size.
   The name is what a reader looks for first and it used to be set at nearly the
-  size of the clock beside it, so **automatic** now asks for it fifteen per
-  cent larger. The other two are the size they were.
+  size of the clock beside it, so the page now asks for it at 115%. The other
+  two are the size they were, which is 100%.
 
   Nothing is fetched. A page that asks for a font from somewhere else is a page
   that does not open on a train, so the choices are the three families every
   machine has: sans-serif, serif and monospace.
+
+  Neither list offers "automatic". For a typeface it would resolve to the
+  page's own font, which is the first of the three, so it would be a fourth
+  entry drawing exactly like one of the other three — a choice that is not one.
+  For a size, what the page chooses is a value on the list already. In both
+  cases the page's own answer is simply the one selected, which is also what a
+  reader returns to by pressing Reset. A link written while the lists did carry
+  "automatic" still opens, on the same typeface and at the same size it drew
+  then.
 
   The size is what the reader would like, not what they get. A box gives its
   content its own height less the border and the padding, and every line costs
@@ -650,12 +659,12 @@ paste lands.
   "subjectNameStyle": "full",
   "teacherNameOrder": "last",
 
-  "nameFace": "auto",
-  "nameSize": "auto",
-  "timeFace": "auto",
-  "timeSize": "auto",
-  "detailFace": "auto",
-  "detailSize": "auto",
+  "nameFace": "sans",
+  "nameSize": "115",
+  "timeFace": "sans",
+  "timeSize": "100",
+  "detailFace": "sans",
+  "detailSize": "100",
   "showDuration": true,
   "showGaps": true,
   "showQr": true,

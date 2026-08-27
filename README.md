@@ -533,9 +533,12 @@ period grid, which needs no times.
   Which week is on screen is compared too, however the link came to name it,
   because that is the one thing a reader would notice at once.
 
-  It is a shallow value-by-value check and no more. What it is for is the
-  common case; where it says yes and there was nothing to ask, the reader is
-  asked one question they can answer in a click.
+  It is a shallow value-by-value check and no more, and value-by-value is the
+  whole of it: two sides holding the same answer is nothing to choose between,
+  and why either of them holds it never comes into it. One may have picked it
+  and the other inherited it from a default that has since moved. Where the
+  values do differ, the reader would have watched the page change under them,
+  so that is worth a question.
 
   Both answers are real and neither is obviously right: a link carries only what differs from
   the defaults, so anything the sender left alone is simply absent from it, and

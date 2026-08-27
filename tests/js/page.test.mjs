@@ -1344,6 +1344,20 @@ test("only what the link names counts as a disagreement", () => {
   assert.equal(asks(here + `state.nameSize = "115";`, { class: "8" }), false,
                "a default that moved since was called a disagreement");
   assert.equal(asks(here, { class: "8" }), false, "the same link asked again");
+  /* Both sides holding the same value is nothing to choose between, and why
+     either of them holds it never comes into it. One may have chosen it and
+     the other inherited it from a default that has since moved; the value is
+     the same either way, so there is no question to ask. */
+  assert.equal(asks(here + `state.nameSize = "125";`,
+                    { class: "8", nameSize: "125" }), false,
+               "the same value on both sides was called a disagreement");
+  assert.equal(asks(here + `state.nameSize = "115";`,
+                    { class: "8", nameSize: "115" }), false,
+               "a value that used to be a default, agreed on by both");
+  // Different values are a real difference, whatever put them there.
+  assert.equal(asks(here + `state.nameSize = "115";`,
+                    { class: "8", nameSize: "150" }), true,
+               "the reader would have seen their type change size in silence");
   assert.equal(asks(here + `state.subjects = {Ajalugu: {label: "X"}};`,
                     { class: "8" }), false,
                "a colour of my own the link never mentions");

@@ -76,6 +76,14 @@ const defaults = () => ({
      difference between a readable box and a cut line. */
   printMargin: 5,
   showSubject: true, subjectNameStyle: "full",
+
+  /* The three kinds of type in a lesson box, each the reader's to set. The
+     subject name is what a reader looks for first, so "automatic" already asks
+     for it a little larger than the rest — and where a box has no room for
+     that, the box gets what the page has always drawn instead. */
+  timeFace: "auto", timeSize: "auto",
+  nameFace: "auto", nameSize: "auto",
+  detailFace: "auto", detailSize: "auto",
   /* A school writes a register family name first. Nobody says a name that way
      out loud, so the reader can turn them round. "last" is how the timetable
      arrives and stays the default. */
@@ -135,6 +143,28 @@ const STYLES = ["palette", "school", "custom"];
    not readable before its own line runs, so declared further down it threw —
    inside the try that guards against unreadable storage, where it was
    swallowed, and then again out loud on the first draw. */
+/* Typefaces the page can promise. Nothing is fetched — a page that asks for a
+   font from somewhere else is a page that does not open on a train — so these
+   are the three families every system has, under the names a reader would use
+   rather than the stacks they resolve to. */
+const FACES = ["auto", "sans", "serif", "mono"];
+const FACE_STACK = {
+  auto: "inherit",
+  sans: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif',
+  serif: 'Georgia, "Times New Roman", Times, serif',
+  mono: 'ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace',
+};
+
+/* How much larger than the page's own size, as a percentage. A scale rather
+   than a size in pixels: the three lines are not the same size to begin with,
+   and a printed sheet is drawn smaller than the screen, so a number of pixels
+   would mean something different in each of the six places it landed. */
+const SIZES = ["auto", "90", "100", "110", "125", "150"];
+
+/* What "automatic" asks for. The name is the thing a reader looks for first,
+   and it was set at the same weight as the clock beside it. */
+const AUTO_GROW = { time: 1, name: 1.15, detail: 1 };
+
 const MARGINS = [5, 9, 14];
 /* The clock strip is this wide, and the tear is drawn across it. The
    stylesheet says the same in --gut, and a test holds the two together. */
@@ -241,6 +271,10 @@ function normalise(saved) {
                                 ["subjectNameStyle", ["short", "full"]],
                                 ["subjectColorStyle", ["palette", "school", "custom"]],
                                 ["teacherNameOrder", ["last", "first"]],
+                                ["timeFace", FACES], ["nameFace", FACES],
+                                ["detailFace", FACES],
+                                ["timeSize", SIZES], ["nameSize", SIZES],
+                                ["detailSize", SIZES],
                                 ["printMargin", MARGINS]]) {
     if (!allowed.includes(out[key])) out[key] = base[key];
   }
@@ -878,6 +912,93 @@ function daysWith(school, mine) {
   return idx.sort((a, b) => a - b);
 }
 
+/* What the reader asked for, as a number. "automatic" is what the page would
+   have chosen; anything else is a percentage of the page's own size. */
+function askedGrow(role) {
+  const said = state[role + "Size"];
+  return said === "auto" ? AUTO_GROW[role] : Number(said) / 100;
+}
+
+/* The sizes the page has always drawn, per line, before anybody asked for
+   more. Two of them depend on how tall the box is, which is why this takes a
+   box and not just a role. */
+function baseSizes(cls) {
+  return {
+    time: 10,
+    name: cls.includes("tight") ? 11 : 12,
+    detail: 10.5,
+  };
+}
+
+/* How much of the reader's larger type one box can take.
+ *
+ * A box gives its content its own height less the border and the padding, and
+ * every line costs its size times its leading. The page's own sizes fit by
+ * construction — the layout was built around them — so the question is only
+ * how far towards the asked size the box can go before the last line meets the
+ * bottom edge. The cost is a straight line between the two, so the answer is
+ * arithmetic rather than a search.
+ *
+ * Hands back a number from 0 to 1: 0 is the page's own sizes, 1 is everything
+ * the reader asked for. A box with room to spare gets 1, a box with none gets
+ * 0, and nothing is ever drawn smaller than it was before this setting
+ * existed. */
+function growRoom(height, cls, lines) {
+  const base = baseSizes(cls);
+  const leading = cls.includes("snug") ? 1.1 : 1.25;
+  /* The border is 1px each side and the padding 2px each side. A dashed box
+     draws 2px, and half a pixel of slack is cheaper than a second branch. */
+  const room = height - 2 - 4 - 1;
+  let now = 0, want = 0;
+  for (const role of lines) {
+    now += base[role] * leading;
+    want += base[role] * askedGrow(role) * leading;
+  }
+  if (want <= room) return 1;
+  if (want <= now) return 1;                  // asked for smaller: always fits
+  return Math.max(0, Math.min(1, (room - now) / (want - now)));
+}
+
+/* And then the browser is asked.
+ *
+ * The arithmetic above counts one line per line. A name set larger can wrap
+ * where it did not before — "Prantsuse keel" is one line at twelve pixels and
+ * two at fourteen — and no arithmetic here knows how tall that made it. Only
+ * the browser does, and only once the box is in the page.
+ *
+ * So every box that overflows gives its growth back, a step at a time, until
+ * it fits or until it is back to the size the page has always drawn. Nothing
+ * ends up smaller than it was before any of this existed. */
+const GIVE_BACK = 0.92;
+
+function shrinkOverfull(root) {
+  if (!root || !root.querySelectorAll) return;
+  for (const box of root.querySelectorAll(".ev")) {
+    if (!box.style || !box.style.getPropertyValue) continue;
+    let guard = 12;
+    while (guard-- > 0 && box.scrollHeight > box.clientHeight + 1) {
+      let moved = false;
+      for (const role of ["time", "name", "detail"]) {
+        const now = Number(box.style.getPropertyValue("--grow-" + role)) || 1;
+        if (now <= 1) continue;
+        box.style.setProperty("--grow-" + role,
+                              String(Math.max(1, Math.round(now * GIVE_BACK * 1000) / 1000)));
+        moved = true;
+      }
+      if (!moved) break;            // back to the page's own sizes, and still full
+    }
+  }
+}
+
+/* The three numbers a box carries, written where the stylesheet reads them. */
+function growStyle(height, cls, lines) {
+  const room = growRoom(height, cls, lines);
+  return ["time", "name", "detail"]
+    .map(role => "--grow-" + role + ":" +
+                 Math.round((1 + (askedGrow(role) - 1) * room) * 1000) / 1000 + ";")
+    .join("");
+}
+
 function renderTimeline(school, cls, shown, mine, scale) {
   const dayIdx = daysWith(school, mine);
 
@@ -1106,8 +1227,9 @@ function tornEdge(width, shift, amp) {
         /* Ten minutes is the shortest band anything is written in — TäheTERA
            has one between its second and third lessons — and at that height
            the padding is the difference between a line and a cut line. */
-        h += '<div class="ev brk' +
-             (height < 17 ? " tiny squeeze" : height < 22 ? " tiny" : "") + '" style="' +
+        const brkCls = height < 17 ? " tiny squeeze" : height < 22 ? " tiny" : "";
+        h += '<div class="ev brk' + brkCls + '" style="' +
+             growStyle(height, brkCls, height >= 30 ? ["name", "time"] : ["name"]) +
              geom + "background-color:" + esc(col.bg) +
              ";color:" + esc(col.fg) + ";" + hatch(col.bg) +
              '" data-subject="' + esc(band) + '" title="' +
@@ -1144,9 +1266,15 @@ function tornEdge(width, shift, amp) {
          name stays on one. Left to wrap, a long subject took two lines and the
          bottom of the box cut it — which it did long before the detail line
          was let in here. */
-      h += '<div class="ev' + (e.B ? " brk" : "") + (height < 40 ? " tight" : "") +
-           (height < 62 ? " snug" : "") + (e.o ? " approx" : "") +
-           '" data-subject="' + esc(e.s) + '" style="' + geom + "background-color:" + esc(col.bg) +
+      const lessonCls = (e.B ? " brk" : "") + (height < 40 ? " tight" : "") +
+                        (height < 62 ? " snug" : "");
+      const lessonLines = height >= 30
+        ? (height >= 46 && meta.length ? ["time", "name", "detail"] : ["time", "name"])
+        : ["name"];
+      h += '<div class="ev' + lessonCls + (e.o ? " approx" : "") +
+           '" data-subject="' + esc(e.s) + '" style="' +
+           growStyle(height, lessonCls, lessonLines) + geom +
+           "background-color:" + esc(col.bg) +
            ";color:" + esc(col.fg) + '" title="' + esc(tip) + '">' + body + "</div>";
     }
     /* The layer on top. Events are packed among themselves, so two of them at
@@ -1169,8 +1297,12 @@ function tornEdge(width, shift, amp) {
       if (height >= 46 && it.note) {
         body += '<div class="who2">' + esc(it.note) + "</div>";
       }
-      h += '<div class="ev mine' + (height < 40 ? " tight" : "") +
-           '" style="' + place(it, over ? 16 : 0) +
+      const mineCls = height < 40 ? " tight" : "";
+      const mineLines = height >= 30
+        ? (height >= 46 && it.note ? ["time", "name", "detail"] : ["time", "name"])
+        : ["name"];
+      h += '<div class="ev mine' + mineCls + '" style="' +
+           growStyle(height, mineCls, mineLines) + place(it, over ? 16 : 0) +
            "background-color:" + esc(it.bg) + ";color:" + esc(fg) + '" title="' +
            esc([it.label, it.note, when].filter(Boolean).join("\n")) + '">' +
            body + "</div>";
@@ -1478,8 +1610,11 @@ const RESTORE_PREVIOUS = "restore";
 
 function fitTimeline(school, cls, shown, mine) {
   return fitToSheet((scale) => {
-    document.getElementById("grid").innerHTML =
-      renderTimeline(school, cls, shown, mine, scale);
+    const grid = document.getElementById("grid");
+    grid.innerHTML = renderTimeline(school, cls, shown, mine, scale);
+    /* Measured before it is judged: a box that gave its growth back is shorter
+       than the one the arithmetic drew, and the sheet is measured after. */
+    shrinkOverfull(grid);
     return RESTORE_PREVIOUS;      // render() draws the real one with the answer
   }, 0.25, 3.0);
 }
@@ -1544,9 +1679,11 @@ function render() {
   else document.body.classList.remove("printview");
 
   if (timeline) {
-    document.getElementById("grid").innerHTML =
+    const grid = document.getElementById("grid");
+    grid.innerHTML =
       renderTimeline(school, cls, drawn, parsed.events,
                      printing ? fitTimeline(school, cls, drawn, parsed.events) : 0);
+    shrinkOverfull(grid);
     document.getElementById("count").textContent =
       t("lessonCount", drawn.length) + (parsed.events.length ?
         " · " + t("mineCount", parsed.events.length) : "");
@@ -1871,6 +2008,22 @@ function bindChoice(name, key) {
 ["showStudentName", "showSchoolName", "showClassName",
  "showTeacher", "showRoom", "showGroup", "showSubject",
  "showDuration", "showGaps", "showQr"].forEach(key => bindToggle(key, key));
+/* Six selects, two per kind of type. Every one of them writes one setting and
+   redraws, so they are bound in a loop rather than one at a time. */
+for (const role of ["time", "name", "detail"]) {
+  for (const what of ["Face", "Size"]) {
+    const box = document.getElementById(role + what);
+    if (!box) continue;
+    box.addEventListener("change", () => {
+      const allowed = what === "Face" ? FACES : SIZES;
+      if (!allowed.includes(box.value)) return;
+      state[role + what] = box.value;
+      save();
+      render();
+    });
+  }
+}
+
 /* The one control that carries a number rather than a word. */
 document.getElementById("printMargin").addEventListener("change", (ev) => {
   const mm = Number(ev.target.value);
@@ -1905,6 +2058,49 @@ function syncDisplayControls() {
   document.getElementById("subjectChoice").classList.toggle("off", !state.showSubject);
   renderMargins();
   applyPageMargin();
+  renderFonts();
+  applyFaces();
+}
+
+/* The typefaces, written where every view reads them: the timeline boxes, the
+   fallback grid and the samples in the subject table. Sizes are not written
+   here — how much larger a name can be is a question about the box it is in,
+   and each box answers it for itself. */
+function applyFaces() {
+  const root = document.documentElement;
+  if (!root || !root.style || !root.style.setProperty) return;
+  for (const role of ["time", "name", "detail"]) {
+    root.style.setProperty("--face-" + role,
+                           FACE_STACK[state[role + "Face"]] || "inherit");
+  }
+  /* The grid has no box to measure against, so it takes the asked size as it
+     stands: a table cell grows with what is in it and can cut nothing. */
+  for (const role of ["time", "name", "detail"]) {
+    root.style.setProperty("--grow-" + role, String(askedGrow(role)));
+  }
+}
+
+/* One option per typeface and one per size, built here rather than written in
+   the page, so the lists and the values the settings accept cannot drift. */
+function renderFonts() {
+  for (const role of ["time", "name", "detail"]) {
+    const faces = document.getElementById(role + "Face");
+    const sizes = document.getElementById(role + "Size");
+    if (!faces || !sizes) continue;
+    fillOptions(faces, FACES.map(face => [face, t("face." + face)]),
+                state[role + "Face"]);
+    fillOptions(sizes, SIZES.map(size =>
+      [size, size === "auto" ? t("size.auto") : t("size.percent", size)]),
+      state[role + "Size"]);
+  }
+}
+
+function fillOptions(box, pairs, picked) {
+  const want = pairs.map(([value, label]) =>
+    '<option value="' + esc(value) + '"' + (value === picked ? " selected" : "") +
+    ">" + esc(label) + "</option>").join("");
+  if (box.innerHTML !== want) box.innerHTML = want;
+  box.value = picked;
 }
 
 /* One option per width the reader can pick. Built here rather than written in

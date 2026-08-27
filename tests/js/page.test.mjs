@@ -1171,6 +1171,79 @@ test("the address in the corner stays when the code goes", () => {
   run(`state = defaults();`);
 });
 
+test("the subject name is asked for a little larger than the rest", () => {
+  /* It is the thing a reader looks for first and it was set at the same size
+     as the clock beside it. */
+  run(`state = defaults();`);
+  assert.equal(json(`askedGrow("name")`), 1.15);
+  assert.equal(json(`askedGrow("time")`), 1);
+  assert.equal(json(`askedGrow("detail")`), 1);
+
+  // And the reader's own choice is a percentage of the page's own size.
+  run(`state.nameSize = "150";`);
+  assert.equal(json(`askedGrow("name")`), 1.5);
+  run(`state.nameSize = "90";`);
+  assert.equal(json(`askedGrow("name")`), 0.9);
+  run(`state = defaults();`);
+});
+
+test("a box gives back what it has no room for", () => {
+  /* A box gives its content its own height less the border and the padding,
+     and every line costs its size times its leading. The page's own sizes fit
+     by construction, so the only question is how far towards the asked size a
+     box can go. Nothing is ever drawn smaller than it was before the setting
+     existed. */
+  run(`state = defaults(); state.nameSize = "150";`);
+  const room = (height, cls, lines) =>
+    json(`growRoom(${height}, ${JSON.stringify(cls)}, ${JSON.stringify(lines)})`);
+
+  // Plenty of height: all of it.
+  assert.equal(room(200, "", ["time", "name", "detail"]), 1);
+  // None at all: the page's own sizes, and never less.
+  assert.equal(room(20, "", ["time", "name", "detail"]), 0);
+  // In between: some of it, and never outside nought and one.
+  const part = room(48, " snug", ["time", "name", "detail"]);
+  assert.ok(part > 0 && part < 1, "expected part of the growth, got " + part);
+
+  /* Asking for smaller always fits, whatever the box. */
+  run(`state.nameSize = "90"; state.timeSize = "90"; state.detailSize = "90";`);
+  assert.equal(room(20, "", ["time", "name", "detail"]), 1);
+
+  // What a box carries is the asked size scaled by what it could take.
+  run(`state = defaults(); state.nameSize = "150";`);
+  const wide = json(`growStyle(200, "", ["time", "name", "detail"])`);
+  assert.match(wide, /--grow-name:1\.5;/);
+  assert.match(wide, /--grow-time:1;/);
+  const tight = json(`growStyle(20, "", ["time", "name", "detail"])`);
+  assert.match(tight, /--grow-name:1;/, "a full box was still grown");
+  run(`state = defaults();`);
+});
+
+test("the page's own sizes are what a box falls back to", () => {
+  /* The floor is not a guess. It is the size each line has always been, which
+     is why every box fits today. */
+  assert.deepEqual(json(`baseSizes("")`), { time: 10, name: 12, detail: 10.5 });
+  assert.deepEqual(json(`baseSizes(" tight")`),
+                   { time: 10, name: 11, detail: 10.5 });
+});
+
+test("a typeface is one of the three every machine has", () => {
+  /* Nothing is fetched. A page that asks for a font from somewhere else is a
+     page that does not open on a train. */
+  run(`state = defaults();`);
+  const stacks = json(`FACE_STACK`);
+  assert.deepEqual(Object.keys(stacks).sort(), json(`FACES`).slice().sort());
+  assert.equal(stacks.auto, "inherit");
+  for (const [name, stack] of Object.entries(stacks)) {
+    assert.ok(!/https?:|url\(|@import/.test(stack),
+              `${name} reaches outside the page: ${stack}`);
+  }
+  // A face this page does not know is refused rather than written out.
+  assert.equal(json(`normalise({nameFace: "Comic Sans"}).nameFace`), "auto");
+  assert.equal(json(`normalise({nameSize: "900"}).nameSize`), "auto");
+  assert.equal(json(`normalise({nameFace: "serif"}).nameFace`), "serif");
+});
+
 test("the tear is drawn the width of the strip it tears", () => {
   /* The strip's width lives in the stylesheet and the tear is drawn in the
      page's own script. A tear narrower than the strip leaves a sliver of it

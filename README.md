@@ -417,6 +417,37 @@ period grid, which needs no times.
   which one is not consistent — so each name is turned round on its own and the
   list is put back together with the separators it came with.
 
+  **Type in a lesson box** is three settings, one per kind of line: the subject
+  name, the clock, and the room and teacher. Each takes a typeface and a size.
+  The name is what a reader looks for first and it used to be set at nearly the
+  size of the clock beside it, so **automatic** now asks for it fifteen per
+  cent larger. The other two are the size they were.
+
+  Nothing is fetched. A page that asks for a font from somewhere else is a page
+  that does not open on a train, so the choices are the three families every
+  machine has: sans-serif, serif and monospace.
+
+  The size is what the reader would like, not what they get. A box gives its
+  content its own height less the border and the padding, and every line costs
+  its size times its leading — so how much of the asked size a box can take is
+  arithmetic, and each box does it for itself. A box with room gets all of it,
+  a box with none keeps the size the page has always drawn, and one in between
+  gets the part that fits. Nothing is ever drawn smaller than it was before the
+  setting existed.
+
+  Arithmetic is not the whole answer. A name set larger can *wrap* where it did
+  not before — `Prantsuse keel` is one line at twelve pixels and two at
+  fourteen — and no arithmetic here knows how tall that made it. So after the
+  boxes are in the page, every one that overflows gives its growth back a step
+  at a time until it fits. That is the check the print sweep makes too, which
+  is how the wrapping was found.
+
+  The other view takes the typefaces and the sizes as they stand: a table cell
+  grows with what is in it and can cut nothing. Its subject name used to ignore
+  the print scale, which it could while it was the size the browser gave it.
+  Asked to grow, it has to shrink with everything else, or the fitter has
+  nothing left to give.
+
   **On the printout:** the QR code can be switched off, and the paper edge is
   the reader's to set. Some readers want the sheet and not the corner. The
   address in the other corner stays either way: the code goes to this reader's
@@ -618,6 +649,13 @@ paste lands.
   "showSubject": true,
   "subjectNameStyle": "full",
   "teacherNameOrder": "last",
+
+  "nameFace": "auto",
+  "nameSize": "auto",
+  "timeFace": "auto",
+  "timeSize": "auto",
+  "detailFace": "auto",
+  "detailSize": "auto",
   "showDuration": true,
   "showGaps": true,
   "showQr": true,

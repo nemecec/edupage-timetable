@@ -596,6 +596,20 @@ class SchoolYear(unittest.TestCase):
         self.assertNotIn("default=2026", source)
 
 
+def _every_string(root):
+    """Every key the string table names, read straight off the source."""
+    import ast
+    with open(os.path.join(root, "tt.py"), encoding="utf-8") as fh:
+        tree = ast.parse(fh.read())
+    out = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Dict):
+            for key in node.keys:
+                if isinstance(key, ast.Constant) and isinstance(key.value, str):
+                    out.add(key.value)
+    return out
+
+
 class Documentation(unittest.TestCase):
     """Counts in prose go stale silently. These are the ones worth pinning."""
 
@@ -642,6 +656,14 @@ class Documentation(unittest.TestCase):
         asked = set(re.findall(r'data-i18n(?:-ph|-aria)?="([^"]+)"', source))
         for text in (source, script):
             asked |= set(re.findall(r'\bt\(\s*"([^"]+)"', text))
+        # A key built where it is used — t("face." + face) — names a whole
+        # family at once. The family is asked for; which member is not
+        # something this can read, and a list built from one is checked by the
+        # test that every option carries a label.
+        families = set(re.findall(r'\bt\(\s*"([^"]+\.)"\s*\+', script))
+        self.assertTrue(families, "the scan for built keys found none at all")
+        asked |= {key for family in families
+                  for key in _every_string(ROOT) if key.startswith(family)}
         # Read off the table by name rather than through t().
         asked.add("days")
         _, data = build()

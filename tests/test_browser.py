@@ -192,6 +192,71 @@ class ThePrintedSheet(InABrowser):
         self.assertFalse(back["now"])
         self.assertFalse(back["back"], "the setting did not survive a saved link")
 
+    def test_a_larger_name_is_given_back_where_it_will_not_fit(self):
+        """The arithmetic counts one line per line. A name set larger can wrap
+        where it did not before — "Prantsuse keel" is one line at twelve pixels
+        and two at fourteen — and only the browser knows how tall that made it.
+        Every box that overflows gives its growth back until it fits."""
+        self.show("105", "Joanna")
+        asked = self.js(
+            "state.nameSize = '150'; render();"
+            "var boxes = [].map.call(document.querySelectorAll('#grid .ev'),"
+            "  function (b) { return {grow: Number(b.style.getPropertyValue("
+            "    '--grow-name')) || 1, over: b.scrollHeight > b.clientHeight + 1}; });"
+            "return {boxes: boxes,"
+            "        full: boxes.filter(function (b) { return b.grow >= 1.5; }).length,"
+            "        gaveBack: boxes.filter(function (b) {"
+            "                    return b.grow > 1 && b.grow < 1.5; }).length,"
+            "        floor: boxes.filter(function (b) { return b.grow < 1; }).length,"
+            "        cut: boxes.filter(function (b) { return b.over; }).length};")
+        self.assertGreater(len(asked["boxes"]), 10, "nothing was drawn")
+        self.assertEqual(asked["cut"], 0, "a box was cut by its own edge")
+        self.assertEqual(asked["floor"], 0,
+                         "a box was drawn smaller than the page's own size")
+        self.assertGreater(asked["full"] + asked["gaveBack"], 0,
+                           "nothing grew at all")
+
+        # And at 150% on a tall class, some box really does get the whole ask.
+        self.assertGreater(asked["full"], 0, "no box could take the full size")
+
+    def test_the_name_is_larger_than_it_was_and_nothing_is_cut(self):
+        """The default asks for the subject name a little larger. Every class
+        is checked at print scale by the sweep above; this one checks the
+        screen, where the boxes are taller and the type is not scaled down."""
+        self.show("68", "8")
+        got = self.js(
+            "var box = document.querySelector('#grid .ev');"
+            "var name = box.querySelector('.what');"
+            "var clock = box.querySelector('.when');"
+            "return {name: parseFloat(getComputedStyle(name).fontSize),"
+            "        clock: clock && parseFloat(getComputedStyle(clock).fontSize),"
+            "        grow: box.style.getPropertyValue('--grow-name')};")
+        self.assertGreater(got["name"], 12, "the name is no larger than it was")
+        self.assertGreater(got["name"], got["clock"],
+                           "the name is not larger than the clock beside it")
+
+    def test_a_typeface_reaches_every_view(self):
+        """One choice, and the timeline, the fallback grid and the samples in
+        the subject table all follow it."""
+        self.show("68", "8")
+        got = self.js(
+            "state.nameFace = 'mono'; render();"
+            "var box = document.querySelector('#grid .ev .what');"
+            "var sample = document.querySelector('#legend .sample .what');"
+            "return {box: getComputedStyle(box).fontFamily,"
+            "        sample: sample && getComputedStyle(sample).fontFamily};")
+        self.assertIn("mono", got["box"].lower(), "the box kept the old typeface")
+        self.assertIn("mono", (got["sample"] or "").lower(),
+                      "the sample and the box disagree")
+
+        grid = self.js(
+            "state.school = '103'; state.class = '1.i';"
+            "renderClasses(); renderDivisions(); syncPerClassInputs(); render();"
+            "var name = document.querySelector('#grid .lesson .name');"
+            "return {grid: name && getComputedStyle(name).fontFamily};")
+        self.assertIn("mono", (grid["grid"] or "").lower(),
+                      "the other view kept the old typeface")
+
     def test_the_paper_edge_changes_what_there_is_room_for(self):
         """The rule the browser prints by and the height the fitter measures
         against both come from one setting. If they part company, the page is

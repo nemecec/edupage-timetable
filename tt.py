@@ -103,6 +103,16 @@ STRINGS = {
         "colLabel": "Label",
         "colShow": "Show",
         "colNote": "Second line",
+        "fontHeading": "Type in a lesson box:",
+        "fontName": "Subject name",
+        "fontTime": "Clock",
+        "fontDetail": "Room and teacher",
+        "face.auto": "Automatic",
+        "face.sans": "Sans-serif",
+        "face.serif": "Serif",
+        "face.mono": "Monospace",
+        "size.auto": "Automatic size",
+        "size.percent": "{0}%",
         "showQr": "QR code",
         "nameLastFirst": "Kask Mari",
         "nameFirstLast": "Mari Kask",
@@ -236,6 +246,16 @@ STRINGS = {
         "colLabel": "Nimetus",
         "colShow": "Näita",
         "colNote": "Teine rida",
+        "fontHeading": "Kiri tunni kastis:",
+        "fontName": "Õppeaine nimi",
+        "fontTime": "Kellaaeg",
+        "fontDetail": "Ruum ja õpetaja",
+        "face.auto": "Automaatne",
+        "face.sans": "Groteskkiri",
+        "face.serif": "Seriifkiri",
+        "face.mono": "Püsisammkiri",
+        "size.auto": "Automaatne suurus",
+        "size.percent": "{0}%",
         "showQr": "QR-kood",
         "nameLastFirst": "Kask Mari",
         "nameFirstLast": "Mari Kask",
@@ -1668,6 +1688,17 @@ PAGE = """<!DOCTYPE html>
     /* A step darker than --panel, so a heading row still reads as a heading
        above rows that are themselves striped with --panel. */
     --head: #e8ecf1;
+
+    /* The three kinds of type in a lesson box, each the reader's to set: the
+       clock, the subject name, and the line of room, teacher and group.
+       `--face-*` is which typeface; `--grow-*` is how much larger than the
+       page's own size. Both are 1 or inherited until somebody asks otherwise,
+       so every size below is written as the size it has always been times a
+       number that is normally one. The timeline overrides `--grow-*` on each
+       box, because how much larger a name can be is a question about the box
+       it is in. */
+    --face-time: inherit; --face-name: inherit; --face-detail: inherit;
+    --grow-time: 1; --grow-name: 1; --grow-detail: 1;
   }
   * { box-sizing: border-box; }
   body {
@@ -1798,9 +1829,16 @@ PAGE = """<!DOCTYPE html>
   .lesson { border-radius: 4px; margin-bottom: calc(4px * var(--grid, 1));
             padding: calc(4px * var(--grid, 1)) calc(6px * var(--grid, 1)); }
   .lesson:last-child { margin-bottom: 0; }
-  .lesson .name { font-weight: 600; }
-  .lesson .meta { font-size: calc(11px * var(--grid, 1)); opacity: .85; }
-  .lesson .time { font-size: calc(11px * var(--grid, 1)); opacity: .85;
+  /* The one line in this view that ignored the print scale. It could, while
+     it was the size the browser gave it; asked to grow, it has to shrink with
+     everything else or the fitter has nothing left to give. */
+  .lesson .name { font-weight: 600; font-family: var(--face-name);
+                  font-size: calc(14px * var(--grid, 1) * var(--grow-name)); }
+  .lesson .meta, .lesson .who {
+      font-size: calc(11px * var(--grid, 1) * var(--grow-detail));
+      font-family: var(--face-detail); opacity: .85; }
+  .lesson .time { font-size: calc(11px * var(--grid, 1) * var(--grow-time));
+                  font-family: var(--face-time); opacity: .85;
                   font-variant-numeric: tabular-nums; }
   .cont { opacity: .62; }
   .brk { background: #f2f3f5; min-width: 60px; }
@@ -1868,21 +1906,25 @@ PAGE = """<!DOCTYPE html>
         box-sizing: border-box; border: 1px solid rgba(0,0,0,.18); }
   /* A clock never wraps. In a narrow column "14.10–15.30" broke over two
      lines and took the room the name needed. */
-  .ev .when { font-size: 10px; opacity: .85; font-variant-numeric: tabular-nums;
+  .ev .when { font-size: calc(10px * var(--grow-time)); opacity: .85;
+              font-family: var(--face-time);
+              font-variant-numeric: tabular-nums;
               line-height: 1.25; white-space: nowrap; }
   /* Three lines at most, then an ellipsis. "Teadus, fantaasia ja
      ulmekirjandus II" wraps to six in a narrow column, and the box cut it
      mid-word. The tooltip and the subject table carry the whole name. */
-  .ev .what { font-weight: 600; font-size: 12px; line-height: 1.25;
+  .ev .what { font-weight: 600; font-size: calc(12px * var(--grow-name));
+              font-family: var(--face-name); line-height: 1.25;
               display: -webkit-box; -webkit-box-orient: vertical;
               -webkit-line-clamp: 3; overflow: hidden; }
   .ev.snug .what { -webkit-line-clamp: 1; }
   /* Room, teacher and group on one line, cut with an ellipsis. It is the
      secondary line: wrapped, it pushed itself past the bottom of the box and
      was sliced instead, which loses more than an ellipsis does. */
-  .ev .who2 { font-size: 10.5px; opacity: .85; line-height: 1.25;
+  .ev .who2 { font-size: calc(10.5px * var(--grow-detail)); opacity: .85;
+              font-family: var(--face-detail); line-height: 1.25;
               white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .ev.tight .what { font-size: 11px; }
+  .ev.tight .what { font-size: calc(11px * var(--grow-name)); }
   /* A box with room for exactly three lines gets exactly three lines. Each is
      cut with an ellipsis rather than wrapped and then sliced by the bottom
      edge, and they are set a little tighter so all three clear 45 minutes:
@@ -1896,6 +1938,7 @@ PAGE = """<!DOCTYPE html>
   .ev .what.oneline { font-weight: 600; white-space: nowrap; overflow: hidden;
                       text-overflow: ellipsis; }
   .ev .what.oneline .clock { font-weight: 400; opacity: .85;
+                             font-family: var(--face-time);
                              font-variant-numeric: tabular-nums; }
   .ev.approx { border-style: dashed; border-width: 2px; }
   /* Where the axis is cut, the clock strip is torn across: a piece the shape
@@ -2121,6 +2164,31 @@ PAGE = """<!DOCTYPE html>
         <div class="line">
           <label class="inline"><input type="checkbox" id="showGaps">
             <span data-i18n="showGaps"></span></label>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Three kinds of type in a lesson box, each with a typeface and a size.
+       The size is what the reader would like; a box with no room for it draws
+       what the page has always drawn instead. -->
+  <div class="row">
+    <div class="field" style="width:100%">
+      <label data-i18n="fontHeading"></label>
+      <div class="checklist">
+        <div class="line">
+          <label class="inline" for="nameFace"><span data-i18n="fontName"></span></label>
+          <select id="nameFace"></select>
+          <select id="nameSize"></select>
+        </div>
+        <div class="line">
+          <label class="inline" for="timeFace"><span data-i18n="fontTime"></span></label>
+          <select id="timeFace"></select>
+          <select id="timeSize"></select>
+        </div>
+        <div class="line">
+          <label class="inline" for="detailFace"><span data-i18n="fontDetail"></span></label>
+          <select id="detailFace"></select>
+          <select id="detailSize"></select>
         </div>
       </div>
     </div>

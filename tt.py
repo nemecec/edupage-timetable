@@ -684,21 +684,29 @@ BELLS = {
             {
                 "classes": ["Maarja", "Heliis", "Mari-Liis", "Cathleen", "Silva"],
                 "days": {
-                    (0, 1, 2, 3): [(1, 2, "9:00", "10:50"), (3, 1, "10:50", "11:10"),
-                                   (4, 1, "11:10", "12:10"), (5, 1, "12:20", "13:20"),
-                                   (6, 1, "13:20", "13:50"), (7, 1, "13:50", "14:50"),
+                    # The first two periods are the settling-in half hour and
+                    # the lesson after it. The timetable runs one lesson across
+                    # both, so they are one block here.
+                    (0, 1, 2, 3): [(1, 2, "9:00", "10:30"), (3, 1, "10:30", "10:50"),
+                                   (4, 1, "10:50", "11:50"), (5, 1, "12:00", "13:00"),
+                                   (6, 1, "13:00", "13:50"), (7, 1, "13:50", "14:50"),
                                    (8, 1, "15:00", "16:00")],
-                    (4,): [(1, 1, "9:00", "10:00"), (2, 1, "10:00", "11:00"),
-                           (3, 1, "11:00", "12:00"), (4, 1, "12:00", "13:00")],
+                    (4,): [(1, 1, "9:00", "10:00"), (2, 1, "10:10", "11:10"),
+                           (3, 1, "11:10", "12:00"), (4, 1, "12:00", "13:00")],
                 },
             },
             {
                 "classes": ["Elis", "Kateriine", "Juta", "Katrin", "Joanna", "Sille"],
                 "days": {
+                    # Ten minutes between the fourth period and "hea aeg" that
+                    # the sheet names as a break of its own, and the fifth
+                    # period in its two shapes: on its own to 14.00, or run on
+                    # into the sixth and finished at 14.35.
                     (0, 1, 2, 3): [(1, 2, "9:00", "10:20"), (3, 1, "10:20", "10:40"),
-                                   (4, 2, "10:40", "12:00"), (6, 1, "12:00", "12:45"),
-                                   (7, 1, "12:45", "13:25"), (8, 1, "13:25", "14:10"),
-                                   (9, 1, "14:15", "15:00"), (10, 1, "15:00", "15:45")],
+                                   (4, 2, "10:40", "12:00"), (6, 1, "12:10", "12:45"),
+                                   (7, 1, "12:45", "13:15"),
+                                   (8, 1, "13:15", "14:00", "14:35"),
+                                   (9, 1, "14:10", "14:55"), (10, 1, "15:00", "15:45")],
                     (4,): [(1, 2, "9:00", "10:20"), (3, 2, "10:30", "11:50"),
                            (5, 1, "11:50", "12:15"), (6, 1, "12:15", "13:00")],
                 },
@@ -841,9 +849,21 @@ def band_slots(cfg, class_name, day):
         for days, blocks in band["days"].items():
             if day not in days:
                 continue
-            return [{"period": period, "periods": span, "at": _minutes(start),
-                     "start": _fmt_time(_minutes(start)), "end": _fmt_time(_minutes(end))}
-                    for period, span, start, end in blocks]
+            out = []
+            for block in blocks:
+                period, span, start, end = block[:4]
+                slot = {"period": period, "periods": span, "at": _minutes(start),
+                        "start": _fmt_time(_minutes(start)),
+                        "end": _fmt_time(_minutes(end))}
+                # A fifth time, where a lesson that runs on from this slot
+                # stops somewhere other than the end of the next one. LõunaTERA
+                # gives its fifth and sixth periods two shapes: two lessons of
+                # 45 minutes with a break between them, or one of 80 that ends
+                # before the second would have.
+                if len(block) > 4:
+                    slot["runsOn"] = _fmt_time(_minutes(block[4]))
+                out.append(slot)
+            return out
     return None
 
 
@@ -1174,9 +1194,14 @@ def extract(result, class_name, n_periods=None, cfg=None, period_times=None):
                 slot = slots[e["slot"] - 1]
                 last = slots[min(slot_of_period.get(
                     e["startPeriod"] + e["duration"] - 1, e["slot"]), len(slots)) - 1]
+                # Where the school says a run-on lesson stops early, it stops
+                # there. Otherwise it stops where the last slot it covers does.
+                ends = last["end"]
+                if last is not slot and slot.get("runsOn"):
+                    ends = slot["runsOn"]
                 e["startMin"] = slot["at"]
-                e["endMin"] = _minutes(last["end"].replace(".", ":"))
-                e["time"] = f"{slot['start']}–{last['end']}"
+                e["endMin"] = _minutes(ends.replace(".", ":"))
+                e["time"] = f"{slot['start']}–{ends}"
             elif clock and e["slot"] and "at" in slots[e["slot"] - 1]:
                 first = clock.get(e["startPeriod"])
                 last = clock.get(e["startPeriod"] + e["duration"] - 1, first)

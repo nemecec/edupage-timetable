@@ -79,10 +79,27 @@ class PublishedBlocks(unittest.TestCase):
     cfg = tt.BELLS["LõunaTERA"]
 
     def test_grades_one_to_three_on_a_monday(self):
+        """The settling-in half hour and the lesson after it are one block,
+        because the timetable runs one lesson across both. Then porridge."""
         got = [(s["period"], s["periods"], s["start"], s["end"])
                for s in tt.band_slots(self.cfg, "Maarja", 0)]
-        self.assertEqual(got[:3], [(1, 2, "9.00", "10.50"), (3, 1, "10.50", "11.10"),
-                                   (4, 1, "11.10", "12.10")])
+        self.assertEqual(got[:3], [(1, 2, "9.00", "10.30"), (3, 1, "10.30", "10.50"),
+                                   (4, 1, "10.50", "11.50")])
+
+    def test_a_block_can_say_where_a_run_on_lesson_stops(self):
+        """The fifth period of the older years has two shapes: on its own it
+        runs to 14.00, and carrying the sixth with it, it finishes at 14.35 —
+        which is 20 minutes before the sixth would have ended alone."""
+        fifth = next(s for s in tt.band_slots(self.cfg, "Joanna", 0)
+                     if s["period"] == 8)
+        self.assertEqual((fifth["start"], fifth["end"]), ("13.15", "14.00"))
+        self.assertEqual(fifth["runsOn"], "14.35")
+        # Every other block says nothing, and stops where its last one does.
+        others = [s for s in tt.band_slots(self.cfg, "Joanna", 0)
+                  if s["period"] != 8]
+        self.assertTrue(others)
+        for slot in others:
+            self.assertNotIn("runsOn", slot)
 
     def test_friday_has_its_own_shape(self):
         self.assertEqual(len(tt.band_slots(self.cfg, "Maarja", 4)), 4)

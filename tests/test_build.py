@@ -344,13 +344,24 @@ class WholePage(unittest.TestCase):
                          {"Hispaania keel", "Prantsuse keel", "Saksa keel"})
 
     def test_a_lesson_running_past_one_published_block_ends_where_it_ends(self):
-        # LõunaTERA publishes blocks rather than lesson lengths. A lesson
-        # covering two of them used to stop at the end of the first.
+        """LõunaTERA publishes blocks rather than lesson lengths. A lesson
+        covering two of them used to stop at the end of the first.
+
+        And where the school says such a lesson stops early, it stops there:
+        the fifth period runs to 14.00 on its own, and to 14.35 when it carries
+        the sixth with it — which is 20 minutes before the sixth would have
+        ended on its own."""
         school = next(s for s in self.data["schools"] if s["n"] == "105")
         klass = next(c for c in school["c"] if c["n"].strip() == "Elis")
         box = next(e for e in klass["e"]
                    if e["d"] == 3 and e["s"] == "Kodundus" and not e["c"])
-        self.assertEqual((box["w"], box["a"], box["z"]), ("13.25–15.00", 805, 900))
+        self.assertEqual((box["w"], box["a"], box["z"]), ("13.15–14.35", 795, 875))
+        # The same period on its own keeps its own end.
+        alone = [e for e in klass["e"]
+                 if e["p"] == 8 and e["u"] == 1 and not e["c"]]
+        self.assertTrue(alone, "no class takes the fifth period on its own")
+        for e in alone:
+            self.assertEqual(e["w"], "13.15–14.00")
 
     def test_a_merged_box_carries_the_subjects_it_merged(self):
         merged = [e for s in self.data["schools"] for c in s["c"]

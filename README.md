@@ -210,6 +210,17 @@ block says which aSc periods it holds, and when it is:
 
     (first period, how many periods, start, end)
 
+A block can carry a fifth time, and one does:
+
+    (first period, how many periods, start, end, end when it runs on)
+
+The older years' fifth period has two shapes. On its own it runs 13.15 to
+14.00, and where a lesson carries the sixth period with it, the pair finishes
+at 14.35 — twenty minutes before the sixth would have ended alone, because the
+break between them is not taken. Ten lessons a week are the second shape. Left
+to end where the sixth ends, every one of them said a child was busy for twenty
+minutes after they were free.
+
 Two grade bands run different days. The breaks — Puder, Lõuna/Õue, Hea aeg —
 are lessons in the timetable rather than gaps between lessons, with a
 supervisor and a length. The school says which subjects those are, and the page

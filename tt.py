@@ -594,7 +594,11 @@ BELLS = {
         # final lesson, which is what the sheet leaves room for.
         "blockGaps": [
             {"name": "Amps", "least": 10, "after": "10:15", "before": "10:40"},
-            {"name": "Lõuna", "least": 10, "after": "13:25", "before": "13:50",
+            # Lunch on the days without the language split is the half hour
+            # between the last long block and the closing lesson: 13.15 to
+            # 13.45. The window opens before that, because a day whose fifth
+            # lesson runs late leaves a shorter one in the same place.
+            {"name": "Lõuna", "least": 10, "after": "13:10", "before": "13:50",
              "classes": ["5.a"]},
         ],
         # Lunch here is whatever the language split leaves over, and that is a
@@ -610,21 +614,25 @@ BELLS = {
                     (0,): [(1, 2, "9:00", "10:20"), (3, 1, "10:45", "11:30"),
                            (4, 1, "11:35", "12:05"), (5, 1, "12:10", "12:55"),
                            (6, 1, "12:55", "13:40"), (7, 1, "13:45", "14:30")],
-                    (1,): [(1, 2, "9:00", "10:20"), (3, 2, "10:45", "12:20"),
-                           (6, 1, "12:20", "13:35"), (7, 1, "13:45", "14:30")],
+                    (1,): [(1, 2, "9:00", "10:20"), (3, 2, "10:45", "12:10"),
+                           (6, 1, "12:30", "13:15"), (7, 1, "13:45", "14:30")],
                     (2,): [(1, 2, "9:00", "10:20"), (3, 1, "10:45", "11:30"),
-                           (4, 1, "11:35", "12:20"), (6, 1, "12:20", "13:35"),
+                           (4, 1, "11:35", "12:20"), (6, 1, "12:30", "13:15"),
                            (7, 1, "13:45", "14:30"), (8, 1, "14:35", "15:20")],
-                    # The eighth slot is on both days. The sheet puts the choir
-                    # on Thursday and the timetable now has it on Wednesday, so
-                    # one of the two moved. An unused slot costs nothing; a
-                    # missing one loses the lesson.
+                    # The eighth slot is on Wednesday and Thursday both. The
+                    # choir is on Wednesday, in the sheet and in the school's
+                    # own timetable, and the frozen fixtures under tests are
+                    # one fetch behind and still say Thursday. Which day a
+                    # lesson falls on is the timetable's to say, not this
+                    # table's; all this decides is whether there is a time to
+                    # draw it at. An unused slot costs nothing and a missing
+                    # one loses the lesson, so both days keep one.
                     (3,): [(1, 1, "9:00", "9:45"), (2, 1, "9:50", "10:35"),
                            (3, 2, "10:45", "12:05"), (5, 1, "12:10", "12:55"),
                            (6, 1, "12:55", "13:40"), (7, 1, "13:45", "14:30"),
                            (8, 1, "14:35", "15:20")],
                     (4,): [(1, 1, "9:00", "9:45"), (2, 1, "9:50", "10:35"),
-                           (3, 2, "10:45", "12:05"), (6, 1, "12:20", "13:35"),
+                           (3, 2, "10:45", "12:05"), (6, 1, "12:30", "13:15"),
                            (7, 1, "13:45", "14:30")],
                 },
             },

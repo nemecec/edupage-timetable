@@ -286,17 +286,17 @@ class WholePage(unittest.TestCase):
                 self.assertEqual({b["n"] for b in cls["h"][str(day)]["b"]},
                                  {"Amps"})
 
-    def test_the_short_days_keep_their_ten_minute_lunch(self):
+    def test_the_short_days_keep_their_half_hour_lunch(self):
         """The days without the language split leave one gap between the last
-        long block and the closing lesson, and the sheet gives it no times.
-        Ten minutes is what fits, so ten minutes is what is drawn."""
+        long block and the closing lesson. The first sheet gave it no times and
+        ten minutes was what fit; the next one named it: 13.15 to 13.45."""
         school = next(s for s in self.data["schools"] if s["l"] == "TäheTERA")
         cls = next(c for c in school["c"] if c["n"].strip() == "5.a")
         for day in (1, 2, 4):
             with self.subTest(day=day):
                 lunch = [b for b in cls["h"][str(day)]["b"] if b["n"] == "Lõuna"]
                 self.assertEqual([(b["s"], b["e"]) for b in lunch],
-                                 [("13.35", "13.45")])
+                                 [("13.15", "13.45")])
 
     def test_lunch_belongs_to_a_class_not_to_a_school(self):
         """One canteen cannot seat everybody at once, so a school can name the
@@ -328,7 +328,7 @@ class WholePage(unittest.TestCase):
         school = next(s for s in self.data["schools"] if s["l"] == "TäheTERA")
         cls = next(c for c in school["c"] if c["n"].strip() == "5.a")
         for day, when, subject, groups in (
-                (1, "10.45–12.20", "Inglise keel", {"IK1", "IK2", "IK3"}),
+                (1, "10.45–12.10", "Inglise keel", {"IK1", "IK2", "IK3"}),
                 (3, "10.45–12.05", "Matemaatika", {"Mat 1", "Mat 2", "Mat 3", "Mat 4"})):
             with self.subTest(day=day, subject=subject):
                 boxes = [e for e in cls["e"]

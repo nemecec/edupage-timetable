@@ -182,9 +182,11 @@ half of it. It does not need one: a reader who picks their language group is
 left with their own lunch as the free time around that lesson, found by the
 same rule that finds any other gap.
 
-The other three days do not split, and there the sheet leaves ten minutes
-between the last long block and the closing lesson. It gives that row no
-times, so ten minutes is what is drawn.
+The other three days do not split, and there the sheet leaves half an hour
+between the last long block and the closing lesson: 13.15 to 13.45. The first
+sheet to arrive gave that row no times and ten minutes was what fit around the
+lessons either side; the next one named it, and moved the fifth lesson to
+12.30–13.15 to make the room.
 
 A gap found by the same rule says what it is. The school gives a window —
 midday, at least half an hour — and a hole that fits it is drawn as `Lõuna`

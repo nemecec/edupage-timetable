@@ -813,6 +813,13 @@ the vendored library or the deployment. Neither suite touches the network.
 `tests/fixtures` holds frozen answers from the school's own API, so a build
 takes a moment. CI never spends the rate limit that the nightly publish needs.
 
+They are frozen on purpose and they go out of date on purpose. A test needs an
+input that does not move under it; it does not need this week. So the fixtures
+are not the place to look up what a class has on a Monday — the published page
+is, and it is rebuilt every night. Read the fixtures for that and you will
+report a lesson the school moved weeks ago, which is a mistake that has already
+been made twice.
+
 Measured, rather than guessed at:
 
 | | covered |

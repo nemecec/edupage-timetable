@@ -215,15 +215,25 @@ const MARGINS = [5, 9, 14];
    for its screen: the sheet is meant to go where the iPad goes. */
 const SHEETS = ["a4", "ipad11a16", "custom"];
 const SHEET_MM = { ipad11a16: [248.6, 179.5] };
-/* Nothing can be cut out of A4 that is larger than A4. */
-const SHEET_MIN = 100, SHEET_MAX_W = 297, SHEET_MAX_H = 210;
+/* Nothing can be cut out of A4 that is larger than the A4 page, and nothing can
+   be printed outside the paper edge. So the largest sheet is the page less that
+   edge at each end, which means the paper edge caps the sheet without ever
+   shrinking one that already fits: a line at 248.6mm stays 248.6mm whatever the
+   edge is set to, and only moves further in from the paper. */
+const SHEET_MIN = 100;
+const sheetLimit = () => [297 - 2 * state.printMargin, 210 - 2 * state.printMargin];
 /* Millimetres of white kept between the type and the cut line, so a scissors
    that wanders by a hair does not take a room number with it. */
 const CUT_PAD = 2.5;
 
+/* Clamped into range rather than refused. A reader who asks for more than the
+   paper edge leaves gets the largest sheet that fits, which is what they were
+   reaching for. Only something that is not a number at all — an emptied box —
+   goes back to the size that was in force. */
 const sheetMm = (value, most, fallback) => {
   const mm = Math.round(Number(value));
-  return (mm >= SHEET_MIN && mm <= most) ? mm : fallback;
+  if (!Number.isFinite(mm) || String(value).trim() === "") return fallback;
+  return Math.min(Math.max(mm, SHEET_MIN), most);
 };
 
 /* The sheet in millimetres, or nothing at all when the timetable fills the
@@ -348,8 +358,10 @@ function normalise(saved) {
   /* Free numbers rather than one of a list, so they are checked rather than
      matched. A saved sheet of nought millimetres would leave the fitter
      nothing to fit into and the printout empty. */
-  out.printWidth = sheetMm(out.printWidth, SHEET_MAX_W, base.printWidth);
-  out.printHeight = sheetMm(out.printHeight, SHEET_MAX_H, base.printHeight);
+  /* After the margin, because the margin is what bounds these. */
+  const [mostW, mostH] = [297 - 2 * out.printMargin, 210 - 2 * out.printMargin];
+  out.printWidth = sheetMm(out.printWidth, mostW, base.printWidth);
+  out.printHeight = sheetMm(out.printHeight, mostH, base.printHeight);
   if (!DATA.languages.some(l => l[0] === out.lang)) out.lang = DATA.lang;
   out.subjects = onlySubjects(out.subjects);
   const classes = {};
@@ -2282,6 +2294,11 @@ document.getElementById("printMargin").addEventListener("change", (ev) => {
   const mm = Number(ev.target.value);
   if (!MARGINS.includes(mm)) return;
   state.printMargin = mm;
+  /* A wider edge leaves less paper to cut a sheet out of. One that no longer
+     fits is brought back in, rather than printed off the page. */
+  const limit = sheetLimit();
+  state.printWidth = sheetMm(state.printWidth, limit[0], state.printWidth);
+  state.printHeight = sheetMm(state.printHeight, limit[1], state.printHeight);
   save();
   render();
 });
@@ -2296,14 +2313,13 @@ document.getElementById("printSheet").addEventListener("change", (ev) => {
    larger than the paper it is cut from, or too small to hold a week, is put
    back to what it was and the box is redrawn saying so. Keeping it silently
    would leave the reader looking at a sheet that cannot be printed. */
-for (const [id, key, most] of [["printWidth", "printWidth", SHEET_MAX_W],
-                               ["printHeight", "printHeight", SHEET_MAX_H]]) {
-  document.getElementById(id).addEventListener("change", (ev) => {
-    state[key] = sheetMm(ev.target.value, most, state[key]);
+["printWidth", "printHeight"].forEach((key, axis) => {
+  document.getElementById(key).addEventListener("change", (ev) => {
+    state[key] = sheetMm(ev.target.value, sheetLimit()[axis], state[key]);
     save();
     render();
   });
-}
+});
 bindChoice("teacherNameStyle", "teacherNameStyle");
 bindChoice("teacherNameOrder", "teacherNameOrder");
 bindChoice("subjectNameStyle", "subjectNameStyle");
@@ -2394,13 +2410,13 @@ function renderMargins() {
 function renderSheets() {
   fillOptions(document.getElementById("printSheet"),
               SHEETS.map(key => [key, t("sheet." + key)]), state.printSheet);
-  for (const [id, key, most] of [["printWidth", "printWidth", SHEET_MAX_W],
-                                 ["printHeight", "printHeight", SHEET_MAX_H]]) {
-    const box = document.getElementById(id);
-    box.max = String(most);
+  const limit = sheetLimit();
+  ["printWidth", "printHeight"].forEach((key, axis) => {
+    const box = document.getElementById(key);
     box.min = String(SHEET_MIN);
+    box.max = String(limit[axis]);
     if (box.value !== String(state[key])) box.value = String(state[key]);
-  }
+  });
   document.getElementById("sheetOwn")
           .classList.toggle("off", state.printSheet !== "custom");
   /* Said where the choice is made, because it is the whole answer to "my

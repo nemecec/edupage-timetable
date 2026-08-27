@@ -550,10 +550,26 @@ period grid, which needs no times.
   is left inside it, so a scissors that wanders by a hair does not take a room
   number with it.
 
-  A typed size is held to what an A4 page can carry, between 100mm and the
-  sheet's own 297 by 210. A number outside that goes back to the one in force,
-  and the box is redrawn saying so: a sheet of nought millimetres would leave
-  the fitter nothing to fit into.
+  **The paper edge and the sheet are different settings**, and it is worth being
+  plain about which does what. The paper edge is the printer's own margin. It
+  moves the cut line further in from the edge of the paper and never makes the
+  line smaller: an iPad-sized sheet measures 248.6 by 179.5 at a 5mm edge and at
+  a 14mm one. What the edge does do is leave less paper to cut a sheet out of, so
+  it caps how large a sheet can be — the A4 page less that edge at each end, 287
+  by 200 at the narrowest and 269 by 182 at the widest.
+
+  A typed size is held inside that, and to 100mm at the small end, because less
+  than that holds no week. Past either end it comes back to the largest or the
+  smallest that fits, rather than being refused: that is what the reader was
+  reaching for. Widening the paper edge brings a sheet that no longer fits back
+  in with it. It used to keep whatever was typed, and a sheet the size of the
+  page at the widest edge printed off it and cost a second sheet of paper. Only
+  an emptied box keeps the size that was in force.
+
+  A named sheet is never trimmed to fit, because a line drawn short of an iPad
+  would cut a sheet that does not go where the iPad goes. So a sheet that cannot
+  fit must not be offered at all, and a test holds every one of them against the
+  paper at the widest edge.
   **Lesson colors** offers three answers for every subject: the generated
   palette, the school's own colors from aSc, or colors of your own. A click on
   any lesson in the timetable also recolors its subject. The text flips between

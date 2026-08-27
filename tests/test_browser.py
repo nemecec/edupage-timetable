@@ -305,6 +305,43 @@ class ThePrintedSheet(InABrowser):
         # And the fitter aims at the cut box, less the white around the type.
         self.assertEqual(got["sheet"], round((179.5 - 5) * MM))
 
+    def test_the_paper_edge_caps_the_sheet_without_shrinking_it(self):
+        """Two settings that are easy to confuse. The paper edge is the printer's
+        own margin and it moves the cut line further in from the paper. It never
+        makes the line smaller — an iPad-sized sheet is iPad-sized at every
+        edge. What it does do is leave less paper to cut from, so a size that no
+        longer fits inside it is brought back in."""
+        self.show("68", "8")
+        MM = 96 / 25.4
+        for mm in (5, 9, 14):
+            got = self.js(
+                "state.printSheet = 'ipad11a16'; state.printMargin = %d;"
+                "printing = true; render();"
+                "var box = document.body.getBoundingClientRect();"
+                "var out = {w: box.width, h: box.height};"
+                "printing = false; render(); return out;" % mm)
+            self.assertAlmostEqual(got["w"], 248.6 * MM, delta=1, msg=str(mm))
+            self.assertAlmostEqual(got["h"], 179.5 * MM, delta=1, msg=str(mm))
+
+        # A size of one's own is held to what the edge leaves, through the real
+        # control, and comes back in when the edge widens.
+        got = self.js(
+            "state.printSheet = 'custom'; state.printMargin = 5;"
+            "syncDisplayControls();"
+            "var w = document.getElementById('printWidth');"
+            "w.value = '400'; w.dispatchEvent(new Event('change', {bubbles: true}));"
+            "return {typed: state.printWidth, max: w.max};")
+        self.assertEqual(got["typed"], 287, "not held to the narrowest edge")
+        self.assertEqual(got["max"], "287")
+
+        got = self.js(
+            "var m = document.getElementById('printMargin');"
+            "m.value = '14'; m.dispatchEvent(new Event('change', {bubbles: true}));"
+            "return {w: state.printWidth, h: state.printHeight,"
+            "        max: document.getElementById('printWidth').max};")
+        self.assertEqual(got["w"], 269, "a wider edge left it off the page")
+        self.assertEqual(got["max"], "269")
+
     def test_the_millimetre_boxes_are_live_only_for_a_size_of_ones_own(self):
         """They are dimmed rather than hidden, the way every other dependent
         control here behaves: a reader can see what their own size would be

@@ -537,22 +537,50 @@ test("a class is offered under its label and filed under its name", () => {
   assert.doesNotMatch(pick(`classKey()`), /1\. Maarja/);
 });
 
-test("a sheet the reader types is held to what A4 can carry", () => {
+test("a sheet the reader types is held inside the paper edge", () => {
   /* The number is typed, not picked, so it is the one setting a reader can put
      nonsense into. Nought millimetres would leave the fitter nothing to fit
-     into; a metre cannot be cut out of an A4 page. Both go back to the size
-     that was in force, rather than being kept and drawn. */
+     into, and a sheet wider than the paper edge leaves would print off the page
+     — which cost a second sheet of paper before this held it in.
+
+     The paper edge caps the sheet without ever shrinking one that already fits:
+     that is the whole difference between the two settings. */
   assert.equal(json(`defaults().printSheet`), "a4", "a sheet is cut by default");
   assert.equal(json(`normalise({printSheet: "ipad11a16"}).printSheet`), "ipad11a16");
   assert.equal(json(`normalise({printSheet: "nosuchthing"}).printSheet`), "a4");
 
-  // Held to the paper it is cut from, in each direction.
-  assert.equal(json(`normalise({printWidth: 297}).printWidth`), 297);
-  assert.equal(json(`normalise({printWidth: 298}).printWidth`), 210);
-  assert.equal(json(`normalise({printHeight: 210}).printHeight`), 210);
-  assert.equal(json(`normalise({printHeight: 211}).printHeight`), 148);
-  assert.equal(json(`normalise({printWidth: 0}).printWidth`), 210);
-  assert.equal(json(`normalise({printHeight: -5}).printHeight`), 148);
+  // At the narrowest edge, the A4 page less 5mm at each end.
+  const at = (margin, extra) => json(
+    `JSON.stringify(normalise({printMargin: ${margin}, ${extra}}))`);
+  assert.equal(JSON.parse(at(5, `printWidth: 287`)).printWidth, 287);
+  assert.equal(JSON.parse(at(5, `printHeight: 200`)).printHeight, 200);
+  // Past it, brought back to the largest that fits rather than refused.
+  assert.equal(JSON.parse(at(5, `printWidth: 400`)).printWidth, 287);
+  assert.equal(JSON.parse(at(5, `printHeight: 999`)).printHeight, 200);
+  // A wider edge leaves less paper, so the same number is held to less.
+  assert.equal(JSON.parse(at(14, `printWidth: 287`)).printWidth, 269);
+  assert.equal(JSON.parse(at(14, `printHeight: 200`)).printHeight, 182);
+  // And too small to hold a week comes up to the smallest that can.
+  assert.equal(JSON.parse(at(5, `printWidth: 4`)).printWidth, 100);
+  assert.equal(JSON.parse(at(5, `printHeight: -5`)).printHeight, 100);
+  // An emptied box keeps the size that was in force.
+  assert.equal(JSON.parse(at(5, `printWidth: null`)).printWidth, 210);
+});
+
+test("every sheet on offer fits the paper at the widest edge", () => {
+  /* A named sheet is a real object's size, so it is never trimmed to fit — a
+     line drawn short of an iPad would cut a sheet that does not go where the
+     iPad goes. Which means a sheet that cannot fit must not be offered at all,
+     and this is where a new one that cannot gets caught. */
+  const own = load();
+  const widest = JSON.parse(own(`JSON.stringify(Math.max(...MARGINS))`));
+  const room = [297 - 2 * widest, 210 - 2 * widest];
+  const sizes = JSON.parse(own(`JSON.stringify(SHEET_MM)`));
+  assert.ok(Object.keys(sizes).length, "no named sheets to check");
+  for (const [name, [w, h]] of Object.entries(sizes)) {
+    assert.ok(w <= room[0], `${name} is ${w}mm wide, the paper leaves ${room[0]}`);
+    assert.ok(h <= room[1], `${name} is ${h}mm tall, the paper leaves ${room[1]}`);
+  }
 });
 
 test("only a sheet smaller than the page is cut out of it", () => {

@@ -190,8 +190,8 @@ STRINGS = {
                            "computer. You can copy it straight from the "
                            "address bar, or use the {0} button in the top "
                            "right corner."),
-        "settings.printed": ("The bottom right corner of the printed sheet "
-                             "carries the same address, as a QR code."),
+        "settings.printed": ("The {0} setting puts the same address in the "
+                             "bottom right corner of the printed sheet."),
         "say": "Feedback",
         "say.link": "feedback",
         "say.intro": ("Anything you want to say about this page: what is "
@@ -343,8 +343,8 @@ STRINGS = {
                            "tunniplaan täpselt nii, nagu sa selle seadistasid. "
                            "Võid aadressi kopeerida otse aadressirealt või "
                            "kasutades üleval paremas nurgas asuvat nuppu {0}."),
-        "settings.printed": ("Väljatrüki alumises paremas nurgas on sama "
-                             "aadress QR-koodi kujul."),
+        "settings.printed": ("Valik {0} paneb sama aadressi väljatrüki "
+                             "alumisse paremasse nurka."),
         "say": "Tagasiside",
         "say.link": "tagasiside",
         "say.intro": ("Kõik, mida soovid selle lehe kohta öelda: mis on puudu, "
@@ -2424,7 +2424,7 @@ PAGE = """<!DOCTYPE html>
     <label for="settingsText" data-i18n="backup"></label>
     <p class="sub help" data-i18n="settings.label"></p>
     <p class="sub help" id="shareNote"></p>
-    <p class="sub help" data-i18n="settings.printed"></p>
+    <p class="sub help" id="printedNote"></p>
     <textarea id="settingsText" rows="5" spellcheck="false"></textarea>
   </div>
   <div class="row" style="margin-top:8px;padding-top:0;border-top:none">

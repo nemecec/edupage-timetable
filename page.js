@@ -88,10 +88,12 @@ const defaults = () => ({
   showTeacher: true, teacherNameStyle: "full",
   showRoom: true, showGroup: true,
   showDuration: true, showGaps: true,
-  /* The code in the corner of the printed sheet. Some readers want the sheet
-     and not the corner. The address in the other corner stays either way:
+  /* The code in the corner of the printed sheet, off until it is asked for.
+     Most sheets are read as paper on a wall, and the corner is room the
+     timetable could have used. A reader who wants to pick the sheet back up on
+     a phone switches it on. The address in the other corner stays either way:
      that is where anybody gets a timetable of their own. */
-  showQr: true,
+  showQr: false,
 
   /* Millimetres of paper left blank around the sheet. Five is about as narrow
      as a laser printer will take without clipping, and every millimetre saved
@@ -847,6 +849,11 @@ function applyStrings() {
   /* Named after the button it points at, so the two never drift apart. */
   const shareNote = document.getElementById("shareNote");
   if (shareNote) shareNote.textContent = t("settings.share", t("share"));
+  /* The same for the setting that puts the address on paper. The corner is
+     empty until a reader asks for the code, so the note has to say where to
+     ask, in the words the checkbox itself carries. */
+  const printedNote = document.getElementById("printedNote");
+  if (printedNote) printedNote.textContent = t("settings.printed", t("showQr"));
   /* A control with no visible label still has to say what it is out loud. */
   document.querySelectorAll("[data-i18n-aria]").forEach(el => {
     el.setAttribute("aria-label", t(el.dataset.i18nAria));

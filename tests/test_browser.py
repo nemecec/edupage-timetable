@@ -160,37 +160,37 @@ class ThePrintedSheet(InABrowser):
         self.assertGreater(lines, 500, "no detail lines drawn at all")
         self.assertEqual(clipped, [], "text cut by the edge of its box")
 
-    def test_the_qr_code_can_be_left_off_and_the_address_stays(self):
-        """Some readers want the sheet and not the corner. The address in the
-        other corner is where anybody gets a timetable of their own, so it
+    def test_the_qr_code_can_be_asked_for_and_the_address_stays(self):
+        """The corner is empty until a reader asks for the code. The address in
+        the other corner is where anybody gets a timetable of their own, so it
         stays either way. The code needs the real encoder, which is why this
         is asked of a browser rather than of the stub."""
         self.show("68", "8")
-        with_code = self.js(
+        without = self.js(
             "myOwn().studentName = 'Eva';"
             "printing = true; renderFooter(currentSchool()); printing = false;"
             "return {html: document.getElementById('foot').innerHTML};")["html"]
-        self.assertIn('class="qr"', with_code, "no code on the printed sheet")
+        self.assertNotIn('class="qr"', without, "the code was printed unasked")
 
-        without = self.js(
-            "state.showQr = false;"
+        with_code = self.js(
+            "state.showQr = true;"
             "printing = true; renderFooter(currentSchool()); printing = false;"
             "return {html: document.getElementById('foot').innerHTML};")["html"]
-        self.assertNotIn('class="qr"', without, "the code is still printed")
+        self.assertIn('class="qr"', with_code, "no code on the printed sheet")
         # The address in the other corner is read off location.host, which a
         # page opened from a file does not have. The stub, which does, holds
         # the rule that it stays either way.
 
         # Through the checkbox, and it survives being written down and read back.
         back = self.js(
-            "state.showQr = true;"
+            "state.showQr = false;"
             "var box = document.getElementById('showQr');"
-            "box.checked = false;"
+            "box.checked = true;"
             "box.dispatchEvent(new Event('change', {bubbles: true}));"
             "return {now: state.showQr,"
             "        back: normalise(JSON.parse(JSON.stringify(slim(state)))).showQr};")
-        self.assertFalse(back["now"])
-        self.assertFalse(back["back"], "the setting did not survive a saved link")
+        self.assertTrue(back["now"])
+        self.assertTrue(back["back"], "the setting did not survive a saved link")
 
     def test_a_larger_name_is_given_back_where_it_will_not_fit(self):
         """The arithmetic counts one line per line. A name set larger can wrap

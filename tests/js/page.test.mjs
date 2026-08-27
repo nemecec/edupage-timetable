@@ -1193,24 +1193,25 @@ test("the name order reaches the boxes and the tooltip", () => {
 });
 
 test("the address in the corner stays when the code goes", () => {
-  /* Some readers want the sheet and not the code. The address is where anybody
+  /* The code is off until a reader asks for it. The address is where anybody
      gets a timetable of their own, so it is not part of that choice.
      (The code itself needs the real encoder, so a browser test draws that.) */
   run(`state = defaults(); state.lang = "en"; applyStrings();
        state.school = "68"; state.class = "8";`);
-  assert.equal(json(`defaults().showQr`), true, "the code is off to begin with");
+  assert.equal(json(`defaults().showQr`), false, "the code is off to begin with");
 
   const footer = () => {
     run(`printing = true; renderFooter(currentSchool()); printing = false;`);
     return json(`document.getElementById("foot").innerHTML`);
   };
+  run(`state.showQr = true;`);
   assert.match(footer(), /class="brand"/, "no address on the printed sheet");
   run(`state.showQr = false;`);
   assert.match(footer(), /class="brand"/, "the address went with the code");
 
   // It rides in the settings like the rest.
-  assert.equal(json(`normalise({showQr: false}).showQr`), false);
-  assert.equal(json(`normalise({}).showQr`), true);
+  assert.equal(json(`normalise({showQr: true}).showQr`), true);
+  assert.equal(json(`normalise({}).showQr`), false);
   run(`state = defaults();`);
 });
 

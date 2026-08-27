@@ -369,7 +369,8 @@ month for the hosted zone. Everything else stays inside the free tiers.
 
 Every page names itself unofficial under its heading, beside a link to the
 school's own timetable page and the date the data was read. A printed sheet
-keeps the date and a QR code back to the page, and leaves the rest on screen.
+keeps the date, and leaves the rest on screen. A QR code back to the page can
+be switched on.
 Where visits are counted, the page says so.
 
 What the reader types stays in the reader's browser. Names, group choices,
@@ -503,10 +504,12 @@ period grid, which needs no times.
   Asked to grow, it has to shrink with everything else, or the fitter has
   nothing left to give.
 
-  **On the printout:** the QR code can be switched off, and the paper edge is
-  the reader's to set. Some readers want the sheet and not the corner. The
-  address in the other corner stays either way: the code goes to this reader's
-  own timetable, and the address is where anybody gets one of their own.
+  **On the printout:** the QR code can be switched on, and the paper edge is
+  the reader's to set. The code is off to begin with, because most sheets go on
+  a wall and are read as paper, and the corner is room the timetable could have
+  used. The address in the other corner stays either way: the code goes to this
+  reader's own timetable, and the address is where anybody gets one of their
+  own.
   **Lesson colors** offers three answers for every subject: the generated
   palette, the school's own colors from aSc, or colors of your own. A click on
   any lesson in the timetable also recolors its subject. The text flips between
@@ -693,10 +696,12 @@ period grid, which needs no times.
   code, no scaling and the screen's footer. A `beforeprint` listener does that
   now; the button still does it by hand as well, for a browser too old to fire
   the event, and both are guarded so neither renders twice.
-- **The printed sheet** carries the date the data was read and a QR code of the
-  link, captioned *Edit it here*. A sheet on the fridge can then be picked back
-  up on a phone with every choice still on it. Past about 2 kB no code holds the
-  link, and the corner is then empty. It used to print the address as text
+- **The printed sheet** carries the date the data was read. It can also carry a
+  QR code of the link, captioned *Edit it here*, so a sheet on the fridge can be
+  picked back up on a phone with every choice still on it. The code is off until
+  a reader asks for it: most sheets are read as paper, and the corner is room the
+  timetable could have used. Past about 2 kB no code holds the link, and the
+  corner is then empty. It used to print the address as text
   instead, which was worse than nothing: an address too long for a code is far
   too long to type. The page's other furniture — the
   disclaimer, the source link, the controls — stays on screen.
@@ -707,10 +712,10 @@ period grid, which needs no times.
   already holds it, because every change rewrites it, so the note says to copy
   it from there. The **Share** button does the same in one press. The note
   prints the button's own label, so the two cannot drift apart across a rename
-  or a language. A third sentence says that the printed sheet carries the same
-  address in the QR code in its bottom right corner. That matters for the same
-  reason the second sentence does: a sheet handed to somebody is a copy of the
-  settings, which is not obvious from a grid of lessons.
+  or a language. A third sentence says which setting puts the same address in
+  the bottom right corner of the printed sheet, and prints that setting's own
+  label for the same reason. It matters because a sheet handed to somebody is a
+  copy of the settings, which is not obvious from a grid of lessons.
 - **Language** switches the interface between English and Estonian. Everything
   the school entered stays in the language it was entered in. That is the subject
   names, the group codes, the rooms, the teacher names, and the line the school
@@ -758,7 +763,7 @@ paste lands.
   "detailSize": "100",
   "showDuration": true,
   "showGaps": true,
-  "showQr": true,
+  "showQr": false,
   "printMargin": 5,
 
   "subjectColorStyle": "school",
@@ -1123,7 +1128,8 @@ It appears three times, from one string in `tt.py`: as the tab icon, beside the
 heading on screen, and in the bottom left of the printed sheet next to the
 site's address. That last one is the opposite corner from the QR code, and the
 two say different things — the code goes to *this* reader's timetable, the
-address says where anybody can get one of their own. The address is read off
+address says where anybody can get one of their own. Which is why the address
+stays when the code is off. The address is read off
 `location` rather than written down, so it cannot name somewhere the page is
 not.
 

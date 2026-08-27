@@ -718,6 +718,18 @@ class Documentation(unittest.TestCase):
             # The button's own label goes in the hole, not a copy of the word.
             self.assertNotIn(data["strings"][lang]["share"], note, lang)
 
+    def test_the_printed_note_names_the_setting_it_points_at(self):
+        """The corner is empty until a reader switches the code on, so the note
+        has to say which setting does that, in the words it really carries."""
+        page, data = build()
+        self.assertIn('id="printedNote"', page)
+        self.assertIn('t("settings.printed", t("showQr"))', page)
+        for lang in ("en", "et"):
+            note = data["strings"][lang]["settings.printed"]
+            self.assertIn("{0}", note, lang)
+            # The checkbox's own label goes in the hole, not a copy of it.
+            self.assertNotIn(data["strings"][lang]["showQr"], note, lang)
+
     def test_every_display_setting_sits_under_the_right_heading(self):
         """Three settings drifted into "For each lesson, show:" that are not
         about a lesson at all — free time, which is a box the page adds to the

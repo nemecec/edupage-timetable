@@ -221,6 +221,23 @@ break between them is not taken. Ten lessons a week are the second shape. Left
 to end where the sixth ends, every one of them said a child was busy for twenty
 minutes after they were free.
 
+**LõunaTERA names its classes after their teacher** — Maarja, Heliis, Sille —
+so the name says nothing about which year a class is in. The school marks the
+years with rows of their own: a class called `3`, carrying no lessons, standing
+in the list in front of the classes in the third year. The order of the list is
+the only place that says which teacher teaches which year, and the school's own
+page reads it the same way.
+
+Those rows are not classes and are not offered as one. Only for a school whose
+day plan says it works this way, because `7` and `8` are real classes at
+ProTERA and dropping those would lose two years of the school. One of
+LõunaTERA's markers carries a single stray lesson, which is a slip in the
+timetable rather than a class anybody attends.
+
+So the two bands below are named by year rather than by a list of teachers. A
+school renames a class when its teacher changes, and a list of names here would
+quietly stop covering it — a class with no times draws nothing at all.
+
 Two grade bands run different days. The breaks — Puder, Lõuna/Õue, Hea aeg —
 are lessons in the timetable rather than gaps between lessons, with a
 supervisor and a length. The school says which subjects those are, and the page

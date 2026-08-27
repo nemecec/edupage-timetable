@@ -680,9 +680,13 @@ BELLS = {
         # still breaks, and reading a week is easier when they look like the
         # breaks every other school draws.
         "breakSubjects": ["Puder", "Lõuna/Õue", "Hea aeg"],
+        # Classes here are named after their teacher, and the year is a row of
+        # its own in the list: a class called `3`, carrying no lessons, in front
+        # of the classes in the third year. See class_grades.
+        "gradeRows": True,
         "bands": [
             {
-                "classes": ["Maarja", "Heliis", "Mari-Liis", "Cathleen", "Silva"],
+                "grades": [1, 2, 3],          # I kooliaste
                 "days": {
                     # The first two periods are the settling-in half hour and
                     # the lesson after it. The timetable runs one lesson across
@@ -696,7 +700,7 @@ BELLS = {
                 },
             },
             {
-                "classes": ["Elis", "Kateriine", "Juta", "Katrin", "Joanna", "Sille"],
+                "grades": [4, 5, 6],          # II kooliaste
                 "days": {
                     # Ten minutes between the fourth period and "hea aeg" that
                     # the sheet names as a break of its own, and the fifth
@@ -832,7 +836,36 @@ def block_gaps(cfg, slots, class_name=""):
              "start": _fmt_time(at), "end": _fmt_time(until)}]
 
 
-def band_slots(cfg, class_name, day):
+def class_grades(names, cfg):
+    """Which year each class is in, and which names are not classes at all.
+
+    Most schools write the year into the name: `5.a` and `6. S` are the fifth
+    and sixth years, and the number at the front is the answer.
+
+    LõunaTERA names its classes after their teacher — Maarja, Heliis, Sille —
+    so the name says nothing. It marks the years with rows of their own: a
+    class called `3`, carrying no lessons, standing in the list in front of the
+    classes in the third year. The order of the list is the only place that
+    says which teacher teaches which year, and the school's own page reads it
+    the same way.
+
+    A row like that is not a class and must not be offered as one. Only for a
+    school that says it works this way, because `7` and `8` are real classes at
+    ProTERA and dropping those would lose two years of the school.
+    """
+    grades, markers, year = {}, set(), None
+    for name in names:
+        plain = (name or "").strip()
+        if cfg and cfg.get("gradeRows") and re.fullmatch(r"\d+", plain):
+            year = int(plain)
+            markers.add(name)
+            continue
+        first = re.match(r"(\d+)", plain)
+        grades[name] = int(first.group(1)) if first else year
+    return grades, markers
+
+
+def band_slots(cfg, class_name, day, grade=None):
     """The published blocks for this class on this day, if the school lists them.
 
     A block covering two aSc periods is one box, as a paired slot is. The dicts
@@ -841,10 +874,17 @@ def band_slots(cfg, class_name, day):
     `extract` branches on which of the two it is holding.
     """
     for band in cfg.get("bands", []):
+        # By year where the school's own list says which year a class is in,
+        # and by name where the name is all there is. A year is worth
+        # preferring: a school renames a class when its teacher changes, and a
+        # list of names here would then quietly stop covering it.
+        if "grades" in band:
+            if grade not in band["grades"]:
+                continue
         # aSc hands back what someone typed, trailing space and all: LõunaTERA
         # has a class called "Silva ". Matching it literally lost that class its
         # times, and a class with no times draws nothing at all.
-        if class_name.strip() not in [c.strip() for c in band["classes"]]:
+        elif class_name.strip() not in [c.strip() for c in band["classes"]]:
             continue
         for days, blocks in band["days"].items():
             if day not in days:
@@ -1073,7 +1113,8 @@ def day_slots(blocks, n_periods, always_paired=0):
     return slots
 
 
-def extract(result, class_name, n_periods=None, cfg=None, period_times=None):
+def extract(result, class_name, n_periods=None, cfg=None, period_times=None,
+            grade=None):
     """Flatten the aSc relational tables into one lesson row per (day, period)."""
     T = tables(result)
     subjects, teachers = index(T["subjects"]), index(T["teachers"])
@@ -1142,7 +1183,7 @@ def extract(result, class_name, n_periods=None, cfg=None, period_times=None):
     clock = period_times
     shape = {}
     for day in {e["day"] for e in entries}:
-        published = band_slots(cfg, cls["name"], day) if cfg else None
+        published = band_slots(cfg, cls["name"], day, grade) if cfg else None
         if published:
             used = {e["startPeriod"] + k for e in entries if e["day"] == day
                     for k in range(e["duration"])}
@@ -1225,7 +1266,8 @@ def extract(result, class_name, n_periods=None, cfg=None, period_times=None):
                     e["endMin"] = slot["at"] + length
                     e["time"] = f"{_fmt_time(slot['at'])}–{_fmt_time(slot['at'] + length)}"
 
-    if cfg and cfg.get("bands") and any(band_slots(cfg, cls["name"], d) for d in shape):
+    if cfg and cfg.get("bands") and any(band_slots(cfg, cls["name"], d, grade)
+                                        for d in shape):
         entries = merge_blocks(entries)
 
     label_divisions(divisions, entries)
@@ -1233,6 +1275,8 @@ def extract(result, class_name, n_periods=None, cfg=None, period_times=None):
 
     return {
         "name": cls["name"],
+        # Which year, where the school says. Only the day plan reads it.
+        "grade": grade,
         "divisions": divisions,
         "subjects": sorted({e["subject"] for e in entries}),
         "entries": entries,
@@ -1393,8 +1437,10 @@ def collect(client, year, only, verbose):
             # period times in EduPage. Those are as good as a bell schedule and
             # better than nothing, which is what the fallback grid is.
             own_times = None if cfg else meta["periodTimes"]
-            classes = [extract(result, name, n_periods, for_class(cfg, name), own_times)
-                       for name in meta["classNames"]]
+            grades, markers = class_grades(meta["classNames"], cfg)
+            classes = [extract(result, name, n_periods, for_class(cfg, name),
+                               own_times, grades.get(name))
+                       for name in meta["classNames"] if name not in markers]
         except (RuntimeError, KeyError, TypeError, IndexError, ValueError) as exc:
             print(f"warning: skipping timetable {entry['tt_num']} "
                   f"({type(exc).__name__}: {exc})", file=sys.stderr)
@@ -1416,7 +1462,8 @@ def collect(client, year, only, verbose):
             # thirteen classes would bury the one time it has.
             for c in classes:
                 covered = cfg and (not cfg.get("bands") or
-                                   any(band_slots(cfg, c["name"], d) for d in range(7)))
+                                   any(band_slots(cfg, c["name"], d, c.get("grade"))
+                                       for d in range(7)))
                 lost = [e for e in c["entries"]
                         if not e["part"] and e.get("startMin") is None]
                 if lost and covered:

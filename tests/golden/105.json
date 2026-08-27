@@ -1,14 +1,6 @@
 {
  "school": "LõunaTERA",
  "classes": {
-  "1 · full": [
-   "r0 | Monday | Tuesday | Wednesday | Thursday | Friday",
-   "r1 | 1. | Lisaloovus Maarja Kass"
-  ],
-  "1 · groups": [
-   "r0 | Monday | Tuesday | Wednesday | Thursday | Friday",
-   "r1 | 1. | Lisaloovus Maarja Kass"
-  ],
   "Maarja · full": [
    "Monday | ev | Üldõpetus | t0 | h161 | l0 | w100 | 9.00–10.30 (1 hour 30 min) Häälestus + Üldõpetus Maarja Kass",
    "Monday | ev brk tight snug | Puder | t162 | h35 | l0 | w100 | 10.30–10.50 (20 min) Puder",

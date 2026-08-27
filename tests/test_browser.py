@@ -112,7 +112,7 @@ class ThePrintedSheet(InABrowser):
         pairs = self.js(
             "return [].concat.apply([], DATA.schools.map(function (s) {"
             "  return s.c.map(function (c) { return [s.n, c.n]; }); }))")
-        self.assertGreaterEqual(len(pairs), 41, "fewer classes than the fixtures hold")
+        self.assertGreaterEqual(len(pairs), 40, "fewer classes than the fixtures hold")
         over = []
         for school, klass in pairs:
             got = self.js(

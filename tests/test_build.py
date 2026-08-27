@@ -20,10 +20,6 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 FIXTURES = os.path.join(HERE, "fixtures")
 
-# Empty containers aSc carries alongside the real classes, standing in for a
-# grade heading. Named rather than counted, so the invariants below cannot be
-# talked out of examining a real class that happens to be small.
-MARKER_CLASSES = {"1"}
 sys.path.insert(0, ROOT)
 
 import tt
@@ -84,15 +80,15 @@ class WholePage(unittest.TestCase):
         rows = [e for s in self.data["schools"] for c in s["c"] for e in c["e"]]
         boxes = [e for e in rows if not e["c"]]
         self.assertEqual(len(self.data["schools"]), 4)
-        self.assertEqual(sum(len(s["c"]) for s in self.data["schools"]), 41)
+        self.assertEqual(sum(len(s["c"]) for s in self.data["schools"]), 40)
         # Fewer boxes than periods-with-a-lesson: a published block covering
         # two periods is one box. Fewer rows than periods with a card, too —
         # SädeTERA has two lessons its own day plan leaves no room for, and the
         # build says so rather than drawing them at a guessed time.
-        self.assertEqual((len(rows), len(boxes)), (1891, 1553))
+        self.assertEqual((len(rows), len(boxes)), (1890, 1552))
         # 70 subject names, plus the five named breaks. A break is drawn and
         # recolored like a lesson, so it needs a color of its own.
-        self.assertEqual(len(self.data["palette"]), 75)
+        self.assertEqual(len(self.data["palette"]), 74)
         # Every class carries lessons, and the group pickers are populated.
         self.assertTrue(all(c["e"] for s in self.data["schools"] for c in s["c"]))
         self.assertEqual(sum(len(c["v"]) for s in self.data["schools"]
@@ -482,13 +478,17 @@ class WholePage(unittest.TestCase):
             # A school can publish a sheet for one class and none for the
             # others — TäheTERA has one of fourteen — and the others fall back
             # to the plain grid on purpose. Check the ones the plan names.
-            covered = ({name.strip() for band in bands for name in band["classes"]}
-                       if bands else {k["n"].strip() for k in school["c"]})
+            # A band names the classes it covers, or the years — and where it
+            # names years, every class the school offers is in one of them.
+            covered = ({k["n"].strip() for k in school["c"]}
+                       if not bands or any("grades" in band for band in bands)
+                       else {name.strip() for band in bands
+                             for name in band["classes"]})
             for klass in school["c"]:
                 name = klass["n"].strip()
                 timed = sum(1 for e in klass["e"] if e["a"] is not None)
                 with self.subTest(school=school["l"], klass=name):
-                    if name in covered and name not in MARKER_CLASSES:
+                    if name in covered:
                         checked += 1
                         self.assertEqual(timed, len(klass["e"]),
                                          "lessons without a time are never drawn")

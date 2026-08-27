@@ -82,7 +82,7 @@ class PublishedBlocks(unittest.TestCase):
         """The settling-in half hour and the lesson after it are one block,
         because the timetable runs one lesson across both. Then porridge."""
         got = [(s["period"], s["periods"], s["start"], s["end"])
-               for s in tt.band_slots(self.cfg, "Maarja", 0)]
+               for s in tt.band_slots(self.cfg, "Maarja", 0, 1)]
         self.assertEqual(got[:3], [(1, 2, "9.00", "10.30"), (3, 1, "10.30", "10.50"),
                                    (4, 1, "10.50", "11.50")])
 
@@ -90,30 +90,49 @@ class PublishedBlocks(unittest.TestCase):
         """The fifth period of the older years has two shapes: on its own it
         runs to 14.00, and carrying the sixth with it, it finishes at 14.35 —
         which is 20 minutes before the sixth would have ended alone."""
-        fifth = next(s for s in tt.band_slots(self.cfg, "Joanna", 0)
+        fifth = next(s for s in tt.band_slots(self.cfg, "Joanna", 0, 6)
                      if s["period"] == 8)
         self.assertEqual((fifth["start"], fifth["end"]), ("13.15", "14.00"))
         self.assertEqual(fifth["runsOn"], "14.35")
         # Every other block says nothing, and stops where its last one does.
-        others = [s for s in tt.band_slots(self.cfg, "Joanna", 0)
+        others = [s for s in tt.band_slots(self.cfg, "Joanna", 0, 6)
                   if s["period"] != 8]
         self.assertTrue(others)
         for slot in others:
             self.assertNotIn("runsOn", slot)
 
     def test_friday_has_its_own_shape(self):
-        self.assertEqual(len(tt.band_slots(self.cfg, "Maarja", 4)), 4)
+        self.assertEqual(len(tt.band_slots(self.cfg, "Maarja", 4, 1)), 4)
 
     def test_the_two_bands_differ(self):
-        self.assertNotEqual(tt.band_slots(self.cfg, "Maarja", 0),
-                            tt.band_slots(self.cfg, "Juta", 0))
+        self.assertNotEqual(tt.band_slots(self.cfg, "Maarja", 0, 1),
+                            tt.band_slots(self.cfg, "Juta", 0, 5))
 
-    def test_a_class_name_with_stray_space_still_matches(self):
-        # aSc hands back "Silva " — matching it literally lost that class its times.
-        self.assertIsNotNone(tt.band_slots(self.cfg, "Silva ", 0))
+    def test_the_year_comes_from_the_order_of_the_school_s_own_list(self):
+        """LõunaTERA names its classes after their teacher, so the name says
+        nothing. It marks the years with rows of their own: a class called `3`,
+        carrying no lessons, in front of the classes in the third year. Those
+        rows are not classes and must not be offered as one."""
+        names = ["1", "Maarja", "2", "Heliis", "Mari-Liis", "3", "Cathleen",
+                 "Silva ", "4", "Elis", "Kateriine"]
+        grades, markers = tt.class_grades(names, self.cfg)
+        self.assertEqual(markers, {"1", "2", "3", "4"})
+        self.assertEqual(grades, {"Maarja": 1, "Heliis": 2, "Mari-Liis": 2,
+                                  "Cathleen": 3, "Silva ": 3,
+                                  "Elis": 4, "Kateriine": 4})
+        # The trailing space aSc hands back is carried through untouched, so
+        # the class it belongs to still finds its year and its times.
+        self.assertIsNotNone(tt.band_slots(self.cfg, "Silva ", 0, grades["Silva "]))
 
-    def test_a_class_in_no_band_gets_nothing(self):
-        self.assertIsNone(tt.band_slots(self.cfg, "Nobody", 0))
+    def test_a_school_that_writes_the_year_in_the_name_needs_no_rows(self):
+        """Everywhere else the number at the front of the name is the year, and
+        a class called `7` is a class, not a marker."""
+        grades, markers = tt.class_grades(["7", "8", "5.a", "6. S"], None)
+        self.assertEqual(markers, set())
+        self.assertEqual(grades, {"7": 7, "8": 8, "5.a": 5, "6. S": 6})
+
+    def test_a_class_in_no_year_gets_nothing(self):
+        self.assertIsNone(tt.band_slots(self.cfg, "Nobody", 0, None))
 
     def test_a_school_without_bands_gets_nothing(self):
         self.assertIsNone(tt.band_slots(tt.BELLS["ProTERA"], "8", 0))

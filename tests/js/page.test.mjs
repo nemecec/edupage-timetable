@@ -537,6 +537,27 @@ test("a class is offered under its label and filed under its name", () => {
   assert.doesNotMatch(pick(`classKey()`), /1\. Maarja/);
 });
 
+test("a pick left over from a renamed group hides nothing", () => {
+  /* Renaming a study group renames the key its pick is filed under, because the
+     key is the list of groups in the division. A pick under the old key matches
+     no division, and the reader is shown every group until they pick again.
+     There is nothing to migrate it to: TäheTERA's old "HK" was a placeholder
+     covering half of each group that replaced it. Showing everything is the only
+     safe answer — an empty timetable would look like a school with no lessons. */
+  const own = load();
+  const shown = (expression) => JSON.parse(own(`JSON.stringify(${expression})`));
+  const groupsDrawn = () => shown(`currentClass().e
+      .filter(e => visible(e, mine().studyGroups, currentClass().v))
+      .map(e => e.g.join("/"))`);
+
+  own(`myOwn().studyGroups = {"HK/HK1/PK/SK": "HK"};`);
+  assert.ok(groupsDrawn().includes("A"), "a group lesson went missing");
+
+  // A pick that does match a division still rules the other groups out.
+  own(`myOwn().studyGroups = {"A/B": "B"};`);
+  assert.ok(!groupsDrawn().includes("A"), "the pick stopped filtering");
+});
+
 test("a class with no label of its own is called by its name", () => {
   assert.equal(json(`classLabel({n: "8"})`), "8");
   assert.equal(json(`classLabel({n: "8", d: ""})`), "8");

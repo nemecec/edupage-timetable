@@ -176,6 +176,22 @@ one group takes the language at **12.10-12.55** and eats after, the other eats
 first and takes it at **12.55-13.40**. Two rows, two periods in the timetable,
 so both are drawn.
 
+**EduPage's two Spanish groups are not groups.** It names one group per lesson,
+which assumes that a group meets at the same period every week. Here it does
+not. The half that goes first on Monday goes second on Thursday. What EduPage
+holds is `HK` fixed to 12.10 and `HK1` fixed to 12.55, on both days. Neither is
+a set of children. A reader who picked one saw the right lesson on one day and
+the wrong one on the other, with lunch on the wrong side of it.
+
+So 5.a's two are mapped onto the groups the school does name. `HK1` takes the
+language at 12.10 on Monday and at 12.55 on Thursday. `HK2` is the other way
+round. The mapping is per class and per day. It renames the picker as well as
+the lessons, because one EduPage group becomes two.
+
+5.l and 5.t sit in the same two lessons and are listed the same way. Whether
+they swap too is not in the data, and the school has said only for 5.a. It is
+one more line in the table once somebody says.
+
 On Monday and Thursday, then, the school publishes no lunch band. Lunch is a
 different hour for each group, and a band across the class would be wrong for
 half of it. It does not need one: a reader who picks their language group is

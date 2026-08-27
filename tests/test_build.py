@@ -201,6 +201,41 @@ class WholePage(unittest.TestCase):
         for e in taught:
             self.assertEqual(len(e["T"]), len(e["t"]))
 
+    def test_the_swapped_spanish_groups_land_on_the_right_days(self):
+        """TäheTERA 5.a takes Spanish at 12.10 and at 12.55 on Monday and on
+        Thursday, and the half that goes first on Monday goes second on
+        Thursday. aSc cannot say that, so it names one group per period and
+        both names are placeholders. HK1 is the group that goes at 12.10 on
+        Monday, HK2 the other one."""
+        school = next(s for s in self.data["schools"] if s["l"] == "TäheTERA")
+        cls = next(c for c in school["c"] if c["n"] == "5.a")
+        spanish = sorted((e["d"], e["a"], "/".join(e["g"]))
+                         for e in cls["e"] if e["s"] == "Hispaania keel")
+        mon, thu = 0, 3
+        self.assertEqual(spanish, [
+            (mon, 12 * 60 + 10, "HK1"), (mon, 12 * 60 + 55, "HK2"),
+            (thu, 12 * 60 + 10, "HK2"), (thu, 12 * 60 + 55, "HK1"),
+        ])
+
+    def test_the_group_picker_offers_both_spanish_groups(self):
+        """One aSc group becomes two, and the reader has to be able to pick
+        either. French and German share the division and do not swap."""
+        school = next(s for s in self.data["schools"] if s["l"] == "TäheTERA")
+        cls = next(c for c in school["c"] if c["n"] == "5.a")
+        div = next(d for d in cls["v"] if "HK1" in d["groups"])
+        self.assertEqual(div["groups"], ["HK1", "HK2", "PK", "SK"])
+
+    def test_the_other_fifth_years_are_left_as_edupage_has_them(self):
+        """5.l and 5.t sit in the same two lessons and are listed the same way.
+        Whether they swap too is not in the data, and the school has said only
+        for 5.a. Guessing would put the wrong lesson in front of a reader."""
+        school = next(s for s in self.data["schools"] if s["l"] == "TäheTERA")
+        for name in ("5.l", "5.t"):
+            cls = next(c for c in school["c"] if c["n"] == name)
+            groups = {g for e in cls["e"] if e["s"] == "Hispaania keel"
+                      for g in e["g"]}
+            self.assertEqual(sorted(groups), ["HK", "HK1"], name)
+
     def test_a_teacher_named_class_is_offered_with_its_year(self):
         """LõunaTERA names its classes after their teacher, so the built page
         carries a label saying the year as well. The name itself must not move:

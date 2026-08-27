@@ -630,6 +630,32 @@ BELLS = {
         # call one that falls in the middle of the day and is long enough to
         # eat in. Fifteen minutes between two lessons is not lunch.
         "lunchGap": {"name": "Lõuna", "from": "12:00", "to": "13:00", "least": 30},
+        # 5.a takes Spanish in two groups, and aSc cannot say so. It names one
+        # group per lesson, which assumes a group meets at the same period
+        # every week, and here it does not. Both days hold a Spanish lesson at
+        # 12.10 and another at 12.55, and the half that goes first on Monday
+        # goes second on Thursday. aSc writes that as two groups fixed to their
+        # periods — "HK" always at 12.10, "HK1" always at 12.55 — so a reader
+        # who picks one is shown the wrong lesson on one of the two days.
+        #
+        # Those two names mean nothing on their own, so they are mapped onto
+        # the two groups the school itself names. HK1 is the group that takes
+        # the language at 12.10 on Monday and at 12.55 on Thursday, HK2 the
+        # other way round.
+        #
+        # This is 5.a as the school stated it. 5.l and 5.t sit in the same two
+        # lessons and are listed the same way, and whether they swap too is not
+        # in the data: it is one more line here once somebody says.
+        # Source: the school, on the split.
+        "regroup": [
+            {
+                "classes": ["5.a"],
+                "days": {
+                    (0,): {"HK": "HK1", "HK1": "HK2"},
+                    (3,): {"HK": "HK2", "HK1": "HK1"},
+                },
+            },
+        ],
         "bands": [
             {
                 "classes": ["5.a"],
@@ -863,6 +889,46 @@ def class_grades(names, cfg):
         first = re.match(r"(\d+)", plain)
         grades[name] = int(first.group(1)) if first else year
     return grades, markers
+
+
+def _regroup_rule(cfg, class_name):
+    """The day-by-day group remapping this class needs, if the school needs one."""
+    for rule in (cfg or {}).get("regroup", []):
+        # Trailing space and all, the way band_slots matches.
+        if class_name.strip() in [c.strip() for c in rule["classes"]]:
+            return rule["days"]
+    return None
+
+
+def regroup(cfg, class_name, day, names):
+    """What the class really calls these groups on this day.
+
+    aSc names one group per lesson, which assumes that a group meets at the
+    same period every week. Where a school swaps two groups between two periods
+    from one day to the next, that assumption is wrong: the names aSc keeps are
+    placeholders, and a reader who picks one is shown the wrong lesson on one of
+    the days. This maps them onto the groups the school itself names.
+    """
+    days = _regroup_rule(cfg, class_name)
+    if not days:
+        return names
+    for wanted, mapping in days.items():
+        if day in wanted:
+            return [mapping.get(n, n) for n in names]
+    return names
+
+
+def regroup_all(cfg, class_name, names):
+    """Every name the remapping can produce, which is what a picker offers.
+
+    One aSc group becomes two, because the two days disagree about which group
+    it is. A name no rule touches comes through as it is.
+    """
+    days = _regroup_rule(cfg, class_name)
+    if not days:
+        return names
+    return sorted({mapping.get(name, name)
+                   for name in names for mapping in days.values()})
 
 
 def band_slots(cfg, class_name, day, grade=None):
@@ -1134,7 +1200,11 @@ def extract(result, class_name, n_periods=None, cfg=None, period_times=None,
         members = [groups[g]["name"] for g in div["groupids"]
                    if g in groups and not groups[g]["entireclass"]]
         if members:
-            divisions.append({"id": div["id"], "groups": sorted(set(members))})
+            # A picker offers every group the reader could be in, which is not
+            # always what aSc lists. See regroup_all.
+            divisions.append({"id": div["id"],
+                              "groups": regroup_all(cfg, class_name,
+                                                    sorted(set(members)))})
     divisions.sort(key=lambda d: (len(d["groups"]), d["groups"]))
 
     entries = []
@@ -1163,8 +1233,10 @@ def extract(result, class_name, n_periods=None, cfg=None, period_times=None,
         for day_idx, flag in enumerate(card["days"]):
             if flag != "1":
                 continue
+            # Which group this is can depend on the day. See regroup.
+            here = dict(base, groups=regroup(cfg, class_name, day_idx, grp))
             for step in range(base["duration"]):
-                entries.append(dict(base, day=day_idx, period=start + step,
+                entries.append(dict(here, day=day_idx, period=start + step,
                                     startPeriod=start, part=step))
 
     for e in entries:

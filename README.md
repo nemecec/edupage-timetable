@@ -922,7 +922,23 @@ Some of these choices are not obvious:
   in the stylesheet, and a printer rendered the translucent half as solid black
   — on paper only, never in a PDF, which is the sort of thing a driver does
   with alpha it would rather not composite. Nothing is left for a driver to
-  blend. The default
+  blend.
+
+  **No gradient that reaches the sheet has a see-through stop**, and the hatch
+  is only where that was learned. The half-hour rules down a day and the grey
+  behind the clock strip were written the same way, `transparent` past the first
+  pixel, and printed the same way: black bands across the afternoon, on paper
+  and in a printed PDF, never on screen. Both now name the color behind them
+  instead. A browser test walks every gradient the sheet really paints and fails
+  on any stop that is not opaque, which is the only place this can be caught —
+  nothing on screen shows it, so the reader finds out from the printer.
+
+  Collapsing the rules also fixed something quieter. They were two stacked
+  gradients, one per half hour and one per hour, and the top one had to be
+  see-through for the other to show. Both drew their lines at the same offsets,
+  so the lighter half-hour line covered the darker hour line it was meant to
+  leave showing. An hour is exactly two halves, so one gradient now holds both
+  lines and the hour reads darker again. The default
   color is a quiet grey rather than one from the subject palette. A break runs
   the full width of the day, so a palette color wins every glance, which is
   backwards for a gap. Each row says what that subject

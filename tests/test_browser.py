@@ -15,6 +15,7 @@ than fail, so a checkout with no Chrome still runs the rest of the suite.
 
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -304,6 +305,39 @@ class ThePrintedSheet(InABrowser):
         self.assertIn("size: A4 landscape", got["rule"])
         # And the fitter aims at the cut box, less the white around the type.
         self.assertEqual(got["sheet"], round((179.5 - 5) * MM))
+
+    def test_no_gradient_on_the_sheet_has_a_see_through_stop(self):
+        """A printer turns the see-through half of a gradient solid black. It
+        does it on paper only, never in a PDF viewer, so nothing on screen shows
+        it and the reader finds out from the printer. The break hatch was bitten
+        first and is mixed opaque in page.js; the half-hour rules and the clock
+        strip were bitten next.
+
+        So: every gradient that reaches the sheet must be opaque at every stop.
+        Where something needs to look see-through, it is written as the color
+        behind it instead. This walks what is really painted, because one of the
+        three gradients is built in the script rather than written in the CSS."""
+        for school, klass in (("103", "5.a"), ("105", "Maarja"), ("68", "8")):
+            self.show(school, klass)
+            got = self.js(
+                "printing = true; render();"
+                "var seen = new Set();"
+                "document.querySelectorAll('#grid, #grid *, #foot, #foot *')"
+                "  .forEach(function (el) {"
+                "    var v = getComputedStyle(el).backgroundImage || '';"
+                "    if (v.indexOf('gradient') >= 0) seen.add(v); });"
+                "printing = false; render();"
+                "return {images: Array.from(seen)};")
+            self.assertGreater(len(got["images"]), 0,
+                               "no gradients found at all, so nothing was checked")
+            for image in got["images"]:
+                inside = " ".join(re.findall(r"gradient\((.*)\)", image))
+                # rgba(...) is fine only at full alpha. Chrome writes every
+                # computed color as rgb() or rgba(), so this sees them all.
+                see_through = [c for c in re.findall(r"rgba\([^)]*\)", inside)
+                               if not re.search(r",\s*1\s*\)$", c)]
+                self.assertEqual(see_through, [],
+                                 "%s/%s paints %s" % (school, klass, image[:120]))
 
     def test_the_paper_edge_caps_the_sheet_without_shrinking_it(self):
         """Two settings that are easy to confuse. The paper edge is the printer's

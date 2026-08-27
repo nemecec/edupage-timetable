@@ -2118,17 +2118,31 @@ PAGE = """<!DOCTYPE html>
   /* The clock runs down a strip of its own, carried on through from the day
      headings above it. The strip is what makes a cut readable: where the axis
      jumps, the strip is torn across and the page shows through the gap. */
+  /* Opaque at both ends, never `transparent`. A printer turned the translucent
+     half of a gradient solid black — on paper only, never in a PDF viewer,
+     which is what a driver does with alpha it does not want to composite. So
+     the far half is written as the color behind it rather than as nothing. See
+     hatch() in page.js, which was bitten first. */
   .tlbody { display: flex; position: relative; padding: 9px 0 11px;
             background: linear-gradient(to right,
-              var(--panel) 0 var(--gut), transparent var(--gut)); }
+              var(--panel) 0 var(--gut), var(--bg) var(--gut)); }
   .tlaxis { flex: 0 0 var(--gut); position: relative; }
   .tlaxis .t { position: absolute; right: 6px; font-size: 10.5px; color: var(--muted);
                transform: translateY(-50%); font-variant-numeric: tabular-nums; }
   .tlaxis .t.hour { color: #4b5563; font-weight: 600; }
+  /* The half-hour rules, one gradient rather than two stacked. An hour is
+     exactly two halves, so one period holds both lines: the darker one on the
+     hour and the lighter one between. Stacking them needed the top layer to be
+     see-through, and see-through is what a printer turns black. It also meant
+     the two layers drew their lines at the same offsets, where the top one
+     covered the hour line it was supposed to leave showing. */
   .tlcol { flex: 1 1 0; position: relative; border-left: 1px solid var(--line);
            background-image:
-             repeating-linear-gradient(to bottom, #eceef1 0 1px, transparent 1px var(--half)),
-             repeating-linear-gradient(to bottom, #d8dbe0 0 1px, transparent 1px var(--hour));
+             repeating-linear-gradient(to bottom,
+               #d8dbe0 0 1px,
+               var(--bg) 1px var(--half),
+               #eceef1 var(--half) calc(var(--half) + 1px),
+               var(--bg) calc(var(--half) + 1px) var(--hour));
   }
   .ev { position: absolute; border-radius: 4px; padding: 2px 5px; overflow: hidden;
         box-sizing: border-box; border: 1px solid rgba(0,0,0,.18); }

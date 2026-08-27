@@ -1171,12 +1171,12 @@ test("the address in the corner stays when the code goes", () => {
   run(`state = defaults();`);
 });
 
-test("the subject name is asked for a little larger than the rest", () => {
-  /* It is the thing a reader looks for first and it was set at the same size
-     as the clock beside it. */
+test("the name and the clock are asked for larger than the rest", () => {
+  /* The two things a reader is looking for. The line of room and teacher is
+     there to be checked rather than read, and stays the size it was. */
   run(`state = defaults();`);
-  assert.equal(json(`askedGrow("name")`), 1.15);
-  assert.equal(json(`askedGrow("time")`), 1);
+  assert.equal(json(`askedGrow("name")`), 1.5);
+  assert.equal(json(`askedGrow("time")`), 1.25);
   assert.equal(json(`askedGrow("detail")`), 1);
 
   // And the reader's own choice is a percentage of the page's own size.
@@ -1202,6 +1202,7 @@ test("a box gives back what it has no room for", () => {
   // None at all: the page's own sizes, and never less.
   assert.equal(room(20, "", ["time", "name", "detail"]), 0);
   // In between: some of it, and never outside nought and one.
+  run(`state.timeSize = "100"; state.detailSize = "100";`);
   const part = room(48, " snug", ["time", "name", "detail"]);
   assert.ok(part > 0 && part < 1, "expected part of the growth, got " + part);
 
@@ -1213,7 +1214,8 @@ test("a box gives back what it has no room for", () => {
   run(`state = defaults(); state.nameSize = "150";`);
   const wide = json(`growStyle(200, "", ["time", "name", "detail"])`);
   assert.match(wide, /--grow-name:1\.5;/);
-  assert.match(wide, /--grow-time:1;/);
+  assert.match(wide, /--grow-time:1\.25;/, "the clock is asked for larger too");
+  assert.match(wide, /--grow-detail:1;/, "the quiet line was grown");
   const tight = json(`growStyle(20, "", ["time", "name", "detail"])`);
   assert.match(tight, /--grow-name:1;/, "a full box was still grown");
   run(`state = defaults();`);
@@ -1251,12 +1253,12 @@ test("a typeface is one of the three every machine has", () => {
 
   // A face this page does not know is refused rather than written out.
   assert.equal(json(`normalise({nameFace: "Comic Sans"}).nameFace`), "sans");
-  assert.equal(json(`normalise({nameSize: "900"}).nameSize`), "115");
+  assert.equal(json(`normalise({nameSize: "900"}).nameSize`), "150");
   assert.equal(json(`normalise({nameFace: "serif"}).nameFace`), "serif");
   /* A link written before this list lost its "automatic" still opens, and on
      the same typeface it drew then. */
   assert.equal(json(`normalise({nameFace: "auto"}).nameFace`), "sans");
-  assert.equal(json(`normalise({nameSize: "auto"}).nameSize`), "115");
+  assert.equal(json(`normalise({nameSize: "auto"}).nameSize`), "150");
 });
 
 test("the tear is drawn the width of the strip it tears", () => {

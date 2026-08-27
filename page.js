@@ -81,8 +81,8 @@ const defaults = () => ({
      subject name is what a reader looks for first, so "automatic" already asks
      for it a little larger than the rest — and where a box has no room for
      that, the box gets what the page has always drawn instead. */
-  timeFace: "sans", timeSize: "100",
-  nameFace: "sans", nameSize: "115",
+  timeFace: "sans", timeSize: "125",
+  nameFace: "sans", nameSize: "150",
   detailFace: "sans", detailSize: "100",
   /* A school writes a register family name first. Nobody says a name that way
      out loud, so the reader can turn them round. "last" is how the timetable
@@ -165,9 +165,10 @@ const FACE_STACK = {
    pixels would mean something different in each of the six places it landed.
  *
  * No "automatic" here either. What the page chooses is a value on this list,
- * and it is the one selected: 115 for the name, which a reader looks for first
- * and which used to be set at nearly the size of the clock beside it, and 100
- * for the two lines that were already the size they should be. */
+ * and it is the one selected: 150 for the name and 125 for the clock, the two
+ * things a reader is looking for, and 100 for the line of room and teacher,
+ * which is there to be checked rather than read. A box with no room for that
+ * much keeps the sizes the page has always drawn. */
 const SIZES = ["90", "100", "115", "125", "150"];
 
 const MARGINS = [5, 9, 14];
@@ -1203,6 +1204,10 @@ function tornEdge(width, shift, amp) {
         /* Worked out here rather than published, so it says only the one thing
            the lessons around it do not: how long it is. The outline is what
            says it was inferred; the color is the reader's like any other. */
+        /* No growth here, and that is a decision rather than an omission. A
+           worked-out hole is the least of what a day says — it is there to be
+           counted, not read — and it is the one box whose whole content is a
+           duration the lessons either side already imply. */
         const kind = it.gap, col = colorFor(kind), how = durationText(it.z - it.a);
         h += '<div class="ev gap" data-subject="' + esc(kind) + '" style="' + geom +
              "background-color:" + esc(col.bg) + ";color:" + esc(col.fg) +

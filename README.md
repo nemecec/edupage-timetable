@@ -419,9 +419,10 @@ period grid, which needs no times.
 
   **Type in a lesson box** is three settings, one per kind of line: the subject
   name, the clock, and the room and teacher. Each takes a typeface and a size.
-  The name is what a reader looks for first and it used to be set at nearly the
-  size of the clock beside it, so the page now asks for it at 115%. The other
-  two are the size they were, which is 100%.
+  The page asks for the subject name at 150% and the clock at 125% — the two
+  things a reader is looking for. The line of room and teacher stays at 100%:
+  it is there to be checked rather than read, and it is what gives the other
+  two the room to grow.
 
   Nothing is fetched. A page that asks for a font from somewhere else is a page
   that does not open on a train, so the choices are the three families every
@@ -660,9 +661,9 @@ paste lands.
   "teacherNameOrder": "last",
 
   "nameFace": "sans",
-  "nameSize": "115",
+  "nameSize": "150",
   "timeFace": "sans",
-  "timeSize": "100",
+  "timeSize": "125",
   "detailFace": "sans",
   "detailSize": "100",
   "showDuration": true,

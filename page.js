@@ -28,6 +28,16 @@ const INJECTED = ["ethereum", "solana", "web3", "tronWeb", "keplr",
    a chat window, which the reader can do something about. */
 let linkFault = "";
 
+/* Whether the page opened with a class already chosen — stored here from a
+   previous visit, or carried in by a link. It decides one thing: whether the
+   filter starts open.
+
+   A reader arriving for the first time has one job, which is to say whose
+   timetable this is, and the filter is where that is said. A reader coming
+   back has done it, and the panel is then a header taking up the room the
+   week wants. */
+let cameSetUp = false;
+
 /* One page, a handful of reports. A fault inside the drawing code fires on
    every repaint, and a reporter that reports its own reporting never stops.
 
@@ -311,6 +321,7 @@ let state = defaults();
     } catch (e) { /* not ours to read, so the defaults stand */ }
   }
   if (saved) {
+    cameSetUp = true;
     try {
       state = normalise(saved);
     } catch (e) {
@@ -375,6 +386,7 @@ function applyShared(shared, current) {
      long for something to carry. */
   if (linkFault) report("link", new Error(linkFault));
   if (shared) {
+    cameSetUp = true;
     state = applyShared(shared, state);
     /* Keep what the link brought, so closing it and coming back later still
        shows the same timetable. */
@@ -537,6 +549,15 @@ function renderSubtitle(school) {
   document.getElementById("subtitle").innerHTML =
     [esc(school.t), esc(school.v), link, say, stamp].filter(Boolean).join(" · ") +
     '<div class="unofficial">' + esc(t("footer.disclaimer")) + "</div>";
+}
+
+/* Open on a first visit, closed once there is nothing left to ask. Written
+   here rather than in the page so that a browser running no script at all
+   still gets it open, which is the answer that helps somebody who cannot
+   collapse it either. */
+function openFilterIfNeeded() {
+  const panel = document.getElementById("filterPanel");
+  if (panel) panel.open = !cameSetUp;
 }
 
 /* The box holds the settings as they are stored, so it has to follow them.
@@ -2861,5 +2882,6 @@ renderClasses();
 applyStrings();
 renderDivisions();
 syncPerClassInputs();
+openFilterIfNeeded();
 render();
 countVisit();

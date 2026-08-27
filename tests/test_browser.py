@@ -615,6 +615,35 @@ class ArrivingWithSettings(InABrowser):
                     self.js("return {n: document.querySelectorAll('.ev').length};")["n"],
                     0, "a fragment we did not write took the page down")
 
+    def test_the_filter_opens_only_when_there_is_still_something_to_ask(self):
+        """A reader arriving for the first time has one job: to say whose
+        timetable this is. A reader coming back has done it, and the panel is
+        then a header taking up the room the week wants."""
+        self.browser.eval("localStorage.clear()")
+        self.visit()
+        self.assertTrue(
+            self.js("return {o: document.getElementById('filterPanel').open};")["o"],
+            "a first visit was asked nothing and shown nothing")
+
+        # Choosing a class writes it down, and the next visit does not ask.
+        self.js("state.class = '8'; save(); return {};")
+        self.visit()
+        self.assertFalse(
+            self.js("return {o: document.getElementById('filterPanel').open};")["o"],
+            "a returning reader was asked again")
+
+        # A link says whose timetable it is, so it does not ask either.
+        self.browser.eval("localStorage.clear()")
+        self.visit(self.LINK)
+        self.assertFalse(
+            self.js("return {o: document.getElementById('filterPanel').open};")["o"],
+            "a shared link still asked which class")
+
+        # And the page ships it open, so a browser running no script at all
+        # gets the answer that helps somebody who cannot collapse it either.
+        with open(os.path.join(ROOT, "tt.py"), encoding="utf-8") as fh:
+            self.assertIn('id="filterPanel" open', fh.read())
+
     def test_a_link_that_cannot_be_read_tells_the_reader(self):
         """It drew the timetable as the page opens and said nothing, so the
         reader believed that was what was shared. The usual cause is a link cut

@@ -396,6 +396,13 @@ period grid, which needs no times.
   lesson over several periods repeats in every period it covers, and the
   continuation is dimmed. Where the school publishes period times, the headers
   show them.
+- **The filter** is open on a first visit and closed after that. A reader
+  arriving for the first time has one job — to say whose timetable this is —
+  and the filter is where that is said. A reader coming back has done it, and
+  the panel is then a header taking up the room the week wants. A link counts
+  as having said it, since it names the class itself. The page is shipped with
+  the panel open, so a browser running no script at all gets the answer that
+  helps somebody who cannot collapse it either.
 - **Display options** is five sections, and each holds only what belongs to it.
   The title, then what each lesson box says, then what the day shows, then what
   the printout carries, then how lessons look. Three settings had drifted into

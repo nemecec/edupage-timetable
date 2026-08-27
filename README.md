@@ -458,13 +458,16 @@ period grid, which needs no times.
   the panel open, so a browser running no script at all gets the answer that
   helps somebody who cannot collapse it either.
 - **Display options** is five sections, and each holds only what belongs to it.
-  The title, then what each lesson box says, then what the day shows, then what
-  the printout carries, then how lessons look. Three settings had drifted into
-  the lesson section that are not about a lesson at all: free time, which is a
-  box the page adds to the day where the school left a hole, and two that
-  change nothing until the sheet leaves the printer. A control under the wrong
-  heading is a control nobody finds, and a test now holds each one where it
-  belongs.
+  The title, then what each lesson box says, then what the day shows, then the
+  type, then how lessons look. A control under the wrong heading is a control nobody finds, and
+  a test holds each one where it belongs. Free time lives under the day rather
+  than the lesson, because it is a box the page adds where the school left a
+  hole and not a label on a lesson.
+- **Print options** is a section of its own, beside Display options. Everything
+  in it changes nothing until the sheet comes out of the printer, which is a
+  different question from what the reader is looking at on screen. It held a row
+  inside Display options once, and a reader looking for the paper edge had to
+  open the wrong section and scroll past the typefaces to find it.
 
   **For each lesson, show:** the teacher, the room, the study group and the
   subject are independent of each other. The teacher and the
@@ -520,8 +523,8 @@ period grid, which needs no times.
   Asked to grow, it has to shrink with everything else, or the fitter has
   nothing left to give.
 
-  **On the printout:** the QR code can be switched on, the paper edge is the
-  reader's to set, and so is the size of the sheet. The code is off to begin
+  **Print options** carries the rest: the QR code can be switched on, the paper
+  edge is the reader's to set, and so is the size of the sheet. The code is off to begin
   with, because most sheets go on a wall and are read as paper, and the corner
   is room the timetable could have used. The address in the other corner stays
   either way: the code goes to this reader's own timetable, and the address is

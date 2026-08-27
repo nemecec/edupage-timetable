@@ -688,6 +688,13 @@ class Documentation(unittest.TestCase):
             body = fh.read().split("\nResources:\n", 1)[1].split("\nOutputs:")[0]
         return re.findall(r"^  ([A-Za-z0-9]+):\s*$", body, re.M)
 
+    def section(self, first, next_one):
+        """One settings panel out of the page source, up to the one after it."""
+        with open(os.path.join(ROOT, "tt.py"), encoding="utf-8") as fh:
+            page = fh.read()
+        mark = '<details class="panel" id="%s">'
+        return page[page.index(mark % first):page.index(mark % next_one)]
+
     def test_no_two_strings_share_a_key(self):
         """A duplicate key is silent — the later value simply wins, and some
         label somewhere shows text meant for something else."""
@@ -766,19 +773,14 @@ class Documentation(unittest.TestCase):
             self.assertNotIn(data["strings"][lang]["showQr"], note, lang)
 
     def test_every_display_setting_sits_under_the_right_heading(self):
-        """Three settings drifted into "For each lesson, show:" that are not
-        about a lesson at all — free time, which is a box the page adds to the
-        day, and two that change nothing until the sheet leaves the printer.
-        A control under the wrong heading is a control nobody finds."""
-        with open(os.path.join(ROOT, "tt.py"), encoding="utf-8") as fh:
-            page = fh.read()
-        panel = page[page.index('<details class="panel" id="displayPanel">'):
-                     page.index('<details class="panel" id="eventsPanel">')]
+        """A control under the wrong heading is a control nobody finds. Free
+        time is a box the page adds to the day, not a label on a lesson, so it
+        does not belong under "For each lesson, show:"."""
+        panel = self.section("displayPanel", "printPanel")
         # Which heading each control falls under: the last one written above it.
         where, heading = {}, ""
         for kind, name in re.findall(
-                r'data-i18n="(\w+Heading)"'
-                r'|id="(show\w+|print(?:Margin|Sheet|Width|Height)|\w*[Nn]ame)"', panel):
+                r'data-i18n="(\w+Heading)"|id="(show\w+|\w*[Nn]ame)"', panel):
             if kind:
                 heading = kind
             elif name:
@@ -790,22 +792,42 @@ class Documentation(unittest.TestCase):
             "showRoom": "showHeading", "showGroup": "showHeading",
             "showSubject": "showHeading",
             "showGaps": "dayHeading",
-            "showQr": "printHeading", "printMargin": "printHeading",
-            "printSheet": "printHeading", "printWidth": "printHeading",
-            "printHeight": "printHeading",
         }
         for control, expected in want.items():
             self.assertEqual(where.get(control), expected,
                              f"{control} is under {where.get(control)!r}")
 
+    def test_the_readme_counts_the_display_sections_it_describes(self):
+        """A count in prose goes stale silently. This one moved when the print
+        settings left the panel."""
+        panel = self.section("displayPanel", "printPanel")
+        headings = re.findall(r'data-i18n="(\w+Heading)"', panel)
+        self.assertEqual(len(headings), 5, headings)
+        with open(os.path.join(ROOT, "README.md"), encoding="utf-8") as fh:
+            self.assertIn("**Display options** is five sections", fh.read())
+
+    def test_the_print_settings_are_a_section_of_their_own(self):
+        """They change nothing until the sheet comes out of the printer, so they
+        are not a row among the settings that change the screen. Every one of
+        them belongs in the print section and nowhere else."""
+        printed = self.section("printPanel", "eventsPanel")
+        shown = self.section("displayPanel", "printPanel")
+        for control in ("showQr", "printMargin", "printSheet",
+                        "printWidth", "printHeight", "cutNote"):
+            self.assertIn('id="%s"' % control, printed, control)
+            self.assertNotIn('id="%s"' % control, shown, control)
+        # The section names itself, so no row inside it carries a heading too.
+        self.assertIn('data-i18n="print.summary"', printed)
+        self.assertNotIn("Heading", printed)
+
     def test_a_heading_does_not_repeat_itself_in_its_own_labels(self):
-        """"On the printout:" followed by "QR code on the printout" says it
-        twice and reads as if the two were different things."""
+        """"Print options" followed by "Print sheet" says it twice and reads as
+        if the two were different things."""
         _, data = build()
         strings = data["strings"]
         for lang, heading, labels in (
-                ("en", "printHeading", ("showQr", "printMargin", "printSheet")),
-                ("et", "printHeading", ("showQr", "printMargin", "printSheet"))):
+                ("en", "print.summary", ("showQr", "printMargin", "printSheet")),
+                ("et", "print.summary", ("showQr", "printMargin", "printSheet"))):
             words = set(re.findall(r"\w+", strings[lang][heading].lower()))
             words.discard("on")
             words.discard("the")

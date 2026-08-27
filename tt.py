@@ -76,10 +76,10 @@ STRINGS = {
         "lang": "Language",
         "school": "School", "class": "Class", "classN": "class {0}",
         "display": "Display options",
+        "print.summary": "Print options",
         "advanced": "Save and restore settings",
         "showHeading": "For each lesson, show:",
         "dayHeading": "In the day, show:",
-        "printHeading": "On the printout:",
         "showTeacher": "Teacher",
         "showRoom": "Room",
         "showGroup": "Study group",
@@ -237,10 +237,10 @@ STRINGS = {
         "lang": "Keel",
         "school": "Kool", "class": "Klass", "classN": "{0}. klass",
         "display": "Kuvamise seaded",
+        "print.summary": "Väljatrüki seaded",
         "advanced": "Seadete salvestamine ja taastamine",
         "showHeading": "Iga tunni juures näita:",
         "dayHeading": "Päevas näita:",
-        "printHeading": "Väljatrükil:",
         "showTeacher": "Õpetaja",
         "showRoom": "Ruum",
         "showGroup": "Õpperühm",
@@ -2455,37 +2455,6 @@ PAGE = """<!DOCTYPE html>
       </div>
     </div>
   </div>
-  <!-- Paper, not screen. Settings that change nothing until the sheet comes out
-       of the printer, and none of them belongs beside a lesson label. -->
-  <div class="row">
-    <div class="field" style="width:100%">
-      <label data-i18n="printHeading"></label>
-      <div class="checklist">
-        <div class="line">
-          <label class="inline"><input type="checkbox" id="showQr">
-            <span data-i18n="showQr"></span></label>
-        </div>
-        <div class="line">
-          <label class="inline" for="printMargin"><span data-i18n="printMargin"></span></label>
-          <select id="printMargin"></select>
-        </div>
-        <!-- The sheet, and the reader's own measurements beside it. The boxes
-             are dimmed rather than hidden while another sheet is chosen, the
-             way every other dependent control here behaves. -->
-        <div class="line">
-          <label class="inline" for="printSheet"><span data-i18n="printSheet"></span></label>
-          <select id="printSheet"></select>
-          <span class="choice" id="sheetOwn">
-            <input type="number" id="printWidth" step="1" data-i18n-aria="sheet.width">
-            <span class="times">&times;</span>
-            <input type="number" id="printHeight" step="1" data-i18n-aria="sheet.height">
-            <span data-i18n="sheet.mm"></span>
-          </span>
-        </div>
-      </div>
-      <p class="sub help" id="cutNote" data-i18n="sheet.cut" hidden></p>
-    </div>
-  </div>
   <div class="row">
     <div class="field" style="width:100%">
       <label data-i18n="colorsHeading"></label>
@@ -2515,6 +2484,41 @@ PAGE = """<!DOCTYPE html>
           </table>
         </div>
       </details>
+    </div>
+  </div>
+</details>
+
+<!-- Paper, not screen. These change nothing until the sheet comes out of the
+     printer, so they are a section of their own rather than a row among the
+     settings that change what is on the screen in front of the reader. -->
+<details class="panel" id="printPanel">
+  <summary data-i18n="print.summary"></summary>
+  <div class="row">
+    <div class="field" style="width:100%">
+      <div class="checklist">
+        <div class="line">
+          <label class="inline"><input type="checkbox" id="showQr">
+            <span data-i18n="showQr"></span></label>
+        </div>
+        <div class="line">
+          <label class="inline" for="printMargin"><span data-i18n="printMargin"></span></label>
+          <select id="printMargin"></select>
+        </div>
+        <!-- The sheet, and the reader's own measurements beside it. The boxes
+             are dimmed rather than hidden while another sheet is chosen, the
+             way every other dependent control here behaves. -->
+        <div class="line">
+          <label class="inline" for="printSheet"><span data-i18n="printSheet"></span></label>
+          <select id="printSheet"></select>
+          <span class="choice" id="sheetOwn">
+            <input type="number" id="printWidth" step="1" data-i18n-aria="sheet.width">
+            <span class="times">&times;</span>
+            <input type="number" id="printHeight" step="1" data-i18n-aria="sheet.height">
+            <span data-i18n="sheet.mm"></span>
+          </span>
+        </div>
+      </div>
+      <p class="sub help" id="cutNote" data-i18n="sheet.cut" hidden></p>
     </div>
   </div>
 </details>

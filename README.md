@@ -429,9 +429,10 @@ period grid, which needs no times.
   subject are independent of each other. The teacher and the
   subject each choose between the full name and the school's abbreviation.
 
-  A teacher's name arrives family name first, which is how a school writes a
-  register and not how anybody says a name out loud. A second pair of buttons
-  turns them round. Only the first word moves: a person can have more than one
+  A teacher's name arrives family name first and abbreviated, which is how a
+  school files a name and fits it in a cell — not how a family says it. So the
+  page writes it out in full and turns it round, and both are the reader's to
+  put back. A second pair of buttons does the turning round. Only the first word moves: a person can have more than one
   given name, and `Kask Mari Liis` is one family name and two given ones. One
   entry can hold several people, separated by a slash, a comma or a semicolon —
   which one is not consistent — so each name is turned round on its own and the
@@ -723,7 +724,7 @@ paste lands.
   "showGroup": true,
   "showSubject": true,
   "subjectNameStyle": "full",
-  "teacherNameOrder": "last",
+  "teacherNameOrder": "first",
 
   "nameFace": "sans",
   "nameSize": "150",

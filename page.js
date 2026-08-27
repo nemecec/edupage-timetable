@@ -85,7 +85,7 @@ const defaults = () => ({
   class: DATA.initialClass,
 
   showStudentName: false, showSchoolName: true, showClassName: true,
-  showTeacher: true, teacherNameStyle: "short",
+  showTeacher: true, teacherNameStyle: "full",
   showRoom: true, showGroup: true,
   showDuration: true, showGaps: true,
   /* The code in the corner of the printed sheet. Some readers want the sheet
@@ -108,9 +108,10 @@ const defaults = () => ({
   nameFace: "sans", nameSize: "150",
   detailFace: "sans", detailSize: "100",
   /* A school writes a register family name first. Nobody says a name that way
-     out loud, so the reader can turn them round. "last" is how the timetable
-     arrives and stays the default. */
-  teacherNameOrder: "last",           // "last" | "first"
+     out loud, so the page turns them round — and writes them out in full,
+     because an abbreviation is a thing a school uses to fit a name in a cell,
+     not a thing a family says. Both are the reader's to put back. */
+  teacherNameOrder: "first",          // "last" | "first"
 
   /* What every subject does unless it says otherwise. One question, three
      answers. It was two checkboxes that quietly layered on each other. Nobody

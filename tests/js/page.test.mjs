@@ -351,7 +351,7 @@ test("settings of the wrong shape fall back to their defaults", () => {
   assert.equal(got.lang, "en");
   assert.equal(got.showRoom, true, "a string is not a checkbox");
   assert.deepEqual(got.classes, {}, "an array is not a map of classes");
-  assert.equal(got.teacherNameStyle, "short");
+  assert.equal(got.teacherNameStyle, "full", "a nonsense style falls back");
   assert.equal(got.subjectColorStyle, "custom", "an unknown style is not a style");
   assert.equal(got.subjectNameStyle, "short", "a valid value is kept");
   assert.equal(got.showGroup, false, "and so is a valid false");
@@ -1142,16 +1142,20 @@ test("a teacher's name can be turned round, however many names there are", () =>
   assert.equal(turned("Kask Mari / Peedu / Tamm Jaan"),
                "Mari Kask / Peedu / Jaan Tamm");
 
-  // And left alone by default, which is how the timetable arrives.
+  /* Turned round by default, and the register order is the reader's to put
+     back. A school writes a name family-first to file it, not to say it. */
+  assert.equal(json(`defaults().teacherNameOrder`), "first");
+  assert.equal(json(`defaults().teacherNameStyle`), "full",
+               "an abbreviation is how a school fits a name in a cell");
   run(`state.teacherNameOrder = "last";`);
   assert.equal(turned("Kask Mari / Tamm Jaan"), "Kask Mari / Tamm Jaan");
-  assert.equal(json(`defaults().teacherNameOrder`), "last");
   run(`state = defaults();`);
 });
 
 test("the name order reaches the boxes and the tooltip", () => {
   run(`state = defaults(); state.lang = "en"; applyStrings();
-       state.school = "68"; state.class = "8"; state.teacherNameStyle = "full";`);
+       state.school = "68"; state.class = "8";
+       state.teacherNameStyle = "full"; state.teacherNameOrder = "last";`);
   const draw = () => run(`renderTimeline(currentSchool(), currentClass(),
                                          currentClass().e, [], 0)`);
   const before = draw();

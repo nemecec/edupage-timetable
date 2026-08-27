@@ -71,7 +71,7 @@ The script needs the Python 3 standard library and nothing else. There is no
 pip install and no browser.
 
 For `tera` in 2026 the result is 4 schools, 41 classes and about 1,900 lesson
-slots, in a file of about 660 KB. That is 91 KB over the wire, because it
+slots, in a file of about 700 KB. That is 104 KB over the wire, because it
 compresses well.
 
     python3 -m unittest discover -s tests     # the generator
@@ -521,8 +521,35 @@ period grid, which needs no times.
   the fragment. Only what differs from the defaults goes in, and only the class
   on screen. This keeps a typical link near 140 characters. It also means that
   sharing one child's timetable does not hand over a sibling's name. The
-  fragment never leaves the browser. A link that you open merges what it carries
-  into what this browser already had, rather than replacing it.
+  fragment never leaves the browser.
+
+  **A link and a browser that disagree are put to the reader.** Both are real
+  answers and neither is obviously right: a link carries only what differs from
+  the defaults, so anything the sender left alone is simply absent from it, and
+  filling those gaps in from the reader's own settings is as defensible as
+  resetting them. The link's are shown, because following one is a request to
+  see what it carries. Nothing of the reader's is written down until they say
+  which they meant, so *keep mine* is still on the table however long they take.
+
+  Three answers, and the difference between the first two is only what happens
+  to a setting the link says nothing about:
+
+  - **Keep the link's** — every setting the link carries, and the page's own
+    where it is silent. The class it is about is the link's too, name and
+    events and all: mixing one child's after-school events into another child's
+    week is not a merge. Every other class this browser knows about is left
+    alone, because a link for one child must not throw away a sibling's setup.
+  - **Merge** — the link's where it speaks, the reader's where it does not.
+    This is what the page did on its own before it started asking.
+  - **Use mine instead** — the link is ignored.
+
+  **Copy mine first** puts what this browser had on the clipboard before any of
+  that, or into the box under Advanced where there is no clipboard — which is
+  where a backup is pasted back in. It answers nothing; the question stays up.
+
+  The question is asked in the language the reader was reading in, whatever the
+  link says. A question somebody cannot read is not a question. The link's own
+  language arrives with the rest of it, if they choose it.
 
   Settings are JSON, UTF-8, base64url. Past a certain size the script gzips them
   first, and writes `#z=` rather than `#s=`. This takes a link that carries every

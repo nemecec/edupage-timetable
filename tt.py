@@ -114,6 +114,17 @@ STRINGS = {
         "showQr": "QR code",
         "nameLastFirst": "Kask Mari",
         "nameFirstLast": "Mari Kask",
+        "clash.says": "This link's settings are not the ones saved in this "
+                      "browser. The link's are showing, and nothing of yours "
+                      "is written over until you choose.",
+        "clash.merge.means": "Merge takes the link's settings and fills the "
+                             "rest in from yours.",
+        "clash.useLink": "Keep the link's",
+        "clash.useMerge": "Merge",
+        "clash.useMine": "Use mine instead",
+        "clash.copy": "Copy mine first",
+        "clash.copied": "Your settings are on the clipboard.",
+        "clash.inBox": "Your settings are in the box under Advanced.",
         "link.unreadable": "This link carries settings that the page cannot read, "
                            "so the timetable below does not come from it. A link "
                            "is often cut short when it is copied, so ask for the "
@@ -255,6 +266,18 @@ STRINGS = {
         "showQr": "QR-kood",
         "nameLastFirst": "Kask Mari",
         "nameFirstLast": "Mari Kask",
+        "clash.says": "Selle lingi seaded ei ole samad, mis siia brauserisse "
+                      "salvestatud. Näidatakse lingi omi ja sinu omi ei "
+                      "kirjutata üle enne, kui oled valinud.",
+        "clash.merge.means": "Liitmine võtab lingi seaded ja ülejäänu sinu "
+                             "omadest.",
+        "clash.useLink": "Jäta lingi omad",
+        "clash.useMerge": "Liida",
+        "clash.useMine": "Kasuta minu omi",
+        "clash.copy": "Kopeeri enne minu omad",
+        "clash.copied": "Sinu seaded on lõikelaual.",
+        "clash.inBox": "Sinu seaded on lahtris \"Seadete salvestamine ja "
+                       "taastamine\".",
         "link.unreadable": "See link sisaldab seadeid, mida leht ei oska lugeda, "
                            "seega allolev tunniplaan ei tule sellest lingist. "
                            "Kopeerimisel jääb link sageli poolikuks, seega küsi "
@@ -1870,6 +1893,17 @@ PAGE = """<!DOCTYPE html>
               border: 1px solid #f0c9c9; background: #fdf3f3; color: #8a2b2b;
               font-size: 13px; line-height: 1.45; }
   @media print { .linkwarn { display: none; } }
+  /* The same voice as the notice above it, with the answers underneath. Amber
+     rather than red: nothing is broken, there are two answers and only the
+     reader knows which. */
+  .linkask { margin: 0 0 14px; padding: 10px 12px; border-radius: 8px;
+             border: 1px solid #e8d29a; background: #fdf8ec; color: #6b5320;
+             font-size: 13px; line-height: 1.45; }
+  .linkask p { margin: 0; }
+  .linkask .asked { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 9px; }
+  .linkask .said:empty { display: none; }
+  .linkask .said { margin-top: 8px; font-size: 12px; }
+  @media print { .linkask { display: none; } }
   details.panel { padding: 0; }
   details.panel > summary { padding: 12px 16px; cursor: pointer; font-size: 13px;
                             font-weight: 600; color: var(--muted); list-style: none;
@@ -2068,6 +2102,20 @@ PAGE = """<!DOCTYPE html>
 <!-- A link this page wrote and cannot read. Above the filter, because it is
      about the whole page rather than about any one control in it. -->
 <p class="linkwarn" id="linkwarn" role="status" hidden></p>
+
+<!-- A link and a browser that has been here before, saying different things.
+     The link's settings are showing; nothing of the reader's is written over
+     until they answer, so every one of the three is still open to them. -->
+<div class="linkask" id="linkask" role="status" hidden>
+  <p id="linkasksays"></p>
+  <div class="asked">
+    <button id="clashLink" class="go" type="button"></button>
+    <button id="clashMerge" type="button"></button>
+    <button id="clashMine" type="button"></button>
+    <button id="clashCopy" type="button"></button>
+  </div>
+  <p class="said" id="linkaskmsg"></p>
+</div>
 
 <details class="panel" id="filterPanel" open>
   <summary data-i18n="filter"></summary>

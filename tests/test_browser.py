@@ -644,6 +644,119 @@ class ArrivingWithSettings(InABrowser):
         with open(os.path.join(ROOT, "tt.py"), encoding="utf-8") as fh:
             self.assertIn('id="filterPanel" open', fh.read())
 
+    MINE = ("state.lang = 'et'; state.school = '68'; state.class = '8';"
+            "state.showRoom = false; state.showGroup = false;"
+            "state.subjects = {Matemaatika: {label: 'MINE'}}; save();")
+    # A link for another class, with rooms on and its own name for a subject.
+    THEIRS = ("#s=eyJjbGFzcyI6ICI3IiwgInNob3dSb29tIjogdHJ1ZSwgInN1YmplY3RzIjog"
+              "eyJNYXRlbWFhdGlrYSI6IHsibGFiZWwiOiAiRlJPTSBMSU5LIn19fQ")
+
+    def arrive(self):
+        """Save one set of settings, then follow a link that disagrees."""
+        self.browser.eval("localStorage.clear()")
+        self.visit()
+        self.js(self.MINE + " return {};")
+        self.visit(self.THEIRS)
+
+    def test_a_link_that_disagrees_with_this_browser_asks_before_it_saves(self):
+        """Two answers and no way to tell which was meant. The link's is shown
+        because following one is a request to see it, and nothing of the
+        reader's is written over until they say."""
+        self.arrive()
+        got = self.js(
+            "return {asked: !document.getElementById('linkask').hidden,"
+            " klass: state.class, room: state.showRoom,"
+            " label: (state.subjects.Matemaatika || {}).label,"
+            " lang: state.lang,"
+            " stored: JSON.parse(localStorage.getItem("
+            "   Object.keys(localStorage)[0]) || '{}')};")
+        self.assertTrue(got["asked"], "the disagreement was settled silently")
+        self.assertEqual(got["klass"], "7", "the link is not what is showing")
+        self.assertEqual(got["label"], "FROM LINK")
+        self.assertEqual(got["stored"]["class"], "8",
+                         "the reader's own settings were written over")
+        self.assertEqual(got["lang"], "et",
+                         "the question was asked in the wrong language")
+
+    def test_each_of_the_three_answers_does_what_it_says(self):
+        answers = {}
+        for button, name in (("clashLink", "link"), ("clashMerge", "merge"),
+                             ("clashMine", "mine")):
+            self.arrive()
+            answers[name] = self.js(
+                "document.getElementById('%s').dispatchEvent("
+                "  new MouseEvent('click', {bubbles: true}));"
+                "return {asked: !document.getElementById('linkask').hidden,"
+                " klass: state.class, room: state.showRoom,"
+                " group: state.showGroup,"
+                " label: (state.subjects.Matemaatika || {}).label,"
+                " stored: JSON.parse(localStorage.getItem("
+                "   Object.keys(localStorage)[0]) || '{}').class};" % button)
+
+        for name, got in answers.items():
+            self.assertFalse(got["asked"], f"{name} left the question up")
+
+        # The link's: everything the link says, and the page's own where it is
+        # silent — so a setting of the reader's that the link never mentions
+        # goes back to the default.
+        self.assertEqual(answers["link"]["klass"], "7")
+        self.assertEqual(answers["link"]["label"], "FROM LINK")
+        self.assertTrue(answers["link"]["group"], "a silent setting kept mine")
+
+        # Merge: the link's where it speaks, mine where it does not. That one
+        # setting is the whole difference between this and the answer above.
+        self.assertEqual(answers["merge"]["klass"], "7")
+        self.assertEqual(answers["merge"]["label"], "FROM LINK")
+        self.assertFalse(answers["merge"]["group"], "merge did not keep mine")
+
+        # Mine: the link is ignored, and what was stored is what stays.
+        self.assertEqual(answers["mine"]["klass"], "8")
+        self.assertEqual(answers["mine"]["label"], "MINE")
+        self.assertFalse(answers["mine"]["room"])
+
+        # And every answer is written down, so the question is asked once.
+        for name, got in answers.items():
+            self.assertEqual(got["stored"], got["klass"],
+                             f"{name} was shown but not saved")
+
+    def test_the_reader_can_take_a_copy_before_answering(self):
+        """The one moment their own settings are about to be written over. A
+        page opened from a file has no clipboard, so this lands in the box
+        under Advanced — which is where a backup is pasted back in."""
+        self.arrive()
+        import time
+        self.js("document.getElementById('clashCopy').dispatchEvent("
+                "  new MouseEvent('click', {bubbles: true})); return {};")
+        time.sleep(0.5)
+        got = self.js(
+            "return {said: document.getElementById('linkaskmsg').textContent,"
+            " backup: JSON.parse(document.getElementById('settingsText').value"
+            "                    || '{}'),"
+            " onScreen: state.class,"
+            " stillAsking: !document.getElementById('linkask').hidden};")
+        self.assertTrue(got["said"], "nothing was said about where it went")
+        self.assertEqual(got["backup"]["class"], "8",
+                         "the backup is the link's, not the reader's")
+        self.assertEqual(
+            (got["backup"].get("subjects") or {}).get("Matemaatika", {}).get("label"),
+            "MINE")
+        self.assertEqual(got["onScreen"], "7", "taking a copy changed the page")
+        self.assertTrue(got["stillAsking"], "taking a copy answered the question")
+
+    def test_a_link_that_agrees_asks_nothing(self):
+        """Only a disagreement is worth a question. A reader following their
+        own link, or one that matches what they already had, is asked nothing
+        and the link is saved as it always was."""
+        self.browser.eval("localStorage.clear()")
+        self.visit(self.THEIRS)
+        self.js("save(); return {};")
+        self.visit(self.THEIRS)
+        got = self.js(
+            "return {asked: !document.getElementById('linkask').hidden,"
+            " klass: state.class};")
+        self.assertFalse(got["asked"], "an agreeing link asked a question")
+        self.assertEqual(got["klass"], "7")
+
     def test_a_link_that_cannot_be_read_tells_the_reader(self):
         """It drew the timetable as the page opens and said nothing, so the
         reader believed that was what was shared. The usual cause is a link cut

@@ -38,6 +38,19 @@ let linkFault = "";
    week wants. */
 let cameSetUp = false;
 
+/* A link and a browser that has been here before, saying different things.
+ *
+ * The link wins while this is unresolved, because following one is a request
+ * to see what it carries. But it is not saved over the reader's own settings
+ * until they say which they meant — so choosing to keep theirs is always still
+ * possible, and nothing is lost by looking. */
+let clash = null;                 // { mine, theirs } once there is one
+
+/* What this browser had before any link was read. Declared up here with the
+   rest, because the block that fills it runs above the block that reads it —
+   and a `let` is not writable before its own line either. */
+let stash = null;
+
 /* One page, a handful of reports. A fault inside the drawing code fires on
    every repaint, and a reporter that reports its own reporting never stops.
 
@@ -330,6 +343,7 @@ let state = defaults();
       state = defaults();
     }
   }
+  stash = state;
 }
 /* A link wins over what this browser had, since following one is a request to
    see that. The per-class bags merge rather than replace, so a link for one
@@ -337,6 +351,22 @@ let state = defaults();
 
    A named function rather than a block, so a test can hand it a link and look
    at what comes out. This is the one place untrusted input reaches the page. */
+/* The link on its own, as the person who sent it has it.
+ *
+ * Every display setting is the link's, and one it does not carry goes back to
+ * what the page opens with rather than to whatever this browser had. The class
+ * the link is about is the link's too, name and events and all: mixing one
+ * child's after-school events into another child's week is not a merge, it is
+ * a mess. Every other class this browser knows about is left alone — a link
+ * for one child must not throw away a sibling's setup. */
+function linkOnly(shared, current) {
+  const base = defaults();
+  base.classes = Object.assign({}, current.classes);
+  const named = Object.keys((shared && shared.classes) || {});
+  for (const key of named) delete base.classes[key];
+  return applyShared(shared, base);
+}
+
 function applyShared(shared, current) {
   const merged = normalise(Object.assign({}, current, shared));
   /* Classes merge rather than replace: a link for one class must not wipe what
@@ -387,10 +417,27 @@ function applyShared(shared, current) {
   if (linkFault) report("link", new Error(linkFault));
   if (shared) {
     cameSetUp = true;
-    state = applyShared(shared, state);
-    /* Keep what the link brought, so closing it and coming back later still
-       shows the same timetable. */
-    try { localStorage.setItem(KEY, JSON.stringify(slim(state))); } catch (e) {}
+    const merged = applyShared(shared, state);
+    const theirs = linkOnly(shared, state);
+    const same = (a, b) => JSON.stringify(slim(a)) === JSON.stringify(slim(b));
+    if (stash && !same(stash, theirs)) {
+      /* Two answers and no way to tell which was meant. The link's is shown,
+         and the question is put where the reader can see it. Nothing is
+         written down until they answer, so "keep mine" is still on the table
+         however long they take. */
+      clash = { mine: stash, theirs: theirs, merged: merged };
+      /* Every setting the link carries, except the language it is read in.
+         A question the reader cannot read is not a question, and a link that
+         says nothing about language would otherwise put this one in whichever
+         language the page opens in. A copy, because `theirs` is the answer
+         kept for the button and must stay the link's own. */
+      state = Object.assign({}, theirs, { lang: stash.lang });
+    } else {
+      state = merged;
+      /* Keep what the link brought, so closing it and coming back later still
+         shows the same timetable. */
+      try { localStorage.setItem(KEY, JSON.stringify(slim(state))); } catch (e) {}
+    }
   }
 }
 
@@ -581,6 +628,68 @@ function refreshSettingsBox(force) {
   if (!force && document.activeElement === box) return;
   const want = JSON.stringify(slim(state), null, 2);
   if (box.value !== want) box.value = want;
+}
+
+/* The question, put where the reader is looking. Shown until it is answered,
+   and it goes for good once it is. */
+function showLinkClash() {
+  const box = document.getElementById("linkask");
+  if (!box) return;
+  box.hidden = !clash;
+  if (!clash) return;
+  const said = document.getElementById("linkasksays");
+  if (said) said.textContent = t("clash.says") + " " + t("clash.merge.means");
+  /* Written out one by one rather than looped over a table of keys: a key
+     that only exists inside a variable is a key the check for strings nobody
+     asks for cannot see, and an unused string is then never noticed. */
+  const label = (id, text) => {
+    const button = document.getElementById(id);
+    if (button) button.textContent = text;
+  };
+  label("clashLink", t("clash.useLink"));
+  label("clashMerge", t("clash.useMerge"));
+  label("clashMine", t("clash.useMine"));
+  label("clashCopy", t("clash.copy"));
+}
+
+/* One of the three, and then the question is over. This is the first time the
+   reader's own settings are written over, which is the whole reason the
+   question was asked before saving rather than after. */
+function resolveClash(which) {
+  if (!clash) return;
+  state = which === "mine" ? clash.mine
+        : which === "merge" ? clash.merged
+        : clash.theirs;
+  clash = null;
+  save();
+  renderLanguages(); renderSchools(); renderClasses();
+  applyStrings(); renderDivisions(); syncPerClassInputs(); render();
+}
+
+/* A copy of what this browser had, before anything is written over it. The
+   clipboard where there is one; the box under Advanced where there is not,
+   which is the same place a backup is pasted back in. */
+async function copyMySettings() {
+  if (!clash) return "";
+  const text = JSON.stringify(slim(clash.mine), null, 2);
+  try {
+    await navigator.clipboard.writeText(text);
+    return t("clash.copied");
+  } catch (e) {
+    const box = document.getElementById("settingsText");
+    const panel = document.getElementById("advancedPanel");
+    if (!box) return "";
+    if (panel) panel.open = true;
+    /* After the panel has finished opening. Opening it fires its own toggle,
+       and that fills the box from the settings on screen — which are the
+       link's. Written first, the backup was overwritten by the very thing it
+       is a backup against. */
+    setTimeout(() => {
+      box.value = text;
+      if (box.select) box.select();
+    }, 0);
+    return t("clash.inBox");
+  }
 }
 
 /* Said once, where the reader is looking, and in their own language — which
@@ -1696,6 +1805,7 @@ function render() {
 
   renderFooter(school);
   showLinkFault();
+  showLinkClash();
   refreshSettingsBox();
   document.title = displayTitle(school, cls) || t("classN", cls.n);
   renderSubtitle(school);
@@ -2747,6 +2857,22 @@ function scrubbed(value, key) {
    deliberately and this must not undo it. */
 function faultPlace(at) {
   return String(at || "").split("#")[0].split("?")[0];
+}
+
+for (const [id, which] of [["clashLink", "link"], ["clashMerge", "merge"],
+                           ["clashMine", "mine"]]) {
+  const button = document.getElementById(id);
+  if (button) button.addEventListener("click", () => resolveClash(which));
+}
+{
+  const button = document.getElementById("clashCopy");
+  if (button) {
+    button.addEventListener("click", async () => {
+      const said = await copyMySettings();
+      const note = document.getElementById("linkaskmsg");
+      if (note) note.textContent = said;
+    });
+  }
 }
 
 /* Whether a fault may leave this page at all.

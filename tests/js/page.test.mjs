@@ -1291,6 +1291,58 @@ test("the tear is drawn the width of the strip it tears", () => {
                "the clock has no strip, so a tear in it says nothing");
 });
 
+test("the link on its own keeps other classes but not this one's leftovers", () => {
+  /* What the person who sent it sees. Every display setting is the link's, and
+     one it does not carry goes back to what the page opens with rather than to
+     whatever this browser had. The class it is about is the link's too, name
+     and events and all — mixing one child's after-school events into another
+     child's week is not a merge. Every other class is left alone. */
+  run(`state = defaults(); state.school = "68"; state.class = "8";
+       state.showRoom = false; state.showGroup = false;
+       state.classes = {
+         "68/8": { studentName: "Mine", studyGroups: {}, schoolName: "",
+                   className: "", events: [] },
+         "68/7": { studentName: "Sibling", studyGroups: {}, schoolName: "",
+                   className: "", events: [] } };`);
+  const sent = { class: "8", showRoom: true,
+                 classes: { "68/8": { studentName: "Theirs" } } };
+  const theirs = json(`linkOnly(${JSON.stringify(sent)}, state)`);
+
+  assert.equal(theirs.showRoom, true, "the link's setting was not taken");
+  assert.equal(theirs.showGroup, true, "a setting the link is silent on kept mine");
+  assert.equal(theirs.classes["68/8"].studentName, "Theirs",
+               "the class the link is about is not the link's");
+  assert.equal(theirs.classes["68/7"].studentName, "Sibling",
+               "a link for one child threw away a sibling's setup");
+
+  // Merge is the other answer: the link's where it speaks, mine where it does not.
+  const merged = json(`applyShared(${JSON.stringify(sent)}, state)`);
+  assert.equal(merged.showRoom, true);
+  assert.equal(merged.showGroup, false, "merge did not keep mine");
+  run(`state = defaults();`);
+});
+
+test("a link and a browser that disagree are put to the reader", () => {
+  /* Two answers and no way to tell which was meant. The link's is shown, and
+     nothing of the reader's is written down until they say. */
+  const source = readFileSync(join(root, "page.js"), "utf8");
+  const block = source.slice(source.indexOf("const shared = readUrl();"),
+                             source.indexOf("----- the address bar carries"));
+  assert.match(block, /clash = \{ mine: stash, theirs: theirs, merged: merged \}/,
+               "the two answers are not kept for the reader to pick from");
+  /* The save is inside the branch where there is nothing to ask, and only
+     there: saving first is what would make "keep mine" impossible. */
+  const asked = block.slice(block.indexOf("if (stash && !same("));
+  assert.ok(!asked.slice(0, asked.indexOf("} else {")).includes("localStorage.setItem"),
+            "the reader's own settings were written over before they answered");
+  assert.match(asked, /\} else \{[\s\S]*localStorage\.setItem/,
+               "an agreeing link is no longer saved");
+
+  // And the question is asked in the language the reader was reading in.
+  assert.match(block, /lang: stash\.lang/,
+               "the question would be asked in whatever the link says");
+});
+
 test("a link says which class it is about, and an old one still can", () => {
   /* Which class the page opens on comes out of the school's own timetable, and
      it moves when the school moves one. A link written without a class of its

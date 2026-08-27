@@ -100,6 +100,13 @@ const defaults = () => ({
      is a millimetre the timetable can use — which on a tight class is the
      difference between a readable box and a cut line. */
   printMargin: 5,
+
+  /* Which sheet the timetable is laid out for. Almost every printout is the A4
+     page itself, so that is what this says until a reader asks for a sheet to
+     cut out of it. The two millimetre figures are the reader's own size, and
+     they only count when the sheet is "custom" — A5 landscape to begin with,
+     because it is a size somebody can hold up against a sheet of A4 and see. */
+  printSheet: "a4", printWidth: 210, printHeight: 148,
   showSubject: true, subjectNameStyle: "full",
 
   /* The three kinds of type in a lesson box, each the reader's to set. The
@@ -198,6 +205,33 @@ const FACE_STACK = {
 const SIZES = ["90", "100", "115", "125", "150"];
 
 const MARGINS = [5, 9, 14];
+/* The sheet a printout is laid out for. "a4" is the sheet itself, and the
+   timetable is fitted to all of it. The other two are smaller than an A4 page
+   and are cut out of one: the printer still gets an ordinary A4 page, and the
+   printout carries the line to cut along. So a reader with nothing but an A4
+   printer can still end up with a sheet of any size that fits on it.
+
+   Millimetres, landscape. The iPad figures are Apple's own for the device, not
+   for its screen: the sheet is meant to go where the iPad goes. */
+const SHEETS = ["a4", "ipad11a16", "custom"];
+const SHEET_MM = { ipad11a16: [248.6, 179.5] };
+/* Nothing can be cut out of A4 that is larger than A4. */
+const SHEET_MIN = 100, SHEET_MAX_W = 297, SHEET_MAX_H = 210;
+/* Millimetres of white kept between the type and the cut line, so a scissors
+   that wanders by a hair does not take a room number with it. */
+const CUT_PAD = 2.5;
+
+const sheetMm = (value, most, fallback) => {
+  const mm = Math.round(Number(value));
+  return (mm >= SHEET_MIN && mm <= most) ? mm : fallback;
+};
+
+/* The sheet in millimetres, or nothing at all when the timetable fills the
+   A4 page. Everything that has to agree about the size reads this. */
+function cutSheet() {
+  if (state.printSheet === "custom") return [state.printWidth, state.printHeight];
+  return SHEET_MM[state.printSheet] || null;
+}
 /* The clock strip is this wide, and the tear is drawn across it. The
    stylesheet says the same in --gut, and a test holds the two together. */
 const GUTTER = 58;
@@ -307,9 +341,15 @@ function normalise(saved) {
                                 ["detailFace", FACES],
                                 ["timeSize", SIZES], ["nameSize", SIZES],
                                 ["detailSize", SIZES],
-                                ["printMargin", MARGINS]]) {
+                                ["printMargin", MARGINS],
+                                ["printSheet", SHEETS]]) {
     if (!allowed.includes(out[key])) out[key] = base[key];
   }
+  /* Free numbers rather than one of a list, so they are checked rather than
+     matched. A saved sheet of nought millimetres would leave the fitter
+     nothing to fit into and the printout empty. */
+  out.printWidth = sheetMm(out.printWidth, SHEET_MAX_W, base.printWidth);
+  out.printHeight = sheetMm(out.printHeight, SHEET_MAX_H, base.printHeight);
   if (!DATA.languages.some(l => l[0] === out.lang)) out.lang = DATA.lang;
   out.subjects = onlySubjects(out.subjects);
   const classes = {};
@@ -1774,8 +1814,13 @@ function bodyCell(cls, dayIdx, col, bucket) {
    entry there. So it is drawn and measured rather than guessed at from constants —
    the footer alone changes size with the QR code and the language, and a guess
    that was right once quietly stops being right. */
-/* A4 landscape is 210mm tall, less the margin at each end. */
+/* How tall the printed block may be. On the A4 page that is the sheet less the
+   margin at each end. On a sheet cut out of A4 it is the cut box itself, less
+   the white that keeps type off the line. The paper edge does not come into
+   that one: it is the printer's own margin, outside the sheet being cut. */
 function sheetHeight() {
+  const cut = cutSheet();
+  if (cut) return Math.round((cut[1] - 2 * CUT_PAD) * MM);
   return Math.round(210 * MM - 2 * state.printMargin * MM);
 }
 /* A few pixels in hand: the print layout rounds differently from the screen
@@ -2240,6 +2285,25 @@ document.getElementById("printMargin").addEventListener("change", (ev) => {
   save();
   render();
 });
+document.getElementById("printSheet").addEventListener("change", (ev) => {
+  if (!SHEETS.includes(ev.target.value)) return;
+  state.printSheet = ev.target.value;
+  save();
+  render();
+});
+/* Their own size is typed, because the sizes worth having are not a list
+   anybody could write down: a tablet, a noticeboard, a folder pocket. A number
+   larger than the paper it is cut from, or too small to hold a week, is put
+   back to what it was and the box is redrawn saying so. Keeping it silently
+   would leave the reader looking at a sheet that cannot be printed. */
+for (const [id, key, most] of [["printWidth", "printWidth", SHEET_MAX_W],
+                               ["printHeight", "printHeight", SHEET_MAX_H]]) {
+  document.getElementById(id).addEventListener("change", (ev) => {
+    state[key] = sheetMm(ev.target.value, most, state[key]);
+    save();
+    render();
+  });
+}
 bindChoice("teacherNameStyle", "teacherNameStyle");
 bindChoice("teacherNameOrder", "teacherNameOrder");
 bindChoice("subjectNameStyle", "subjectNameStyle");
@@ -2265,7 +2329,9 @@ function syncDisplayControls() {
   document.getElementById("teacherOrder").classList.toggle("off", !state.showTeacher);
   document.getElementById("subjectChoice").classList.toggle("off", !state.showSubject);
   renderMargins();
+  renderSheets();
   applyPageMargin();
+  applyCutSheet();
   renderFonts();
   applyFaces();
 }
@@ -2321,6 +2387,27 @@ function renderMargins() {
   box.value = String(state.printMargin);
 }
 
+/* One option per sheet, built here rather than written in the page, so the list
+   and the values the settings accept cannot drift. The two millimetre boxes are
+   dimmed rather than hidden while another sheet is chosen: a reader can see what
+   their own size would be before asking for it. */
+function renderSheets() {
+  fillOptions(document.getElementById("printSheet"),
+              SHEETS.map(key => [key, t("sheet." + key)]), state.printSheet);
+  for (const [id, key, most] of [["printWidth", "printWidth", SHEET_MAX_W],
+                                 ["printHeight", "printHeight", SHEET_MAX_H]]) {
+    const box = document.getElementById(id);
+    box.max = String(most);
+    box.min = String(SHEET_MIN);
+    if (box.value !== String(state[key])) box.value = String(state[key]);
+  }
+  document.getElementById("sheetOwn")
+          .classList.toggle("off", state.printSheet !== "custom");
+  /* Said where the choice is made, because it is the whole answer to "my
+     printer only holds A4". */
+  document.getElementById("cutNote").hidden = !cutSheet();
+}
+
 /* An @page rule is not reachable through a class or a custom property, so the
    whole rule is written out. The sheet the fitter measures against has to
    agree with it, which is why both read the one setting. */
@@ -2328,6 +2415,23 @@ function applyPageMargin() {
   const rule = document.getElementById("pagerule");
   const want = "@page { size: A4 landscape; margin: " + state.printMargin + "mm; }";
   if (rule.textContent !== want) rule.textContent = want;
+}
+
+/* The sheet the printout is cut to. The page rule above stays on A4 whatever
+   this says, because the printer is still fed an A4 page: the smaller sheet is
+   drawn on it, with a line to cut along. So nothing here can hand the printer a
+   paper size it does not hold.
+
+   The two figures go out as custom properties, which the print stylesheet reads
+   for both the width on screen and the width on paper. One number, so what the
+   fitter measured is what comes out. */
+function applyCutSheet() {
+  const cut = cutSheet();
+  const root = document.documentElement;
+  root.style.setProperty("--cutw", cut ? cut[0] + "mm" : "");
+  root.style.setProperty("--cuth", cut ? cut[1] + "mm" : "");
+  root.style.setProperty("--cutpad", CUT_PAD + "mm");
+  document.body.classList.toggle("cutsheet", !!cut);
 }
 /* Clicking a lesson opens a color picker anchored under it. The input is a
    permanent hidden node, so nothing rebuilds it while the picker is open. */

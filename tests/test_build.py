@@ -777,7 +777,8 @@ class Documentation(unittest.TestCase):
         # Which heading each control falls under: the last one written above it.
         where, heading = {}, ""
         for kind, name in re.findall(
-                r'data-i18n="(\w+Heading)"|id="(show\w+|printMargin|\w*[Nn]ame)"', panel):
+                r'data-i18n="(\w+Heading)"'
+                r'|id="(show\w+|print(?:Margin|Sheet|Width|Height)|\w*[Nn]ame)"', panel):
             if kind:
                 heading = kind
             elif name:
@@ -790,6 +791,8 @@ class Documentation(unittest.TestCase):
             "showSubject": "showHeading",
             "showGaps": "dayHeading",
             "showQr": "printHeading", "printMargin": "printHeading",
+            "printSheet": "printHeading", "printWidth": "printHeading",
+            "printHeight": "printHeading",
         }
         for control, expected in want.items():
             self.assertEqual(where.get(control), expected,
@@ -801,8 +804,8 @@ class Documentation(unittest.TestCase):
         _, data = build()
         strings = data["strings"]
         for lang, heading, labels in (
-                ("en", "printHeading", ("showQr", "printMargin")),
-                ("et", "printHeading", ("showQr", "printMargin"))):
+                ("en", "printHeading", ("showQr", "printMargin", "printSheet")),
+                ("et", "printHeading", ("showQr", "printMargin", "printSheet"))):
             words = set(re.findall(r"\w+", strings[lang][heading].lower()))
             words.discard("on")
             words.discard("the")

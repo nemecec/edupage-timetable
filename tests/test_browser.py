@@ -277,6 +277,67 @@ class ThePrintedSheet(InABrowser):
         self.assertGreater(narrow - wide, 60, "the setting barely moved the sheet")
 
 
+    def test_a_sheet_cut_out_of_a4_is_drawn_at_its_own_size(self):
+        """The printer is still handed an A4 page. What changes is the box drawn
+        on it, and the box has to measure what it says it does — a sheet cut to
+        a line that is a millimetre out is a sheet that does not fit."""
+        self.show("68", "8")
+        MM = 96 / 25.4
+        got = self.js(
+            "state.printSheet = 'ipad11a16'; printing = true; render();"
+            "var box = document.body.getBoundingClientRect();"
+            "var css = getComputedStyle(document.body);"
+            "var out = {w: box.width, h: box.height, style: css.borderTopStyle,"
+            "           rule: document.getElementById('pagerule').textContent,"
+            "           cut: document.body.classList.contains('cutsheet'),"
+            "           sheet: sheetHeight(),"
+            "           note: !document.getElementById('cutNote').hidden};"
+            "printing = false; render();"
+            "return out;")
+        # Apple's own figures for the device, in the box the reader cuts along.
+        self.assertAlmostEqual(got["w"], 248.6 * MM, delta=1)
+        self.assertAlmostEqual(got["h"], 179.5 * MM, delta=1)
+        self.assertEqual(got["style"], "dashed", "no line to cut along")
+        self.assertTrue(got["cut"])
+        self.assertTrue(got["note"], "nothing said the sheet has to be cut")
+        # The page stays A4, so the printer is never asked for paper it lacks.
+        self.assertIn("size: A4 landscape", got["rule"])
+        # And the fitter aims at the cut box, less the white around the type.
+        self.assertEqual(got["sheet"], round((179.5 - 5) * MM))
+
+    def test_the_millimetre_boxes_are_live_only_for_a_size_of_ones_own(self):
+        """They are dimmed rather than hidden, the way every other dependent
+        control here behaves: a reader can see what their own size would be
+        before asking for it."""
+        self.show("68", "8")
+        for sheet, dimmed in (("a4", True), ("ipad11a16", True), ("custom", False)):
+            got = self.js(
+                "state.printSheet = '%s'; syncDisplayControls();"
+                "return {off: document.getElementById('sheetOwn')"
+                "                 .classList.contains('off'),"
+                "        picked: document.getElementById('printSheet').value};"
+                % sheet)
+            self.assertEqual(got["off"], dimmed, sheet)
+            self.assertEqual(got["picked"], sheet)
+
+    def test_the_whole_a4_page_draws_no_line_and_fills_the_sheet(self):
+        """The default. Nothing is cut, so nothing says to cut it."""
+        self.show("68", "8")
+        got = self.js(
+            "state.printSheet = 'a4'; printing = true; render();"
+            "var out = {cut: document.body.classList.contains('cutsheet'),"
+            "           style: getComputedStyle(document.body).borderTopStyle,"
+            "           note: !document.getElementById('cutNote').hidden,"
+            "           sheet: sheetHeight()};"
+            "printing = false; render();"
+            "return out;")
+        self.assertFalse(got["cut"])
+        self.assertEqual(got["style"], "none")
+        self.assertFalse(got["note"])
+        self.assertEqual(got["sheet"],
+                         round(210 * 96 / 25.4) - 2 * round(5 * 96 / 25.4))
+
+
 class TheControls(InABrowser):
     """Pressing things. Every listener here was unreachable from a stub."""
 

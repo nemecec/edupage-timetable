@@ -87,6 +87,15 @@ STRINGS = {
         "showDuration": "How long it lasts",
         "printMargin": "Paper edge",
         "printMargin.mm": "{0} mm",
+        "printSheet": "Sheet",
+        "sheet.a4": "The whole A4 page",
+        "sheet.ipad11a16": "iPad 11\" A16",
+        "sheet.custom": "My own size",
+        "sheet.mm": "mm",
+        "sheet.width": "Sheet width in millimetres",
+        "sheet.height": "Sheet height in millimetres",
+        "sheet.cut": ("This sheet is smaller than an A4 page. Print it on A4 "
+                      "at full size, then cut along the dashed line."),
         "showGaps": "Free time between lessons",
         "gap": "Break",
         "dur.hour": "{0} hour",
@@ -239,6 +248,15 @@ STRINGS = {
         "showDuration": "Kui kaua kestab",
         "printMargin": "Paberi äär",
         "printMargin.mm": "{0} mm",
+        "printSheet": "Leht",
+        "sheet.a4": "Kogu A4 leht",
+        "sheet.ipad11a16": "iPad 11\" A16",
+        "sheet.custom": "Minu enda mõõt",
+        "sheet.mm": "mm",
+        "sheet.width": "Lehe laius millimeetrites",
+        "sheet.height": "Lehe kõrgus millimeetrites",
+        "sheet.cut": ("See leht on A4-st väiksem. Trüki see A4 peale "
+                      "täissuuruses ja lõika mööda katkendjoont."),
         "showGaps": "Vaba aeg tundide vahel",
         "gap": "Paus",
         "dur.hour": "{0} tund",
@@ -1925,6 +1943,11 @@ PAGE = """<!DOCTYPE html>
   .checklist .line > label.inline:first-child { min-width: 9.5rem; }
   .choice { display: flex; gap: 14px; }
   .choice.off { opacity: .4; pointer-events: none; }
+  /* Wide enough for three digits and no wider: the box says how many characters
+     belong in it, and a full-width field invites a sentence. */
+  #sheetOwn input[type="number"] { width: 4.5rem; }
+  #sheetOwn { display: flex; align-items: center; gap: 6px; }
+  .times { color: var(--muted); }
   #subjectPanel { margin-top: 10px; }
   #subjectPanel > summary { cursor: pointer; font-size: 13px; color: var(--accent);
                             padding: 4px 0; }
@@ -2209,6 +2232,19 @@ PAGE = """<!DOCTYPE html>
   body.printview .count, body.printview .topbar { display: none; }
   body.printview #grid { width: 1054px; }          /* 297mm less two 9mm margins */
   body.printview #grid table { min-width: 0; }
+  /* A sheet cut out of the A4 page. The printer is still handed an A4 page, so
+     nothing here asks it for paper it does not hold: the smaller sheet is drawn
+     on that page with the line to cut along, and the timetable is fitted to the
+     line rather than to the paper.
+
+     The measurements arrive as custom properties, and the same two rules serve
+     the preview and the printout — what was measured on screen is what comes
+     out. `max-width` is the safety net: a sheet as wide as A4 itself cannot
+     also clear the printer's margin, and it is held to what the page has. */
+  body.printview.cutsheet { box-sizing: border-box; padding: var(--cutpad);
+                            width: var(--cutw); height: var(--cuth);
+                            border: 1px dashed #b6bcc4; }
+  body.printview.cutsheet #grid, body.printview.cutsheet .foot { width: auto; }
   /* The margin is written from the setting into #pagerule below. This copy is
      what a browser gets if the script never runs. */
   @page { size: A4 landscape; margin: 5mm; }
@@ -2222,6 +2258,13 @@ PAGE = """<!DOCTYPE html>
     body { padding: 0; }
     .panel, .count, .topbar { display: none; }
     #grid { width: auto; }
+    /* The cut sheet again, on paper. `max-width` belongs here and not in the
+       preview: on paper the page is what the sheet has to fit inside, and on
+       screen it would be the window, which would shrink the preview on a narrow
+       one and measure a sheet nobody is printing. */
+    body.cutsheet { box-sizing: border-box; padding: var(--cutpad);
+                    width: var(--cutw); height: var(--cuth);
+                    max-width: 100%; border: 1px dashed #b6bcc4; }
 
     .ptitle { font-size: 17px; font-weight: 700; text-align: center; }
   }
@@ -2412,8 +2455,8 @@ PAGE = """<!DOCTYPE html>
       </div>
     </div>
   </div>
-  <!-- Paper, not screen. Two settings that change nothing until the sheet
-       comes out of the printer, and neither belongs beside a lesson label. -->
+  <!-- Paper, not screen. Settings that change nothing until the sheet comes out
+       of the printer, and none of them belongs beside a lesson label. -->
   <div class="row">
     <div class="field" style="width:100%">
       <label data-i18n="printHeading"></label>
@@ -2426,7 +2469,21 @@ PAGE = """<!DOCTYPE html>
           <label class="inline" for="printMargin"><span data-i18n="printMargin"></span></label>
           <select id="printMargin"></select>
         </div>
+        <!-- The sheet, and the reader's own measurements beside it. The boxes
+             are dimmed rather than hidden while another sheet is chosen, the
+             way every other dependent control here behaves. -->
+        <div class="line">
+          <label class="inline" for="printSheet"><span data-i18n="printSheet"></span></label>
+          <select id="printSheet"></select>
+          <span class="choice" id="sheetOwn">
+            <input type="number" id="printWidth" step="1" data-i18n-aria="sheet.width">
+            <span class="times">&times;</span>
+            <input type="number" id="printHeight" step="1" data-i18n-aria="sheet.height">
+            <span data-i18n="sheet.mm"></span>
+          </span>
+        </div>
       </div>
+      <p class="sub help" id="cutNote" data-i18n="sheet.cut" hidden></p>
     </div>
   </div>
   <div class="row">

@@ -537,6 +537,64 @@ test("a class is offered under its label and filed under its name", () => {
   assert.doesNotMatch(pick(`classKey()`), /1\. Maarja/);
 });
 
+test("a sheet the reader types is held to what A4 can carry", () => {
+  /* The number is typed, not picked, so it is the one setting a reader can put
+     nonsense into. Nought millimetres would leave the fitter nothing to fit
+     into; a metre cannot be cut out of an A4 page. Both go back to the size
+     that was in force, rather than being kept and drawn. */
+  assert.equal(json(`defaults().printSheet`), "a4", "a sheet is cut by default");
+  assert.equal(json(`normalise({printSheet: "ipad11a16"}).printSheet`), "ipad11a16");
+  assert.equal(json(`normalise({printSheet: "nosuchthing"}).printSheet`), "a4");
+
+  // Held to the paper it is cut from, in each direction.
+  assert.equal(json(`normalise({printWidth: 297}).printWidth`), 297);
+  assert.equal(json(`normalise({printWidth: 298}).printWidth`), 210);
+  assert.equal(json(`normalise({printHeight: 210}).printHeight`), 210);
+  assert.equal(json(`normalise({printHeight: 211}).printHeight`), 148);
+  assert.equal(json(`normalise({printWidth: 0}).printWidth`), 210);
+  assert.equal(json(`normalise({printHeight: -5}).printHeight`), 148);
+});
+
+test("only a sheet smaller than the page is cut out of it", () => {
+  /* The A4 setting is the page itself, so there is nothing to cut and no line
+     to draw. Anything else is a box on that page. */
+  const own = load();
+  const cut = (sheet) => {
+    own(`state.printSheet = ${JSON.stringify(sheet)};`);
+    return JSON.parse(own(`JSON.stringify(cutSheet())`));
+  };
+  assert.equal(cut("a4"), null, "A4 is the page, not a sheet cut out of it");
+  assert.deepEqual(cut("ipad11a16"), [248.6, 179.5]);
+  // Their own size is whatever the two boxes say.
+  own(`state.printWidth = 200; state.printHeight = 120;`);
+  assert.deepEqual(cut("custom"), [200, 120]);
+});
+
+test("the picker offers every sheet the settings accept", () => {
+  /* The list and the values normalise takes are one list, so a sheet cannot be
+     offered that a saved link would then refuse. */
+  const own = load();
+  own(`renderSheets();`);
+  const html = own(`document.getElementById("printSheet").innerHTML`);
+  const values = [...html.matchAll(/value="([^"]*)"/g)].map(m => m[1]);
+  assert.deepEqual(values, JSON.parse(own(`JSON.stringify(SHEETS)`)));
+  assert.equal(values.length, 3);
+  // Whether the two millimetre boxes are dimmed is a real class on a real
+  // element, which the stub does not keep. A browser test checks that.
+});
+
+test("the printer is never asked for paper it does not hold", () => {
+  /* Every sheet is drawn on an A4 page. The rule the browser prints by says so
+     whatever sheet is chosen, which is what keeps a home printer out of the
+     argument — no custom paper size, and nothing to scale. */
+  const own = load();
+  const rule = () => own(`document.getElementById("pagerule").textContent`);
+  for (const sheet of ["a4", "ipad11a16", "custom"]) {
+    own(`state.printSheet = ${JSON.stringify(sheet)}; applyPageMargin();`);
+    assert.match(rule(), /size: A4 landscape/, sheet);
+  }
+});
+
 test("a pick left over from a renamed group hides nothing", () => {
   /* Renaming a study group renames the key its pick is filed under, because the
      key is the list of groups in the division. A pick under the old key matches

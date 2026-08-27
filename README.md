@@ -520,12 +520,37 @@ period grid, which needs no times.
   Asked to grow, it has to shrink with everything else, or the fitter has
   nothing left to give.
 
-  **On the printout:** the QR code can be switched on, and the paper edge is
-  the reader's to set. The code is off to begin with, because most sheets go on
-  a wall and are read as paper, and the corner is room the timetable could have
-  used. The address in the other corner stays either way: the code goes to this
-  reader's own timetable, and the address is where anybody gets one of their
-  own.
+  **On the printout:** the QR code can be switched on, the paper edge is the
+  reader's to set, and so is the size of the sheet. The code is off to begin
+  with, because most sheets go on a wall and are read as paper, and the corner
+  is room the timetable could have used. The address in the other corner stays
+  either way: the code goes to this reader's own timetable, and the address is
+  where anybody gets one of their own.
+
+  **Sheet** is the size the timetable is laid out for. Three answers: the whole
+  A4 page, an iPad 11" A16, or a size the reader types in millimetres. A4 is
+  what almost every printout is, and it is what this says until somebody asks
+  for something else.
+
+  The other two are smaller than an A4 page and are cut out of one. The printer
+  is still handed an A4 page — the `@page` rule says A4 whatever the sheet says
+  — and the smaller sheet is drawn on it as a dashed line to cut along. That
+  matters more than it sounds. A custom paper size has to exist in the printer
+  driver, and a browser asked for paper the printer does not hold scales the
+  page to what it does hold, which is how a sheet meant to be 248.6mm wide
+  arrives at 287. Nothing here can go wrong that way, because nothing is ever
+  scaled: the page is A4, and only the line moves.
+
+  The iPad figures are Apple's own for the device, 248.6 by 179.5 millimetres,
+  not for its screen. The sheet is meant to go where the iPad goes. The
+  timetable is fitted to the line rather than to the paper, and 2.5mm of white
+  is left inside it, so a scissors that wanders by a hair does not take a room
+  number with it.
+
+  A typed size is held to what an A4 page can carry, between 100mm and the
+  sheet's own 297 by 210. A number outside that goes back to the one in force,
+  and the box is redrawn saying so: a sheet of nought millimetres would leave
+  the fitter nothing to fit into.
   **Lesson colors** offers three answers for every subject: the generated
   palette, the school's own colors from aSc, or colors of your own. A click on
   any lesson in the timetable also recolors its subject. The text flips between
@@ -781,6 +806,9 @@ paste lands.
   "showGaps": true,
   "showQr": false,
   "printMargin": 5,
+  "printSheet": "a4",
+  "printWidth": 210,
+  "printHeight": 148,
 
   "subjectColorStyle": "school",
   "subjects": {

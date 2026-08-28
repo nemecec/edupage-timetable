@@ -612,6 +612,24 @@ test("the picker offers every sheet the settings accept", () => {
   // element, which the stub does not keep. A browser test checks that.
 });
 
+test("the type can be asked for smaller than the page draws it", () => {
+  /* The steps under a hundred are what a small sheet needs. A name the box
+     cannot fit is cut with an ellipsis, and on a 100 by 60 card twelve of the
+     thirty-three names were cut at 90% against six at 70%. Sixty is the floor:
+     under that a room number is a smudge rather than small print. */
+  const sizes = json(`SIZES`).map(Number);
+  assert.ok(Math.min(...sizes) <= 70, "the type cannot be asked for smaller");
+  assert.equal(Math.min(...sizes), 60, "the floor moved");
+  assert.equal(Math.max(...sizes), 150);
+  // Ordered, so the picker reads as a scale rather than a bag of numbers.
+  assert.deepEqual(sizes, [...sizes].sort((a, b) => a - b));
+  // And every one of them is a size the settings will take back.
+  for (const size of json(`SIZES`)) {
+    assert.equal(json(`normalise({nameSize: ${JSON.stringify(size)}}).nameSize`),
+                 size, size);
+  }
+});
+
 test("a sheet smaller than the page is copied to fill it", () => {
   /* Somebody who asks for a card a third the size of the paper wants more than
      one card, and the rest of the sheet would go in the bin. So the page is

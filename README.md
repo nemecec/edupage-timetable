@@ -509,6 +509,14 @@ period grid, which needs no times.
   it is there to be checked rather than read, and it is what gives the other
   two the room to grow.
 
+  The sizes run from 60% to 150%. The steps under a hundred are what a small
+  sheet needs: a name the box cannot fit is cut with an ellipsis, and a size
+  down costs nothing but reading distance while it buys whole words. On a 100 by
+  60 card, twelve of the thirty-three names were cut at 90% and six at 70% —
+  *Ajutreening*, *Geograafia* and *Praktikum* all come out whole at 70%. Sixty
+  is the floor, because under that a room number is a smudge rather than small
+  print.
+
   Nothing is fetched. A page that asks for a font from somewhere else is a page
   that does not open on a train, so the choices are the three families every
   machine has: sans-serif, serif and monospace.

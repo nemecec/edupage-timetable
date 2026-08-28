@@ -202,7 +202,12 @@ const FACE_STACK = {
  * things a reader is looking for, and 100 for the line of room and teacher,
  * which is there to be checked rather than read. A box with no room for that
  * much keeps the sizes the page has always drawn. */
-const SIZES = ["90", "100", "115", "125", "150"];
+/* How large a reader asks their type to be, as a percentage of the size the
+   page draws by default. The steps below a hundred are the useful ones on a
+   small sheet: a name the box cannot fit is cut with an ellipsis, and a size
+   down costs nothing but reading distance while it buys whole words. Sixty is
+   the floor — under that a room number is a smudge rather than small print. */
+const SIZES = ["60", "70", "80", "90", "100", "115", "125", "150"];
 
 const MARGINS = [5, 9, 14];
 /* The sheet a printout is laid out for. "a4" is the sheet itself, and the

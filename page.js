@@ -2353,18 +2353,40 @@ function icsFile(withMine, lead) {
              .map(icsFold).join("\r\n") + "\r\n";
 }
 
-/* What the calendar and the file are called. Google offers the file's name
-   when it makes a calendar, so this is what the reader will see in the list —
-   and with two children in two classes, the class is the thing that tells them
-   apart. */
-function icsCalendarName() {
-  const cls = currentClass();
-  return t("cal.name", classLabel(cls));
+/* What the calendar and the file are called. Google offers the file's name when
+   it makes a calendar, so this is what the reader ends up seeing in their list
+   of calendars — and a household with two children has two of these to tell
+   apart. The school, the class, and the child's name where one was given.
+
+   The name is the reader's own and they typed it themselves; where they left it
+   blank there is nothing to say and the part is dropped rather than left as a
+   gap in the middle of a filename. */
+function icsParts() {
+  /* Trimmed: the school types "1. S " with the space and every one of these
+     ends up in a name somebody reads. */
+  return [currentSchool().l, classLabel(currentClass()), mine().studentName]
+    .map(part => String(part || "").replace(/\s+/g, " ").trim())
+    .filter(Boolean);
 }
+
+function icsCalendarName() {
+  return t("cal.name", icsParts().join(" · "));
+}
+
+/* Estonian letters a filename carries everywhere. Folding them is friendlier
+   than dropping them: icsSafe alone turns "TERA gümnaasium" into
+   "TERA-g-mnaasium", which is nobody's school. */
+const FOLDED = { "ä": "a", "ö": "o", "õ": "o", "ü": "u", "š": "s", "ž": "z",
+                 "Ä": "A", "Ö": "O", "Õ": "O", "Ü": "U", "Š": "S", "Ž": "Z" };
+
+const plainName = (value) =>
+  String(value).replace(/[äöõüšžÄÖÕÜŠŽ]/g, (c) => FOLDED[c]);
 
 function icsFileName() {
   const term = currentSchool().cal || {};
-  return icsSafe(icsCalendarName()).toLowerCase() + "-" + (term.a || "") + ".ics";
+  return [t("cal.file")].concat(icsParts()).concat(term.a ? [term.a] : [])
+    .map(part => icsSafe(plainName(part))).filter(part => part !== "x")
+    .join("-") + ".ics";
 }
 
 /* Repaint the grid but leave the legend alone. Its color inputs are live DOM
@@ -2874,6 +2896,19 @@ function showCalendarPanel() {
   if (!term) return;
   document.getElementById("calCovers").textContent =
     t("cal.covers", plainDate(term.a), plainDate(term.z));
+  /* What this school does that the others do not. A reader who knows the week
+     is missing on the twenty-first is a reader who trusts the rest of it — and
+     one who does not is left wondering whether the file is broken. */
+  const off = (term.o || []).map(x => x.n + " " + plainRange(x.a, x.z));
+  const instead = (term.e || [])
+    .map(x => x.n + " " + plainDate(x.d) + " " + hhmm(x.a) + "–" + hhmm(x.z));
+  const line = (id, text) => {
+    const node = document.getElementById(id);
+    node.hidden = !text;
+    if (text) node.textContent = text;
+  };
+  line("calOff", off.length ? t("cal.off", off.join(", ")) : "");
+  line("calInstead", instead.length ? t("cal.instead", instead.join(", ")) : "");
   /* A reminder belongs to the reader's own events, so it goes with them: with
      those left out there is nothing for it to ring about. Dimmed rather than
      hidden, the way every other dependent control here behaves. */
@@ -2881,13 +2916,28 @@ function showCalendarPanel() {
   box.disabled = !state.calMine;
   document.getElementById("calAlarmRow")
           .classList.toggle("off", !state.calMine);
-  document.getElementById("calLead")
-          .classList.toggle("off", !state.calMine || !state.calAlarm);
+  const ringing = state.calMine && state.calAlarm;
+  document.getElementById("calLead").classList.toggle("off", !ringing);
+  /* Google drops reminders into any calendar but the primary one, which is the
+     one thing the advice above tells the reader not to use. Said where the
+     choice is made, and only to a reader the choice can reach. */
+  document.getElementById("calAlarmNote").hidden = !ringing;
   /* Built here rather than written into the page, so the list and the values
      the settings accept cannot drift — the same bargain the margins make. */
   fillOptions(document.getElementById("calAlarmMinutes"),
               LEAD_MINUTES.map(m => [String(m), t("cal.lead.min", m)]),
               String(state.calAlarmMinutes));
+}
+
+/* A stretch of days, as short as it can be said without becoming ambiguous.
+   One day is one date. Two dates in the same year say the year once, at the
+   end, the way a Estonian reader writes a range. Across a new year — the
+   Christmas break runs into January — both say it. */
+function plainRange(from, to) {
+  if (from === to) return plainDate(from);
+  const sameYear = String(from).slice(0, 4) === String(to).slice(0, 4);
+  const first = sameYear ? plainDate(from).replace(/\.\d{4}$/, "") : plainDate(from);
+  return first + "–" + plainDate(to);
 }
 
 /* An ISO date the way it is written in Estonia. Only the calendar panel says a

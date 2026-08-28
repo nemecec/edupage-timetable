@@ -541,6 +541,32 @@ period grid, which needs no times.
   its own slow schedule — half a day at best, sometimes days — so a corrected
   timetable would sit stale and the feature would read as broken.
 
+  **The panel says what the school's own year does to the file**, because a
+  reader who knows the week is missing on the twenty-first trusts the rest of
+  it, and one who does not is left wondering whether the export is broken. Each
+  school states its own:
+
+      ProTERA          Katab 26.08.2026 kuni 18.12.2026
+                       Tunde ei ole: TERA20 aktus 31.08.2026,
+                                     Sügisvaheaeg 26.10–30.10.2026
+      TäheTERA         Katab 27.08.2026 kuni 18.12.2026
+                       Tunde ei ole: Iseõppepäev 21.09.2026,
+                                     Sügisvaheaeg 26.10–30.10.2026
+                       Asendab tunde: Jõulukontsert 16.12.2026 9.15–10.15
+
+  A stretch is named by the school days it costs, not by the calendar days the
+  holiday covers: the autumn break reads 26.10–30.10 because the weekend either
+  side was never a school day. A holiday that falls on a Saturday is not listed
+  at all, since nothing about the week changes.
+
+  The file itself is named for the school, the class and the child —
+  `Tunniplaan-ProTERA-8-Eva-2026-08-26.ics` — because Google offers the
+  filename when it makes a calendar, and a household with two children needs to
+  tell one from the other. A child's name that was never filled in is left out
+  rather than leaving a gap. Estonian letters are folded in the filename and
+  kept in the calendar's own name: stripping them turns `gümnaasium` into
+  `g-mnaasium`, which is nobody's school.
+
   **The dates come from `SCHOOL_YEAR`, not from EduPage.** The timetable is a
   repeating week and carries no dates: aSc's `terms` table is one nameless
   entry with none, and two of the four timetables leave even the free-text
@@ -575,9 +601,11 @@ period grid, which needs no times.
 
   Google drops reminders when the file is imported into any calendar but the
   primary one, which is the one thing this page tells readers not to do. Apple
-  keeps them wherever the events go. So the reminder is worth having and is not
-  worth promising: it is off until asked for, and a Google reader who follows
-  the advice about a separate calendar may not get it.
+  keeps them wherever the events go. So the panel says so — but only once
+  reminders are actually asked for. It pulls against the advice directly above
+  it, and a reader who wants none of this has nothing to weigh; a caveat shown
+  to everybody is a caveat nobody reads. The reminder stays off until asked
+  for, and the reader who turns it on is the one told what it costs.
 
   **The two makers do not behave the same, and the panel says which is which.**
   On Apple — iPhone, iPad and Mac — opening the file is the whole procedure:

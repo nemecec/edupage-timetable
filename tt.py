@@ -79,12 +79,15 @@ STRINGS = {
         "print.summary": "Print options",
         "cal.summary": "Calendar",
         "cal.covers": "Covers {0} to {1}",
+        "cal.off": "No lessons on: {0}",
+        "cal.instead": "Replacing lessons: {0}",
         "cal.mine": "Include my own events",
         "cal.alarm": "Remind me before my own events",
         "cal.lead": "How long before",
         "cal.lead.min": "{0} minutes",
-        "cal.download": "Download calendar file",
+        "cal.download": "Download calendar file (.ics)",
         "cal.name": "Timetable {0}",
+        "cal.file": "Timetable",
         "cal.advice": "Import this into a new calendar of its own. A calendar "
                       "cannot be told that a lesson has gone, so when the "
                       "timetable changes, delete that calendar and export "
@@ -97,6 +100,11 @@ STRINGS = {
                       "import a file.",
         "cal.help.apple": "Apple's instructions",
         "cal.help.google": "Google's instructions",
+        # Only said once reminders are asked for. It cuts against the advice
+        # above it, and a reader who wants none of this does not need to weigh
+        # something that cannot affect them.
+        "cal.google.alarm": "Google keeps reminders only in your main calendar, "
+                            "not in a separate one.",
         "advanced": "Save and restore settings",
         "showHeading": "For each lesson, show:",
         "dayHeading": "In the day, show:",
@@ -262,12 +270,15 @@ STRINGS = {
         "print.summary": "Väljatrüki seaded",
         "cal.summary": "Kalender",
         "cal.covers": "Katab {0} kuni {1}",
+        "cal.off": "Tunde ei ole: {0}",
+        "cal.instead": "Asendab tunde: {0}",
         "cal.mine": "Lisa ka minu enda sündmused",
         "cal.alarm": "Tuleta enda sündmused enne meelde",
         "cal.lead": "Kui palju aega enne",
         "cal.lead.min": "{0} minutit",
-        "cal.download": "Laadi kalendrifail alla",
+        "cal.download": "Laadi kalendrifail alla (.ics)",
         "cal.name": "Tunniplaan {0}",
+        "cal.file": "Tunniplaan",
         "cal.advice": "Impordi see eraldi uude kalendrisse. Kalendrile ei saa "
                       "öelda, et tund on ära jäänud, seega kui tunniplaan "
                       "muutub, kustuta see kalender ja ekspordi uuesti.",
@@ -280,6 +291,8 @@ STRINGS = {
         # told before they follow either one.
         "cal.help.apple": "Apple'i juhend (inglise keeles)",
         "cal.help.google": "Google'i juhend (inglise keeles)",
+        "cal.google.alarm": "Google säilitab meeldetuletused ainult "
+                            "põhikalendris, mitte eraldi kalendris.",
         "advanced": "Seadete salvestamine ja taastamine",
         "showHeading": "Iga tunni juures näita:",
         "dayHeading": "Päevas näita:",
@@ -2381,6 +2394,10 @@ def _calendar_of(school):
     if not window:
         return {}
     cal = dict(zip(("a", "z", "x"), window))
+    # The same days again, named and as stretches, for the panel to show. The
+    # export reads `x`; nothing reads both, and a test holds them to agreeing.
+    cal["o"] = [{"n": name, "a": first, "z": last}
+                for name, first, last in window[3]]
     inside = [e for e in term_events(year) if cal["a"] <= e["date"] <= cal["z"]]
     if inside:
         cal["e"] = [{"d": e["date"], "a": e["from"], "z": e["to"], "n": e["name"]}
@@ -2416,12 +2433,17 @@ def _minutes(clock):
 def term_days(year):
     """The window the export covers, and the school days taken out of it.
 
-    Returns (start, end, [dates off]) as ISO strings, or None where no dates
-    are written down — which is also what nothing at all answers, so a school
-    with no year is asked about the same way as one with half of one. The dates
-    off are only the ones that cost a lesson: inside the window, and on a
-    weekday, because a Saturday holiday takes nothing away from a timetable
-    that never runs then.
+    Returns (start, end, [dates off], [named stretches]) as ISO strings, or
+    None where no dates are written down — which is also what nothing at all
+    answers, so a school with no year is asked about the same way as one with
+    half of one. The dates off are only the ones that cost a lesson: inside the
+    window, and on a weekday, because a Saturday holiday takes nothing away
+    from a timetable that never runs then.
+
+    The named stretches are the same thing said the way a reader reads it: what
+    each run of missing days is called, and the first and last school day of
+    it. A stretch that costs no school day at all — a holiday on a Saturday —
+    is not named, because nothing about the week changes.
     """
     if not (year or {}).get("start") or not (year or {}).get("end"):
         return None
@@ -2429,15 +2451,20 @@ def term_days(year):
     end = datetime.date.fromisoformat(year["end"])
     if end < start:
         return None
-    off = set()
-    for first, last, _ in year.get("off", ()):
+    off, named = set(), []
+    for first, last, name in year.get("off", ()):
         day = datetime.date.fromisoformat(first)
         stop = datetime.date.fromisoformat(last)
+        mine = []
         while day <= stop:
             if start <= day <= end and day.weekday() < 5:
                 off.add(day.isoformat())
+                mine.append(day)
             day += datetime.timedelta(days=1)
-    return year["start"], year["end"], sorted(off)
+        if mine:
+            named.append((name, mine[0].isoformat(), mine[-1].isoformat()))
+    named.sort(key=lambda x: (x[1], x[0]))
+    return year["start"], year["end"], sorted(off), named
 
 
 def plain_subject(name):
@@ -3335,7 +3362,12 @@ PAGE = """<!DOCTYPE html>
   <div class="row">
     <div class="field" style="width:100%">
       <div class="checklist">
+        <!-- What this school's own year does: the days it takes out and the
+             hours it fills itself. A reader who knows the week is missing on
+             the twenty-first trusts the rest of the file. -->
         <div class="line"><span class="sub" id="calCovers"></span></div>
+        <div class="line"><span class="sub" id="calOff" hidden></span></div>
+        <div class="line"><span class="sub" id="calInstead" hidden></span></div>
         <div class="line">
           <label class="inline"><input type="checkbox" id="calMine">
             <span data-i18n="cal.mine"></span></label>
@@ -3369,6 +3401,10 @@ PAGE = """<!DOCTYPE html>
         <a id="calHelpGoogle" target="_blank" rel="noopener noreferrer"
            href="https://support.google.com/calendar/answer/37118"
            data-i18n="cal.help.google"></a></p>
+      <!-- Shown only once reminders are asked for: it pulls against the advice
+           above about a calendar of its own, and a reader who wants no
+           reminders has nothing to weigh. -->
+      <p class="sub help" id="calAlarmNote" data-i18n="cal.google.alarm" hidden></p>
     </div>
   </div>
 </details>

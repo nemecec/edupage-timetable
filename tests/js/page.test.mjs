@@ -546,6 +546,29 @@ test("an event keeps its calendar name through every edit around it", () => {
   run(`myOwn().events = [];`);
 });
 
+test("the file is named after the school, the class and the child", () => {
+  /* Google offers the filename when it makes a calendar, so this is what a
+     household with two children reads to tell one from the other. */
+  run(`myOwn().studentName = "Eva";`);
+  assert.equal(json(`icsFileName()`), "Timetable-A-school-8-Eva-2026-08-24.ics");
+  assert.equal(json(`icsCalendarName()`), "Timetable A school · 8 · Eva");
+  // No name given is no part, not a gap in the middle of the name.
+  run(`myOwn().studentName = "";`);
+  assert.equal(json(`icsFileName()`), "Timetable-A-school-8-2026-08-24.ics");
+  run(`myOwn().studentName = "   ";`);
+  assert.equal(json(`icsFileName()`), "Timetable-A-school-8-2026-08-24.ics",
+               "a name of nothing but spaces is no name");
+  /* Estonian letters are folded rather than dropped: icsSafe on its own turns
+     "gümnaasium" into "g-mnaasium", which is nobody's school. The calendar's
+     own name keeps them, because a person reads that one. */
+  assert.equal(json(`plainName("TERA gümnaasium Jüri Öösel Šašlõkk")`),
+               "TERA gumnaasium Juri Oosel Saslokk");
+  run(`myOwn().studentName = "Jüri";`);
+  assert.match(json(`icsFileName()`), /-Juri-/);
+  assert.match(json(`icsCalendarName()`), /Jüri/);
+  run(`myOwn().studentName = "";`);
+});
+
 test("a reminder is set only where there is room for one", () => {
   /* The pause before the event has to be at least as long as the warning.
      A reminder that rings during a lesson is one the reader never sees. */

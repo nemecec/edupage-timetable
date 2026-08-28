@@ -34,9 +34,12 @@ const DATA = {
      from many, so both languages carry the duration words. */
   strings: {
     en: { classN: "class {0}", gap: "Break",
+          /* The calendar names itself and its file out of these. */
+          "cal.name": "Timetable {0}", "cal.file": "Timetable",
           "link.unreadable": "This link carries settings the page cannot read.",
           "dur.hour": "{0} hour", "dur.hours": "{0} hours", "dur.min": "{0} min" },
     et: { classN: "{0}. klass", gap: "Paus",
+          "cal.name": "Tunniplaan {0}", "cal.file": "Tunniplaan",
           "link.unreadable": "Leht ei oska seda linki lugeda.",
           "dur.hour": "{0} tund", "dur.hours": "{0} tundi", "dur.min": "{0} min" },
   },

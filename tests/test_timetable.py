@@ -5,6 +5,7 @@ same API responses the live site is built from, frozen. Nothing that needs the
 school's server or a browser belongs in this file.
 """
 
+import datetime
 import os
 import sys
 import unittest
@@ -360,6 +361,32 @@ class TheTermTheExportCovers(unittest.TestCase):
         # taking it out would say a lesson was cancelled that never ran.
         self.assertEqual(got[2], ["2026-10-26", "2026-10-27", "2026-10-28",
                                   "2026-10-29", "2026-10-30"])
+        # And the same days named, for the panel to say. The stretch stops on
+        # the Friday: what a reader wants is which school days go, not which
+        # calendar days the holiday covers.
+        self.assertEqual(got[3], [("Sügis", "2026-10-26", "2026-10-30")])
+
+    def test_a_stretch_that_costs_no_school_day_is_not_named(self):
+        """A holiday on a Saturday changes nothing about the week, and naming
+        it would have the panel list days the reader never had lessons on."""
+        got = tt.term_days({"start": "2026-08-24", "end": "2026-12-18",
+                            "off": [("2026-11-07", "2026-11-08", "Laupäev")]})
+        self.assertEqual((got[2], got[3]), ([], []))
+
+    def test_the_named_stretches_and_the_dates_say_the_same_thing(self):
+        """Two ways of writing one fact: the export reads the dates and the
+        panel reads the names. Nothing reads both, so this holds them level."""
+        for label in ("TäheTERA", "ProTERA", "SädeTERA", "LõunaTERA"):
+            _, _, dates, named = tt.term_days(tt.year_for_school(label, ""))
+            covered = set()
+            for _, first, last in named:
+                day = datetime.date.fromisoformat(first)
+                stop = datetime.date.fromisoformat(last)
+                while day <= stop:
+                    if day.weekday() < 5:
+                        covered.add(day.isoformat())
+                    day += datetime.timedelta(days=1)
+            self.assertEqual(covered, set(dates), label)
 
     def test_a_day_off_outside_the_window_costs_nothing(self):
         """The winter break opens after this timetable stops, and the August
@@ -391,10 +418,10 @@ class TheTermTheExportCovers(unittest.TestCase):
     def test_a_schools_own_days_off_are_added_to_the_shared_ones(self):
         """Not instead of them: TäheTERA's self-study day is one more day
         without lessons, and it still keeps every break the school publishes."""
-        _, _, off = tt.term_days(tt.year_for_school("TäheTERA", ""))
+        _, _, off, _ = tt.term_days(tt.year_for_school("TäheTERA", ""))
         self.assertIn("2026-09-21", off, "the iseõppepäev")
         self.assertIn("2026-10-26", off, "and the autumn break with it")
-        _, _, protera = tt.term_days(tt.year_for_school("ProTERA", ""))
+        _, _, protera, _ = tt.term_days(tt.year_for_school("ProTERA", ""))
         self.assertIn("2026-08-31", protera, "the TERA20 aktus")
         self.assertNotIn("2026-09-21", protera, "which is TäheTERA's day, not this one")
 

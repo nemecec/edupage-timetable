@@ -983,8 +983,12 @@ function splitClassKey(key) {
 }
 
 /* Which of a division's groups this reader is in, keyed by the choice on offer.
-   The division's own id is aSc's ("*5:1") and means nothing to anyone. */
-const choiceKey = (division) => division.groups.join("/");
+   The division's own id is aSc's ("*5:1") and means nothing to anyone.
+
+   A division the build split into one picker per subject carries a key of its
+   own, because both halves offer the same group list and would otherwise share
+   one answer. The half that kept the group list keeps the saved pick. */
+const choiceKey = (division) => division.k || division.groups.join("/");
 
 function readable(bg) {
   /* Three, four, six or eight digits — a short hex is a color like any other,
@@ -1120,6 +1124,11 @@ function visible(entry, picked, divisions) {
      whether it works, because its removal changes nothing. */
   if (!Object.values(picked).filter(Boolean).length) return true;
   for (const div of divisions) {
+    /* A division split per subject offers every one of the same groups, so the
+       groups alone no longer say which picker a lesson answers to. Its subject
+       does. Where a division was never split this changes nothing: the list is
+       built from the very lessons its groups carry. */
+    if (div.sj && div.sj.length && !div.sj.includes(entry.s)) continue;
     if (!entry.g.some(g => div.groups.includes(g))) continue;
     const pick = picked[choiceKey(div)];
     if (pick && !entry.g.includes(pick)) return false;

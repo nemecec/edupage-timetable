@@ -471,6 +471,22 @@ period grid, which needs no times.
   TäheTERA Spanish groups are Maria Martinez, so the name tells them apart from
   French and German and not from each other.
 
+  **Two questions in one picker.** ProTERA's ninth years take Estonian and
+  English in six sets — *I A, I B, II A, II B, III A, III B* — and aSc holds
+  them as one division. The letter is which half of the class you are in: the
+  halves swap the two subjects at the same hour, so a reader keeps one letter
+  all week. The numeral is the set within that half, and it can differ between
+  the two subjects. A reader who is Estonian II and English I had no code to
+  pick, and picking one gave them the right lesson in one subject and the wrong
+  one in the other.
+
+  So that division is offered twice, once per subject, with the same codes in
+  both and the right teacher against each. The seventh and eighth years keep
+  English in a division of its own, which is the same arrangement written the
+  way aSc can hold it. Only a division named in `perSubject` is pulled apart —
+  a class split into science sets keeps those sets across the sciences, and two
+  pickers there would invite a week nobody has.
+
   To keep every group on one axis, leave its picker on *— all —*. Whole-class lessons always show.
   Divisions with no lessons are dropped. The page remembers the choices for each
   school and class.
@@ -949,7 +965,10 @@ Some of these choices are not obvious:
 
 - **`studyGroups` is keyed by the choice on offer**, `"Alfa/Beeta/Gamma"`. It is
   not keyed by aSc's own identifier for that division, which is `"*5:1"` and
-  means nothing outside the feed.
+  means nothing outside the feed. Where one division is offered once per subject,
+  both halves carry the same codes, so the second is keyed
+  `"Inglise keel: I A/I B/…"` and the first keeps the plain list. A pick saved
+  before the split still answers the first.
 - **`subjectColorStyle` says what every subject does**: `palette` (the generated
   one), `school` (the timetable's own), or `custom` (yours). It was two
   checkboxes that layered on each other. Nobody can guess that by looking.

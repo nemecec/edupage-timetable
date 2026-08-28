@@ -92,7 +92,7 @@ class WholePage(unittest.TestCase):
         # Every class carries lessons, and the group pickers are populated.
         self.assertTrue(all(c["e"] for s in self.data["schools"] for c in s["c"]))
         self.assertEqual(sum(len(c["v"]) for s in self.data["schools"]
-                             for c in s["c"]), 59)
+                             for c in s["c"]), 60)
 
     def test_a_known_day_comes_out_exactly_as_it_should(self):
         """One day, pinned whole: subject, period, groups and clock time.
@@ -435,14 +435,60 @@ class WholePage(unittest.TestCase):
         school = next(s for s in self.data["schools"]
                       if s["l"].startswith("ProTERA"))
         cls = next(c for c in school["c"] if c["n"] == "9")
-        div = next(d for d in cls["v"] if "I A" in d["groups"])
+        div = next(d for d in cls["v"] if "9.1" in d["groups"])
         who = dict(zip(div["groups"], div["w"]))
-        self.assertEqual(who["I A"], [["Vigel Hanna-Stina", "Eesti k"],
-                                      ["Eskla Jane", "Eng"]])
+        self.assertEqual(who["9.1"], [["Tempel Marie", "(M)AT"],
+                                      ["Aarna Silver", "Füs"],
+                                      ["Ruuder Epp", "Kem"]])
+        # One teacher taking two of the subjects says both.
+        self.assertEqual(who["9.2"], [["Pertman Getter", "(M)AT"],
+                                      ["Brikker Meelis", "Füs/Kem"]])
         # Every option in one picker lists its subjects the same way round, or
-        # two of them cannot be compared at a glance.
-        orders = {tuple(s for _, s in entry) for entry in div["w"] if entry}
+        # two of them cannot be compared at a glance. A teacher taking two of
+        # them writes both in one cell, so the order is read off the subjects
+        # rather than off the teachers.
+        orders = {tuple(s for _, subjects in entry for s in subjects.split("/"))
+                  for entry in div["w"] if entry}
         self.assertEqual(len(orders), 1, orders)
+
+    def test_the_ninth_years_pick_their_two_languages_apart(self):
+        """One aSc division holds Estonian and English in six sets. The letter
+        is which half of the class you are in, the numeral is your set, and the
+        numeral can differ between the two subjects. One picker could not say
+        that, and a reader who is Estonian II and English I had no answer."""
+        school = next(s for s in self.data["schools"]
+                      if s["l"].startswith("ProTERA"))
+        cls = next(c for c in school["c"] if c["n"] == "9")
+        both = [d for d in cls["v"] if "I A" in d["groups"]]
+        self.assertEqual([d["l"] for d in both], ["Eesti keel", "Inglise keel"])
+        for div in both:
+            self.assertEqual(div["groups"],
+                             ["I A", "I B", "II A", "II B", "III A", "III B"])
+        # Each says who teaches that subject, and only that subject.
+        estonian = dict(zip(both[0]["groups"], both[0]["w"]))
+        english = dict(zip(both[1]["groups"], both[1]["w"]))
+        self.assertEqual(estonian["II A"], [["Nursi Deisy", ""]])
+        self.assertEqual(english["II A"], [["Kartašev Kristi", ""]])
+        # Both offer the same codes, so the second is filed on its own. The
+        # first keeps the key the whole division had, and a saved pick stands.
+        self.assertNotIn("k", both[0])
+        self.assertEqual(both[1]["k"],
+                         "Inglise keel: I A/I B/II A/II B/III A/III B")
+
+    def test_only_the_class_the_rule_names_is_split(self):
+        """The seventh and eighth years keep English in a division of its own,
+        which is the same arrangement written the way aSc can hold it. The
+        ninth years' science sets stay together, because nobody has said they
+        come apart."""
+        school = next(s for s in self.data["schools"]
+                      if s["l"].startswith("ProTERA"))
+        for name in ("7", "8"):
+            cls = next(c for c in school["c"] if c["n"] == name)
+            english = [d for d in cls["v"] if "Inglise keel" in d["sj"]]
+            self.assertEqual([d["sj"] for d in english], [["Inglise keel"]], name)
+        cls = next(c for c in school["c"] if c["n"] == "9")
+        div = next(d for d in cls["v"] if "9.1" in d["groups"])
+        self.assertEqual(div["sj"], ["Ajutreening", "Füüsika", "Keemia"])
 
     def test_a_group_with_a_class_worth_of_teachers_says_none(self):
         """Past three names the list stops being a hint. Those groups are not a

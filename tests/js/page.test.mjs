@@ -395,6 +395,39 @@ test("a lesson is mine when every division it belongs to matches a pick", () => 
                "with nothing picked, everything shows");
 });
 
+test("two pickers over one set of groups are answered apart", () => {
+  /* A division the build split per subject offers the same codes twice, so
+     neither the group list nor the groups on a lesson say which picker it
+     answers to. The subject does, and the second half carries a key of its
+     own. See split_by_subject in tt.py. */
+  const divisions = `[{id: "d/E", groups: ["I A", "I B"], sj: ["Eesti keel"]},
+                      {id: "d/I", groups: ["I A", "I B"], sj: ["Inglise keel"],
+                       k: "Inglise keel: I A/I B"}]`;
+  const picks = `{"I A/I B": "II", "Inglise keel: I A/I B": "I B"}`;
+  assert.equal(run(`choiceKey({groups: ["I A", "I B"]})`), "I A/I B",
+               "a division with no key of its own is filed under its groups");
+  assert.equal(run(`choiceKey({groups: ["I A", "I B"], k: "x"})`), "x");
+  // Estonian answers to the first pick, English to the second, and neither
+  // pick reaches across.
+  const shown = (subject, group) =>
+    run(`visible({s: ${JSON.stringify(subject)}, g: [${JSON.stringify(group)}]},
+                 ${picks}, ${divisions})`);
+  assert.equal(shown("Eesti keel", "I A"), false, "not the Estonian pick");
+  assert.equal(shown("Inglise keel", "I A"), false, "not the English pick");
+  assert.equal(shown("Inglise keel", "I B"), true, "the English pick");
+});
+
+test("a division carrying several subjects still filters all of them", () => {
+  /* The subject check must not narrow an ordinary division. Its subject list
+     is built from the very lessons its groups carry, so every one of them is
+     in it. */
+  const divisions = `[{id: "d1", groups: ["HK1", "PK"],
+                       sj: ["Hispaania keel", "Prantsuse keel"]}]`;
+  const picks = `{"HK1/PK": "HK1"}`;
+  assert.equal(run(`visible({s: "Hispaania keel", g: ["HK1"]}, ${picks}, ${divisions})`), true);
+  assert.equal(run(`visible({s: "Prantsuse keel", g: ["PK"]}, ${picks}, ${divisions})`), false);
+});
+
 test("minutes read back as the clock", () => {
   assert.equal(run(`hhmm(540)`), "9.00");
   assert.equal(run(`hhmm(1095)`), "18.15");

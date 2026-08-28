@@ -278,6 +278,77 @@ class AGroupTheSchoolLeftUnnamed(unittest.TestCase):
                          {"Lx": ("Mat 4", "*me:1")})
 
 
+class TwoQuestionsInOnePicker(unittest.TestCase):
+    """A division whose subjects are chosen independently is offered per subject.
+
+    ProTERA's ninth years take Estonian and English in six sets. aSc holds one
+    division, so a reader who is Estonian II and English I has no code to pick.
+    """
+
+    def setUp(self):
+        self.cfg = {"perSubject": [{"classes": ["9"],
+                                    "subjects": ["Eesti keel", "Inglise keel"]}]}
+
+    def entries(self, pairs):
+        """One entry per (group, subject), which is all the split reads."""
+        return [{"groups": [group], "subject": subject, "part": 0}
+                for group, subject in pairs]
+
+    def division(self, groups, subjects):
+        return {"id": "*6:3", "groups": list(groups), "subjects": list(subjects),
+                "label": " / ".join(subjects), "lessons": 1}
+
+    def test_the_division_becomes_one_picker_per_subject(self):
+        div = self.division(["I A", "I B"], ["Eesti keel", "Inglise keel"])
+        entries = self.entries([("I A", "Eesti keel"), ("I B", "Eesti keel"),
+                                ("I A", "Inglise keel"), ("I B", "Inglise keel")])
+        got = tt.split_by_subject(self.cfg, "9", [div], entries)
+        self.assertEqual([d["label"] for d in got], ["Eesti keel", "Inglise keel"])
+        self.assertEqual([d["groups"] for d in got],
+                         [["I A", "I B"], ["I A", "I B"]])
+        self.assertEqual([d["only"] for d in got], ["Eesti keel", "Inglise keel"])
+
+    def test_the_first_half_keeps_the_key_the_whole_division_had(self):
+        """Both halves offer the same groups, so the second needs a key of its
+        own or the two share one answer. The first keeps the old one, and a
+        pick already saved is not lost."""
+        div = self.division(["I A", "I B"], ["Eesti keel", "Inglise keel"])
+        entries = self.entries([("I A", "Eesti keel"), ("I B", "Eesti keel"),
+                                ("I A", "Inglise keel"), ("I B", "Inglise keel")])
+        got = tt.split_by_subject(self.cfg, "9", [div], entries)
+        self.assertNotIn("key", got[0])
+        self.assertEqual(got[1]["key"], "Inglise keel: I A/I B")
+
+    def test_a_subject_the_rule_does_not_name_stays_where_it_is(self):
+        """The rule names two subjects. A third in the same division is not
+        pulled out, and a division holding none of them is untouched."""
+        div = self.division(["9.1", "9.2"], ["Füüsika", "Keemia"])
+        entries = self.entries([("9.1", "Füüsika"), ("9.2", "Keemia")])
+        self.assertEqual(tt.split_by_subject(self.cfg, "9", [div], entries), [div])
+
+    def test_a_division_carrying_one_of_them_is_left_whole(self):
+        """The seventh and eighth years keep English on its own. There is one
+        question there, and splitting it would ask it twice."""
+        div = self.division(["I A", "I B"], ["Inglise keel"])
+        entries = self.entries([("I A", "Inglise keel"), ("I B", "Inglise keel")])
+        self.assertEqual(tt.split_by_subject(self.cfg, "9", [div], entries), [div])
+
+    def test_a_class_the_rule_does_not_name_is_left_alone(self):
+        div = self.division(["I A", "I B"], ["Eesti keel", "Inglise keel"])
+        entries = self.entries([("I A", "Eesti keel"), ("I A", "Inglise keel")])
+        self.assertEqual(tt.split_by_subject(self.cfg, "8", [div], entries), [div])
+        self.assertEqual(tt.split_by_subject(None, "9", [div], entries), [div])
+
+    def test_a_half_offers_only_the_groups_that_take_its_subject(self):
+        """Nothing says both subjects reach every group. One that takes only
+        the first must not be offered as an answer to the second."""
+        div = self.division(["I A", "I B"], ["Eesti keel", "Inglise keel"])
+        entries = self.entries([("I A", "Eesti keel"), ("I B", "Eesti keel"),
+                                ("I A", "Inglise keel")])
+        got = tt.split_by_subject(self.cfg, "9", [div], entries)
+        self.assertEqual([d["groups"] for d in got], [["I A", "I B"], ["I A"]])
+
+
 class MergingABlock(unittest.TestCase):
     """A published block holding two subjects in sequence is one box."""
 

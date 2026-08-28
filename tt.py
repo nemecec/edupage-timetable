@@ -438,6 +438,25 @@ BELLS = {
             {"after": 3, "minutes": 20, "name": "Amps"},
         ],
         "defaultGap": 5,
+        # Estonian and English in the ninth year are one aSc division — I A,
+        # I B, II A, II B, III A, III B — and they are two choices, not one.
+        #
+        # The letter is which half of the class you are in. The halves swap the
+        # two subjects at the same hour: on Tuesday at 12.50 the A half takes
+        # English while the B half takes Estonian. So a reader keeps one letter
+        # all week. The numeral is the set within that half, and it can differ
+        # between the two subjects — a reader can be Estonian II and English I.
+        # No single code says that, and picking one gave them the right lesson
+        # in one subject and the wrong one in the other.
+        #
+        # So that division is offered once per subject. The seventh and eighth
+        # years keep English in a division of its own, which is the same
+        # arrangement written the way aSc can hold it.
+        # Source: a reader, who has Estonian 2a and English 1a. Being checked
+        # with the school.
+        "perSubject": [
+            {"classes": ["9"], "subjects": ["Eesti keel", "Inglise keel"]},
+        ],
         # TERA gümnaasium is in the same published timetable and does not keep
         # the same day. Four lessons of eighty minutes, its own two breaks, and
         # nothing after half past three. Read against the grades below it, its
@@ -1667,6 +1686,8 @@ def extract(result, class_name, n_periods=None, cfg=None, period_times=None,
         entries = merge_blocks(entries)
 
     label_divisions(divisions, entries)
+    # A division that asks two questions at once. See split_by_subject.
+    divisions = split_by_subject(cfg, class_name, divisions, entries)
     name_the_groups(divisions, entries)
     divisions = [d for d in divisions if d["lessons"]]
 
@@ -1779,6 +1800,53 @@ def _one_box(here):
     return joined
 
 
+def split_by_subject(cfg, class_name, divisions, entries):
+    """One picker per subject, where the two choices are really independent.
+
+    aSc gives a class one division per way it splits, and a group of that
+    division carries every subject taught to it. Usually that is the truth: a
+    class divided into science sets keeps the same sets across the sciences.
+    Sometimes it is not, and then one picker asks one question where a reader
+    has two to answer. See perSubject in BELLS for the case that says so.
+
+    Only the subjects the rule names are pulled apart, and only where the
+    division carries more than one of them. Each half offers the groups that
+    take that subject, and is filed on its own so the two picks are free of one
+    another. The first keeps the key the whole division had, so a pick already
+    saved is not lost.
+    """
+    rule = None
+    for entry in (cfg or {}).get("perSubject", []):
+        # Trailing space and all, the way band_slots matches.
+        if class_name.strip() in [c.strip() for c in entry["classes"]]:
+            rule = entry["subjects"]
+            break
+    if not rule:
+        return divisions
+
+    out = []
+    for div in divisions:
+        wanted = [s for s in rule if s in div["subjects"]]
+        if len(wanted) < 2:
+            out.append(div)
+            continue
+        for n, subject in enumerate(wanted):
+            groups = [g for g in div["groups"]
+                      if any(g in e["groups"] and e["subject"] == subject
+                             for e in entries if not e["part"])]
+            if not groups:
+                continue
+            part = dict(div, id=div["id"] + "/" + subject, only=subject,
+                        groups=groups, subjects=[subject], label=subject)
+            # What the reader's pick is filed under. The page falls back to the
+            # group list, which is what every other division uses, so the first
+            # half needs no key of its own and inherits the saved answer.
+            if n:
+                part["key"] = subject + ": " + "/".join(groups)
+            out.append(part)
+    return out
+
+
 def label_divisions(divisions, entries):
     """Name each group picker after what is actually taught in it.
 
@@ -1790,6 +1858,8 @@ def label_divisions(divisions, entries):
         counts = {}
         for e in entries:
             if e["part"]:
+                continue
+            if div.get("only") and e["subject"] != div["only"]:
                 continue
             if any(g in div["groups"] for g in e["groups"]):
                 counts[e["subject"]] = counts.get(e["subject"], 0) + 1
@@ -1837,6 +1907,8 @@ def name_the_groups(divisions, entries):
             taught, wants = {}, {}
             for e in entries:
                 if e["part"] or group not in e["groups"]:
+                    continue
+                if div.get("only") and e["subject"] != div["only"]:
                     continue
                 for name in e["teachers"]:
                     taught.setdefault(name, [])
@@ -2209,6 +2281,9 @@ def compact(schools):
                    if _year_first(cls["grade"], cls["name"]) else {}),
                 "v": [{"id": d["id"], "groups": d["groups"], "l": d["label"],
                        "sj": d["subjects"],
+                       # What the pick is filed under, where the group list is
+                       # not enough on its own. See split_by_subject.
+                       **({"k": d["key"]} if d.get("key") else {}),
                        # Who teaches each group, in the same order. See
                        # name_the_groups: the names are raw, so the page can
                        # write them the way round the reader asked for.

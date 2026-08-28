@@ -125,11 +125,15 @@ const SCENARIOS = [
   { name: "full", setUp: "" },
   /* And one week per set of picks. Which lessons a study group keeps is the
      school's own splitting, not a control — the same plan read one child's
-     way. The first option of every division, so it is the same every run. */
+     way. The first option of every division, so it is the same every run.
+
+     Through choiceKey, because two divisions can offer the same group list —
+     a division split into one picker per subject does — and filing both under
+     that list would leave one of them unanswered. */
   { name: "groups", setUp: `
       var picks = {};
       (currentClass().v || []).forEach(function (division) {
-        picks[division.groups.join("/")] = division.groups[0];
+        picks[choiceKey(division)] = division.groups[0];
       });
       myOwn().studyGroups = picks;` },
 ];

@@ -474,6 +474,24 @@ test("a subject can differ from what every other subject is doing", () => {
   run(`state.subjects = {}; state.subjectColorStyle = "custom";`);
 });
 
+test("a color the reader picks is the color the box gets", () => {
+  /* A row pinned to one of the other two answers kept that pin when a color
+     was picked, so the color was stored and never drawn: the radio said "own
+     colour" and the box stayed the school's. Picking a color is asking for
+     that color, whatever the row said before. */
+  for (const pinned of ["school", "palette"]) {
+    run(`state.subjectColorStyle = "custom";
+         state.subjects = {Matemaatika: {style: ${JSON.stringify(pinned)}}};
+         setColor("Matemaatika", "#123456");`);
+    assert.equal(json(`colorFor("Matemaatika").bg`), "#123456", pinned);
+  }
+  /* And the pin goes, because "custom" is what every subject is already
+     doing. An entry that says what the switch says is an entry saying
+     nothing. */
+  assert.deepEqual(json(`state.subjects.Matemaatika`), { backgroundColor: "#123456" });
+  run(`state.subjects = {}; state.subjectColorStyle = "custom";`);
+});
+
 test("the README describes the settings that actually exist", () => {
   /* The shape is what a reader sees in the Advanced box, so the documented
      version has to be the real one — a renamed field with the old name still

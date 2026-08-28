@@ -2062,9 +2062,12 @@ function setTextColor(subject, value, redraw) {
 function setColor(subject, value) {
   const entry = state.subjects[subject] || (state.subjects[subject] = {});
   entry.backgroundColor = value;
-  /* Choosing a color is asking for it — for this subject, not for every one.
-     If everything is already on its own colors there is nothing to say. */
-  if (state.subjectColorStyle !== "custom") entry.style = "custom";
+  /* Choosing a color is asking for it — for this subject, whatever the row was
+     set to before. A row pinned to the timetable's own color kept that pin, so
+     the color the reader then picked was stored and never drawn, and the radio
+     said "own colour" while the box said otherwise. Where the pin now matches
+     what every subject does, tidySubjects drops it again. */
+  entry.style = "custom";
   tidySubjects();
   syncDisplayControls();
   save();

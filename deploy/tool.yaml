@@ -288,8 +288,6 @@ Resources:
                 Resource: !GetAtt BuildFunction.Arn
 
 Outputs:
-
-Outputs:
   BuildFunctionName:
     Value: !Ref BuildFunction
   PublishRoleArn:

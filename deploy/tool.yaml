@@ -96,6 +96,7 @@ Resources:
   # deploy rebuilds in a minute.
   BuildLogs:
     DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Join ["", ["/aws/lambda/", !Join ["-", !Split [".", !Ref DomainName]], "-build"]]

@@ -250,9 +250,10 @@ class ThePrintedSheet(InABrowser):
         self.assertIn("mono", (got["sample"] or "").lower(),
                       "the sample and the box disagree")
 
+        # The plain grid is what a class no day plan covers falls back to.
+        # Every real class has a plan now, so the times come off by hand.
         grid = self.js(
-            "state.school = '103'; state.class = '1.i';"
-            "renderClasses(); renderDivisions(); syncPerClassInputs(); render();"
+            "currentClass().e.forEach(function (e) { e.a = null; }); render();"
             "var name = document.querySelector('#grid .lesson .name');"
             "return {grid: name && getComputedStyle(name).fontFamily};")
         self.assertIn("mono", (grid["grid"] or "").lower(),

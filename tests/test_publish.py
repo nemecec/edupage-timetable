@@ -405,7 +405,7 @@ class Building(unittest.TestCase):
         finally:
             publish.tt.EduPage = real
         self.assertEqual(schools, 4)
-        self.assertGreater(slots, 1800)
+        self.assertGreater(slots, 1700)
         self.assertTrue(body.startswith(b"<!DOCTYPE html>"))
         # And the page agrees with the numbers logged beside it.
         self.assertEqual(publish.timetables_in(body), schools)

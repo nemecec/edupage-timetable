@@ -603,15 +603,17 @@ BELLS = {
         ],
     },
     # TäheTERA publishes nothing to EduPage — no day plan and no period times,
-    # so its classes fall back to the plain numbered grid. One class has sent
-    # its own sheet, and one class is what is encoded: the others are not
-    # guessable from it. 5.a alone has the fourth lesson ending at 12.05 on a
-    # Monday and 12.20 on a Wednesday, so a clock that looks regular is not.
+    # so the clock comes from the school's own sheets instead, one per grade
+    # band. Every class is here, and no two of them run the same week. Nor does
+    # one day settle another: 5.a alone has the fourth lesson ending at 12.05 on
+    # a Monday and 12.20 on a Wednesday.
     #
-    # What the sheet does settle for the whole school: EduPage labels period 5
-    # "HA", which reads as a break, and it is not one. It is the fifth years'
-    # language lesson — 5.a, 5.l and 5.t use it, on Monday and Thursday, and
-    # the other eleven classes leave it empty, where it really is the break.
+    # aSc keeps a fifth period that only the fifth years use — the one EduPage
+    # labels "HA", which reads as a break and is not one. It is their language
+    # lesson, on Monday and Thursday, and the other eleven classes step straight
+    # from the fourth lesson to the sixth. So the school's own numbering and
+    # aSc's part company after the fourth: the sheet's 5, 6 and 7 are periods 6,
+    # 7 and 8 here. The two HA rows are periods 5 and 6.
     #
     # Around midday the fifth years split. The sheet writes two rows, and each
     # holds a lesson and lunch in the opposite order: one group takes the
@@ -620,33 +622,48 @@ BELLS = {
     # reader who picks their language group sees only their own, with their own
     # lunch showing up as the free time between it and the lesson either side.
     #
-    # That is why there is no named lunch here. It is a different hour for each
-    # group, and a band drawn across the class would be wrong for half of them.
-    # Only the morning Amps is named, which is the same for everybody.
-    # Source: "Tunniplaan 2026/27 5.a klass", and the school on the split.
+    # That is why the fifth years get no named lunch on those two days. It is a
+    # different hour for each group, and a band drawn across the class would be
+    # wrong for half of them. The five minutes the sheet marks there are a
+    # changeover, and the windows below are set not to call that lunch.
+    #
+    # The eighth period is the choir, and it carries a slot on Wednesday and
+    # Thursday both. The sheets put it on Wednesday and the frozen fixtures
+    # under tests are one fetch behind and still say Thursday. Which day a
+    # lesson falls on is the timetable's to say, not this table's. All this
+    # decides is whether there is a time to draw it at, and an unused slot costs
+    # nothing where a missing one loses the lesson.
+    #
+    # Source: "Päevaplaanid klasside kaupa", the school's day plans for the
+    # first half of 2026/27, one sheet for years 1-3 and one for years 4-6.
     "TäheTERA": {
         "name": "Tunniplaan",
-        # The morning break, which the sheet calls Amps. It opens when the
-        # morning's lessons stop, and that is 10.20 after a double and 10.35
-        # after two singles.
-        # Amps opens when the morning's lessons stop, and that is 10.20 after
-        # a double and 10.35 after two singles. Lunch on the days without the
-        # language split is ten minutes between the last long block and the
-        # final lesson, which is what the sheet leaves room for.
         "blockGaps": [
-            {"name": "Amps", "least": 10, "after": "10:15", "before": "10:40"},
-            # Lunch on the days without the language split is the half hour
-            # between the last long block and the closing lesson: 13.15 to
-            # 13.45. The window opens before that, because a day whose fifth
-            # lesson runs late leaves a shorter one in the same place.
-            {"name": "Lõuna", "least": 10, "after": "13:10", "before": "13:50",
-             "classes": ["5.a"]},
+            # Amps opens when the morning's lessons stop: 10.20 after a double
+            # first block, 10.35 after two singles, and 9.45 where the day opens
+            # with one single. Ten minutes is the floor, because the older half
+            # steps from the first lesson to the second in five, and five
+            # minutes is a changeover rather than a snack.
+            {"name": "Amps", "least": 10, "after": "9:40", "before": "10:44"},
+            # The younger half eats at 12.20, after the fourth lesson. The older
+            # half eats at 13.15, after the fifth — except 6.k on a Wednesday,
+            # which eats at 12.20, and that is why the second window opens
+            # before midday. Fifteen minutes is the floor for both: the older
+            # half's fourth and fifth lessons are ten minutes apart.
+            # Two sittings, and the windows overlap in the minutes around
+            # 12.20, so each names the classes it feeds. A class in both lists
+            # would be given lunch twice over the same hole.
+            {"name": "Lõuna", "least": 15, "after": "12:00", "before": "12:30",
+             "classes": ["1.i", "1.k", "2.l", "2.t", "3.a", "3.k"]},
+            {"name": "Lõuna", "least": 15, "after": "12:15", "before": "13:20",
+             "classes": ["4.a", "4.e", "4.i", "5.a", "5.l", "5.t", "6.k", "6.v"]},
         ],
-        # Lunch here is whatever the language split leaves over, and that is a
-        # different hour for each group. So it is not a band across the class:
-        # it is the hole the reader's own lessons leave, and this says what to
-        # call one that falls in the middle of the day and is long enough to
-        # eat in. Fifteen minutes between two lessons is not lunch.
+        # Lunch on the two days the fifth years split is whatever the language
+        # split leaves over, and that is a different hour for each group. So it
+        # is not a band across the class: it is the hole the reader's own
+        # lessons leave, and this says what to call one that falls in the middle
+        # of the day and is long enough to eat in. Fifteen minutes between two
+        # lessons is not lunch.
         "lunchGap": {"name": "Lõuna", "from": "12:00", "to": "13:00", "least": 30},
         # 5.a takes Spanish in two groups, and aSc cannot say so. It names one
         # group per lesson, which assumes a group meets at the same period
@@ -676,6 +693,155 @@ BELLS = {
         ],
         "bands": [
             {
+                "classes": ["1.i"],
+                "days": {
+                    (0, 3): [(1, 1, "9:00", "9:45"), (2, 1, "9:55", "10:40"),
+                             (3, 2, "10:50", "12:10"), (6, 1, "12:40", "13:25")],
+                    (1,): [(1, 1, "9:00", "9:45"), (2, 1, "9:55", "10:40"),
+                           (3, 1, "10:45", "11:30"), (4, 1, "11:35", "12:20"),
+                           (6, 1, "12:40", "13:25"), (7, 1, "13:30", "14:15")],
+                    (2,): [(1, 1, "9:00", "9:45"), (2, 1, "9:55", "10:40"),
+                           (3, 2, "10:45", "12:05"), (6, 1, "12:40", "13:25"),
+                           (7, 1, "13:30", "14:15")],
+                    (4,): [(1, 2, "9:00", "10:20"), (3, 1, "10:45", "11:30"),
+                           (4, 1, "11:35", "12:20"), (6, 1, "12:40", "13:25")],
+                },
+            },
+            {
+                "classes": ["1.k"],
+                "days": {
+                    (0, 4): [(1, 2, "9:00", "10:20"), (3, 1, "10:45", "11:30"),
+                             (4, 1, "11:35", "12:20"), (6, 1, "12:40", "13:25")],
+                    (1,): [(1, 1, "9:00", "9:45"), (2, 1, "9:55", "10:40"),
+                           (3, 1, "10:45", "11:30"), (4, 1, "11:35", "12:20"),
+                           (6, 1, "12:40", "13:25")],
+                    (2,): [(1, 1, "9:00", "9:45"), (2, 1, "9:55", "10:40"),
+                           (3, 2, "10:50", "12:10"), (6, 1, "12:40", "13:25"),
+                           (7, 1, "13:30", "14:15")],
+                    (3,): [(1, 1, "9:00", "9:45"), (2, 1, "9:55", "10:40"),
+                           (3, 2, "10:50", "12:10"), (6, 1, "12:40", "13:25")],
+                },
+            },
+            {
+                "classes": ["2.l"],
+                "days": {
+                    (0,): [(1, 1, "9:00", "9:45"), (2, 1, "9:55", "10:40"),
+                           (3, 1, "10:45", "11:30"), (4, 1, "11:35", "12:20"),
+                           (6, 1, "12:40", "13:25")],
+                    (1,): [(1, 1, "9:00", "9:45"), (2, 1, "9:55", "10:40"),
+                           (3, 2, "10:50", "12:10"), (6, 1, "12:40", "13:25")],
+                    (2,): [(1, 2, "9:00", "10:20"), (3, 1, "10:45", "11:30"),
+                           (4, 1, "11:35", "12:20"), (6, 1, "12:40", "13:25"),
+                           (7, 1, "13:30", "14:15")],
+                    (3,): [(1, 1, "9:00", "9:45"), (2, 1, "9:55", "10:40"),
+                           (3, 2, "10:50", "12:10"), (6, 1, "12:40", "13:25"),
+                           (7, 1, "13:30", "14:15")],
+                    (4,): [(1, 2, "9:00", "10:20"), (3, 1, "10:45", "11:30"),
+                           (4, 1, "11:35", "12:20"), (6, 1, "12:40", "13:25")],
+                },
+            },
+            {
+                "classes": ["2.t"],
+                "days": {
+                    (0,): [(1, 2, "9:00", "10:20"), (3, 1, "10:45", "11:30"),
+                           (4, 1, "11:35", "12:20"), (6, 1, "12:40", "13:25")],
+                    (1,): [(1, 1, "9:00", "9:45"), (2, 1, "9:55", "10:40"),
+                           (3, 2, "10:45", "12:05"), (6, 1, "12:40", "13:25")],
+                    (2,): [(1, 2, "9:00", "10:20"), (3, 1, "10:45", "11:30"),
+                           (4, 1, "11:35", "12:20"), (6, 1, "12:40", "13:25"),
+                           (7, 1, "13:30", "14:15")],
+                    (3,): [(1, 1, "9:00", "9:45"), (2, 1, "9:55", "10:40"),
+                           (3, 1, "10:45", "11:30"), (4, 1, "11:35", "12:20"),
+                           (6, 2, "12:40", "14:00")],
+                    (4,): [(1, 1, "9:00", "9:45"), (2, 2, "10:00", "11:20"),
+                           (4, 1, "11:35", "12:20"), (6, 1, "12:40", "13:25")],
+                },
+            },
+            {
+                "classes": ["3.a"],
+                "days": {
+                    (0,): [(1, 2, "9:00", "10:20"), (3, 1, "10:45", "11:30"),
+                           (4, 1, "11:35", "12:20"), (6, 1, "12:40", "13:25")],
+                    (1,): [(1, 1, "9:00", "9:45"), (2, 1, "9:55", "10:40"),
+                           (3, 1, "10:45", "11:30"), (4, 1, "11:35", "12:20"),
+                           (6, 2, "12:40", "14:00")],
+                    (2,): [(1, 2, "9:00", "10:20"), (3, 2, "10:45", "12:05"),
+                           (6, 1, "12:40", "13:25"), (7, 1, "13:30", "14:15")],
+                    (3, 4): [(1, 2, "9:00", "10:20"), (3, 1, "10:45", "11:30"),
+                             (4, 1, "11:35", "12:20"), (6, 1, "12:40", "13:25"),
+                             (7, 1, "13:30", "14:15")],
+                },
+            },
+            {
+                "classes": ["3.k"],
+                "days": {
+                    (0,): [(1, 2, "9:00", "10:20"), (3, 1, "10:45", "11:30"),
+                           (4, 1, "11:35", "12:20"), (6, 1, "12:40", "13:25")],
+                    (1, 4): [(1, 1, "9:00", "9:45"), (2, 1, "9:55", "10:40"),
+                             (3, 1, "10:45", "11:30"), (4, 1, "11:35", "12:20"),
+                             (6, 2, "12:40", "14:00")],
+                    (2, 3): [(1, 2, "9:00", "10:20"), (3, 1, "10:45", "11:30"),
+                             (4, 1, "11:35", "12:20"), (6, 1, "12:40", "13:25"),
+                             (7, 1, "13:30", "14:15")],
+                },
+            },
+            {
+                "classes": ["4.a"],
+                "days": {
+                    (0,): [(1, 1, "9:00", "9:45"), (2, 1, "9:50", "10:35"),
+                           (3, 2, "10:45", "12:05"), (6, 1, "12:30", "13:15"),
+                           (7, 1, "13:45", "14:30")],
+                    (1,): [(1, 2, "9:00", "10:20"), (3, 1, "10:45", "11:30"),
+                           (4, 1, "11:35", "12:20"), (6, 1, "12:30", "13:15"),
+                           (7, 1, "13:45", "14:30")],
+                    (2,): [(1, 2, "9:00", "10:20"), (3, 1, "10:45", "11:30"),
+                           (4, 1, "11:35", "12:20"), (6, 1, "12:30", "13:15"),
+                           (7, 1, "13:45", "14:30"), (8, 1, "14:35", "15:20")],
+                    (3,): [(1, 1, "9:00", "9:45"), (2, 1, "9:50", "10:35"),
+                           (3, 1, "10:45", "11:30"), (4, 1, "11:35", "12:20"),
+                           (6, 1, "12:30", "13:15"), (7, 1, "13:45", "14:30"),
+                           (8, 1, "14:35", "15:20")],
+                    (4,): [(1, 1, "9:00", "9:45"), (2, 1, "9:50", "10:35"),
+                           (3, 1, "10:45", "11:30"), (4, 1, "11:35", "12:20"),
+                           (6, 1, "12:30", "13:15")],
+                },
+            },
+            {
+                "classes": ["4.e"],
+                "days": {
+                    (0, 1): [(1, 1, "9:00", "9:45"), (2, 1, "9:50", "10:35"),
+                             (3, 1, "10:45", "11:30"), (4, 1, "11:35", "12:20"),
+                             (6, 1, "12:30", "13:15"), (7, 1, "13:45", "14:30")],
+                    (2, 3): [(1, 2, "9:00", "10:20"), (3, 1, "10:45", "11:30"),
+                             (4, 1, "11:35", "12:20"), (6, 1, "12:30", "13:15"),
+                             (7, 1, "13:45", "14:30"), (8, 1, "14:35", "15:20")],
+                    (4,): [(1, 1, "9:00", "9:45"), (2, 1, "9:50", "10:35"),
+                           (3, 1, "10:45", "11:30"), (4, 1, "11:35", "12:20"),
+                           (6, 1, "12:30", "13:15")],
+                },
+            },
+            {
+                "classes": ["4.i"],
+                "days": {
+                    (0,): [(1, 1, "9:00", "9:45"), (2, 1, "9:50", "10:35"),
+                           (3, 1, "10:45", "11:30"), (4, 1, "11:35", "12:20"),
+                           (6, 1, "12:30", "13:15"), (7, 1, "13:45", "14:30")],
+                    (1,): [(1, 2, "9:00", "10:20"), (3, 1, "10:45", "11:30"),
+                           (4, 1, "11:35", "12:20"), (6, 1, "12:30", "13:15"),
+                           (7, 1, "13:45", "14:30")],
+                    (2,): [(1, 2, "9:00", "10:20"), (3, 1, "10:45", "11:30"),
+                           (4, 3, "11:45", "13:05"), (7, 1, "13:45", "14:30"),
+                           (8, 1, "14:35", "15:20")],
+                    (3,): [(1, 1, "9:00", "9:45"), (2, 1, "9:50", "10:35"),
+                           (3, 1, "10:45", "11:30"), (4, 1, "11:35", "12:20"),
+                           (6, 1, "12:30", "13:15"), (7, 1, "13:30", "14:15"),
+                           (8, 1, "14:35", "15:20")],
+                    (4,): [(1, 1, "9:00", "9:45"), (2, 1, "9:50", "10:35"),
+                           (3, 1, "10:45", "11:30"), (4, 1, "11:35", "12:20"),
+                           (6, 1, "12:30", "13:15")],
+                },
+            },
+            {
                 "classes": ["5.a"],
                 "days": {
                     (0,): [(1, 2, "9:00", "10:20"), (3, 1, "10:45", "11:30"),
@@ -686,20 +852,90 @@ BELLS = {
                     (2,): [(1, 2, "9:00", "10:20"), (3, 1, "10:45", "11:30"),
                            (4, 1, "11:35", "12:20"), (6, 1, "12:30", "13:15"),
                            (7, 1, "13:45", "14:30"), (8, 1, "14:35", "15:20")],
-                    # The eighth slot is on Wednesday and Thursday both. The
-                    # choir is on Wednesday, in the sheet and in the school's
-                    # own timetable, and the frozen fixtures under tests are
-                    # one fetch behind and still say Thursday. Which day a
-                    # lesson falls on is the timetable's to say, not this
-                    # table's; all this decides is whether there is a time to
-                    # draw it at. An unused slot costs nothing and a missing
-                    # one loses the lesson, so both days keep one.
                     (3,): [(1, 1, "9:00", "9:45"), (2, 1, "9:50", "10:35"),
                            (3, 2, "10:45", "12:05"), (5, 1, "12:10", "12:55"),
                            (6, 1, "12:55", "13:40"), (7, 1, "13:45", "14:30"),
                            (8, 1, "14:35", "15:20")],
                     (4,): [(1, 1, "9:00", "9:45"), (2, 1, "9:50", "10:35"),
                            (3, 2, "10:45", "12:05"), (6, 1, "12:30", "13:15"),
+                           (7, 1, "13:45", "14:30")],
+                },
+            },
+            {
+                "classes": ["5.l"],
+                "days": {
+                    (0,): [(1, 2, "9:00", "10:20"), (3, 1, "10:45", "11:30"),
+                           (4, 1, "11:35", "12:05"), (5, 1, "12:10", "12:55"),
+                           (6, 1, "12:55", "13:40"), (7, 1, "13:45", "14:30")],
+                    (1,): [(1, 1, "9:00", "9:45"), (2, 1, "9:50", "10:35"),
+                           (3, 2, "10:45", "12:20"), (6, 1, "12:30", "13:15"),
+                           (7, 1, "13:45", "14:30")],
+                    (2,): [(1, 2, "9:00", "10:20"), (3, 1, "10:45", "11:30"),
+                           (4, 1, "11:35", "12:20"), (6, 1, "12:30", "13:15"),
+                           (7, 1, "13:45", "14:30"), (8, 1, "14:35", "15:20")],
+                    (3,): [(1, 1, "9:00", "9:45"), (2, 1, "9:50", "10:35"),
+                           (3, 2, "10:45", "12:05"), (5, 1, "12:10", "12:55"),
+                           (6, 1, "12:55", "13:40"), (7, 1, "13:45", "14:30"),
+                           (8, 1, "14:35", "15:20")],
+                    (4,): [(1, 2, "9:00", "10:20"), (3, 1, "10:45", "11:30"),
+                           (4, 1, "11:35", "12:20"), (6, 1, "12:30", "13:15"),
+                           (7, 1, "13:45", "14:30")],
+                },
+            },
+            {
+                "classes": ["5.t"],
+                "days": {
+                    (0,): [(1, 1, "9:00", "9:45"), (2, 1, "9:50", "10:35"),
+                           (3, 1, "10:45", "11:30"), (4, 1, "11:35", "12:05"),
+                           (5, 1, "12:10", "12:55"), (6, 1, "12:55", "13:40"),
+                           (7, 1, "13:45", "14:30")],
+                    (1,): [(1, 2, "9:00", "10:20"), (3, 2, "10:45", "12:05"),
+                           (6, 1, "12:30", "13:15"), (7, 1, "13:45", "14:30")],
+                    (2,): [(1, 1, "9:00", "9:45"), (2, 1, "9:50", "10:35"),
+                           (3, 1, "10:45", "11:30"), (4, 1, "11:35", "12:20"),
+                           (6, 1, "12:30", "13:15"), (7, 1, "13:45", "14:30"),
+                           (8, 1, "14:35", "15:20")],
+                    (3,): [(1, 1, "9:00", "9:45"), (2, 1, "9:50", "10:35"),
+                           (3, 2, "10:45", "12:05"), (5, 1, "12:10", "12:55"),
+                           (6, 1, "12:55", "13:40"), (7, 1, "13:45", "14:30"),
+                           (8, 1, "14:35", "15:20")],
+                    (4,): [(1, 1, "9:00", "9:45"), (2, 1, "9:50", "10:35"),
+                           (3, 2, "10:45", "12:05"), (6, 1, "12:30", "13:15"),
+                           (7, 1, "13:45", "14:30")],
+                },
+            },
+            {
+                "classes": ["6.k"],
+                "days": {
+                    (0,): [(1, 1, "9:00", "9:45"), (2, 1, "9:50", "10:35"),
+                           (3, 2, "10:45", "12:05"), (6, 1, "12:30", "13:15"),
+                           (7, 1, "13:45", "14:30")],
+                    (1,): [(1, 2, "9:00", "10:20"), (3, 2, "10:45", "12:05"),
+                           (6, 1, "12:30", "13:15"), (7, 2, "13:45", "15:05")],
+                    (2,): [(1, 2, "9:00", "10:20"), (3, 1, "10:45", "11:30"),
+                           (4, 1, "11:35", "12:20"), (6, 2, "12:50", "14:10"),
+                           (8, 1, "14:15", "15:00")],
+                    (3,): [(1, 2, "9:00", "10:20"), (3, 2, "10:45", "12:05"),
+                           (6, 1, "12:30", "13:15"), (7, 1, "13:45", "14:30"),
+                           (8, 1, "14:35", "15:20")],
+                    (4,): [(1, 1, "9:00", "9:45"), (2, 1, "9:55", "10:40"),
+                           (3, 1, "10:45", "11:30"), (4, 1, "11:35", "12:20"),
+                           (6, 1, "12:30", "13:15"), (7, 1, "13:45", "14:30")],
+                },
+            },
+            {
+                "classes": ["6.v"],
+                "days": {
+                    (0,): [(1, 2, "9:00", "10:20"), (3, 2, "10:45", "12:05"),
+                           (6, 1, "12:30", "13:15"), (7, 1, "13:45", "14:30")],
+                    (1, 3): [(1, 2, "9:00", "10:20"), (3, 2, "10:45", "12:05"),
+                             (6, 1, "12:30", "13:15"), (7, 1, "13:45", "14:30"),
+                             (8, 1, "14:35", "15:20")],
+                    (2,): [(1, 2, "9:00", "10:20"), (3, 1, "10:45", "11:30"),
+                           (4, 1, "11:35", "12:20"), (6, 1, "12:30", "13:15"),
+                           (7, 2, "13:45", "15:00")],
+                    (4,): [(1, 1, "9:00", "9:45"), (2, 2, "10:00", "11:20"),
+                           (4, 1, "11:35", "12:20"), (6, 1, "12:30", "13:15"),
                            (7, 1, "13:45", "14:30")],
                 },
             },

@@ -70,8 +70,8 @@ A `--class` without a `--school` is looked up across all timetables.
 The script needs the Python 3 standard library and nothing else. There is no
 pip install and no browser.
 
-For `tera` in 2026 the result is 4 schools, 41 classes and about 1,900 lesson
-slots, in a file of about 700 KB. That is 104 KB over the wire, because it
+For `tera` in 2026 the result is 4 schools, 40 classes and about 1,800 lesson
+slots, in a file of about 730 KB. That is 104 KB over the wire, because it
 compresses well.
 
     python3 -m unittest discover -s tests     # the generator
@@ -82,16 +82,15 @@ school's API.
 
 ## Lesson times and the day plan
 
-The four timetables get their times from three different places. One gets no
-times at all.
+All four timetables are timed, from three different places.
 
 **SädeTERA** is the simple case. EduPage carries real times for its periods, so
 the script uses them as they come.
 
 The others carry nothing in EduPage. Every period reads `00:00`, and the `bells`
 table is empty. For these the day plan lives in `BELLS` at the top of `tt.py`,
-keyed by a substring of the timetable title. Two schools publish a day plan, in
-two different shapes.
+keyed by a substring of the timetable title. Three schools publish a day plan,
+in two different shapes.
 
 **ProTERA runs off a clock.** A day is a sequence of slots. A slot holds either
 a paired lesson (`P`, two aSc periods) or a single lesson (`L`). Which one it
@@ -160,12 +159,18 @@ on says so instead of quietly drawing last year's times. It earned its keep on
 the first run: it caught two lessons the transcription had missed.
 
 **TäheTERA publishes nothing to EduPage** — no day plan, no period times — so
-its classes fall back to the plain grid. A sheet arrived for one class of
-fourteen, and one class is what is encoded. The others are not guessable from
-it: 5.a alone has the fourth lesson ending at 12.05 on a Monday and 12.20 on a
-Wednesday, so a clock that looks regular is not one.
+its clock comes from the school's own day-plan sheets instead, one for years
+1-3 and one for years 4-6. All fourteen classes are in them, and no two run the
+same week. Nor does one day settle another: 5.a alone has the fourth lesson
+ending at 12.05 on a Monday and 12.20 on a Wednesday, so a clock that looks
+regular is not one.
 
-The sheet did settle something for the whole school, though. EduPage labels
+The sheets were read by script rather than by hand, and the script was checked
+against the one class that had already been transcribed from its own sheet. It
+reproduced that class byte for byte, all five days, before the other thirteen
+were taken from it.
+
+Reading them settled the numbering for the whole school. EduPage labels
 period 5 `HA`, which reads as a break, and it is not one — it is the fifth
 years' language lesson. Only 5.a, 5.l and 5.t use it, on Monday and Thursday.
 For the other eleven classes it is empty, and there it really is the break.
@@ -283,9 +288,6 @@ the block decides how the script draws it:
 The script matches class names with the surrounding space ignored, because aSc
 hands back what somebody typed. One class is called `Silva `. A literal match
 once cost that class every one of its times.
-
-**TäheTERA publishes no times yet.** Its lessons have no times, and the page
-says so.
 
 Two more things are worth knowing:
 

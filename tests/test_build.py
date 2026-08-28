@@ -85,7 +85,7 @@ class WholePage(unittest.TestCase):
         # two periods is one box. Fewer rows than periods with a card, too —
         # SädeTERA has two lessons its own day plan leaves no room for, and the
         # build says so rather than drawing them at a guessed time.
-        self.assertEqual((len(rows), len(boxes)), (1890, 1552))
+        self.assertEqual((len(rows), len(boxes)), (1782, 1468))
         # 70 subject names, plus the five named breaks. A break is drawn and
         # recolored like a lesson, so it needs a color of its own.
         self.assertEqual(len(self.data["palette"]), 74)
@@ -355,14 +355,82 @@ class WholePage(unittest.TestCase):
 
     def test_lunch_belongs_to_a_class_not_to_a_school(self):
         """One canteen cannot seat everybody at once, so a school can name the
-        classes a band applies to. Only 5.a has published times, so only 5.a
-        is given the short lunch."""
+        classes a band applies to. TäheTERA feeds its younger half after the
+        fourth lesson and its older half after the fifth, which is two windows
+        rather than one."""
         school = next(s for s in self.data["schools"] if s["l"] == "TäheTERA")
+        at = {}
         for cls in school["c"]:
-            if cls["n"].strip() == "5.a":
-                continue
-            names = {b["n"] for d in cls["h"].values() for b in d["b"]}
-            self.assertNotIn("Lõuna", names, cls["n"])
+            for day in cls["h"].values():
+                for b in day["b"]:
+                    if b["n"] == "Lõuna":
+                        at.setdefault(cls["n"].strip(), set()).add(b["s"])
+        young = {"1.i", "1.k", "2.l", "2.t", "3.a", "3.k"}
+        for name, starts in sorted(at.items()):
+            for start in starts:
+                hour = int(start.split(".")[0])
+                if name in young:
+                    self.assertEqual(hour, 12, "%s eats at %s" % (name, start))
+                else:
+                    self.assertIn(hour, (12, 13), "%s eats at %s" % (name, start))
+        self.assertGreater(len(at), 10, "hardly a class was fed")
+
+    def test_the_readme_counts_what_the_build_really_holds(self):
+        """Counts in prose go stale silently. The class count had been one out,
+        and the slot count moved when the last school got a day plan and its
+        paired lessons became one box each."""
+        with open(os.path.join(ROOT, "README.md"), encoding="utf-8") as fh:
+            readme = fh.read()
+        schools = len(self.data["schools"])
+        classes = sum(len(s["c"]) for s in self.data["schools"])
+        slots = sum(len(c["e"]) for s in self.data["schools"] for c in s["c"])
+        self.assertIn("%d schools, %d classes" % (schools, classes), readme)
+        # Rounded to the nearest hundred in the prose, so it does not move on
+        # every timetable edit. It has to be the right hundred.
+        self.assertIn("about %d,%03d lesson" % divmod(round(slots, -2), 1000),
+                      readme)
+
+    def test_no_break_is_named_twice_on_one_day(self):
+        """A school can name a band per class, and two windows for the same
+        meal can both catch the same hole. TäheTERA feeds its two halves at
+        hours that overlap around 12.20, and a class in both lists was given
+        lunch twice over."""
+        for s in self.data["schools"]:
+            for cls in s["c"]:
+                for day, shape in (cls.get("h") or {}).items():
+                    names = [b["n"] for b in shape["b"]]
+                    self.assertEqual(sorted(set(names)), sorted(names),
+                                     "%s %s day %s" % (s["l"], cls["n"], day))
+
+    def test_the_snack_break_opens_when_the_morning_stops(self):
+        """Amps is 25 minutes after a double first block, 10 after two singles,
+        and 10 where the day opens with one single. It is never the five
+        minutes between one lesson and the next."""
+        school = next(s for s in self.data["schools"] if s["l"] == "TäheTERA")
+        seen = 0
+        for cls in school["c"]:
+            for day in cls["h"].values():
+                for b in day["b"]:
+                    if b["n"] != "Amps":
+                        continue
+                    seen += 1
+                    self.assertGreaterEqual(b["x"] - b["m"], 10, cls["n"])
+                    self.assertGreaterEqual(b["m"], 9 * 60 + 40, cls["n"])
+                    self.assertLess(b["m"], 10 * 60 + 44, cls["n"])
+        self.assertGreater(seen, 50, "hardly a snack break was drawn")
+
+    def test_the_fifth_years_get_no_lunch_band_on_a_language_day(self):
+        """Their lunch is whichever of the two language slots they are not in,
+        so it is a different hour for each group. A band drawn across the class
+        would be wrong for half of them. The five minutes the sheet marks there
+        are a changeover between two lessons, not a meal."""
+        school = next(s for s in self.data["schools"] if s["l"] == "TäheTERA")
+        for name in ("5.a", "5.l", "5.t"):
+            cls = next(c for c in school["c"] if c["n"].strip() == name)
+            for day in ("0", "3"):                    # Monday and Thursday
+                named = {b["n"] for b in cls["h"][day]["b"]}
+                self.assertNotIn("Lõuna", named, "%s day %s" % (name, day))
+                self.assertIn("Amps", named, "%s day %s" % (name, day))
 
     def test_only_the_school_that_leaves_lunch_to_arithmetic_says_so(self):
         """Three schools publish a lunch band. TäheTERA cannot: it is a
@@ -421,7 +489,7 @@ class WholePage(unittest.TestCase):
     def test_a_merged_box_carries_the_subjects_it_merged(self):
         merged = [e for s in self.data["schools"] for c in s["c"]
                   for e in c["e"] if e["S"]]
-        self.assertEqual(len(merged), 36)
+        self.assertEqual(len(merged), 42)
         self.assertIn(["Häälestus", "Üldõpetus"], [e["S"] for e in merged])
 
     def test_the_two_teacher_spellings_do_not_change_places(self):
@@ -459,19 +527,27 @@ class WholePage(unittest.TestCase):
                             self.assertIn(name, self.data["palette"])
 
     def test_the_right_schools_have_a_day_plan(self):
-        """All four are timed now, each from a plan copied off a published
-        sheet. TäheTERA is the thin one: a sheet arrived for one class of
-        fourteen, so that class is timed and the other thirteen keep the plain
-        grid. If a bell config stopped matching, the invariants below would
-        pass by examining nothing at all."""
+        """All four are timed, each from a plan copied off a published sheet.
+        If a bell config stopped matching, the invariants below would pass by
+        examining nothing at all."""
         self.assertEqual({s["l"]: s["b"] for s in self.data["schools"]},
                          {"ProTERA ja TERA gümnaasium": True, "SädeTERA": True,
                           "LõunaTERA": True, "TäheTERA": True})
         tahe = next(s for s in self.data["schools"] if s["l"] == "TäheTERA")
-        timed = [c["n"].strip() for c in tahe["c"]
-                 if any(e["a"] is not None for e in c["e"])]
-        self.assertEqual(timed, ["5.a"], "a class was timed from a sheet nobody sent")
         self.assertEqual(len(tahe["c"]), 14)
+        # Every one of the fourteen, from the school's own day-plan sheets.
+        untimed = [c["n"].strip() for c in tahe["c"]
+                   if any(e["a"] is None for e in c["e"])]
+        self.assertEqual(untimed, [], "a class is still on the plain grid")
+
+    def test_no_class_anywhere_is_left_without_a_clock(self):
+        """The plain numbered grid is the answer for a class no day plan
+        covers. Nothing reaches it now, and a lesson that lost its time would
+        be the first thing to."""
+        for s in self.data["schools"]:
+            for c in s["c"]:
+                blank = [e["s"] for e in c["e"] if e["a"] is None]
+                self.assertEqual(blank, [], "%s %s" % (s["l"], c["n"]))
 
     def test_sadetera_draws_the_day_plan_the_school_publishes(self):
         """It ran on a clock with fixed periods, and had to guess which lessons

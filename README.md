@@ -616,7 +616,26 @@ period grid, which needs no times.
   The copies are made after the fitter has run, from a sheet that is already the
   right size and scale, so nothing is measured or drawn twice. Their `id`
   attributes come off on the way: two nodes answering to `grid` would send every
-  later `getElementById` to whichever came first.
+  later `getElementById` to whichever came first. The original stays in the
+  document and goes out of sight only once the copies exist — hidden any earlier
+  it measures nothing, and the fitter then scales the week for a sheet of no
+  size at all. While the copies are being made it is laid out at the width of
+  one of them, or the fitter measures a week three times wider than the one
+  going on the card.
+
+  **A card drops what it has no room for.** The heading, the day names and the
+  clock down the side are sized in points rather than fitted, so on a sheet a
+  third the size of a page they crowded out the week they were labelling. They
+  shrink with the sheet now, down to a floor that keeps them readable. Below
+  170mm the clock also keeps its hours and drops its half hours, which had run
+  into each other and read as a grey smear, and a lesson box drops the clock it
+  repeats: the strip beside it already says when the lesson is, and every box on
+  a 100 by 60 card read *9.00…* where it should have read its own name.
+
+  At that size the week is still a week — subject names, breaks and free time,
+  each lesson at its true height — but a class with five parallel groups has
+  19mm to draw each day in. Picking a group makes it a card worth carrying,
+  which is the same thing the picker is for on screen.
   **Lesson colors** offers three answers for every subject: the generated
   palette, the school's own colors from aSc, or colors of your own. A click on
   any lesson in the timetable also recolors its subject. The text flips between

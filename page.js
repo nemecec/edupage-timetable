@@ -2511,6 +2511,13 @@ function applyCutSheet() {
      with a count. */
   const many = cut && tiling().count > 1;
   root.style.setProperty("--cols", many ? String(tiling().cols) : "");
+  /* How much smaller the sheet is than a whole page, for the few things that
+     are sized in points rather than fitted: the heading, and the space under
+     it. A4 landscape less the narrowest paper edge is the full-size case. */
+  root.style.setProperty("--sheetscale",
+                         cut ? String(Math.min(1, cut[0] / 287)) : "");
+  /* Too small for every label the page usually draws. */
+  document.body.classList.toggle("tight", !!cut && cut[0] < 170);
   document.body.classList.toggle("cutsheet", !!cut && !many);
   document.body.classList.toggle("tiled", !!many);
 }
@@ -3020,11 +3027,17 @@ function layOutTiles() {
   if (!host) return;
   const many = printing && cutSheet() && tiling().count > 1;
   host.hidden = !many;
+  /* Only now is the original safe to hide: the fitter has measured it, and the
+     copies are about to stand in for it. */
+  document.body.classList.toggle("copied", !!many);
   if (!many) {
     if (host.firstChild) host.textContent = "";
     return;
   }
-  const parts = [document.querySelector(".scroll"), document.getElementById("foot")];
+  /* The week itself, not the box it scrolls in: three things on this page have
+     the scroll class and the settings panel owns the first of them. Copying
+     that put the subject table on every card. */
+  const parts = [document.getElementById("grid"), document.getElementById("foot")];
   host.textContent = "";
   for (let n = 0; n < tiling().count; n++) {
     const tile = document.createElement("div");

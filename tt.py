@@ -2329,7 +2329,7 @@ PAGE = """<!DOCTYPE html>
      here and used to print on two or three pages. */
   th, td { border: 1px solid var(--line); vertical-align: top;
            padding: calc(5px * var(--grid, 1)) calc(7px * var(--grid, 1)); }
-  #grid table { font-size: calc(14px * var(--grid, 1)); }
+  .week table { font-size: calc(14px * var(--grid, 1)); }
   thead th { background: var(--panel); font-size: calc(12px * var(--grid, 1));
              text-align: center; white-space: nowrap; }
   tbody th { background: var(--panel); font-size: calc(13px * var(--grid, 1));
@@ -2401,10 +2401,15 @@ PAGE = """<!DOCTYPE html>
 
   /* Timeline: a continuous clock down the side and every box drawn at its true
      start and height, so a 45-minute lesson never has to pretend to be 80. */
-  .tl { --ppm: 1; --gut: 58px; border: 1px solid var(--line); border-radius: 8px;
+  /* The clock strip and the day headings are furniture, sized in points rather
+     than fitted, so on a sheet smaller than a page they crowd out the week they
+     are labelling. They shrink with the sheet, down to a floor that keeps them
+     readable. See --sheetscale in page.js. */
+  .tl { --ppm: 1; --gut: max(26px, calc(58px * var(--sheetscale, 1))); border: 1px solid var(--line); border-radius: 8px;
         overflow: hidden; background: #fff; }
   .tlhead { display: flex; border-bottom: 1px solid var(--line); background: var(--panel); }
-  .tlhead .cell { flex: 1 1 0; text-align: center; font-size: 12px; font-weight: 600;
+  .tlhead .cell { flex: 1 1 0; text-align: center; font-weight: 600;
+                  font-size: max(6px, calc(12px * var(--sheetscale, 1)));
                   padding: 6px 4px; border-left: 1px solid var(--line); }
   .tlhead .gut { flex: 0 0 var(--gut); border-left: none; }
   /* The clock runs down a strip of its own, carried on through from the day
@@ -2419,9 +2424,20 @@ PAGE = """<!DOCTYPE html>
             background: linear-gradient(to right,
               var(--panel) 0 var(--gut), var(--bg) var(--gut)); }
   .tlaxis { flex: 0 0 var(--gut); position: relative; }
-  .tlaxis .t { position: absolute; right: 6px; font-size: 10.5px; color: var(--muted);
+  .tlaxis .t { position: absolute; right: 6px; color: var(--muted);
+               font-size: max(5.5px, calc(10.5px * var(--sheetscale, 1)));
                transform: translateY(-50%); font-variant-numeric: tabular-nums; }
   .tlaxis .t.hour { color: #4b5563; font-weight: 600; }
+  /* Every half hour is more clock than a small sheet has room for: the labels
+     ran into each other and read as a grey smear. The rules behind them stay,
+     so the half hours are still there to be seen. */
+  body.tight .tlaxis .t:not(.hour) { display: none; }
+  /* And a box that small has room for one line. The clock down the side
+     already says when the lesson is, so a copy of it inside the box costs the
+     subject its name — every card read "9.00…" where it should have read the
+     lesson. */
+  body.tight .ev .when,
+  body.tight .ev .what.oneline .clock { display: none; }
   /* The half-hour rules, one gradient rather than two stacked. An hour is
      exactly two halves, so one period holds both lines: the darker one on the
      hour and the lighter one between. Stacking them needed the top layer to be
@@ -2533,8 +2549,12 @@ PAGE = """<!DOCTYPE html>
 
   /* Print: the same timeline, laid out at the width of the sheet so what is
      measured on screen is what comes out of the printer. */
-  .ptitle.sheet { font-size: 19px; font-weight: 700; text-align: center;
-                  padding: 0 0 10px; border: none; }
+  /* The heading shrinks with the sheet. Nineteen point on an A4 page is the
+     right weight; on a card the size of a bus ticket it was a third of the
+     card. The floor keeps it readable where the arithmetic would not. */
+  .ptitle.sheet { font-size: max(8px, calc(19px * var(--sheetscale, 1)));
+                  font-weight: 700; text-align: center;
+                  padding: 0 0 calc(10px * var(--sheetscale, 1)); border: none; }
   body.printview .count, body.printview .topbar { display: none; }
   body.printview #grid { width: 1054px; }          /* 297mm less two 9mm margins */
   body.printview #grid table { min-width: 0; }
@@ -2567,7 +2587,16 @@ PAGE = """<!DOCTYPE html>
      pulled back by their own width instead. A row of copies can fill the page
      exactly, and one more pixel of line then cost a second sheet of paper. A
      quarter of a millimetre inside a five-millimetre paper edge still prints. */
-  body.printview.tiled > .scroll, body.printview.tiled > .foot { display: none; }
+  /* While there are copies to make, the original is laid out at the width of
+     one copy. The fitter measures the original, so measuring it at the width of
+     the whole page would scale the week for a sheet three times wider than the
+     one it is going on — and a hidden original measures nothing at all, which
+     scaled it not at all. It goes out of sight only once the copies are made,
+     which is what `copied` says. */
+  body.printview.tiled > .scroll .week,
+  body.printview.tiled > .foot { width: calc(var(--cutw) - 2 * var(--cutpad)); }
+  body.printview.copied > .scroll, body.printview.copied > .foot { display: none; }
+  #tiles .tile > .week { width: auto; }
   body.printview.tiled #tiles { display: grid; margin: -1px auto 0;
                                 grid-template-columns: repeat(var(--cols), var(--cutw));
                                 grid-auto-rows: var(--cuth);
@@ -2607,7 +2636,9 @@ PAGE = """<!DOCTYPE html>
     /* The same block on paper. The page is turned by the @page rule to
        whichever way round fits more copies, so the block is centred in
        whatever shape that leaves. */
-    body.tiled > .scroll, body.tiled > .foot { display: none; }
+    body.tiled > .scroll .week,
+    body.tiled > .foot { width: calc(var(--cutw) - 2 * var(--cutpad)); }
+    body.copied > .scroll, body.copied > .foot { display: none; }
     body.tiled #tiles { display: grid; margin: -1px auto 0;
                         grid-template-columns: repeat(var(--cols), var(--cutw));
                         grid-auto-rows: var(--cuth);
@@ -2945,7 +2976,7 @@ PAGE = """<!DOCTYPE html>
 <input type="color" id="pick" class="hiddenpick" tabindex="-1" aria-hidden="true">
 
 <div class="count" id="count"></div>
-<div class="scroll"><div id="grid"></div></div>
+<div class="scroll"><div id="grid" class="week"></div></div>
 <footer class="foot" id="foot"></footer>
 <!-- Copies of the sheet above, when it is small enough that several fit on one
      page. Filled only while printing, and emptied on the way out, so the page

@@ -1486,7 +1486,10 @@ test("the tear is drawn the width of the strip it tears", () => {
      page's own script. A tear narrower than the strip leaves a sliver of it
      standing; a wider one spills into the first day. */
   const css = readFileSync(join(root, "tt.py"), "utf8");
-  const said = /--gut:\s*(\d+)px/.exec(css);
+  /* The strip shrinks with the sheet, so the stylesheet says a floor and a
+     full-size width. The tear is drawn to the full-size one and stretched with
+     the strip by the viewBox, so that is the number the script has to match. */
+  const said = /--gut:[^;]*?calc\((\d+)px \* var\(--sheetscale/.exec(css);
   assert.ok(said, "the stylesheet no longer says how wide the strip is");
   assert.equal(json(`GUTTER`), Number(said[1]),
                "the strip and the tear across it are different widths");

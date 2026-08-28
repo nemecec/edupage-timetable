@@ -394,7 +394,11 @@ class ThePrintedSheet(InABrowser):
             "           rule: document.getElementById('pagerule').textContent,"
             "           cls: document.body.className,"
             "           w: one && one.width, h: one && one.height,"
-            "           lessons: document.querySelectorAll('#tiles .tile .ev').length,"
+            "           lessons: tiles[0] ? tiles[0].querySelectorAll('.ev').length : 0,"
+            "           was: document.getElementById('grid')"
+            "                  .querySelectorAll('.ev').length,"
+            "           legend: document.querySelectorAll('#tiles .evtable').length,"
+            "           weeks: document.querySelectorAll('#tiles .tile > .week').length,"
             "           ids: document.querySelectorAll('#tiles [id]').length,"
             "           note: document.getElementById('cutNote').textContent};"
             "printing = false; render();"
@@ -406,12 +410,62 @@ class ThePrintedSheet(InABrowser):
         self.assertIn("tiled", got["cls"])
         self.assertAlmostEqual(got["w"], 100 * MM, delta=1)
         self.assertAlmostEqual(got["h"], 60 * MM, delta=1)
-        # Every copy carries the whole week, not an empty frame.
-        self.assertGreater(got["lessons"], 8 * 10)
+        # Every copy carries the whole week — the same boxes as the original,
+        # not some other part of the page. Three things here scroll, and the
+        # settings panel owns the first of them: copying that put the subject
+        # table on every card, and a count of boxes did not notice, because the
+        # table draws a sample box on every row.
+        self.assertEqual(got["lessons"], got["was"], "a copy is not the week")
+        self.assertGreater(got["was"], 40, "the week itself came out empty")
+        self.assertEqual(got["legend"], 0, "a copy carries the settings table")
+        self.assertEqual(got["weeks"], 8, "a copy is missing its week")
         # A second node answering to an id would send getElementById astray.
         self.assertEqual(got["ids"], 0, "a copy kept an id of its own")
         self.assertIn("8", got["note"], "the note did not say how many")
         self.assertEqual(got["after"], 0, "the copies outlived the printout")
+
+    def test_a_small_sheet_drops_what_it_has_no_room_for(self):
+        """The furniture is sized in points and does not shrink with the sheet,
+        so on a card it crowded out the week it was labelling. The heading and
+        the clock shrink with it, the clock keeps its hours and drops its half
+        hours, and the box drops the clock it repeats — every lesson read
+        "9.00…" where it should have read its own name."""
+        self.show("68", "8")
+        small = self.js(
+            "state.printSheet = 'custom'; state.printWidth = 100;"
+            "state.printHeight = 60; printing = true; render();"
+            "var title = document.querySelector('#tiles .tile .ptitle');"
+            "var head = document.querySelector('#tiles .tile .tlhead .cell');"
+            "var out = {tight: document.body.classList.contains('tight'),"
+            "           title: parseFloat(getComputedStyle(title).fontSize),"
+            "           head: parseFloat(getComputedStyle(head).fontSize),"
+            "           halves: [...document.querySelectorAll("
+            "                      '#tiles .tile .tlaxis .t:not(.hour)')]"
+            "                    .filter(function (e) {"
+            "                       return getComputedStyle(e).display !== 'none'; }).length,"
+            "           hours: document.querySelectorAll("
+            "                      '#tiles .tile .tlaxis .t.hour').length};"
+            "printing = false; render(); return out;")
+        self.assertTrue(small["tight"])
+        self.assertLess(small["title"], 12, "the heading did not shrink")
+        self.assertGreaterEqual(small["title"], 8, "the heading shrank past reading")
+        self.assertLess(small["head"], 12, "the day headings did not shrink")
+        self.assertEqual(small["halves"], 0, "the half hours crowd the clock")
+        self.assertGreater(small["hours"], 3, "the clock lost its hours too")
+
+        # A whole page keeps all of it: nothing here changes the normal sheet.
+        big = self.js(
+            "state.printSheet = 'a4'; printing = true; render();"
+            "var title = document.querySelector('.ptitle');"
+            "var out = {tight: document.body.classList.contains('tight'),"
+            "           title: title ? parseFloat(getComputedStyle(title).fontSize) : 0,"
+            "           halves: [...document.querySelectorAll('.tlaxis .t:not(.hour)')]"
+            "                    .filter(function (e) {"
+            "                       return getComputedStyle(e).display !== 'none'; }).length};"
+            "printing = false; render(); return out;")
+        self.assertFalse(big["tight"])
+        self.assertGreaterEqual(big["title"], 17, "a whole page lost its heading")
+        self.assertGreater(big["halves"], 3, "a whole page lost its half hours")
 
     def test_a_sheet_that_fills_the_page_is_drawn_once(self):
         """Nothing to tile, so nothing changes: the sheet is the page, the way

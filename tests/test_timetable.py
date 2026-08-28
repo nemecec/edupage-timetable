@@ -202,6 +202,82 @@ class SwappedGroups(unittest.TestCase):
                          ["HK", "HK1"])
 
 
+class AGroupTheSchoolLeftUnnamed(unittest.TestCase):
+    """A lesson marked "whole class" that in fact serves one group of it.
+
+    One aSc lesson serves several classes and names a group per class. Where
+    the school names a real group in one class and "whole class" in another,
+    the second class draws that lesson beside every group it splits into, and
+    no pick removes it. TäheTERA's fourth maths group is the live case.
+    """
+
+    def tables(self, others, mine, beside=(("Mat 1", "MargeL"),), day="10000",
+               period="3", duration=1):
+        """One class, one hour, one subject: the groups run side by side.
+
+        `mine` is what the school wrote for this class — a group name, or None
+        for "whole class". `others` is what the same lesson names elsewhere.
+        """
+        groups = [{"id": "g" + str(i), "name": name, "classid": "*me",
+                   "divisionid": "*me:1", "entireclass": False}
+                  for i, (name, _) in enumerate(beside)]
+        groups.append({"id": "gall", "name": "Terve klass", "classid": "*me",
+                       "divisionid": "*me:", "entireclass": True})
+        groups += [{"id": "go" + str(i), "name": name, "classid": "*other",
+                    "divisionid": "*other:1", "entireclass": False}
+                   for i, name in enumerate(others)]
+        if mine:
+            groups.append({"id": "gmine", "name": mine, "classid": "*me",
+                           "divisionid": "*me:1", "entireclass": False})
+        lessons = [{"id": "L" + str(i), "subjectid": "-1", "classids": ["*me"],
+                    "teacherids": [], "groupids": ["g" + str(i)],
+                    "durationperiods": 1}
+                   for i in range(len(beside))]
+        lessons.append({"id": "Lx", "subjectid": "-1",
+                        "classids": ["*me", "*other"], "teacherids": [],
+                        "groupids": (["gmine"] if mine else ["gall"]) +
+                                    ["go" + str(i) for i in range(len(others))],
+                        "durationperiods": duration})
+        cards = [{"lessonid": x["id"], "period": period, "days": day,
+                  "classroomids": []} for x in lessons]
+        return ({"cards": cards}, {"id": "*me", "name": "5.l"},
+                {g["id"]: g for g in groups}, {x["id"]: x for x in lessons})
+
+    def answer(self, *args, **kw):
+        T, cls, groups, lessons = self.tables(*args, **kw)
+        return tt.name_whole_class_groups(T, cls, groups, lessons)
+
+    def test_it_takes_the_name_the_school_gave_it_in_another_class(self):
+        self.assertEqual(self.answer(["Mat 4"], None), {"Lx": ("Mat 4", "*me:1")})
+
+    def test_a_lesson_the_school_did_name_here_is_left_alone(self):
+        self.assertEqual(self.answer(["Mat 4"], "Mat 2"), {})
+
+    def test_a_whole_class_lesson_at_an_hour_with_no_groups_is_left_alone(self):
+        """Every class has real whole-class lessons. This must not touch them:
+        TäheTERA's fourth years take one maths lesson a week all together."""
+        T, cls, groups, lessons = self.tables(["Mat 4"], None)
+        T["cards"] = [c for c in T["cards"] if c["lessonid"] == "Lx"]
+        self.assertEqual(tt.name_whole_class_groups(T, cls, groups, lessons), {})
+
+    def test_nothing_is_invented_where_no_other_class_names_it(self):
+        """A guess would be a group nobody is in, offered in the picker."""
+        self.assertEqual(self.answer([], None), {})
+
+    def test_two_names_elsewhere_say_nothing_about_which_one_this_is(self):
+        self.assertEqual(self.answer(["Mat 4", "Mat 5"], None), {})
+
+    def test_an_unplaced_card_is_not_an_hour(self):
+        """aSc keeps cards with no day in the same table as the placed ones."""
+        self.assertEqual(self.answer(["Mat 4"], None, day="00000"), {})
+
+    def test_a_pair_is_beside_the_groups_on_both_its_periods(self):
+        """A double period overlaps the singles it runs against on the second
+        period as much as the first, and the first is enough to find it."""
+        self.assertEqual(self.answer(["Mat 4"], None, duration=2),
+                         {"Lx": ("Mat 4", "*me:1")})
+
+
 class MergingABlock(unittest.TestCase):
     """A published block holding two subjects in sequence is one box."""
 

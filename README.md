@@ -197,6 +197,22 @@ the lessons, because one EduPage group becomes two.
 they swap too is not in the data, and the school has said only for 5.a. It is
 one more line in the table once somebody says.
 
+**EduPage calls the fourth maths group the whole class.** 5.l and 5.t split
+maths four ways. Three of the four lessons carry a group. The fourth carries
+*Terve klass*.
+
+A lesson in no group belongs to everybody, so that one was drawn beside
+whichever group the reader picked. No pick removed it. The reader saw two maths
+lessons at the same hour, in two rooms, with two teachers.
+
+One aSc lesson serves several classes and names a group per class, and in 5.a
+the same lesson names `Mat 4`. So where a subject runs at one hour both in
+groups and as the whole class, the whole-class card is a further group of that
+class, and it takes the name the school gave it elsewhere. Where no other class
+names it, nothing is invented and the lesson stays as it is. A real whole-class
+lesson is untouched: the fourth years take one maths lesson a week all
+together, with all four teachers in the room, and no groups run against it.
+
 On Monday and Thursday, then, the school publishes no lunch band. Lunch is a
 different hour for each group, and a band across the class would be wrong for
 half of it. It does not need one: a reader who picks their language group is

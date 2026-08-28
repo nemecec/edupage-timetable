@@ -1437,6 +1437,64 @@ def day_slots(blocks, n_periods, always_paired=0):
     return slots
 
 
+def name_whole_class_groups(T, cls, groups, lessons):
+    """A lesson the school marked "whole class" but which runs beside groups.
+
+    One aSc lesson can serve several classes, and the group it names is per
+    class. TäheTERA's fourth maths group is "Mat 4" in 5.a and "whole class" in
+    5.l and 5.t, which is a slip: those classes are already split three ways at
+    that hour, so a fourth lesson at the same hour cannot be for all of the
+    class. Read as written, it was drawn beside whichever group the reader
+    picked, and no pick ever removed it.
+
+    So: where a subject runs at one hour both in groups and as the whole class,
+    the whole-class card is a further group. Where the same lesson names exactly
+    one real group in another class, that name is the school's own word for it
+    and is what the reader picks. Where it names none, nothing is invented and
+    the lesson is left as it is.
+
+    Returns {lesson id: (group name, division id)}.
+    """
+    placed = {}
+    for card in T["cards"]:
+        lesson = lessons.get(card["lessonid"])
+        if not lesson or cls["id"] not in lesson["classids"]:
+            continue
+        if not card["period"] or "1" not in (card["days"] or ""):
+            continue
+        start = int(card["period"])
+        for day_idx, flag in enumerate(card["days"]):
+            if flag != "1":
+                continue
+            for step in range(lesson.get("durationperiods") or 1):
+                placed.setdefault((day_idx, start + step), []).append(lesson)
+
+    def own_groups(lesson):
+        return [groups[g] for g in lesson["groupids"]
+                if g in groups and groups[g]["classid"] == cls["id"]
+                and not groups[g]["entireclass"]]
+
+    named = {}
+    for here in placed.values():
+        by_subject = {}
+        for lesson in here:
+            by_subject.setdefault(lesson["subjectid"], []).append(lesson)
+        for beside in by_subject.values():
+            grouped = [x for x in beside if own_groups(x)]
+            if not grouped:
+                continue
+            for lesson in beside:
+                if own_groups(lesson) or lesson["id"] in named:
+                    continue
+                elsewhere = sorted({groups[g]["name"] for g in lesson["groupids"]
+                                    if g in groups and not groups[g]["entireclass"]})
+                if len(elsewhere) != 1:
+                    continue
+                division = own_groups(grouped[0])[0]["divisionid"]
+                named[lesson["id"]] = (elsewhere[0], division)
+    return named
+
+
 def extract(result, class_name, n_periods=None, cfg=None, period_times=None,
             grade=None):
     """Flatten the aSc relational tables into one lesson row per (day, period)."""
@@ -1450,6 +1508,9 @@ def extract(result, class_name, n_periods=None, cfg=None, period_times=None,
         raise SystemExit(f"Class {class_name!r} not in this timetable. Available: {available}")
     cls = matches[0]
 
+    # A group the school forgot to name here. See name_whole_class_groups.
+    unnamed = name_whole_class_groups(T, cls, groups, lessons)
+
     # Divisions are the "pick one group" axes a student chooses along.
     divisions = []
     for div in T["divisions"]:
@@ -1457,6 +1518,9 @@ def extract(result, class_name, n_periods=None, cfg=None, period_times=None,
             continue
         members = [groups[g]["name"] for g in div["groupids"]
                    if g in groups and not groups[g]["entireclass"]]
+        # A group read back off the timetable belongs on the same axis as the
+        # groups it runs beside, or the reader is never offered it.
+        members += [name for name, where in unnamed.values() if where == div["id"]]
         if members:
             # A picker offers every group the reader could be in, which is not
             # always what aSc lists. See regroup_all.
@@ -1477,6 +1541,8 @@ def extract(result, class_name, n_periods=None, cfg=None, period_times=None,
         grp = [groups[g]["name"] for g in lesson["groupids"]
                if g in groups and groups[g]["classid"] == cls["id"]
                and not groups[g]["entireclass"]]
+        if not grp and lesson["id"] in unnamed:
+            grp = [unnamed[lesson["id"]][0]]
         base = {
             "subject": subject.get("name", "?"),
             "subjectShort": subject.get("short", "?"),

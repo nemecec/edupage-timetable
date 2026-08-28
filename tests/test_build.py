@@ -236,6 +236,29 @@ class WholePage(unittest.TestCase):
                       for g in e["g"]}
             self.assertEqual(sorted(groups), ["HK", "HK1"], name)
 
+    def test_the_fourth_maths_group_is_offered_where_edupage_calls_it_the_class(self):
+        """5.l and 5.t split maths four ways, and the school wrote the fourth
+        lesson as the whole class. Read as written it was drawn beside all
+        three groups, and picking a group never removed it."""
+        school = next(s for s in self.data["schools"] if s["l"] == "TäheTERA")
+        for name in ("5.a", "5.l", "5.t"):
+            cls = next(c for c in school["c"] if c["n"] == name)
+            div = next(d for d in cls["v"] if "Mat 1" in d["groups"])
+            self.assertEqual(div["groups"],
+                             ["Mat 1", "Mat 2", "Mat 3", "Mat 4"], name)
+            loose = [e for e in cls["e"] if e["s"] == "Matemaatika" and not e["g"]]
+            self.assertEqual(loose, [], name)
+
+    def test_a_whole_class_lesson_at_an_hour_nothing_splits_stays_whole(self):
+        """The fourth years take one maths lesson a week all together, with
+        all four teachers in the room. It is not a group and must not become
+        one."""
+        school = next(s for s in self.data["schools"] if s["l"] == "TäheTERA")
+        cls = next(c for c in school["c"] if c["n"] == "4.a")
+        whole = [e for e in cls["e"] if e["s"] == "Matemaatika" and not e["g"]]
+        self.assertEqual(len(whole), 1)
+        self.assertEqual(len(whole[0]["T"]), 4)
+
     def test_a_teacher_named_class_is_offered_with_its_year(self):
         """LõunaTERA names its classes after their teacher, so the built page
         carries a label saying the year as well. The name itself must not move:

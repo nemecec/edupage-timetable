@@ -152,19 +152,25 @@ def published(key):
 
 
 def timetables_in(page):
-    """How many schools a published page carries, or None if it cannot be told.
+    """How many timetables a published page carries, or None if it cannot be told.
 
     Read out of the page's own data blob rather than guessed from the
     markup. The keys are shortened on the way in, and `ttNum` is written `n`.
     So a count of a long name finds nothing, and answers "no schools live"
     without a word.
+
+    Timetables and not entries in the picker: one file can be offered as two
+    schools, and each part carries the number it came out of in `tt`. The build
+    counts the files it read, and this has to answer the same question or the
+    check below compares two different ones.
     """
     found = re.search(rb'<script id="data" type="application/json">(.*?)</script>',
                       page, re.S)
     if not found:
         return None
     try:
-        return len(json.loads(found.group(1).decode("utf-8"))["schools"])
+        schools = json.loads(found.group(1).decode("utf-8"))["schools"]
+        return len({s.get("tt", s["n"]) for s in schools})
     except (ValueError, KeyError, TypeError):
         return None
 

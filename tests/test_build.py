@@ -68,8 +68,13 @@ class WholePage(unittest.TestCase):
         cls.page, cls.data = build()
 
     def test_it_builds_the_schools_the_fixtures_describe(self):
+        # Five entries out of four timetables: ProTERA and the gümnaasium
+        # share a file and are offered apart. See split_schools.
         self.assertEqual([s["l"] for s in self.data["schools"]],
-                         ["ProTERA ja TERA gümnaasium", "SädeTERA", "LõunaTERA", "TäheTERA"])
+                         ["ProTERA", "TERA gümnaasium", "SädeTERA",
+                          "LõunaTERA", "TäheTERA"])
+        self.assertEqual([s["tt"] for s in self.data["schools"]],
+                         ["68", "68", "104", "105", "103"])
 
     def test_the_fixtures_actually_produce_a_timetable(self):
         """The one that stops every invariant below being vacuous.
@@ -79,7 +84,7 @@ class WholePage(unittest.TestCase):
         """
         rows = [e for s in self.data["schools"] for c in s["c"] for e in c["e"]]
         boxes = [e for e in rows if not e["c"]]
-        self.assertEqual(len(self.data["schools"]), 4)
+        self.assertEqual(len(self.data["schools"]), 5)
         self.assertEqual(sum(len(s["c"]) for s in self.data["schools"]), 40)
         # Fewer boxes than periods-with-a-lesson: a published block covering
         # two periods is one box. Fewer rows than periods with a card, too —
@@ -312,13 +317,17 @@ class WholePage(unittest.TestCase):
     def test_the_gumnaasium_keeps_its_own_day(self):
         """One published timetable, two schools. Read against the grades below
         it, the gümnaasium afternoon ran ten and then twenty minutes late."""
-        school = next(s for s in self.data["schools"] if s["n"] == "68")
-        names = [c["n"] for c in school["c"]]
-        self.assertEqual(names, ["7", "8", "9", "G1B", "G1J", "G1K",
-                                 "G2A", "G2M", "G2T"])
+        protera = next(s for s in self.data["schools"] if s["l"] == "ProTERA")
+        school = next(s for s in self.data["schools"] if s["l"] == "TERA gümnaasium")
+        # One timetable, two entries, and every class in exactly one of them.
+        self.assertEqual([c["n"] for c in protera["c"]], ["7", "8", "9"])
+        self.assertEqual([c["n"] for c in school["c"]],
+                         ["G1B", "G1J", "G1K", "G2A", "G2M", "G2T"])
+        self.assertEqual((protera["n"], protera["tt"]), ("68", "68"))
+        self.assertEqual((school["n"], school["tt"]), ("68G", "68"))
 
-        def monday(klass):
-            cls = next(c for c in school["c"] if c["n"] == klass)
+        def monday(klass, where=None):
+            cls = next(c for c in (where or school)["c"] if c["n"] == klass)
             first = {}
             for e in cls["e"]:
                 if e["d"] == 0:
@@ -333,7 +342,7 @@ class WholePage(unittest.TestCase):
         self.assertEqual(breaks, [("Hommikuamps", "8.30", "8.55"),
                                   ("Lõuna", "11.50", "12.40")])
         # The grades below it are untouched.
-        lessons, breaks = monday("8")
+        lessons, breaks = monday("8", protera)
         self.assertIn("12.50–13.35", lessons)
         self.assertEqual(breaks, [("Vaba aeg", "11.50", "12.50"),
                                   ("Amps", "13.35", "13.55")])
@@ -571,7 +580,7 @@ class WholePage(unittest.TestCase):
         window = {s["l"]: s["lg"] for s in self.data["schools"]}
         self.assertEqual(window["TäheTERA"],
                          {"n": "Lõuna", "a": 12 * 60, "z": 13 * 60, "m": 30})
-        for name in ("ProTERA ja TERA gümnaasium", "SädeTERA", "LõunaTERA"):
+        for name in ("ProTERA", "TERA gümnaasium", "SädeTERA", "LõunaTERA"):
             self.assertEqual(window[name], 0, name)
 
     def test_a_group_that_has_a_block_to_itself_gets_one_box(self):
@@ -663,8 +672,8 @@ class WholePage(unittest.TestCase):
         If a bell config stopped matching, the invariants below would pass by
         examining nothing at all."""
         self.assertEqual({s["l"]: s["b"] for s in self.data["schools"]},
-                         {"ProTERA ja TERA gümnaasium": True, "SädeTERA": True,
-                          "LõunaTERA": True, "TäheTERA": True})
+                         {"ProTERA": True, "TERA gümnaasium": True,
+                          "SädeTERA": True, "LõunaTERA": True, "TäheTERA": True})
         tahe = next(s for s in self.data["schools"] if s["l"] == "TäheTERA")
         self.assertEqual(len(tahe["c"]), 14)
         # Every one of the fourteen, from the school's own day-plan sheets.
@@ -1171,7 +1180,9 @@ class Selection(unittest.TestCase):
 
     def test_asking_for_one_school_leaves_the_others_out(self):
         _, data = build("--only", "ProTERA")
-        self.assertEqual([s["l"] for s in data["schools"]], ["ProTERA ja TERA gümnaasium"])
+        # One timetable asked for, and both the entries it is offered as.
+        self.assertEqual([s["l"] for s in data["schools"]],
+                         ["ProTERA", "TERA gümnaasium"])
 
 
 if __name__ == "__main__":

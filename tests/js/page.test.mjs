@@ -428,6 +428,61 @@ test("a division carrying several subjects still filters all of them", () => {
   assert.equal(run(`visible({s: "Prantsuse keel", g: ["PK"]}, ${picks}, ${divisions})`), false);
 });
 
+test("a link written before a school was split still finds its class", () => {
+  /* ProTERA and the gümnaasium came out of one timetable and one entry in the
+     dropdown. Every link shared before the split names the old entry, and the
+     class is the half of it that still means something. */
+  /* SCHOOLS is the array the page was loaded with, so the stand-in goes into
+     it rather than over it, and the real one goes back at the end. */
+  run(`globalThis.wasSchools = SCHOOLS.slice();
+       SCHOOLS.length = 0;
+       SCHOOLS.push(
+         {n: "68", tt: "68", l: "ProTERA", b: true, sj: {},
+          c: [{n: "8", e: [], v: [], h: {}, m: 0}]},
+         {n: "68G", tt: "68", l: "TERA gümnaasium", b: true, sj: {},
+          c: [{n: "G1K", e: [], v: [], h: {}, m: 0}]});`);
+  run(`state.school = "68"; state.class = "G1K";`);
+  assert.equal(json(`currentSchool().l`), "TERA gümnaasium",
+               "the class did not carry the reader across");
+  assert.equal(json(`currentClass().n`), "G1K");
+  // A class the named school does hold is left exactly where it is.
+  run(`state.school = "68"; state.class = "8";`);
+  assert.equal(json(`currentSchool().l`), "ProTERA");
+  // And a name nothing holds falls back rather than throwing.
+  run(`state.school = "68"; state.class = "nope";`);
+  assert.equal(json(`currentSchool().l`), "ProTERA");
+  assert.equal(json(`currentClass().n`), "8");
+
+  // Filed under the timetable, so the split renames nothing already saved.
+  run(`state.school = "68G"; state.class = "G1K";`);
+  assert.equal(json(`classKey()`), "68/G1K");
+  run(`state.school = "68"; state.class = "8";`);
+  assert.equal(json(`classKey()`), "68/8");
+
+  run(`SCHOOLS.length = 0; SCHOOLS.push.apply(SCHOOLS, wasSchools);
+       state.school = SCHOOLS[0].n; state.class = SCHOOLS[0].c[0].n;`);
+});
+
+test("an hour the school fills takes only the lessons it covers", () => {
+  /* A concert is not a day off. TäheTERA's runs 9.15 to 10.15 and the school
+     counts it as the first two lessons, which for most classes is one paired
+     block and for the first years two singles — so the rule is overlap and not
+     a count. */
+  const instead = `[{d: "2026-12-16", a: 555, z: 615, n: "Jõulukontsert"}]`;
+  const args = (a, z) => `icsRepeat(2, icsDay("2026-08-27"), icsDay("2026-12-18"),
+                                    [], ${instead}, ${a}, ${z})`;
+  const paired = json(args(540, 620));       // 9.00-10.20, one block of two
+  assert.deepEqual(paired.skip.map(d => d.slice(0, 10)), ["2026-12-16"]);
+  const early = json(args(540, 585));        // 9.00-9.45, a single
+  assert.deepEqual(early.skip.map(d => d.slice(0, 10)), ["2026-12-16"]);
+  const later = json(args(645, 690));        // 10.45-11.30, after it ends
+  assert.deepEqual(later.skip, [], "a lesson after the hour was cancelled too");
+  // Two reasons to skip a week do not skip it twice.
+  const both = json(`icsRepeat(2, icsDay("2026-08-27"), icsDay("2026-12-18"),
+                               ["2026-12-16"], ${instead}, 540, 620)`);
+  assert.equal(both.skip.length, 1, "the same day was excluded twice");
+});
+
 const BS = String.fromCharCode(92);   // one backslash, unambiguously
 const CRLF = "\r\n";
 

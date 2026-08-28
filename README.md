@@ -30,6 +30,19 @@ periods and group divisions. The page adapts to the timetable you select.
 
 `--list` names them all with their internal `tt_num`.
 
+**One timetable can be offered as two schools.** ProTERA and TERA gümnaasium
+share a file and nothing else: the gümnaasium keeps a different day, starts its
+year on a different date, and a reader of one has no use for the other's
+classes. So the picker offers them apart — `split` in `BELLS` says which class
+prefix belongs to which — and four timetables become five entries.
+
+The first part keeps the timetable's own number as its key, so a link written
+before the split still names something. A link naming a class the other half
+now holds is not broken either: the class is the more specific of the two and
+decides, and the page follows it to the right half. And a reader's own settings
+are filed under the **timetable** rather than under the picker entry, so
+splitting a school renames nothing anybody has saved.
+
 ## Note on `num=` in the URL
 
 `num=35` in that URL is a retired timetable. A request for it answers
@@ -70,7 +83,7 @@ A `--class` without a `--school` is looked up across all timetables.
 The script needs the Python 3 standard library and nothing else. There is no
 pip install and no browser.
 
-For `tera` in 2026 the result is 4 schools, 40 classes and about 1,800 lesson
+For `tera` in 2026 the result is 5 schools, 40 classes and about 1,800 lesson
 slots, in a file of about 765 KB. That is 123 KB over the wire, because it
 compresses well.
 
@@ -556,6 +569,19 @@ period grid, which needs no times.
   second import fixes the entry in place rather than drawing a second one
   beside it. The class is in the name too, because one aSc lesson serves
   several classes and a parent with two children may put both in one calendar.
+
+  **An hour the school fills is not a day off.** TäheTERA's Christmas concert
+  runs 9.15 to 10.15 on 16.12, and the school counts it as replacing the first
+  two lessons. What that is depends on the class: most have one paired block
+  there, the first years two singles, and the classes that split into groups
+  several boxes at once. All of them lose exactly two periods. So `instead`
+  cancels by overlap rather than by counting lessons — whatever a class has at
+  that hour goes, the rest of its day stands — and the concert takes their
+  place as an event that happens once. A reader's own events keep their hour:
+  a swimming lesson at five is not cancelled by an assembly at nine.
+
+  These are the only dated things the page knows. The screen shows a week that
+  repeats, which has no room for one, so they live in the calendar alone.
 
   The file carries Estonia's clock rule as a `VTIMEZONE`. The autumn term
   straddles the change — the clocks go back the day before the autumn break —

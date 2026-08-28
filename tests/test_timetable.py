@@ -399,6 +399,72 @@ class TheTermTheExportCovers(unittest.TestCase):
         self.assertNotIn("2026-09-21", protera, "which is TäheTERA's day, not this one")
 
 
+class OneTimetableTwoSchools(unittest.TestCase):
+    """ProTERA and the gümnaasium share a file and nothing else."""
+
+    def payload(self, classes, label="ProTERA ja TERA gümnaasium"):
+        return [{"n": "68", "l": label, "t": label + " 2026/2027",
+                 "c": [{"n": name} for name in classes]}]
+
+    def test_a_prefix_takes_its_classes_and_the_rest_stay_behind(self):
+        got = tt.split_schools(self.payload(["7", "8", "G1B", "G2A"]))
+        self.assertEqual([(x["n"], x["l"], [c["n"] for c in x["c"]]) for x in got],
+                         [("68", "ProTERA", ["7", "8"]),
+                          ("68G", "TERA gümnaasium", ["G1B", "G2A"])])
+
+    def test_both_halves_remember_the_timetable_they_came_from(self):
+        """Which is what a reader's settings are filed under, so splitting a
+        school renames nothing they have saved."""
+        got = tt.split_schools(self.payload(["7", "G1B"]))
+        self.assertEqual([x["tt"] for x in got], ["68", "68"])
+        # And the first half keeps the number itself, so an old link still
+        # names something.
+        self.assertEqual(got[0]["n"], "68")
+
+    def test_a_school_with_no_rule_comes_through_whole(self):
+        one = self.payload(["1.i", "5.a"], label="TäheTERA")
+        got = tt.split_schools(one)
+        self.assertEqual(len(got), 1)
+        self.assertEqual(got[0]["l"], "TäheTERA")
+        self.assertEqual(got[0]["tt"], "68", "the timetable is named either way")
+
+    def test_a_half_with_no_classes_is_not_offered(self):
+        """A timetable holding no gümnaasium class is one school, not one and
+        an empty one."""
+        got = tt.split_schools(self.payload(["7", "8", "9"]))
+        self.assertEqual([x["l"] for x in got], ["ProTERA"])
+
+    def test_the_halves_keep_their_own_dates(self):
+        """The old title names both, so matching on it would give the
+        gümnaasium ProTERA's term. Only the name each half chose has a say."""
+        got = tt.split_schools(self.payload(["7", "G1B"]))
+        protera, gumn = got
+        self.assertEqual(protera["cal"]["a"], "2026-08-26")
+        self.assertIn("2026-08-31", protera["cal"]["x"], "the TERA20 aktus")
+        self.assertEqual(gumn["cal"]["a"], tt.SCHOOL_YEAR["start"])
+        self.assertNotIn("2026-08-31", gumn["cal"]["x"])
+
+
+class AnHourThatReplacesLessons(unittest.TestCase):
+    """A concert is not a day off. It takes the lessons it sits on and no more."""
+
+    def test_the_hour_is_read_in_minutes(self):
+        got = tt.term_events({"instead": [
+            {"date": "2026-12-16", "start": "9:15", "end": "10:15", "name": "Kontsert"}]})
+        self.assertEqual(got, [{"date": "2026-12-16", "from": 555, "to": 615,
+                                "name": "Kontsert"}])
+
+    def test_a_school_with_no_such_hour_has_none(self):
+        self.assertEqual(tt.term_events({}), [])
+        self.assertEqual(tt.term_events(None), [])
+
+    def test_tahetera_keeps_its_christmas_concert_and_nobody_else_does(self):
+        self.assertEqual([e["date"] for e in
+                          tt.term_events(tt.year_for_school("TäheTERA", ""))],
+                         ["2026-12-16"])
+        self.assertEqual(tt.term_events(tt.year_for_school("ProTERA", "")), [])
+
+
 class MergingABlock(unittest.TestCase):
     """A published block holding two subjects in sequence is one box."""
 

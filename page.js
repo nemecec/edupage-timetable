@@ -958,7 +958,19 @@ const esc = (s) => String(s).replace(/[&<>"'`]/g, c =>
      "'": "&#39;", "`": "&#96;" }[c]));
 
 function currentSchool() {
-  return SCHOOLS.find(s => s.n === state.school) || SCHOOLS[0];
+  const named = SCHOOLS.find(s => s.n === state.school);
+  /* One timetable can be offered as two schools — ProTERA and the gümnaasium
+     share a file and nothing else — and a link written before that split names
+     the school that no longer holds its class. The class is the more specific
+     of the two, so it decides: a sibling out of the same timetable that has it
+     is the one meant. Without this the reader lands silently on the first
+     class of the wrong half. */
+  if (named && state.class && !named.c.some(c => c.n === state.class)) {
+    const sibling = SCHOOLS.find(s => s !== named && s.tt && s.tt === named.tt &&
+                                      s.c.some(c => c.n === state.class));
+    if (sibling) return sibling;
+  }
+  return named || SCHOOLS[0];
 }
 function currentClass() {
   const school = currentSchool();
@@ -971,7 +983,14 @@ function currentClass() {
    differently, so this is per school and not one table for all of them. */
 function subjectFacts() { return currentSchool().sj || {}; }
 
-function classKey() { return currentSchool().n + "/" + currentClass().n; }
+/* Filed under the timetable and not under the entry in the dropdown. The two
+   are the same until a timetable is offered as two schools, and then keying by
+   the dropdown would rename every setting the gümnaasium's readers had saved.
+   The timetable a class came out of never changes. */
+function classKey() {
+  const school = currentSchool();
+  return (school.tt || school.n) + "/" + currentClass().n;
+}
 
 /* What to call a class, which is not always its name. A school that names its
    classes after their teacher says the year in the order of its list, so the
@@ -2097,15 +2116,30 @@ function icsSequence() {
     : Math.max(0, Math.round((built.getTime() - Date.UTC(2026, 0, 1)) / 86400000));
 }
 
-/* One repeating lesson: its first sitting, and the weeks it skips. */
-function icsRepeat(dayIdx, from, to, off) {
+/* One repeating lesson: its first sitting, and the weeks it skips.
+
+   A week is skipped for two reasons. The day is not a school day at all, which
+   is `off`. Or the school has put something else in that hour — a concert, an
+   assembly — and `instead` says so; then only the lessons that hour actually
+   covers are dropped, and the rest of the day stands. */
+function icsRepeat(dayIdx, from, to, off, instead, a, z) {
   const first = firstOnOrAfter(from, dayIdx), last = lastOnOrBefore(to, dayIdx);
   if (first > last) return null;             // never sits inside the term
-  return {
-    first: first, last: last,
-    skip: off.map(icsDay).filter(day => day.getUTCDay() === weekdayOf(dayIdx) &&
-                                        day >= first && day <= last),
-  };
+  const inTerm = (day) => day.getUTCDay() === weekdayOf(dayIdx) &&
+                          day >= first && day <= last;
+  const skip = off.map(icsDay).filter(inTerm);
+  const seen = new Set(skip.map(day => day.getTime()));
+  for (const one of instead || []) {
+    const day = icsDay(one.d);
+    /* Overlap, not a lesson count: what a class has at that hour is what it
+       loses, and two classes rarely have the same thing there. */
+    if (inTerm(day) && a < one.z && one.a < z && !seen.has(day.getTime())) {
+      skip.push(day);
+      seen.add(day.getTime());
+    }
+  }
+  skip.sort((p, q) => p - q);
+  return { first: first, last: last, skip: skip };
 }
 
 /* One event, as the lines it is made of. Empty fields are left out rather than
@@ -2177,7 +2211,7 @@ function icsFile(withMine) {
   let body = [];
 
   for (const e of icsLessons(school, cls)) {
-    const when = icsRepeat(e.d, from, to, off);
+    const when = icsRepeat(e.d, from, to, off, term.e, e.a, e.z);
     if (!when) continue;
     const note = [icsList(teacherNames(e, "full"), " / "), icsList(e.g, "/")]
                  .filter(Boolean).join(" · ");
@@ -2188,7 +2222,10 @@ function icsFile(withMine) {
 
   if (withMine) {
     readEvents(mine().events).events.forEach((ev, i) => {
-      const when = icsRepeat(ev.day, from, to, off);
+      /* The reader's own events keep their hour whatever the school puts in
+         it: a swimming lesson at five is not cancelled by an assembly at
+         nine, and nobody but the reader can say otherwise. */
+      const when = icsRepeat(ev.day, from, to, off, [], ev.a, ev.z);
       if (!when) return;
       /* The reader's own events have no id of their own, so the row they sit
          on is the identity. Reordering the table renames them, which costs one
@@ -2198,6 +2235,24 @@ function icsFile(withMine) {
       body = body.concat(icsEvent(uid, when, ev.a, ev.z, ev.label, "",
                                   ev.note, stampNow, sequence));
     });
+  }
+
+  /* And the hours the school put in place of those lessons. One date, one
+     sitting, no recurrence — the only events in the file that happen once. */
+  for (const one of term.e || []) {
+    const day = icsDay(one.d);
+    if (day < from || day > to) continue;
+    body = body.concat([
+      "BEGIN:VEVENT",
+      "UID:instead-" + one.d.replace(/-/g, "") + "-" + one.a + "-" +
+        icsSafe(school.n) + "-" + icsSafe(cls.n) + "@little.tools",
+      "DTSTAMP:" + stampNow,
+      "SEQUENCE:" + sequence,
+      "DTSTART;TZID=" + ICS_TZ + ":" + stampLocal(day, one.a),
+      "DTEND;TZID=" + ICS_TZ + ":" + stampLocal(day, one.z),
+      "SUMMARY:" + icsText(one.n),
+      "END:VEVENT",
+    ]);
   }
 
   const head = [

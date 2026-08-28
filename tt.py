@@ -501,6 +501,15 @@ SCHOOL_YEAR = {
 SCHOOL_DATES = {
     "TäheTERA": {
         "start": "2026-08-27",
+        # An hour that takes the lessons around it with it. The school counts
+        # the concert as replacing the first two lessons, and every class loses
+        # exactly two periods to a 9.15-10.15 hour — for most of them that is
+        # one paired block, for the first years two singles. So the rule is
+        # overlap and not a count: whatever a class has at that hour goes.
+        "instead": [
+            {"date": "2026-12-16", "start": "9:15", "end": "10:15",
+             "name": "Jõulukontsert Pauluse kirikus"},
+        ],
         "off": [
             # Iseõppepäevad: the class works, but not at school and not to this
             # plan, so the day carries no lesson.
@@ -537,6 +546,21 @@ BELLS = {
             {"after": 3, "minutes": 20, "name": "Amps"},
         ],
         "defaultGap": 5,
+        # One EduPage timetable, two schools in the dropdown. They share
+        # nothing but the file: the gümnaasium keeps its own day (see
+        # variants), starts its year on its own date, and a reader of one has
+        # no use for the other's classes in their list.
+        #
+        # The first part keeps the timetable's own number, so a link written
+        # before the split still names it. What a reader's settings are filed
+        # under is the timetable number for both — see classKey in page.js — so
+        # the split moves nobody's groups or events.
+        # In the order they are offered. ProTERA first: it keeps the
+        # timetable's own number, and it is the school the page opens on.
+        "split": [
+            {"label": "ProTERA"},
+            {"label": "TERA gümnaasium", "classPrefix": "G", "suffix": "G"},
+        ],
         # Estonian and English in the ninth year are one aSc division — I A,
         # I B, II A, II B, III A, III B — and they are two choices, not one.
         #
@@ -2289,6 +2313,83 @@ def year_for_school(label, text):
     return year
 
 
+def split_schools(payload):
+    """One EduPage timetable shown as two entries, where a school says so.
+
+    A part with a classPrefix takes the classes whose names start with it; the
+    part without takes whatever is left, so the two cannot overlap and nothing
+    is dropped. A school with no rule comes through untouched.
+
+    Every part carries `tt`, the timetable it came from. That is what the page
+    files a reader's settings under, so splitting a school renames nothing they
+    have saved.
+    """
+    out = []
+    for school in payload:
+        parts = (bell_config(school["l"], school["t"]) or {}).get("split")
+        if not parts:
+            out.append(dict(school, tt=school["n"]))
+            continue
+        claimed = {c["n"] for part in parts if part.get("classPrefix")
+                   for c in school["c"]
+                   if c["n"].strip().startswith(part["classPrefix"])}
+        for part in parts:
+            prefix = part.get("classPrefix")
+            here = ([c for c in school["c"] if c["n"].strip().startswith(prefix)]
+                    if prefix else
+                    [c for c in school["c"] if c["n"] not in claimed])
+            if not here:
+                continue
+            piece = dict(school, n=school["n"] + part.get("suffix", ""),
+                         tt=school["n"], l=part["label"], c=here)
+            # The dates follow the new name, not the timetable's. The old title
+            # says "ProTERA ja TERA gümnaasium" and would match both halves, so
+            # only the label the part chose gets a say.
+            piece.pop("cal", None)
+            piece.update(_calendar_of({"label": part["label"], "text": ""}))
+            out.append(piece)
+    return out
+
+
+def _calendar_of(school):
+    """The `cal` block for one school, or nothing where it has no dates."""
+    year = year_for_school(school["label"], school["text"])
+    window = term_days(year)
+    if not window:
+        return {}
+    cal = dict(zip(("a", "z", "x"), window))
+    inside = [e for e in term_events(year) if cal["a"] <= e["date"] <= cal["z"]]
+    if inside:
+        cal["e"] = [{"d": e["date"], "a": e["from"], "z": e["to"], "n": e["name"]}
+                    for e in inside]
+    return {"cal": cal}
+
+
+def term_events(year):
+    """One-off hours that replace the lessons they sit on.
+
+    A whole day off is a date in `off`. This is the other kind: an hour the
+    school fills with something else, which cancels whatever a class has then
+    and puts the event in its place. Only the calendar knows about these — the
+    page draws a week that repeats, and a dated hour has no place in one.
+
+    Returns [{"date", "from", "to", "name"}] with the times in minutes, or [].
+    """
+    out = []
+    for one in (year or {}).get("instead", ()):
+        out.append({
+            "date": one["date"],
+            "from": _minutes(one["start"]), "to": _minutes(one["end"]),
+            "name": one["name"],
+        })
+    return out
+
+
+def _minutes(clock):
+    hour, _, minute = str(clock).partition(":")
+    return int(hour) * 60 + int(minute or 0)
+
+
 def term_days(year):
     """The window the export covers, and the school days taken out of it.
 
@@ -2401,11 +2502,7 @@ def compact(schools):
             # school days taken out between them. Per school, because they do
             # not open their weeks on the same day. Absent where no dates are
             # written down, and then that school offers no export at all.
-            **({"cal": dict(zip(("a", "z", "x"),
-                                term_days(year_for_school(school["label"],
-                                                          school["text"]))))}
-               if term_days(year_for_school(school["label"], school["text"]))
-               else {}),
+            **_calendar_of(school),
             "t": school["text"],
             "v": school["validity"],
             "d": [{"i": d["idx"], "n": d["name"]} for d in school["days"]],
@@ -2468,7 +2565,7 @@ def compact(schools):
                 } for e in cls["entries"]],
             } for cls in school["classes"]],
         })
-    return out, subject_meta
+    return split_schools(out), subject_meta
 
 
 # --------------------------------------------------------------------------
@@ -3530,7 +3627,9 @@ def main():
                              initial_class, args.lang, args.built, args.goatcounter))
     total = sum(len(c["entries"]) for s in schools for c in s["classes"])
     classes = sum(len(s["classes"]) for s in schools)
-    print(f"wrote {args.out} — {len(schools)} schools, {classes} classes, {total} lesson slots "
+    # Timetables and not schools: one file can be offered as two. See
+    # split_schools, which the page's own dropdown counts.
+    print(f"wrote {args.out} — {len(schools)} timetables, {classes} classes, {total} lesson slots "
           f"(opens on {initial_school}/{initial_class})")
     return 0
 

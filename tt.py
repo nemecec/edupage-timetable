@@ -85,7 +85,9 @@ STRINGS = {
         "cal.advice": "Import this into a new calendar of its own. A calendar "
                       "cannot be told that a lesson has gone, so when the "
                       "timetable changes, delete that calendar and export "
-                      "again.",
+                      "again. Importing needs a computer: the Google Calendar "
+                      "app on a phone cannot do it.",
+        "cal.help": "How to import a calendar file (Google)",
         "advanced": "Save and restore settings",
         "showHeading": "For each lesson, show:",
         "dayHeading": "In the day, show:",
@@ -256,7 +258,13 @@ STRINGS = {
         "cal.name": "Tunniplaan {0}",
         "cal.advice": "Impordi see eraldi uude kalendrisse. Kalendrile ei saa "
                       "öelda, et tund on ära jäänud, seega kui tunniplaan "
-                      "muutub, kustuta see kalender ja ekspordi uuesti.",
+                      "muutub, kustuta see kalender ja ekspordi uuesti. "
+                      "Importimiseks on vaja arvutit: telefonis Google'i "
+                      "kalendri rakendus seda ei oska.",
+        # Google has this page in English only — asking for it in Estonian
+        # answers "Taotletud leht pole praegu teie keeles saadaval" — so the
+        # reader is told before they follow it.
+        "cal.help": "Kuidas kalendrifaili importida (Google, inglise keeles)",
         "advanced": "Seadete salvestamine ja taastamine",
         "showHeading": "Iga tunni juures näita:",
         "dayHeading": "Päevas näita:",
@@ -3322,6 +3330,12 @@ PAGE = """<!DOCTYPE html>
         </div>
       </div>
       <p class="sub help" data-i18n="cal.advice"></p>
+      <!-- Google's own instructions, and the only link off this page. No `hl`
+           on it: the page has no Estonian, and letting Google choose gives a
+           reader whose account is in some third language their own. -->
+      <p class="sub"><a id="calHelp" target="_blank" rel="noopener noreferrer"
+         href="https://support.google.com/calendar/answer/37118"
+         data-i18n="cal.help"></a></p>
     </div>
   </div>
 </details>

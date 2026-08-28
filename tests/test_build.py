@@ -264,6 +264,22 @@ class WholePage(unittest.TestCase):
         self.assertEqual(len(whole), 1)
         self.assertEqual(len(whole[0]["T"]), 4)
 
+    def test_the_calendar_panel_points_at_googles_own_instructions(self):
+        """The only link off this page. Google has that page in English alone —
+        asking for it in Estonian answers that it is not available — so the
+        Estonian label says so rather than letting the reader find out."""
+        self.assertIn('href="https://support.google.com/calendar/answer/37118"',
+                      self.page)
+        # No `hl`: pinning it would hand a reader whose Google runs in some
+        # third language a page in ours instead of theirs.
+        self.assertNotIn("answer/37118?hl=", self.page)
+        # A new tab, and no handle back on this one.
+        self.assertIn('rel="noopener noreferrer"', self.page)
+        self.assertIn("inglise keeles", tt.STRINGS["et"]["cal.help"])
+        # The one thing no link can say: the phone app cannot do this at all.
+        self.assertIn("arvutit", tt.STRINGS["et"]["cal.advice"])
+        self.assertIn("computer", tt.STRINGS["en"]["cal.advice"])
+
     def test_a_teacher_named_class_is_offered_with_its_year(self):
         """LõunaTERA names its classes after their teacher, so the built page
         carries a label saying the year as well. The name itself must not move:

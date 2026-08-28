@@ -564,6 +564,16 @@ period grid, which needs no times.
   asks for a calendar of its own: when the timetable changes, deleting one
   calendar and exporting again is two clicks, where weeding one is not.
 
+  **Importing needs a computer.** Google Calendar's phone app has no import at
+  all — neither *Import & export* nor *From URL* exists in it — so a parent who
+  taps the button on a phone has a file and nowhere to put it. The panel says
+  so, and links to [Google's own
+  instructions](https://support.google.com/calendar/answer/37118). That page is
+  English only: asking for it in Estonian answers that it is not available in
+  your language, so the Estonian label says as much before the reader follows
+  it. The link carries no `hl`, because letting Google choose gives a reader
+  whose account runs in some third language their own.
+
   A correction needs none of that. Each event is named after aSc's own id for
   the placed lesson, so a lesson moved to another hour keeps its name and a
   second import fixes the entry in place rather than drawing a second one

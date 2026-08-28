@@ -80,6 +80,9 @@ STRINGS = {
         "cal.summary": "Calendar",
         "cal.covers": "Covers {0} to {1}",
         "cal.mine": "Include my own events",
+        "cal.alarm": "Remind me before my own events",
+        "cal.lead": "How long before",
+        "cal.lead.min": "{0} minutes",
         "cal.download": "Download calendar file",
         "cal.name": "Timetable {0}",
         "cal.advice": "Import this into a new calendar of its own. A calendar "
@@ -260,6 +263,9 @@ STRINGS = {
         "cal.summary": "Kalender",
         "cal.covers": "Katab {0} kuni {1}",
         "cal.mine": "Lisa ka minu enda sündmused",
+        "cal.alarm": "Tuleta enda sündmused enne meelde",
+        "cal.lead": "Kui palju aega enne",
+        "cal.lead.min": "{0} minutit",
         "cal.download": "Laadi kalendrifail alla",
         "cal.name": "Tunniplaan {0}",
         "cal.advice": "Impordi see eraldi uude kalendrisse. Kalendrile ei saa "
@@ -3333,6 +3339,18 @@ PAGE = """<!DOCTYPE html>
         <div class="line">
           <label class="inline"><input type="checkbox" id="calMine">
             <span data-i18n="cal.mine"></span></label>
+        </div>
+        <!-- A reminder belongs to those events, so it sits under them and goes
+             dim with them. The lessons never get one: a phone that rings thirty
+             times a week is a phone with notifications turned off. -->
+        <div class="line choice" id="calAlarmRow">
+          <label class="inline"><input type="checkbox" id="calAlarm">
+            <span data-i18n="cal.alarm"></span></label>
+          <span class="choice" id="calLead">
+            <label class="inline" for="calAlarmMinutes"
+              ><span data-i18n="cal.lead"></span></label>
+            <select id="calAlarmMinutes"></select>
+          </span>
         </div>
         <div class="line">
           <button id="calGet" data-i18n="cal.download"></button>

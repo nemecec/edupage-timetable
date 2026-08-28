@@ -564,6 +564,21 @@ period grid, which needs no times.
   asks for a calendar of its own: when the timetable changes, deleting one
   calendar and exporting again is two clicks, where weeding one is not.
 
+  **A reminder is set only where there is room for one.** The reader can ask
+  for one before their own events — half an hour by default — and it is added
+  only when the pause before the event is at least that long. The pause is
+  measured from whatever ends last before it, a lesson or another of the
+  reader's own events, so a training session a quarter of an hour after school
+  gets no half-hour warning and neither does one a quarter of an hour after
+  swimming. A reminder that rings while the phone is in a bag during a lesson
+  is one nobody sees, and by the time they look the thing has started.
+
+  Google drops reminders when the file is imported into any calendar but the
+  primary one, which is the one thing this page tells readers not to do. Apple
+  keeps them wherever the events go. So the reminder is worth having and is not
+  worth promising: it is off until asked for, and a Google reader who follows
+  the advice about a separate calendar may not get it.
+
   **The two makers do not behave the same, and the panel says which is which.**
   On Apple — iPhone, iPad and Mac — opening the file is the whole procedure:
   tap it, choose a calendar, done, phone included. Google Calendar's phone app
@@ -1027,6 +1042,8 @@ paste lands.
   "showGaps": true,
   "showQr": false,
   "calMine": true,
+  "calAlarm": false,
+  "calAlarmMinutes": 30,
   "printMargin": 5,
   "printSheet": "a4",
   "printWidth": 210,
@@ -1060,6 +1077,10 @@ paste lands.
 
 Some of these choices are not obvious:
 
+- **`calAlarm` and `calAlarmMinutes` ring before the reader's own events**, and
+  never before a lesson: a phone that goes off thirty times a week is a phone
+  with notifications switched off. Off until it is asked for, because a reminder
+  is a thing that goes off in a pocket.
 - **Each event carries an `id`**, given once and then kept. Nothing on the page
   shows it and only the calendar file reads it, where it is what names the
   event. Without one an event was identified by where it sat in the table, and

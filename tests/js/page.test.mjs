@@ -546,6 +546,71 @@ test("an event keeps its calendar name through every edit around it", () => {
   run(`myOwn().events = [];`);
 });
 
+test("a reminder is set only where there is room for one", () => {
+  /* The pause before the event has to be at least as long as the warning.
+     A reminder that rings during a lesson is one the reader never sees. */
+  const busy = `[{day: 0, a: 540, z: 870}]`;        // school until 14.30
+  const room = (start, lead) => json(`alarmIsUseful(0, ${start}, ${lead}, ${busy})`);
+  assert.equal(room(960, 30), true, "16.00, an hour and a half after school");
+  assert.equal(room(900, 30), true, "15.00, exactly half an hour after");
+  assert.equal(room(885, 30), false, "14.45, a quarter of an hour after");
+  assert.equal(room(885, 15), true, "the same event with a shorter warning");
+  // Another day is another day: Monday's lessons say nothing about Tuesday.
+  assert.equal(json(`alarmIsUseful(1, 885, 30, ${busy})`), true);
+  // Nothing before it at all: the pause runs back to the start of the day.
+  assert.equal(json(`alarmIsUseful(0, 540, 120, [])`), true);
+  assert.equal(json(`alarmIsUseful(0, 60, 120, [])`), false, "an hour past midnight");
+  // Something still running when the event opens leaves no pause whatever.
+  assert.equal(json(`alarmIsUseful(0, 900, 5, [{day: 0, a: 840, z: 960}])`), false);
+  /* The pause is measured from what ends last, not from what ends first. An
+     earlier gap in the day is not room before this event. */
+  const two = `[{day: 0, a: 540, z: 600}, {day: 0, a: 940, z: 955}]`;
+  assert.equal(json(`alarmIsUseful(0, 960, 30, ${two})`), false,
+               "a wide gap earlier in the day is not a pause before this");
+});
+
+test("a reminder dodges the reader's other events too", () => {
+  /* "No point if there is only a small break between events" — the events are
+     the reader's own as much as the school's. */
+  run(`myOwn().events = [
+         {id: "eeee1111", day: "Mon", startTime: "16:00", endTime: "17:00",
+          backgroundColor: "#DDDDDD", textColor: "", label: "Ujumine", note: ""},
+         {id: "ffff2222", day: "Mon", startTime: "17:15", endTime: "18:00",
+          backgroundColor: "#DDDDDD", textColor: "", label: "Trenn", note: ""}];`);
+  const rings = (label, lead) => json(`(function () {
+      var ics = icsFile(true, ${lead});
+      var block = ics.split("BEGIN:VEVENT").filter(function (b) {
+        return b.indexOf("SUMMARY:${label}") >= 0; })[0] || "";
+      return block.indexOf("BEGIN:VALARM") >= 0;
+    })()`);
+  assert.equal(rings("Ujumine", 30), true, "an afternoon clear of everything");
+
+  /* And the school's own lessons count as much as the reader's events. The
+     class here is taught until 12.10, so an event at 12.25 has a quarter of an
+     hour of pause and no more — driven through the file, because the rule is
+     only worth anything if the lessons actually reach it. */
+  run(`myOwn().events = myOwn().events.concat([
+         {id: "gggg3333", day: "Mon", startTime: "12:25", endTime: "13:00",
+          backgroundColor: "#DDDDDD", textColor: "", label: "Kohe", note: ""}]);`);
+  assert.equal(rings("Kohe", 30), false, "a quarter of an hour after school");
+  assert.equal(rings("Kohe", 15), true, "and the same event warned of sooner");
+
+  assert.equal(rings("Trenn", 30), false,
+               "a quarter of an hour after the event before it");
+  assert.equal(rings("Trenn", 15), true, "and the same event warned of sooner");
+  // Nothing at all when the reader has not asked for reminders.
+  assert.equal(rings("Ujumine", 0), false);
+  run(`myOwn().events = [];`);
+});
+
+test("the school's own lessons never ring", () => {
+  /* Thirty notifications a week is a phone with notifications turned off. */
+  run(`myOwn().events = [];`);
+  const ics = json(`icsFile(true, 30)`);
+  assert.ok(ics.includes("SUMMARY:Matemaatika"), "no lessons in the file");
+  assert.ok(!ics.includes("BEGIN:VALARM"), "a lesson was given a reminder");
+});
+
 test("the calendar leaves out what the reader does not want in it", () => {
   run(`myOwn().events = [
          {id: "cccc3333", day: "Mon", startTime: "16:00", endTime: "17:00",

@@ -100,6 +100,13 @@ const defaults = () => ({
      them where their week is. */
   calMine: true,
 
+  /* And whether those events ring beforehand. Off until it is asked for: a
+     reminder is a thing that goes off in a pocket, and nobody should find one
+     they did not ask for. The lessons never get one — a phone that rings
+     thirty times a week is a phone with notifications turned off. */
+  calAlarm: false,
+  calAlarmMinutes: 30,
+
   /* Millimetres of paper left blank around the sheet. Five is about as narrow
      as a laser printer will take without clipping, and every millimetre saved
      is a millimetre the timetable can use — which on a tight class is the
@@ -215,6 +222,11 @@ const FACE_STACK = {
 const SIZES = ["60", "70", "80", "90", "100", "115", "125", "150"];
 
 const MARGINS = [5, 9, 14];
+
+/* How long before one of the reader's own events a reminder can be set for.
+   Half an hour is the default: long enough to leave the house for a training
+   session, short enough that the reader is still thinking about the day. */
+const LEAD_MINUTES = [5, 10, 15, 20, 30, 45, 60, 90, 120];
 /* The sheet a printout is laid out for. "a4" is the sheet itself, and the
    timetable is fitted to all of it. The other two are smaller than an A4 page
    and are cut out of one: the printer still gets an ordinary A4 page, and the
@@ -414,6 +426,7 @@ function normalise(saved) {
                                 ["timeSize", SIZES], ["nameSize", SIZES],
                                 ["detailSize", SIZES],
                                 ["printMargin", MARGINS],
+                                ["calAlarmMinutes", LEAD_MINUTES],
                                 ["printSheet", SHEETS]]) {
     if (!allowed.includes(out[key])) out[key] = base[key];
   }
@@ -2173,9 +2186,37 @@ function icsRepeat(dayIdx, from, to, off, instead, a, z) {
   return { first: first, last: last, skip: skip };
 }
 
+/* Whether a reminder set this far ahead is worth setting at all.
+
+   The pause before the event has to be at least as long as the warning. A
+   reminder that goes off in the middle of a lesson is one the reader cannot
+   act on and will not see: the phone is in a bag, and by the time they look at
+   it the thing has either started or is about to. Fifteen minutes between the
+   end of school and a training session is not room for a half-hour warning.
+
+   The pause is measured from whatever ends last before the event — a lesson or
+   another of the reader's own events. Something still running when the event
+   begins leaves no pause at all. With nothing before it the pause runs back to
+   the start of the day, which is more than any warning on offer. */
+function alarmIsUseful(day, start, lead, busy) {
+  const before = busy.filter(x => x.day === day && x.a < start);
+  const ends = before.map(x => Math.min(x.z, start));
+  const pause = ends.length ? start - Math.max.apply(null, ends) : start;
+  return pause >= lead;
+}
+
+/* Everything already on the reader's day, which is what a reminder has to
+   dodge: the lessons they kept, and their own events including the one being
+   reminded about — two events twenty minutes apart do not want a half-hour
+   warning on the second. */
+function busyDay(lessons, events) {
+  return lessons.map(e => ({ day: e.d, a: e.a, z: e.z }))
+    .concat(events.map(ev => ({ day: ev.day, a: ev.a, z: ev.z })));
+}
+
 /* One event, as the lines it is made of. Empty fields are left out rather than
    written blank: a calendar shows an empty LOCATION as an empty line. */
-function icsEvent(uid, when, a, z, summary, where, note, stampNow, sequence) {
+function icsEvent(uid, when, a, z, summary, where, note, stampNow, sequence, lead) {
   const lines = [
     "BEGIN:VEVENT",
     "UID:" + uid,
@@ -2192,6 +2233,13 @@ function icsEvent(uid, when, a, z, summary, where, note, stampNow, sequence) {
   lines.push("SUMMARY:" + icsText(summary));
   if (where) lines.push("LOCATION:" + icsText(where));
   if (note) lines.push("DESCRIPTION:" + icsText(note));
+  /* A reminder rings this long before every sitting of the event. The
+     description is the event's own name, because that is what a phone shows
+     on the notification and "Reminder" tells nobody anything. */
+  if (lead) {
+    lines.push("BEGIN:VALARM", "ACTION:DISPLAY", "TRIGGER:-PT" + lead + "M",
+               "DESCRIPTION:" + icsText(summary), "END:VALARM");
+  }
   lines.push("END:VEVENT");
   return lines;
 }
@@ -2231,7 +2279,7 @@ function icsLessons(school, cls) {
 /* The whole file. Times come from the timetable, dates from the school's term,
    and the words from whatever the reader has renamed things to — a calendar
    they cannot read in their own words is no better than the sheet. */
-function icsFile(withMine) {
+function icsFile(withMine, lead) {
   const school = currentSchool(), cls = currentClass(), term = school.cal;
   if (!term) return "";
   const from = icsDay(term.a), to = icsDay(term.z), off = term.x || [];
@@ -2248,11 +2296,15 @@ function icsFile(withMine) {
                  .filter(Boolean).join(" · ");
     body = body.concat(icsEvent(icsUid(school, cls, e), when, e.a, e.z,
                                 subjectName(e, false), icsList(e.r, " / "), note,
-                                stampNow, sequence));
+                                stampNow, sequence, 0));
   }
 
   if (withMine) {
-    readEvents(mine().events).events.forEach((ev, i) => {
+    const own = readEvents(mine().events).events;
+    /* What a reminder has to dodge: the lessons that reached the file, and the
+       reader's own events. Worked out once rather than per event. */
+    const busy = lead ? busyDay(icsLessons(school, cls), own) : [];
+    own.forEach((ev, i) => {
       /* The reader's own events keep their hour whatever the school puts in
          it: a swimming lesson at five is not cancelled by an assembly at
          nine, and nobody but the reader can say otherwise. */
@@ -2264,8 +2316,9 @@ function icsFile(withMine) {
          where it sits. */
       const uid = "own-" + icsSafe(ev.id || "row" + i) + "-" +
                   icsTimetable(school) + "-" + icsSafe(cls.n) + "@little.tools";
+      const ring = (lead && alarmIsUseful(ev.day, ev.a, lead, busy)) ? lead : 0;
       body = body.concat(icsEvent(uid, when, ev.a, ev.z, ev.label, "",
-                                  ev.note, stampNow, sequence));
+                                  ev.note, stampNow, sequence, ring));
     });
   }
 
@@ -2722,12 +2775,24 @@ function bindChoice(name, key) {
 document.getElementById("calMine").addEventListener("change", (ev) => {
   state.calMine = ev.target.checked;
   save();
+  showCalendarPanel();
+});
+document.getElementById("calAlarm").addEventListener("change", (ev) => {
+  state.calAlarm = ev.target.checked;
+  save();
+  showCalendarPanel();
+});
+document.getElementById("calAlarmMinutes").addEventListener("change", (ev) => {
+  const minutes = Number(ev.target.value);
+  if (LEAD_MINUTES.includes(minutes)) state.calAlarmMinutes = minutes;
+  save();
 });
 
 /* The file is built when it is asked for, never before: it is the only thing
    on the page that costs anything to make and is wanted once a term. */
 document.getElementById("calGet").addEventListener("click", () => {
-  const text = icsFile(state.calMine !== false);
+  const text = icsFile(state.calMine !== false,
+                       state.calAlarm ? state.calAlarmMinutes : 0);
   if (!text) return;
   /* A blob rather than a data: URL — a term of lessons runs past what some
      browsers will take in one. */
@@ -2809,6 +2874,20 @@ function showCalendarPanel() {
   if (!term) return;
   document.getElementById("calCovers").textContent =
     t("cal.covers", plainDate(term.a), plainDate(term.z));
+  /* A reminder belongs to the reader's own events, so it goes with them: with
+     those left out there is nothing for it to ring about. Dimmed rather than
+     hidden, the way every other dependent control here behaves. */
+  const box = document.getElementById("calAlarm");
+  box.disabled = !state.calMine;
+  document.getElementById("calAlarmRow")
+          .classList.toggle("off", !state.calMine);
+  document.getElementById("calLead")
+          .classList.toggle("off", !state.calMine || !state.calAlarm);
+  /* Built here rather than written into the page, so the list and the values
+     the settings accept cannot drift — the same bargain the margins make. */
+  fillOptions(document.getElementById("calAlarmMinutes"),
+              LEAD_MINUTES.map(m => [String(m), t("cal.lead.min", m)]),
+              String(state.calAlarmMinutes));
 }
 
 /* An ISO date the way it is written in Estonia. Only the calendar panel says a
@@ -2821,7 +2900,8 @@ function plainDate(iso) {
 function syncDisplayControls() {
   for (const key of ["showStudentName", "showSchoolName", "showClassName",
                      "showTeacher", "showRoom", "showGroup", "showSubject",
-                     "showDuration", "showGaps", "showQr", "calMine"]) {
+                     "showDuration", "showGaps", "showQr", "calMine",
+                     "calAlarm"]) {
     document.getElementById(key).checked = !!state[key];
   }
   showCalendarPanel();

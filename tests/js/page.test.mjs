@@ -560,7 +560,7 @@ test("the same lesson keeps one name however the file is built again", () => {
      name is the school's own id for the placed lesson, so it survives the
      lesson moving to another hour — which is the change most likely to happen
      mid-year. */
-  const school = `{n: "103"}`, cls = `{n: "5.l"}`;
+  const school = `{n: "103", tt: "103"}`, cls = `{n: "5.l"}`;
   const monday = `{i: "*117", d: 0, s: "Matemaatika", p: 7}`;
   const moved = `{i: "*117", d: 0, s: "Matemaatika", p: 3}`;
   assert.equal(json(`icsUid(${school}, ${cls}, ${monday})`),
@@ -575,6 +575,10 @@ test("the same lesson keeps one name however the file is built again", () => {
   // and a parent with two children may put both in one calendar.
   assert.notEqual(json(`icsUid(${school}, {n: "5.t"}, ${monday})`),
                   json(`icsUid(${school}, ${cls}, ${monday})`));
+  /* Named after the timetable, not after the entry in the picker. Offering one
+     timetable as two schools must not rename a reader's whole calendar. */
+  assert.equal(json(`icsUid({n: "68G", tt: "68"}, {n: "G1K"}, ${monday})`),
+               json(`icsUid({n: "68", tt: "68"}, {n: "G1K"}, ${monday})`));
 });
 
 test("minutes read back as the clock", () => {

@@ -2104,9 +2104,16 @@ const icsSafe = (value) => String(value).replace(/[^A-Za-z0-9]+/g, "-")
    both in one calendar. */
 function icsUid(school, cls, entry) {
   return icsSafe(entry.i || (entry.s + "-" + entry.d + "-" + entry.p)) +
-         "-" + entry.d + "-" + icsSafe(school.n) + "-" + icsSafe(cls.n) +
+         "-" + entry.d + "-" + icsTimetable(school) + "-" + icsSafe(cls.n) +
          "@little.tools";
 }
+
+/* The timetable a class came out of, which is what names an event here — not
+   the entry in the picker. The two differ only once a timetable is offered as
+   two schools, and then naming events after the picker would rename every one
+   of them on a change the reader never asked for, and draw the week twice on
+   their next import. Settings are keyed the same way, for the same reason. */
+const icsTimetable = (school) => icsSafe(school.tt || school.n);
 
 /* A number that goes up when the timetable is rebuilt, so a calendar takes the
    second file as a correction of the first rather than as old news. */
@@ -2230,7 +2237,7 @@ function icsFile(withMine) {
       /* The reader's own events have no id of their own, so the row they sit
          on is the identity. Reordering the table renames them, which costs one
          stale entry in a calendar that is replaced wholesale anyway. */
-      const uid = "own-" + i + "-" + ev.day + "-" + icsSafe(school.n) + "-" +
+      const uid = "own-" + i + "-" + ev.day + "-" + icsTimetable(school) + "-" +
                   icsSafe(cls.n) + "@little.tools";
       body = body.concat(icsEvent(uid, when, ev.a, ev.z, ev.label, "",
                                   ev.note, stampNow, sequence));
@@ -2245,7 +2252,7 @@ function icsFile(withMine) {
     body = body.concat([
       "BEGIN:VEVENT",
       "UID:instead-" + one.d.replace(/-/g, "") + "-" + one.a + "-" +
-        icsSafe(school.n) + "-" + icsSafe(cls.n) + "@little.tools",
+        icsTimetable(school) + "-" + icsSafe(cls.n) + "@little.tools",
       "DTSTAMP:" + stampNow,
       "SEQUENCE:" + sequence,
       "DTSTART;TZID=" + ICS_TZ + ":" + stampLocal(day, one.a),

@@ -100,12 +100,12 @@ class Deciding(unittest.TestCase):
             for name in environment:
                 os.environ.pop(name, None)
 
-    def test_the_first_run_publishes_everything(self):
-        """Nothing live yet. The timetable goes up, and so do the two pages
-        around it, and the cache is told."""
+    def test_the_first_run_publishes_the_timetable(self):
+        """Nothing live yet. The timetable goes up and the cache is told. Only
+        the timetable: the landing page and the 404 belong to the site, which
+        publishes them itself."""
         self.assertEqual(self.run_main(), 0)
-        self.assertEqual(set(self.store.objects),
-                         {"index.html", "404.html"})
+        self.assertEqual(set(self.store.objects), {"index.html"})
         self.assertEqual(self.store.invalidations, [["/*"]])
         self.assertIn("published index.html: 2 schools", self.out.getvalue())
 
@@ -118,12 +118,14 @@ class Deciding(unittest.TestCase):
                          "the live page was replaced with the same page")
         self.assertIn("unchanged", self.out.getvalue())
 
-    def test_the_pages_around_it_go_up_even_on_a_quiet_day(self):
-        """Otherwise an edit to the root or the 404 never reaches the site
-        until the timetable happens to change."""
+    def test_a_quiet_day_publishes_nothing_at_all(self):
+        """The timetable did not change, so there is nothing to upload and
+        nothing to invalidate. It used to put the site's own pages up on every
+        run, which is the site's job now — and a cache told to drop everything
+        daily for no reason is a cost with no reader behind it."""
         self.run_main(built=2, live=page_of(2, built="2026-08-25"))
-        self.assertIn("404.html", self.store.objects)
-        self.assertEqual(self.store.invalidations, [["/*"]])
+        self.assertNotIn("404.html", self.store.objects)
+        self.assertEqual(self.store.invalidations, [])
 
     def test_a_changed_timetable_is_published(self):
         self.run_main(built=3, live=page_of(2))
@@ -201,7 +203,7 @@ class Reading(unittest.TestCase):
         finally:
             del os.environ["PREFIX"]
         # And the file, which is the one place the site's address is written.
-        with open(os.path.join(ROOT, "deploy", "site.conf"), encoding="utf-8") as fh:
+        with open(os.path.join(ROOT, "deploy", "tool.conf"), encoding="utf-8") as fh:
             named = re.findall(r"^([A-Z_]+)=", fh.read(), re.M)
         self.assertTrue(named, "site.conf names no settings")
         for name in named:
@@ -224,7 +226,7 @@ class Addressing(unittest.TestCase):
         finally:
             sys.stdout = keep
         # And nothing is published over it: the root page would be that page.
-        self.assertEqual(sorted(store.objects), ["404.html", "index.html"])
+        self.assertEqual(sorted(store.objects), ["index.html"])
 
     def test_a_prefix_puts_the_timetable_under_it(self):
         publish = load()
@@ -237,13 +239,11 @@ class Addressing(unittest.TestCase):
             publish.main()
         finally:
             sys.stdout = keep
-        self.assertEqual(sorted(store.objects),
-                         ["404.html", "index.html", "timetable/index.html"])
-        # The root page points at the prefix rather than keeping its own copy
-        # of it to fall out of step with.
-        self.assertIn(b"timetable", store.objects["index.html"])
-        self.assertNotIn(b"__PREFIX__", store.objects["index.html"])
-        self.assertNotIn(b"__PREFIX__", store.objects["404.html"])
+        self.assertEqual(sorted(store.objects), ["timetable/index.html"])
+        # And only under it. The root page and the 404 are the site's, and it
+        # publishes them itself — a page that lists every tool cannot be
+        # written by one of them.
+        self.assertEqual(store.invalidations, [["/timetable/*"]])
 
     def test_the_report_path_follows_the_switch_that_builds_the_endpoint(self):
         """The page must not post to a path nothing answers."""

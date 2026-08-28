@@ -1,18 +1,19 @@
 #!/usr/bin/env bash
-# Set up the AWS side of little.tools. The nightly rebuild runs in AWS, from
-# EventBridge into a Lambda. This puts that in place, and everything it
-# publishes into. The repository's workflow only asks the Lambda to run early.
+# The AWS side of the timetable at https://little.tools/timetable/. The nightly
+# rebuild runs in AWS, from EventBridge into a Lambda; this puts that in place
+# and pushes the generator into it.
 #
-#   ./deploy.sh dns       once, first: the hosted zone, and the nameservers to
-#                         set at the registrar
-#   ./deploy.sh site      certificate, bucket, CloudFront, publish role
+#   ./deploy.sh stack     the build Lambda, its schedule, its alarms and the
+#                         role the workflow assumes
 #   ./deploy.sh code      push the generator to the Lambda that runs nightly
 #   ./deploy.sh secrets   hand the stack's outputs to the GitHub repository
-#   ./deploy.sh publish   build and publish from here, without waiting for anything
+#   ./deploy.sh publish   build and publish from here, without waiting
 #
-# The bucket and the stacks live in REGION from site.conf. The certificate is
-# its own stack in us-east-1, because CloudFront reads certificates from nowhere
-# else. Everything else here — CloudFront, Route 53, IAM — is global anyway.
+# The site it publishes into is a stack of its own, at
+# https://github.com/nemecec/little-tools: the domain, the bucket, CloudFront
+# and the landing page. Bring that up first. What this needs from it — the
+# bucket, the distribution, the alarm topic, the analytics code — is read from
+# that stack's outputs and passed in as parameters.
 
 set -euo pipefail
 
@@ -23,8 +24,8 @@ here="$(cd "$(dirname "$0")" && pwd)"
 from_env_domain="${DOMAIN:-}" from_env_prefix="${PREFIX:-}" from_env_region="${REGION:-}"
 from_env_gc="${GOATCOUNTER:-}" from_env_alarm="${ALARM_EMAIL:-}"
 from_env_reports="${REPORT_ERRORS:-}"
-# shellcheck source=site.conf
-. "$here/site.conf"
+# shellcheck source=tool.conf
+. "$here/tool.conf"
 DOMAIN="${from_env_domain:-$DOMAIN}"
 PREFIX="${from_env_prefix:-$PREFIX}"
 REGION="${from_env_region:-$REGION}"
@@ -33,13 +34,10 @@ ALARM_EMAIL="${from_env_alarm:-${ALARM_EMAIL:-}}"   # a failed build writes here
 REPORT_ERRORS="${from_env_reports:-${REPORT_ERRORS:-yes}}"
 
 REPO="${REPO:-nemecec/edupage-timetable}"
-CERT_REGION="us-east-1"          # not a preference. CloudFront allows no other
-DNS_STACK="${DOMAIN//./-}-dns"
-CERT_STACK="${DOMAIN//./-}-cert"
-SITE_STACK="${DOMAIN//./-}-site"
+SITE_STACK="${DOMAIN//./-}-site"          # the site's, read only
+TOOL_STACK="${DOMAIN//./-}-${PREFIX}"
 
 aws() { command aws --region "$REGION" "$@"; }
-aws_cert() { command aws --region "$CERT_REGION" "$@"; }
 
 output() {  # stack, key, [region]
   command aws --region "${3:-$REGION}" cloudformation describe-stacks --stack-name "$1" \
@@ -64,89 +62,35 @@ maybe_output() {  # stack, key, [region] — empty if absent, exits if unreachab
 
 case "${1:-}" in
 
-dns)
-  aws cloudformation deploy --stack-name "$DNS_STACK" \
-    --template-file "$here/dns.yaml" \
-    --parameter-overrides "DomainName=$DOMAIN"
-  echo
-  echo "Set these as the nameservers for $DOMAIN at the registrar:"
-  output "$DNS_STACK" NameServers | tr ' ' '\n' | sed 's/^/    /'
-  echo
-  echo "Then wait for the delegation to take effect — check with"
-  echo "    dig +short NS $DOMAIN"
-  echo "and only then run ./deploy.sh site. The certificate is validated over"
-  echo "DNS, so it cannot be issued until Route 53 is answering for the domain."
-  ;;
 
-site)
-  zone="$(maybe_output "$DNS_STACK" HostedZoneId)"
-  [ -n "$zone" ] || { echo "no hosted zone; run ./deploy.sh dns first" >&2; exit 1; }
 
-  # The certificate first, in the only region CloudFront will take one from.
-  # It cannot be issued until the nameservers point here: validation is by DNS.
-  aws_cert cloudformation deploy --stack-name "$CERT_STACK" \
-    --template-file "$here/cert.yaml" \
-    --parameter-overrides "DomainName=$DOMAIN" "HostedZoneId=$zone"
-  cert="$(output "$CERT_STACK" CertificateArn "$CERT_REGION")"
-
-  # An account holds one GitHub OIDC provider. Whether this stack owns it is
-  # decided once, on the first deploy, and then kept: asking the question again
-  # later finds the stack's own provider, answers "no", and makes the next
-  # update delete the very thing it was asked about.
-  # OIDC=yes|no overrides, for putting it right if it was ever answered wrongly.
-  # The alarm address is the same shape of question, and it bit: an address
-  # given once on the command line lives only in the stack, so the next deploy
-  # without it in the environment passed an empty string and deleted the alarm
-  # and its topic. Nothing failed. The site simply stopped being watched.
-  # ALARM_EMAIL= (empty, explicitly) still turns it off.
-  if [ -z "${from_env_alarm:-}" ] && [ -z "${ALARM_EMAIL:-}" ]; then
-    deployed="$(aws cloudformation describe-stacks --stack-name "$SITE_STACK" \
-      --query "Stacks[0].Parameters[?ParameterKey=='AlarmEmail'].ParameterValue" \
-      --output text 2>/dev/null || true)"
-    if [ -n "$deployed" ] && [ "$deployed" != "None" ]; then
-      ALARM_EMAIL="$deployed"
-      echo "keeping the alarm address already deployed"
-    fi
-  fi
-
-  oidc="${OIDC:-}"
-  [ -n "$oidc" ] || oidc="$(aws cloudformation describe-stacks --stack-name "$SITE_STACK" \
-    --query "Stacks[0].Parameters[?ParameterKey=='CreateOidcProvider'].ParameterValue" \
-    --output text 2>/dev/null || true)"
-  if [ -z "$oidc" ] || [ "$oidc" = "None" ]; then
-    if aws iam list-open-id-connect-providers \
-         --query "OpenIDConnectProviderList[?contains(Arn,'token.actions.githubusercontent.com')]" \
-         --output text | grep -q .; then
-      oidc=no
-      echo "reusing the GitHub OIDC provider already in this account"
-    else
-      oidc=yes
-    fi
-  fi
-
-  aws cloudformation deploy --stack-name "$SITE_STACK" \
-    --template-file "$here/site.yaml" \
+stack)
+  # Everything this tool owns. The site's stack is read for what it publishes
+  # into: outputs rather than exports, so the site stays free to change.
+  bucket="$(maybe_output "$SITE_STACK" BucketName)"
+  [ -n "$bucket" ] || { echo "no site stack — bring up nemecec/little-tools first" >&2; exit 1; }
+  aws cloudformation deploy --stack-name "$TOOL_STACK" \
+    --template-file "$here/tool.yaml" \
     --capabilities CAPABILITY_NAMED_IAM \
     --parameter-overrides \
-      "DomainName=$DOMAIN" "HostedZoneId=$zone" "CertificateArn=$cert" \
-      "GitHubRepo=$REPO" "CreateOidcProvider=$oidc" \
-      "CounterSite=${GOATCOUNTER:-}" "AlarmEmail=${ALARM_EMAIL:-}" \
-      "ReportErrors=${REPORT_ERRORS:-yes}"
+      "DomainName=$DOMAIN" \
+      "BucketName=$bucket" \
+      "BucketArn=$(output "$SITE_STACK" BucketArn)" \
+      "DistributionId=$(output "$SITE_STACK" DistributionId)" \
+      "AlarmTopicArn=$(maybe_output "$SITE_STACK" AlarmTopicArn)" \
+      "GitHubRepo=$REPO"
   "$here/deploy.sh" code
-  echo
-  echo "Live at $(output "$SITE_STACK" SiteUrl) once something has been published."
   ;;
 
 code)
   # The nightly build runs from a bundle rather than the checkout, so the layout
   # is flattened: publish.py finds tt.py beside it either way.
-  fn="$(maybe_output "$SITE_STACK" BuildFunctionName)"
-  [ -n "$fn" ] || { echo "no site stack; run ./deploy.sh site first" >&2; exit 1; }
+  fn="$(maybe_output "$TOOL_STACK" BuildFunctionName)"
+  [ -n "$fn" ] || { echo "no stack for this tool; run ./deploy.sh stack first" >&2; exit 1; }
   work="$(mktemp -d)"
   trap 'rm -rf "$work"' EXIT
   cp "$here/../tt.py" "$here/../page.js" "$here/publish.py" \
-     "$here/lambda_function.py" "$here/site.conf" "$here/index.html" \
-     "$here/404.html" "$work/"
+     "$here/lambda_function.py" "$here/tool.conf" "$work/"
   cp -R "$here/../vendor" "$work/vendor"
   (cd "$work" && zip -qr bundle.zip .)
   aws lambda update-function-code --function-name "$fn" \
@@ -160,7 +104,11 @@ code)
   vars="$vars,INITIAL_CLASS=${INITIAL_CLASS:-8}"
   vars="$vars,SITE_LANGUAGE=${SITE_LANGUAGE:-et}"
   vars="$vars,PREFIX=$PREFIX"
-  [ -n "${GOATCOUNTER:-}" ] && vars="$vars,GOATCOUNTER=$GOATCOUNTER"
+  # Whether the site answers /report. Asked rather than assumed: a page
+  # posting where nothing listens is worse than one that stays quiet.
+  vars="$vars,REPORT_ERRORS=$(maybe_output "$SITE_STACK" ReportErrors)"
+  counter="${GOATCOUNTER:-$(maybe_output "$SITE_STACK" CounterSite)}"
+  [ -n "$counter" ] && vars="$vars,GOATCOUNTER=$counter"
   [ -n "${YEAR:-}" ] && vars="$vars,YEAR=$YEAR"
   aws lambda update-function-configuration --function-name "$fn" \
     --environment "Variables={$vars}" \
@@ -177,8 +125,8 @@ secrets)
     echo "  gh auth switch --user <account>" >&2
     exit 1
   fi
-  gh secret set AWS_PUBLISH_ROLE  --repo "$REPO" --body "$(output "$SITE_STACK" PublishRoleArn)"
-  gh secret set AWS_BUILD_FUNCTION --repo "$REPO" --body "$(output "$SITE_STACK" BuildFunctionName)"
+  gh secret set AWS_PUBLISH_ROLE  --repo "$REPO" --body "$(output "$TOOL_STACK" PublishRoleArn)"
+  gh secret set AWS_BUILD_FUNCTION --repo "$REPO" --body "$(output "$TOOL_STACK" BuildFunctionName)"
   echo "set AWS_PUBLISH_ROLE and AWS_BUILD_FUNCTION on $REPO"
   ;;
 
@@ -186,10 +134,11 @@ publish)
   BUCKET="$(output "$SITE_STACK" BucketName)" \
   DISTRIBUTION="$(output "$SITE_STACK" DistributionId)" \
   PREFIX="$PREFIX" \
-  GOATCOUNTER="${GOATCOUNTER:-}" \
+  GOATCOUNTER="${GOATCOUNTER:-$(maybe_output "$SITE_STACK" CounterSite)}" \
   INITIAL_SCHOOL="${INITIAL_SCHOOL:-ProTERA}" \
   INITIAL_CLASS="${INITIAL_CLASS:-8}" \
   SITE_LANGUAGE="${SITE_LANGUAGE:-et}" \
+  REPORT_ERRORS="$(maybe_output "$SITE_STACK" ReportErrors)" \
   AWS_REGION="$REGION" \
     python3 "$here/publish.py"
   ;;

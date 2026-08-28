@@ -822,11 +822,6 @@ def _every_string(root):
 class Documentation(unittest.TestCase):
     """Counts in prose go stale silently. These are the ones worth pinning."""
 
-    def resources(self, name):
-        with open(os.path.join(ROOT, "deploy", name), encoding="utf-8") as fh:
-            body = fh.read().split("\nResources:\n", 1)[1].split("\nOutputs:")[0]
-        return re.findall(r"^  ([A-Za-z0-9]+):\s*$", body, re.M)
-
     def section(self, first, next_one):
         """One settings panel out of the page source, up to the one after it."""
         with open(os.path.join(ROOT, "tt.py"), encoding="utf-8") as fh:
@@ -976,68 +971,11 @@ class Documentation(unittest.TestCase):
                                  f"{lang} {label} repeats its own heading: "
                                  f"{strings[lang][label]!r}")
 
-    def test_cloudfront_and_the_report_function_agree_on_the_gate(self):
-        """The function URL is open to the world and a header is the only
-        thing between it and everybody. If the two spell it differently,
-        every report is refused and the page never finds out."""
-        with open(os.path.join(ROOT, "deploy", "site.yaml"), encoding="utf-8") as fh:
-            template = fh.read()
-        added = re.search(r"HeaderName:\s*(\S+)", template)
-        self.assertIsNotNone(added, "CloudFront adds no header")
-        checked = re.search(r'headers\.get\("([^"]+)"\)', template)
-        self.assertIsNotNone(checked, "the function checks no header")
-        self.assertEqual(added.group(1), checked.group(1))
-        # And the page posts where CloudFront listens.
-        # Without a leading slash. CloudFront matches the pattern against the
-        # path with the slash already off, so "/report" matches nothing and the
-        # request falls through to the bucket.
-        self.assertIn("PathPattern: report\n", template)
-        self.assertNotIn("PathPattern: /report", template)
-        # And the route the API answers is the path the page posts to.
-        self.assertIn("RouteKey: POST /report", template)
-        with open(os.path.join(ROOT, "deploy", "publish.py"), encoding="utf-8") as fh:
-            body = fh.read()
-        self.assertIn('configured("REPORT_ERRORS", "yes")', body)
-        self.assertIn('"/report"', body)
-
-    def test_the_policy_opens_only_for_something_that_is_there(self):
-        """default-src is 'none'. Every hole in it has to be earned by a
-        feature that is switched on."""
-        with open(os.path.join(ROOT, "deploy", "site.yaml"), encoding="utf-8") as fh:
-            template = fh.read()
-        policy = template.split("ContentSecurityPolicy: !Sub", 1)[1]
-        self.assertIn("connect-src ${Connect}", policy)
-        # 'self' is in the reporting arm and nowhere else.
-        arms = policy.split("Connect: !If", 1)[1].split("Beacon:", 1)[0]
-        self.assertIn("Reporting", arms)
-        self.assertEqual(arms.count("'self'"), 2, "one per counting case")
-
-    def test_the_endpoint_takes_both_kinds_and_counts_them_apart(self):
-        """A fault and a message from a reader go the same way, and want
-        different treatment at the other end."""
-        with open(os.path.join(ROOT, "deploy", "site.yaml"), encoding="utf-8") as fh:
-            template = fh.read()
-        self.assertIn('report.get("kind") not in ("page-error", "feedback")', template)
-        self.assertIn(
-            'FilterPattern: \'{ $.kind = "page-error" && $.opaque NOT EXISTS }\'',
-            template, "an unreadable error should not wake anybody")
-        self.assertIn('FilterPattern: \'{ $.kind = "feedback" }\'', template)
-        for metric in ("PageErrors", "Feedback"):
-            self.assertIn("MetricName: %s" % metric, template)
-        # And the page has somewhere to write, in both languages.
-        page, data = build()
-        self.assertIn('id="sayText"', page)
-        self.assertIn('id="sayWithSettings"', page)
-        for lang in ("en", "et"):
-            for key in ("say", "say.intro", "say.withSettings", "say.shown",
-                        "say.send", "say.sent", "say.failed", "say.empty"):
-                self.assertIn(key, data["strings"][lang], (lang, key))
-
     def test_a_stale_day_plan_is_alarmed_on(self):
         """The plans in tt.py are copied from published sheets. A lesson
         landing where the plan has no slot is what a republished sheet looks
         like from here, and it has to reach somebody."""
-        with open(os.path.join(ROOT, "deploy", "site.yaml"), encoding="utf-8") as fh:
+        with open(os.path.join(ROOT, "deploy", "tool.yaml"), encoding="utf-8") as fh:
             template = fh.read()
         self.assertIn("""FilterPattern: '"the day plan has no time for"'""", template)
         self.assertIn("MetricName: PlanDrift", template)
@@ -1083,17 +1021,6 @@ class Documentation(unittest.TestCase):
         # Two fetches: the fault report and the message a reader writes.
         self.assertEqual(len(re.findall(r"(?<![A-Za-z_.$])fetch\s*\(", page)), 2)
 
-    def test_the_deploy_readme_counts_the_resources_correctly(self):
-        counts = {n: len(self.resources(n))
-                  for n in ("site.yaml", "dns.yaml", "cert.yaml")}
-        self.assertEqual(counts, {"site.yaml": 30, "dns.yaml": 2, "cert.yaml": 1})
-        with open(os.path.join(ROOT, "deploy", "README.md"), encoding="utf-8") as fh:
-            readme = fh.read()
-        # The words, not their capitalisation: the sentence around them is
-        # free to be reworded.
-        self.assertIn("thirty-three resources", readme.lower())
-        self.assertIn("thirty in `site.yaml`", readme)
-
     def test_the_size_the_readmes_quote_is_the_size_it_is(self):
         import gzip
         page, _ = build()
@@ -1101,9 +1028,11 @@ class Documentation(unittest.TestCase):
         # Within a tolerance, since the school's own data moves it about.
         self.assertLess(abs(raw / 1024 - 700), 60, "%.0f KB raw" % (raw / 1024))
         self.assertLess(abs(wire / 1024 - 104), 12, "%.0f KB over the wire" % (wire / 1024))
-        for name in ("README.md", os.path.join("deploy", "README.md")):
-            with open(os.path.join(ROOT, name), encoding="utf-8") as fh:
-                self.assertIn("104 KB", fh.read(), name)
+        # The main README is where the size is quoted. The deploy notes are
+        # about bringing it up, and the site's own repository has no idea how
+        # large any tool on it is.
+        with open(os.path.join(ROOT, "README.md"), encoding="utf-8") as fh:
+            self.assertIn("104 KB", fh.read())
 
     def test_the_interface_is_british_and_the_code_is_american(self):
         """Two spellings, each in its own place.

@@ -37,7 +37,7 @@ def configured(name, fallback=""):
     site's address is written down."""
     if os.environ.get(name):
         return os.environ[name]
-    for line in (HERE / "site.conf").read_text(encoding="utf-8").splitlines():
+    for line in (HERE / "tool.conf").read_text(encoding="utf-8").splitlines():
         line = line.strip()
         if line.startswith(f"{name}=") and not line.startswith("#"):
             return line.split("=", 1)[1].strip()
@@ -179,28 +179,13 @@ def upload(text, key):
     store.put(key, text if isinstance(text, bytes) else text.encode("utf-8"))
 
 
-def landing(key):
-    """The pages around the timetable: a root that points at it, and a 404.
-
-    They go up on every run, not only when the timetable changed — otherwise an
-    edit to either one never reaches the site on a quiet day. With no prefix the
-    timetable *is* the root page, so there is nothing here to publish over it.
-    """
-    for name in ("index.html", "404.html"):
-        if name == key:
-            continue
-        upload((HERE / name).read_text(encoding="utf-8").replace("__PREFIX__", PREFIX), name)
-
-
 def main():
     body, schools, slots = build()
     key = f"{PREFIX}/index.html" if PREFIX else "index.html"
 
     current = published(key)
     if current is not None and same(current, body):
-        landing(key)
-        store.invalidate(["/*"])
-        print(f"{key}: unchanged, only the surrounding pages published")
+        print(f"{key}: unchanged, nothing published")
         return 0
 
     # A timetable that errors upstream is skipped with a warning rather than
@@ -215,11 +200,10 @@ def main():
                 f"A timetable probably failed to fetch. Set PUBLISH_ANYWAY=1 to override.")
 
     upload(body, key)
-    # The root page links to whatever the prefix says, rather than keeping its
-    # own copy of it to fall out of step with.
-    landing(key)
-
-    store.invalidate(["/*"])
+    # Only this tool's own path. The landing page and the 404 belong to the
+    # site, which publishes them itself — a page that lists every tool cannot
+    # be written by one of them.
+    store.invalidate([f"/{PREFIX}/*" if PREFIX else "/*"])
     print(f"published {key}: {schools} schools, {slots} lesson slots, {len(body)} bytes")
     return 0
 

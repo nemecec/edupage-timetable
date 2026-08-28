@@ -1283,9 +1283,9 @@ test("a broken link is counted but never wakes anybody", () => {
   const source = readFileSync(join(root, "page.js"), "utf8");
   assert.match(source, /if \(what === "link"\) body\.opaque = 1;/,
                "a cut-short link would ring the alarm");
-  const template = readFileSync(join(root, "deploy", "site.yaml"), "utf8");
-  assert.match(template, /\$\.opaque NOT EXISTS/,
-               "the alarm no longer skips what is marked opaque");
+  /* The other half of this — that the alarm's filter really does skip what is
+     marked opaque — is in the site's repository, because the report endpoint
+     and its alarms belong to the site rather than to any one tool. */
 });
 
 test("the fault reporter is armed before anything can break", () => {

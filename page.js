@@ -2639,9 +2639,22 @@ function renderDivisions() {
   });
 }
 
-document.getElementById("school").addEventListener("change", (ev) => {
-  state.school = ev.target.value;
+/* Moving to a school the reader picked, which decides its own class.
+
+   The class they were on belongs to the school they left and says nothing
+   about this one. It has to go before the new school is asked anything: left
+   in place it sends currentSchool() hunting for whichever half of a split
+   timetable still holds it — and finding it, which walks the reader straight
+   back to where they came from. Changing from ProTERA to the gümnaasium did
+   exactly that, and the class list never moved. */
+function goToSchool(key) {
+  state.school = key;
+  state.class = "";
   state.class = currentSchool().c[0].n;   // class lists differ between schools
+}
+
+document.getElementById("school").addEventListener("change", (ev) => {
+  goToSchool(ev.target.value);
   save(); renderClasses(); renderDivisions(); syncPerClassInputs(); render();
 });
 document.getElementById("klass").addEventListener("change", (ev) => {

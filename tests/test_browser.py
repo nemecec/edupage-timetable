@@ -691,6 +691,40 @@ class TheControls(InABrowser):
         self.assertEqual(got["empty"], "", "a file was built with no dates")
         self.assertFalse(got["back"], "the panel did not come back")
 
+    def test_picking_the_other_half_of_a_split_timetable_changes_the_classes(self):
+        """ProTERA and the gümnaasium come out of one timetable, and a link
+        naming one with the other's class is followed to the class. That rescue
+        must not fight the picker: the class the reader was on belongs to the
+        school they just left, and left in place it walked them back.
+
+        Through the control, because the fault was in what the control did and
+        the function behind it was right all along."""
+        self.show("68", "8")
+        got = self.js(
+            "var sc = document.getElementById('school');"
+            "var cl = document.getElementById('klass');"
+            "var pick = function (label) {"
+            "  sc.value = [].slice.call(sc.options)"
+            "    .filter(function (o) { return o.textContent.trim() === label; })[0].value;"
+            "  sc.dispatchEvent(new Event('change'));"
+            "  return {school: currentSchool().l,"
+            "          classes: [].slice.call(cl.options).map(function (o) {"
+            "            return o.textContent.trim(); }),"
+            "          on: cl.value, key: classKey()};"
+            "};"
+            "return {gumn: pick('TERA gümnaasium'), back: pick('ProTERA'),"
+            "        again: pick('TERA gümnaasium')};")
+        self.assertEqual(got["gumn"]["school"], "TERA gümnaasium")
+        self.assertEqual(got["gumn"]["classes"],
+                         ["G1B", "G1J", "G1K", "G2A", "G2M", "G2T"])
+        self.assertEqual(got["gumn"]["on"], "G1B")
+        # Filed under the timetable both halves came out of, not the picker.
+        self.assertEqual(got["gumn"]["key"], "68/G1B")
+        # And back, which is the same move in the other direction.
+        self.assertEqual(got["back"]["school"], "ProTERA")
+        self.assertEqual(got["back"]["classes"], ["7", "8", "9"])
+        self.assertEqual(got["again"]["classes"], got["gumn"]["classes"])
+
     def test_a_subject_row_can_be_switched_off_and_back_on(self):
         """Through the checkbox, not through the function behind it."""
         self.show("68", "8")

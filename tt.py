@@ -85,9 +85,15 @@ STRINGS = {
         "cal.advice": "Import this into a new calendar of its own. A calendar "
                       "cannot be told that a lesson has gone, so when the "
                       "timetable changes, delete that calendar and export "
-                      "again. Importing needs a computer: the Google Calendar "
-                      "app on a phone cannot do it.",
-        "cal.help": "How to import a calendar file (Google)",
+                      "again.",
+        # What to actually do, which is not the same on the two the school
+        # uses. Apple opens the file where it stands, phone included. Google
+        # has no import in its phone app at all.
+        "cal.apple": "iPhone, iPad and Mac: open the file and pick a calendar.",
+        "cal.google": "Google Calendar: on a computer. Its phone app cannot "
+                      "import a file.",
+        "cal.help.apple": "Apple's instructions",
+        "cal.help.google": "Google's instructions",
         "advanced": "Save and restore settings",
         "showHeading": "For each lesson, show:",
         "dayHeading": "In the day, show:",
@@ -258,13 +264,16 @@ STRINGS = {
         "cal.name": "Tunniplaan {0}",
         "cal.advice": "Impordi see eraldi uude kalendrisse. Kalendrile ei saa "
                       "öelda, et tund on ära jäänud, seega kui tunniplaan "
-                      "muutub, kustuta see kalender ja ekspordi uuesti. "
-                      "Importimiseks on vaja arvutit: telefonis Google'i "
-                      "kalendri rakendus seda ei oska.",
-        # Google has this page in English only — asking for it in Estonian
-        # answers "Taotletud leht pole praegu teie keeles saadaval" — so the
-        # reader is told before they follow it.
-        "cal.help": "Kuidas kalendrifaili importida (Google, inglise keeles)",
+                      "muutub, kustuta see kalender ja ekspordi uuesti.",
+        "cal.apple": "iPhone, iPad ja Mac: ava fail ja vali kalender.",
+        "cal.google": "Google'i kalender: arvutis. Telefonirakendus faili "
+                      "importida ei oska.",
+        # Both pages are English only. Apple answers an Estonian address with
+        # Estonian navigation around an English article, and Google answers
+        # "Taotletud leht pole praegu teie keeles saadaval". So the reader is
+        # told before they follow either one.
+        "cal.help.apple": "Apple'i juhend (inglise keeles)",
+        "cal.help.google": "Google'i juhend (inglise keeles)",
         "advanced": "Seadete salvestamine ja taastamine",
         "showHeading": "Iga tunni juures näita:",
         "dayHeading": "Päevas näita:",
@@ -3330,12 +3339,18 @@ PAGE = """<!DOCTYPE html>
         </div>
       </div>
       <p class="sub help" data-i18n="cal.advice"></p>
-      <!-- Google's own instructions, and the only link off this page. No `hl`
-           on it: the page has no Estonian, and letting Google choose gives a
-           reader whose account is in some third language their own. -->
-      <p class="sub"><a id="calHelp" target="_blank" rel="noopener noreferrer"
-         href="https://support.google.com/calendar/answer/37118"
-         data-i18n="cal.help"></a></p>
+      <!-- The only links off this page. Neither carries a locale: both articles
+           are English whatever is asked for, and pinning one would hand a
+           reader whose account runs in some third language ours instead of
+           theirs. -->
+      <p class="sub"><span data-i18n="cal.apple"></span>
+        <a id="calHelpApple" target="_blank" rel="noopener noreferrer"
+           href="https://support.apple.com/guide/calendar/import-or-export-calendars-icl1023/mac"
+           data-i18n="cal.help.apple"></a></p>
+      <p class="sub"><span data-i18n="cal.google"></span>
+        <a id="calHelpGoogle" target="_blank" rel="noopener noreferrer"
+           href="https://support.google.com/calendar/answer/37118"
+           data-i18n="cal.help.google"></a></p>
     </div>
   </div>
 </details>

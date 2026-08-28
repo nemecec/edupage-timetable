@@ -264,21 +264,35 @@ class WholePage(unittest.TestCase):
         self.assertEqual(len(whole), 1)
         self.assertEqual(len(whole[0]["T"]), 4)
 
-    def test_the_calendar_panel_points_at_googles_own_instructions(self):
-        """The only link off this page. Google has that page in English alone —
-        asking for it in Estonian answers that it is not available — so the
-        Estonian label says so rather than letting the reader find out."""
+    def test_the_calendar_panel_points_at_the_two_makers_instructions(self):
+        """The only links off this page, for the two the school actually uses.
+        Both articles are English whatever locale is asked for, so the Estonian
+        labels say so rather than letting the reader find out."""
         self.assertIn('href="https://support.google.com/calendar/answer/37118"',
                       self.page)
-        # No `hl`: pinning it would hand a reader whose Google runs in some
-        # third language a page in ours instead of theirs.
+        self.assertIn("https://support.apple.com/guide/calendar/"
+                      "import-or-export-calendars-icl1023/mac", self.page)
+        # No locale on either: pinning one would hand a reader whose account
+        # runs in some third language ours instead of theirs.
         self.assertNotIn("answer/37118?hl=", self.page)
+        self.assertNotIn("support.apple.com/et-ee", self.page)
         # A new tab, and no handle back on this one.
-        self.assertIn('rel="noopener noreferrer"', self.page)
-        self.assertIn("inglise keeles", tt.STRINGS["et"]["cal.help"])
-        # The one thing no link can say: the phone app cannot do this at all.
-        self.assertIn("arvutit", tt.STRINGS["et"]["cal.advice"])
-        self.assertIn("computer", tt.STRINGS["en"]["cal.advice"])
+        self.assertEqual(self.page.count('rel="noopener noreferrer"'), 2)
+        for key in ("cal.help.apple", "cal.help.google"):
+            self.assertIn("inglise keeles", tt.STRINGS["et"][key], key)
+
+    def test_the_panel_says_what_each_one_actually_needs(self):
+        """They do not behave the same, and the difference is the whole point
+        of saying anything. Apple opens the file where it stands, phone
+        included. Google Calendar's phone app has no import at all."""
+        self.assertIn("arvutis", tt.STRINGS["et"]["cal.google"])
+        self.assertIn("computer", tt.STRINGS["en"]["cal.google"])
+        for lang in ("en", "et"):
+            apple = tt.STRINGS[lang]["cal.apple"]
+            self.assertIn("iPhone", apple, lang)
+            # And the advice itself stays about the calendar, not the device.
+            self.assertNotIn("computer", tt.STRINGS[lang]["cal.advice"])
+            self.assertNotIn("arvut", tt.STRINGS[lang]["cal.advice"])
 
     def test_a_teacher_named_class_is_offered_with_its_year(self):
         """LõunaTERA names its classes after their teacher, so the built page

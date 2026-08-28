@@ -564,15 +564,29 @@ period grid, which needs no times.
   asks for a calendar of its own: when the timetable changes, deleting one
   calendar and exporting again is two clicks, where weeding one is not.
 
-  **Importing needs a computer.** Google Calendar's phone app has no import at
-  all — neither *Import & export* nor *From URL* exists in it — so a parent who
-  taps the button on a phone has a file and nowhere to put it. The panel says
-  so, and links to [Google's own
-  instructions](https://support.google.com/calendar/answer/37118). That page is
-  English only: asking for it in Estonian answers that it is not available in
-  your language, so the Estonian label says as much before the reader follows
-  it. The link carries no `hl`, because letting Google choose gives a reader
-  whose account runs in some third language their own.
+  **The two makers do not behave the same, and the panel says which is which.**
+  On Apple — iPhone, iPad and Mac — opening the file is the whole procedure:
+  tap it, choose a calendar, done, phone included. Google Calendar's phone app
+  has no import at all, neither *Import & export* nor *From URL*, so a parent
+  who taps the button on a phone ends up with a file and nowhere to put it.
+  That is worth one line each, because it is the difference between a job done
+  in ten seconds and one that cannot be done on the device in hand.
+
+  Each line carries a link: [Apple's](https://support.apple.com/guide/calendar/import-or-export-calendars-icl1023/mac)
+  and [Google's](https://support.google.com/calendar/answer/37118). Both
+  articles are English whatever locale is asked for — Apple answers an Estonian
+  address with Estonian navigation around an English article, Google says the
+  page is not available in your language — so the Estonian labels say as much
+  before the reader follows either. Neither link pins a locale, because letting
+  the maker choose gives a reader whose account runs in some third language
+  their own.
+
+  One caution about Apple's page: the warning on it that importing *replaces
+  all of your current calendar information* is about a calendar archive
+  (`.icbu`), not about an `.ics`. Importing an `.ics` adds to whichever
+  calendar is chosen. The file this page writes is served as `text/calendar`
+  with an `.ics` name, which is what lets Safari hand it to Calendar at all —
+  a file sent as `application/octet-stream` is one iOS refuses to open.
 
   A correction needs none of that. Each event is named after aSc's own id for
   the placed lesson, so a lesson moved to another hour keeps its name and a

@@ -436,8 +436,26 @@ period grid, which needs no times.
   codes. A division that carries one subject is that subject (*Ajutreening*).
   Two or three subjects are listed (*Käsitöö / Tehnoloogiaõpetus*). Four or more
   are shortened to the two commonest, with an ellipsis. The pointer gives the
-  whole list. The group codes sit underneath as a subtitle. To keep every group
-  on one axis, leave its picker on *— all —*. Whole-class lessons always show.
+  whole list. The group codes sit underneath as a subtitle.
+
+  **Each option names the teacher**, because the code is the school's own
+  filing and a reader knows who teaches them instead: *HK1 (Maria Martinez)*.
+  Only the option says so. The value stays the code, which is what the pick is
+  stored under and what a shared link carries.
+
+  Where a division carries more than one subject and a group more than one
+  teacher, each name says what that teacher takes — *I A (Eesti k: Hanna-Stina
+  Vigel, Eng: Jane Eskla)* — in the division's own subject order, so two options
+  can be compared at a glance. Past three names nothing is said at all. Those
+  groups are not a language set but a whole half of a class taking its own six
+  subjects, and there the code is already something a reader knows: it is their
+  own class, *7.a* or *Alfa*.
+
+  One thing the teacher cannot do is separate two groups that share one. Both
+  TäheTERA Spanish groups are Maria Martinez, so the name tells them apart from
+  French and German and not from each other.
+
+  To keep every group on one axis, leave its picker on *— all —*. Whole-class lessons always show.
   Divisions with no lessons are dropped. The page remembers the choices for each
   school and class.
 - **The timeline** draws a continuous clock down the side, ruled every 30

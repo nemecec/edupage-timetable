@@ -2208,6 +2208,24 @@ function renderClasses() {
     ">" + esc(classLabel(c)) + "</option>").join("");
 }
 
+/* What to call one group in the picker. The code is the school's own — "HK1",
+   "Grupp 1", "Mat 3" — and a reader knows who teaches them rather than which
+   code that is. So the option says the teacher as well, and the value stays the
+   code, which is what the pick is filed under.
+
+   Where the division carries more than one subject and the group more than one
+   teacher, each name says what that teacher takes. Otherwise the subject is
+   already in the heading above the picker. See name_the_groups in tt.py, which
+   decides where a list of names stops being a hint. */
+function groupLabel(division, index) {
+  const name = division.groups[index];
+  const who = (division.w || [])[index] || [];
+  if (!who.length) return name;
+  return name + " (" + who.map(
+    ([person, subject]) => (subject ? subject + ": " : "") + teacherName(person)
+  ).join(", ") + ")";
+}
+
 function renderDivisions() {
   const host = document.getElementById("divisions");
   const cls = currentClass(), picked = mine().studyGroups;
@@ -2227,8 +2245,9 @@ function renderDivisions() {
     (d.l ? '<br><span class="divsub">' + esc(d.groups.join(" / ")) + "</span>" : "") +
     "</label>" +
     '<select data-div="' + esc(choiceKey(d)) + '"><option value="">' + esc(t("all")) + "</option>" +
-    d.groups.map(g => '<option value="' + esc(g) + '"' +
-      (picked[choiceKey(d)] === g ? " selected" : "") + ">" + esc(g) + "</option>").join("") +
+    d.groups.map((g, i) => '<option value="' + esc(g) + '"' +
+      (picked[choiceKey(d)] === g ? " selected" : "") + ">" +
+      esc(groupLabel(d, i)) + "</option>").join("") +
     "</select></div>";
   }).join("");
   host.querySelectorAll("select").forEach(sel => {

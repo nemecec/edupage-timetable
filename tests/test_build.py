@@ -390,6 +390,55 @@ class WholePage(unittest.TestCase):
         self.assertIn("about %d,%03d lesson" % divmod(round(slots, -2), 1000),
                       readme)
 
+    def test_a_group_says_who_teaches_it(self):
+        """A reader knows their teacher and not the code the school files them
+        under. Almost every language group has one teacher, which is the whole
+        hint: "HK1 (Maria Martinez)"."""
+        school = next(s for s in self.data["schools"] if s["l"] == "TäheTERA")
+        cls = next(c for c in school["c"] if c["n"] == "5.a")
+        div = next(d for d in cls["v"] if "HK1" in d["groups"])
+        who = dict(zip(div["groups"], div["w"]))
+        # One teacher each, and the subject is left out: the heading above the
+        # picker already says which language each group is.
+        self.assertEqual(who["PK"], [["Laanemäe Eeva", ""]])
+        self.assertEqual(who["SK"], [["Hiiesalu Tuuli", ""]])
+        # The two Spanish groups share a teacher, so the name cannot tell them
+        # apart. It still tells them apart from French and German.
+        self.assertEqual(who["HK1"], who["HK2"])
+
+    def test_several_teachers_are_said_with_what_each_one_takes(self):
+        """Where the division carries more than one subject, the question is
+        which of the teachers the reader has for which, so each name says so."""
+        school = next(s for s in self.data["schools"]
+                      if s["l"].startswith("ProTERA"))
+        cls = next(c for c in school["c"] if c["n"] == "9")
+        div = next(d for d in cls["v"] if "I A" in d["groups"])
+        who = dict(zip(div["groups"], div["w"]))
+        self.assertEqual(who["I A"], [["Vigel Hanna-Stina", "Eesti k"],
+                                      ["Eskla Jane", "Eng"]])
+        # Every option in one picker lists its subjects the same way round, or
+        # two of them cannot be compared at a glance.
+        orders = {tuple(s for _, s in entry) for entry in div["w"] if entry}
+        self.assertEqual(len(orders), 1, orders)
+
+    def test_a_group_with_a_class_worth_of_teachers_says_none(self):
+        """Past three names the list stops being a hint. Those groups are not a
+        language set but a whole half of a class taking its own six subjects,
+        and there the code is already something a reader knows: it is their own
+        class."""
+        school = next(s for s in self.data["schools"]
+                      if s["l"].startswith("ProTERA"))
+        cls = next(c for c in school["c"] if c["n"] == "9")
+        div = next(d for d in cls["v"] if "Alfa" in d["groups"])
+        self.assertFalse(any(div["w"] or []), div["w"])
+        # And nothing anywhere lists more than the cut-off.
+        for s in self.data["schools"]:
+            for c in s["c"]:
+                for d in c["v"]:
+                    for entry in d.get("w") or []:
+                        self.assertLessEqual(len(entry), tt.MOST_TEACHERS,
+                                             "%s %s" % (s["l"], c["n"]))
+
     def test_no_break_is_named_twice_on_one_day(self):
         """A school can name a band per class, and two windows for the same
         meal can both catch the same hole. TäheTERA feeds its two halves at

@@ -623,6 +623,42 @@ test("the printer is never asked for paper it does not hold", () => {
   }
 });
 
+test("a group is offered by its teacher and filed under its code", () => {
+  /* A reader knows who teaches them, not that the school calls them "HK1". So
+     the option says the teacher — but the value has to stay the code, because
+     that is what the pick is stored under and what a shared link carries. */
+  const own = load();
+  own(`currentClass().v[0].w = [[["Tamm Mari", ""]], [["Kask Kati", ""]]];
+       renderDivisions();`);
+  const html = own(`document.getElementById("divisions").innerHTML`);
+  assert.match(html, />A \(Mari Tamm\)</, "the option did not name the teacher");
+  assert.match(html, /value="A"/, "the option did not carry the code");
+
+  // The name goes the way round the reader asked for, as in a lesson box.
+  own(`state.teacherNameOrder = "last"; renderDivisions();`);
+  assert.match(own(`document.getElementById("divisions").innerHTML`),
+               />A \(Tamm Mari\)</, "the picker ignored the name order");
+});
+
+test("a group with no teacher to name is offered by its code alone", () => {
+  /* Past a few names the list stops being a hint, and the generator sends
+     nothing rather than a class register. The option is then the bare code. */
+  const own = load();
+  own(`currentClass().v[0].w = 0; renderDivisions();`);
+  assert.match(own(`document.getElementById("divisions").innerHTML`),
+               />A</, "the bare code went missing");
+  assert.equal(own(`String(document.getElementById("divisions").innerHTML
+                           .indexOf("("))`), "-1", "something was said anyway");
+});
+
+test("a group taught by two says which of them takes what", () => {
+  const own = load();
+  own(`currentClass().v[0].w = [[["Tamm Mari", "Mat"], ["Kask Kati", "Kun"]], []];
+       renderDivisions();`);
+  assert.match(own(`document.getElementById("divisions").innerHTML`),
+               />A \(Mat: Mari Tamm, Kun: Kati Kask\)</);
+});
+
 test("a pick left over from a renamed group hides nothing", () => {
   /* Renaming a study group renames the key its pick is filed under, because the
      key is the list of groups in the division. A pick under the old key matches

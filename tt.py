@@ -1597,6 +1597,7 @@ def extract(result, class_name, n_periods=None, cfg=None, period_times=None,
         entries = merge_blocks(entries)
 
     label_divisions(divisions, entries)
+    name_the_groups(divisions, entries)
     divisions = [d for d in divisions if d["lessons"]]
 
     return {
@@ -1738,6 +1739,56 @@ def label_divisions(divisions, entries):
             div["label"] = " / ".join(ranked)
         else:
             div["label"] = ", ".join(ranked[:2]) + " …"
+
+
+# A group is named by a code the school keeps for itself: "HK1", "IK2",
+# "Grupp 1". A reader knows who teaches them and not which code that is, so
+# the picker says the teacher too.
+#
+# Three is where a list of names stops being a hint. Beyond that the group is
+# not a language set but a whole half of the class, taking its own six or seven
+# subjects — and there the code is already something a reader recognises,
+# because it is their own class: "7.a", "Alfa".
+MOST_TEACHERS = 3
+
+
+def name_the_groups(divisions, entries):
+    """Who teaches each group, for the picker to say beside its code.
+
+    Where a division carries one subject, the subject is already in the heading
+    above the picker and the names go on their own. Where it carries several,
+    each name is prefixed by what that teacher takes, because the whole
+    question is which of them the reader has.
+    """
+    for div in divisions:
+        who = []
+        for group in div["groups"]:
+            # Subjects per teacher, in the order the day runs.
+            taught, wants = {}, {}
+            for e in entries:
+                if e["part"] or group not in e["groups"]:
+                    continue
+                for name in e["teachers"]:
+                    taught.setdefault(name, [])
+                    wants.setdefault(name, [])
+                    if e["subjectShort"] not in taught[name]:
+                        taught[name].append(e["subjectShort"])
+                    if e["subject"] not in wants[name]:
+                        wants[name].append(e["subject"])
+            if not taught or len(taught) > MOST_TEACHERS:
+                who.append([])
+                continue
+            with_subject = len(div["subjects"]) > 1 and len(taught) > 1
+            # In the division's own subject order, so every option in one
+            # picker lists its teachers the same way round. Read off the day
+            # instead, two groups of the same division came out in different
+            # orders and could not be compared at a glance.
+            rank = {name: i for i, name in enumerate(div["subjects"])}
+            order = sorted(taught, key=lambda name: (
+                min(rank.get(s, len(rank)) for s in wants[name]), name))
+            who.append([[name, "/".join(taught[name]) if with_subject else ""]
+                        for name in order])
+        div["who"] = who if any(who) else None
 
 
 def _year_first(grade, name):
@@ -2087,7 +2138,11 @@ def compact(schools):
                 **({"d": _year_first(cls["grade"], cls["name"])}
                    if _year_first(cls["grade"], cls["name"]) else {}),
                 "v": [{"id": d["id"], "groups": d["groups"], "l": d["label"],
-                       "sj": d["subjects"]}
+                       "sj": d["subjects"],
+                       # Who teaches each group, in the same order. See
+                       # name_the_groups: the names are raw, so the page can
+                       # write them the way round the reader asked for.
+                       "w": d["who"] or 0}
                       for d in cls["divisions"]],
                 "m": cls["maxSlots"],
                 "h": {str(day): {

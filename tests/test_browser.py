@@ -410,6 +410,35 @@ class ThePrintedSheet(InABrowser):
                          round(210 * 96 / 25.4) - 2 * round(5 * 96 / 25.4))
 
 
+class TheGroupPicker(InABrowser):
+    """Which group a reader is in is the one question the page cannot answer
+    for them, so the picker has to be answerable from what they do know."""
+
+    def test_a_language_group_is_offered_by_its_teacher(self):
+        """The codes are the school's own filing — HK1, PK, SK — and a reader
+        knows who teaches them instead."""
+        self.show("103", "5.a")
+        got = self.js(
+            "var box = [...document.querySelectorAll('#divisions select')]"
+            "  .find(function (s) { return s.dataset.div.indexOf('HK1') >= 0; });"
+            "return {opts: [...box.options].slice(1).map(function (o) {"
+            "          return [o.value, o.textContent]; })};")
+        self.assertEqual(got["opts"], [
+            ["HK1", "HK1 (Maria Martinez)"],
+            ["HK2", "HK2 (Maria Martinez)"],
+            ["PK", "PK (Eeva Laanemäe)"],
+            ["SK", "SK (Tuuli Hiiesalu)"],
+        ])
+        # Picking one still files the code, not the words beside it.
+        picked = self.js(
+            "var box = [...document.querySelectorAll('#divisions select')]"
+            "  .find(function (s) { return s.dataset.div.indexOf('HK1') >= 0; });"
+            "box.value = 'PK';"
+            "box.dispatchEvent(new Event('change', {bubbles: true}));"
+            "return {stored: Object.values(mine().studyGroups)};")
+        self.assertEqual(picked["stored"], ["PK"])
+
+
 class TheControls(InABrowser):
     """Pressing things. Every listener here was unreachable from a stub."""
 

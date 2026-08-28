@@ -51,13 +51,13 @@ jobs:
       - name: JavaScript tests
         run: node --test tests/js/*.test.mjs
 
-      - name: Lint the templates
+      - name: Lint the template
         run: |
           # Pinned like the actions are: an unpinned install is one more thing
           # that can change under the build without anyone choosing it.
+          # The site's own templates are linted in the site's repository.
           pip install --quiet "cfn-lint==1.55.1"
-          cfn-lint deploy/cert.yaml --region us-east-1
-          cfn-lint deploy/dns.yaml deploy/site.yaml --region eu-central-1
+          cfn-lint deploy/tool.yaml --region eu-central-1
 
   # One fetch, two builds, compared — run by hand, never on a push. The school's
   # server starts refusing an address that has asked too often, and that budget

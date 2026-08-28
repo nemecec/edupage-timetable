@@ -64,6 +64,7 @@ Resources:
 
   # -------------------------------------------------------- scheduled build --
   BuildRole:
+    DeletionPolicy: Delete
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Join ["-", [!Join ["-", !Split [".", !Ref DomainName]], "build"]]
@@ -90,7 +91,11 @@ Resources:
                 Action: cloudfront:CreateInvalidation
                 Resource: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${DistributionId}"
 
+  # Kept when the stack goes: what it holds is the record of every build, and
+  # taking the stack down should not take that with it. Everything else here a
+  # deploy rebuilds in a minute.
   BuildLogs:
+    DeletionPolicy: Retain
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Join ["", ["/aws/lambda/", !Join ["-", !Split [".", !Ref DomainName]], "-build"]]
@@ -102,6 +107,7 @@ Resources:
   # The real code is pushed by deploy.sh: a template's inline body is capped at
   # 4 KB and the generator alone is twenty times that.
   BuildFunction:
+    DeletionPolicy: Delete
     Type: AWS::Lambda::Function
     DependsOn: BuildLogs
     Properties:
@@ -126,6 +132,7 @@ Resources:
   # is the only thing that speaks up. It needs somewhere to speak to, so it is
   # only created when an address is given — see AlarmEmail.
   BuildFailed:
+    DeletionPolicy: Delete
     Type: AWS::CloudWatch::Alarm
     Condition: Alarming
     Properties:
@@ -161,6 +168,7 @@ Resources:
   # first sign is a lesson landing where the plan has no slot for it. The
   # build says so; this is what makes anybody hear it.
   PlanDrifted:
+    DeletionPolicy: Delete
     Type: AWS::Logs::MetricFilter
     Condition: Alarming
     Properties:
@@ -173,6 +181,7 @@ Resources:
           DefaultValue: 0
 
   PlanOutOfDate:
+    DeletionPolicy: Delete
     Type: AWS::CloudWatch::Alarm
     Condition: Alarming
     Properties:
@@ -215,6 +224,7 @@ Resources:
   # The reader's own words never arrive. The page replaces them with their
   # length before it sends. See scrubbed() in page.js.
   BuildSchedule:
+    DeletionPolicy: Delete
     Type: AWS::Events::Rule
     Properties:
       Name: !Join ["-", [!Join ["-", !Split [".", !Ref DomainName]], "rebuild"]]
@@ -226,6 +236,7 @@ Resources:
           Arn: !GetAtt BuildFunction.Arn
 
   SchedulePermission:
+    DeletionPolicy: Delete
     Type: AWS::Lambda::Permission
     Properties:
       FunctionName: !GetAtt BuildFunction.Arn
@@ -234,6 +245,7 @@ Resources:
       SourceArn: !GetAtt BuildSchedule.Arn
 
   PublishRole:
+    DeletionPolicy: Delete
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Join ["-", [!Join ["-", !Split [".", !Ref DomainName]], "publish"]]

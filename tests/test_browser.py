@@ -377,6 +377,57 @@ class ThePrintedSheet(InABrowser):
         self.assertEqual(got["w"], 269, "a wider edge left it off the page")
         self.assertEqual(got["max"], "269")
 
+    def test_a_small_sheet_is_copied_across_the_page(self):
+        """A card a third the size of the paper leaves the rest of it blank, so
+        the page is filled with copies and the paper is turned when turning it
+        fits more. Every copy has to measure what it says it does, or the block
+        of them is cut to the wrong size."""
+        self.show("68", "8")
+        MM = 96 / 25.4
+        got = self.js(
+            "state.printSheet = 'custom'; state.printWidth = 100;"
+            "state.printHeight = 60; state.printMargin = 5;"
+            "printing = true; render();"
+            "var tiles = document.querySelectorAll('#tiles .tile');"
+            "var one = tiles[0] && tiles[0].getBoundingClientRect();"
+            "var out = {n: tiles.length, turn: tiling().portrait,"
+            "           rule: document.getElementById('pagerule').textContent,"
+            "           cls: document.body.className,"
+            "           w: one && one.width, h: one && one.height,"
+            "           lessons: document.querySelectorAll('#tiles .tile .ev').length,"
+            "           ids: document.querySelectorAll('#tiles [id]').length,"
+            "           note: document.getElementById('cutNote').textContent};"
+            "printing = false; render();"
+            "out.after = document.getElementById('tiles').children.length;"
+            "return out;")
+        self.assertEqual(got["n"], 8, "eight copies fit and were not drawn")
+        self.assertTrue(got["turn"], "the page did not turn to fit more")
+        self.assertIn("size: A4 portrait", got["rule"])
+        self.assertIn("tiled", got["cls"])
+        self.assertAlmostEqual(got["w"], 100 * MM, delta=1)
+        self.assertAlmostEqual(got["h"], 60 * MM, delta=1)
+        # Every copy carries the whole week, not an empty frame.
+        self.assertGreater(got["lessons"], 8 * 10)
+        # A second node answering to an id would send getElementById astray.
+        self.assertEqual(got["ids"], 0, "a copy kept an id of its own")
+        self.assertIn("8", got["note"], "the note did not say how many")
+        self.assertEqual(got["after"], 0, "the copies outlived the printout")
+
+    def test_a_sheet_that_fills_the_page_is_drawn_once(self):
+        """Nothing to tile, so nothing changes: the sheet is the page, the way
+        it was before copies existed."""
+        self.show("68", "8")
+        got = self.js(
+            "state.printSheet = 'ipad11a16'; printing = true; render();"
+            "var out = {n: document.querySelectorAll('#tiles .tile').length,"
+            "           cls: document.body.className,"
+            "           rule: document.getElementById('pagerule').textContent};"
+            "printing = false; render(); return out;")
+        self.assertEqual(got["n"], 0)
+        self.assertIn("cutsheet", got["cls"])
+        self.assertNotIn("tiled", got["cls"])
+        self.assertIn("size: A4 landscape", got["rule"])
+
     def test_the_millimetre_boxes_are_live_only_for_a_size_of_ones_own(self):
         """They are dimmed rather than hidden, the way every other dependent
         control here behaves: a reader can see what their own size would be

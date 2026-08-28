@@ -96,6 +96,8 @@ STRINGS = {
         "sheet.height": "Sheet height in millimetres",
         "sheet.cut": ("This sheet is smaller than an A4 page. Print it on A4 "
                       "at full size, then cut along the dashed line."),
+        "sheet.cutMany": ("{0} of this sheet fit on one A4 page. Print it at "
+                          "full size, then cut along the dashed lines."),
         "showGaps": "Free time between lessons",
         "gap": "Break",
         "dur.hour": "{0} hour",
@@ -257,6 +259,8 @@ STRINGS = {
         "sheet.height": "Lehe kõrgus millimeetrites",
         "sheet.cut": ("See leht on A4-st väiksem. Trüki see A4 peale "
                       "täissuuruses ja lõika mööda katkendjoont."),
+        "sheet.cutMany": ("Ühele A4 lehele mahub {0} sellist lehte. Trüki "
+                          "täissuuruses ja lõika mööda katkendjooni."),
         "showGaps": "Vaba aeg tundide vahel",
         "gap": "Paus",
         "dur.hour": "{0} tund",
@@ -2181,9 +2185,6 @@ PAGE = """<!DOCTYPE html>
      back. It is a week: one column a day, hanging from the morning down. -->
 <link rel="icon" href="__ICON__">
 <title>__TITLE__</title>
-<!-- An @page rule cannot be reached through a class or a custom property, so
-     the whole rule is rewritten here when the reader picks a margin. -->
-<style id="pagerule">@page { size: A4 landscape; margin: 5mm; }</style>
 <style>
   :root {
     --bg: #ffffff; --fg: #1b1d21; --muted: #6b7280;
@@ -2550,8 +2551,41 @@ PAGE = """<!DOCTYPE html>
                             width: var(--cutw); height: var(--cuth);
                             border: 1px dashed #b6bcc4; }
   body.printview.cutsheet #grid, body.printview.cutsheet .foot { width: auto; }
+
+  /* Several copies of one small sheet, filling the page. The originals stay in
+     the document and go out of sight; #tiles holds the copies.
+
+     The copies sit flush against each other, so one straight cut separates a
+     whole row and every line runs the full width or height of the block. Space
+     between them would mean two cuts at every boundary and a strip of waste to
+     pick off, and it would protect the type no better — the room for a
+     wandering scissors is the white inside each copy, which is already there.
+
+     Each copy draws its own right and bottom edge and the block draws its top
+     and left, so a line between two copies is one line and not two. The copies
+     size those edges inside themselves, but the block's two cannot be: they are
+     pulled back by their own width instead. A row of copies can fill the page
+     exactly, and one more pixel of line then cost a second sheet of paper. A
+     quarter of a millimetre inside a five-millimetre paper edge still prints. */
+  body.printview.tiled > .scroll, body.printview.tiled > .foot { display: none; }
+  body.printview.tiled #tiles { display: grid; margin: -1px auto 0;
+                                grid-template-columns: repeat(var(--cols), var(--cutw));
+                                grid-auto-rows: var(--cuth);
+                                width: calc(var(--cols) * var(--cutw));
+                                border-top: 1px dashed #b6bcc4;
+                                border-left: 1px dashed #b6bcc4; }
+  #tiles .tile { box-sizing: border-box; padding: var(--cutpad); overflow: hidden;
+                 border-right: 1px dashed #b6bcc4;
+                 border-bottom: 1px dashed #b6bcc4; }
+  #tiles .tile .foot { width: auto; margin: 8px 0 0; }
   /* The margin is written from the setting into #pagerule below. This copy is
      what a browser gets if the script never runs. */
+  /* What a browser gets if the script never runs. The script writes the real
+     rule into #pagerule below, which comes after this one and so wins — it has
+     to, because two @page rules are resolved by which is written last and not
+     by which is more specific. It sat before this one once, where the reader's
+     paper edge was worked out, drawn to, and then quietly overridden on the
+     way to the printer. */
   @page { size: A4 landscape; margin: 5mm; }
   @media print {
     /* Chrome leaves "Background graphics" off by default, which would drop
@@ -2570,6 +2604,16 @@ PAGE = """<!DOCTYPE html>
     body.cutsheet { box-sizing: border-box; padding: var(--cutpad);
                     width: var(--cutw); height: var(--cuth);
                     max-width: 100%; border: 1px dashed #b6bcc4; }
+    /* The same block on paper. The page is turned by the @page rule to
+       whichever way round fits more copies, so the block is centred in
+       whatever shape that leaves. */
+    body.tiled > .scroll, body.tiled > .foot { display: none; }
+    body.tiled #tiles { display: grid; margin: -1px auto 0;
+                        grid-template-columns: repeat(var(--cols), var(--cutw));
+                        grid-auto-rows: var(--cuth);
+                        width: calc(var(--cols) * var(--cutw));
+                        border-top: 1px dashed #b6bcc4;
+                        border-left: 1px dashed #b6bcc4; }
 
     .ptitle { font-size: 17px; font-weight: 700; text-align: center; }
   }
@@ -2594,6 +2638,11 @@ PAGE = """<!DOCTYPE html>
   .count { color: var(--muted); font-size: 12px; margin: 10px 0; }
   @media print { body { padding: 0; } .panel, .count { display: none; } }
 </style>
+<!-- An @page rule cannot be reached through a class or a custom property, so
+     the whole rule is rewritten here when the reader picks a paper edge or a
+     sheet. Last in the head, because the stylesheet above carries a copy for a
+     browser running no script, and the later of two @page rules wins. -->
+<style id="pagerule">@page { size: A4 landscape; margin: 5mm; }</style>
 </head>
 <body>
 <div class="topbar">
@@ -2823,7 +2872,7 @@ PAGE = """<!DOCTYPE html>
           </span>
         </div>
       </div>
-      <p class="sub help" id="cutNote" data-i18n="sheet.cut" hidden></p>
+      <p class="sub help" id="cutNote" hidden></p>
     </div>
   </div>
 </details>
@@ -2898,6 +2947,10 @@ PAGE = """<!DOCTYPE html>
 <div class="count" id="count"></div>
 <div class="scroll"><div id="grid"></div></div>
 <footer class="foot" id="foot"></footer>
+<!-- Copies of the sheet above, when it is small enough that several fit on one
+     page. Filled only while printing, and emptied on the way out, so the page
+     carries one timetable and not several. -->
+<div id="tiles" hidden></div>
 
 __ANALYTICS__
 <script>__QRLIB__</script>

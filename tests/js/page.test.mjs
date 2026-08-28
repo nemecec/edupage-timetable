@@ -560,9 +560,10 @@ test("a sheet the reader types is held inside the paper edge", () => {
   // A wider edge leaves less paper, so the same number is held to less.
   assert.equal(JSON.parse(at(14, `printWidth: 287`)).printWidth, 269);
   assert.equal(JSON.parse(at(14, `printHeight: 200`)).printHeight, 182);
-  // And too small to hold a week comes up to the smallest that can.
-  assert.equal(JSON.parse(at(5, `printWidth: 4`)).printWidth, 100);
-  assert.equal(JSON.parse(at(5, `printHeight: -5`)).printHeight, 100);
+  // And too small to hold a week comes up to the smallest that can. A week
+  // fits in 60mm of height at about eight point, so the floor is 50.
+  assert.equal(JSON.parse(at(5, `printWidth: 4`)).printWidth, 50);
+  assert.equal(JSON.parse(at(5, `printHeight: -5`)).printHeight, 50);
   // An emptied box keeps the size that was in force.
   assert.equal(JSON.parse(at(5, `printWidth: null`)).printWidth, 210);
 });
@@ -611,16 +612,48 @@ test("the picker offers every sheet the settings accept", () => {
   // element, which the stub does not keep. A browser test checks that.
 });
 
+test("a sheet smaller than the page is copied to fill it", () => {
+  /* Somebody who asks for a card a third the size of the paper wants more than
+     one card, and the rest of the sheet would go in the bin. So the page is
+     filled, and the paper is turned when turning it fits more. */
+  const own = load();
+  const tiles = (w, h, margin) => JSON.parse(own(
+    `state.printSheet = "custom"; state.printWidth = ${w};
+     state.printHeight = ${h}; state.printMargin = ${margin || 5};
+     JSON.stringify(tiling())`));
+
+  // 100 by 60 gets six across a landscape page and eight down a portrait one.
+  assert.deepEqual(tiles(100, 60), {portrait: true, cols: 2, rows: 4, count: 8});
+  // And neither way round always wins.
+  assert.deepEqual(tiles(90, 50), {portrait: false, cols: 3, rows: 4, count: 12});
+  assert.deepEqual(tiles(105, 74), {portrait: false, cols: 2, rows: 2, count: 4});
+  // A wider paper edge leaves less to fill, and can turn the sheet back.
+  assert.equal(tiles(100, 60, 14).count, 6);
+  assert.equal(tiles(100, 60, 14).portrait, false);
+  // A sheet that fills the page on its own is drawn once, as it always was.
+  assert.deepEqual(tiles(287, 200), {portrait: false, cols: 1, rows: 1, count: 1});
+  // A4 itself is not a sheet cut out of anything.
+  own(`state.printSheet = "a4";`);
+  assert.equal(JSON.parse(own(`JSON.stringify(tiling())`)).count, 1);
+});
+
 test("the printer is never asked for paper it does not hold", () => {
   /* Every sheet is drawn on an A4 page. The rule the browser prints by says so
      whatever sheet is chosen, which is what keeps a home printer out of the
-     argument — no custom paper size, and nothing to scale. */
+     argument — no custom paper size, and nothing to scale. The page can be
+     turned to fit more copies on it, but it is still A4 either way round. */
   const own = load();
   const rule = () => own(`document.getElementById("pagerule").textContent`);
   for (const sheet of ["a4", "ipad11a16", "custom"]) {
     own(`state.printSheet = ${JSON.stringify(sheet)}; applyPageMargin();`);
-    assert.match(rule(), /size: A4 landscape/, sheet);
+    assert.match(rule(), /size: A4 (landscape|portrait)/, sheet);
   }
+  // Turned only to fit more, and named rather than measured.
+  own(`state.printSheet = "custom"; state.printWidth = 100;
+       state.printHeight = 60; applyPageMargin();`);
+  assert.match(rule(), /size: A4 portrait/, "the page did not turn to fit more");
+  own(`state.printSheet = "a4"; applyPageMargin();`);
+  assert.match(rule(), /size: A4 landscape/, "a whole page turned for nothing");
 });
 
 test("a group is offered by its teacher and filed under its code", () => {

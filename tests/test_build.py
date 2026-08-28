@@ -439,6 +439,20 @@ class WholePage(unittest.TestCase):
                         self.assertLessEqual(len(entry), tt.MOST_TEACHERS,
                                              "%s %s" % (s["l"], c["n"]))
 
+    def test_the_page_rule_the_script_writes_comes_last(self):
+        """Two @page rules are resolved by which is written last, not by which
+        is more specific. The stylesheet carries a copy for a browser running no
+        script, and while that copy came second the reader's paper edge was
+        worked out, drawn to, and then quietly overridden on the way to the
+        printer. Nothing on screen showed it."""
+        page, _ = build()
+        fallback = page.index("@page { size: A4 landscape; margin: 5mm; }")
+        written = page.index('<style id="pagerule">')
+        self.assertLess(fallback, written,
+                        "the script's page rule is overridden by the fallback")
+        self.assertLess(written, page.index("</head>"),
+                        "the page rule is not in the head")
+
     def test_no_break_is_named_twice_on_one_day(self):
         """A school can name a band per class, and two windows for the same
         meal can both catch the same hole. TäheTERA feeds its two halves at

@@ -219,9 +219,40 @@ const SHEET_MM = { ipad11a16: [248.6, 179.5] };
    be printed outside the paper edge. So the largest sheet is the page less that
    edge at each end, which means the paper edge caps the sheet without ever
    shrinking one that already fits: a line at 248.6mm stays 248.6mm whatever the
-   edge is set to, and only moves further in from the paper. */
-const SHEET_MIN = 100;
+   edge is set to, and only moves further in from the paper.
+
+   Fifty at the small end. A week fits in 60mm of height at about eight point,
+   which is a wallet card rather than a smudge, and the preview says plainly
+   what anything smaller looks like. */
+const SHEET_MIN = 50;
 const sheetLimit = () => [297 - 2 * state.printMargin, 210 - 2 * state.printMargin];
+
+/* How many copies of the sheet fit on one page, and which way round to turn
+   the paper for it.
+
+   A sheet smaller than the page leaves the rest of it blank, and somebody who
+   asked for a card a third the size of the paper wants more than one card. So
+   the page is filled, and the paper is turned when turning it fits more:
+   100 by 60 gets six copies across a landscape page and eight down a portrait
+   one. Neither way round always wins, which is why this counts both.
+
+   A tie keeps landscape, which is the timetable's own shape and what a page
+   with nothing to tile has always used. */
+function tiling() {
+  const cut = cutSheet();
+  if (!cut) return { cols: 1, rows: 1, count: 1, portrait: false };
+  const [w, h] = cut, edge = 2 * state.printMargin;
+  const grid = (pw, ph) => {
+    const cols = Math.floor((pw - edge) / w), rows = Math.floor((ph - edge) / h);
+    return { cols, rows, count: Math.max(0, cols) * Math.max(0, rows) };
+  };
+  const flat = grid(297, 210), tall = grid(210, 297);
+  const best = tall.count > flat.count ? tall : flat;
+  /* A sheet that fits neither way round is still drawn once, so the reader
+     sees what they asked for rather than an empty page. */
+  if (!best.count) return { cols: 1, rows: 1, count: 1, portrait: false };
+  return Object.assign({ portrait: best === tall }, best);
+}
 /* Millimetres of white kept between the type and the cut line, so a scissors
    that wanders by a hair does not take a room number with it. */
 const CUT_PAD = 2.5;
@@ -1953,6 +1984,7 @@ function render() {
       t("lessonCount", drawn.length) + (parsed.events.length ?
         " · " + t("mineCount", parsed.events.length) : "");
     if (!keepLegend) renderLegend(shown);
+    layOutTiles();
     return;
   }
 
@@ -2008,6 +2040,7 @@ function render() {
     (parsed.events.length ? " · " + t("mineCount", parsed.events.length) : "") +
     (school.b ? "" : " · " + t("noBells"));
   if (!keepLegend) renderLegend(shown);
+  layOutTiles();
 }
 
 function setTextColor(subject, value, redraw) {
@@ -2439,8 +2472,12 @@ function renderSheets() {
   document.getElementById("sheetOwn")
           .classList.toggle("off", state.printSheet !== "custom");
   /* Said where the choice is made, because it is the whole answer to "my
-     printer only holds A4". */
-  document.getElementById("cutNote").hidden = !cutSheet();
+     printer only holds A4" — and, where several fit, how many come out. */
+  const note = document.getElementById("cutNote");
+  const many = cutSheet() ? tiling().count : 0;
+  note.hidden = !cutSheet();
+  note.textContent = !cutSheet() ? ""
+    : (many > 1 ? t("sheet.cutMany", many) : t("sheet.cut"));
 }
 
 /* An @page rule is not reachable through a class or a custom property, so the
@@ -2448,7 +2485,10 @@ function renderSheets() {
    agree with it, which is why both read the one setting. */
 function applyPageMargin() {
   const rule = document.getElementById("pagerule");
-  const want = "@page { size: A4 landscape; margin: " + state.printMargin + "mm; }";
+  /* Still a named A4, only turned. So the printer is handed paper it holds
+     whatever the sheet says, and nothing is ever scaled. */
+  const want = "@page { size: A4 " + (tiling().portrait ? "portrait" : "landscape") +
+               "; margin: " + state.printMargin + "mm; }";
   if (rule.textContent !== want) rule.textContent = want;
 }
 
@@ -2466,7 +2506,13 @@ function applyCutSheet() {
   root.style.setProperty("--cutw", cut ? cut[0] + "mm" : "");
   root.style.setProperty("--cuth", cut ? cut[1] + "mm" : "");
   root.style.setProperty("--cutpad", CUT_PAD + "mm");
-  document.body.classList.toggle("cutsheet", !!cut);
+  /* One copy is the page itself; several are a block of them laid on it. The
+     two are different shapes, so they are different classes rather than one
+     with a count. */
+  const many = cut && tiling().count > 1;
+  root.style.setProperty("--cols", many ? String(tiling().cols) : "");
+  document.body.classList.toggle("cutsheet", !!cut && !many);
+  document.body.classList.toggle("tiled", !!many);
 }
 /* Clicking a lesson opens a color picker anchored under it. The input is a
    permanent hidden node, so nothing rebuilds it while the picker is open. */
@@ -2959,6 +3005,40 @@ document.getElementById("evadd").addEventListener("click", () => {
    one: the print stylesheet applied, but nothing had switched the page into
    print mode, so there was no QR code, no scaling to the sheet, and the screen
    footer. Both paths go through here now. */
+/* The finished sheet, copied across the page.
+
+   It runs after the fitter, on a box that is already the right size and scale,
+   so nothing here is measured or drawn again — the copies are the original.
+   Ids come off them: two nodes answering to `grid` would send every later
+   getElementById to whichever came first.
+
+   The originals stay in the document and are hidden, rather than moved into
+   the first tile. Moving them would take the click handler's own element out
+   from under it and put the page back together differently on every print. */
+function layOutTiles() {
+  const host = document.getElementById("tiles");
+  if (!host) return;
+  const many = printing && cutSheet() && tiling().count > 1;
+  host.hidden = !many;
+  if (!many) {
+    if (host.firstChild) host.textContent = "";
+    return;
+  }
+  const parts = [document.querySelector(".scroll"), document.getElementById("foot")];
+  host.textContent = "";
+  for (let n = 0; n < tiling().count; n++) {
+    const tile = document.createElement("div");
+    tile.className = "tile";
+    for (const part of parts) {
+      const copy = part.cloneNode(true);
+      copy.removeAttribute("id");
+      copy.querySelectorAll("[id]").forEach(el => el.removeAttribute("id"));
+      tile.appendChild(copy);
+    }
+    host.appendChild(tile);
+  }
+}
+
 function enterPrint() {
   if (printing) return;
   printing = true;

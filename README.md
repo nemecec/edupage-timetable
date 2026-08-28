@@ -578,8 +578,9 @@ period grid, which needs no times.
   it caps how large a sheet can be — the A4 page less that edge at each end, 287
   by 200 at the narrowest and 269 by 182 at the widest.
 
-  A typed size is held inside that, and to 100mm at the small end, because less
-  than that holds no week. Past either end it comes back to the largest or the
+  A typed size is held inside that, and to 50mm at the small end. A week fits in
+  60mm of height at about eight point, which is a wallet card rather than a
+  smudge, and the preview says plainly what anything smaller looks like. Past either end it comes back to the largest or the
   smallest that fits, rather than being refused: that is what the reader was
   reaching for. Widening the paper edge brings a sheet that no longer fits back
   in with it. It used to keep whatever was typed, and a sheet the size of the
@@ -590,6 +591,32 @@ period grid, which needs no times.
   would cut a sheet that does not go where the iPad goes. So a sheet that cannot
   fit must not be offered at all, and a test holds every one of them against the
   paper at the widest edge.
+
+  **A sheet smaller than the page is copied to fill it.** Somebody who asks for
+  a card a third the size of the paper wants more than one card, and the rest of
+  the page would go in the bin. So the copies are laid out in a block and the
+  note under the picker says how many: 100 by 60 gets eight.
+
+  **The paper is turned when turning it fits more.** Landscape wins for most
+  sizes and portrait for many — 100 by 60 gets six across a landscape page and
+  eight down a portrait one, while 90 by 50 gets twelve landscape against ten
+  portrait. So both are counted and the better one is used. It is still a named
+  A4 either way round, so the printer is handed paper it holds and nothing is
+  scaled.
+
+  The copies sit flush against each other with no space between them. One
+  straight cut then separates a whole row, and every line runs the full width or
+  height of the block. Space between them would mean two cuts at every boundary
+  and a strip of waste to pick off, and it would protect the type no better —
+  the room for a wandering scissors is the 2.5mm of white inside each copy,
+  which is already there. Each copy draws its own right and bottom edge and the
+  block draws its top and left, so a line between two copies is one line rather
+  than two.
+
+  The copies are made after the fitter has run, from a sheet that is already the
+  right size and scale, so nothing is measured or drawn twice. Their `id`
+  attributes come off on the way: two nodes answering to `grid` would send every
+  later `getElementById` to whichever came first.
   **Lesson colors** offers three answers for every subject: the generated
   palette, the school's own colors from aSc, or colors of your own. A click on
   any lesson in the timetable also recolors its subject. The text flips between
@@ -943,6 +970,15 @@ Some of these choices are not obvious:
   — on paper only, never in a PDF, which is the sort of thing a driver does
   with alpha it would rather not composite. Nothing is left for a driver to
   blend.
+
+  **The page rule the script writes has to come last.** Two `@page` rules are
+  resolved by which is written later, not by which is more specific. The
+  stylesheet carries a copy for a browser running no script, and while that copy
+  came second the reader's paper edge was worked out, drawn to, and then quietly
+  overridden on the way to the printer — the sheet always printed at 5mm
+  whatever the setting said. Nothing on screen showed it, because the preview
+  reads the setting rather than the rule. A test now holds the script's rule
+  after the fallback.
 
   **No gradient that reaches the sheet has a see-through stop**, and the hatch
   is only where that was learned. The half-hour rules down a day and the grey

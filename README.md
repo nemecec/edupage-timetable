@@ -71,7 +71,7 @@ The script needs the Python 3 standard library and nothing else. There is no
 pip install and no browser.
 
 For `tera` in 2026 the result is 4 schools, 40 classes and about 1,800 lesson
-slots, in a file of about 730 KB. That is 104 KB over the wire, because it
+slots, in a file of about 765 KB. That is 123 KB over the wire, because it
 compresses well.
 
     python3 -m unittest discover -s tests     # the generator
@@ -515,6 +515,52 @@ period grid, which needs no times.
   a test holds each one where it belongs. Free time lives under the day rather
   than the lesson, because it is a box the page adds where the school left a
   hole and not a label on a lesson.
+- **Calendar** is the other way of taking a week away with you, and sits next
+  to Print options for that reason. One button writes an `.ics` file holding
+  exactly what is on screen — the reader's groups, without the subjects they
+  turned off — with their own events beside the lessons unless they say
+  otherwise.
+
+  It is a file, not a connection. Nothing signs in, no key is held, nothing
+  runs nightly, and the same file opens in Google Calendar, Apple Calendar and
+  Outlook. A subscribed URL would keep itself fresh, but only by moving the
+  reader's picks onto a server, and Google refetches an external calendar on
+  its own slow schedule — half a day at best, sometimes days — so a corrected
+  timetable would sit stale and the feature would read as broken.
+
+  **The dates come from `SCHOOL_YEAR`, not from EduPage.** The timetable is a
+  repeating week and carries no dates: aSc's `terms` table is one nameless
+  entry with none, and two of the four timetables leave even the free-text
+  `Kehtivus:` line empty. So the term is written down in `tt.py`, from the
+  school's own calendar. Where a school has no dates the panel is not drawn at
+  all, because an export that guessed them would put a child in a lesson on a
+  day nobody has said there is one.
+
+  Schools do not share a start. The year opens for everyone on 24.08, but the
+  first days are spent with the class rather than on the published plan:
+  TäheTERA joins the timetable on the 27th, ProTERA on the 26th. Each also has
+  days of its own — an *iseõppepäev*, ProTERA's TERA20 aktus — on top of the
+  breaks and national holidays every school keeps. `SCHOOL_DATES` holds what
+  one school does differently, keyed the way `BELLS` is.
+
+  **An import is not a sync**, and this is the thing worth knowing. It can add
+  an event and it can correct one, but nothing in the format says *this lesson
+  is gone*, so a lesson the school drops stays in the calendar until somebody
+  removes it. Two things follow. Every recurrence stops at the end of the
+  published term, so no stale entry outlives the data behind it. And the panel
+  asks for a calendar of its own: when the timetable changes, deleting one
+  calendar and exporting again is two clicks, where weeding one is not.
+
+  A correction needs none of that. Each event is named after aSc's own id for
+  the placed lesson, so a lesson moved to another hour keeps its name and a
+  second import fixes the entry in place rather than drawing a second one
+  beside it. The class is in the name too, because one aSc lesson serves
+  several classes and a parent with two children may put both in one calendar.
+
+  The file carries Estonia's clock rule as a `VTIMEZONE`. The autumn term
+  straddles the change — the clocks go back the day before the autumn break —
+  so without it every lesson after October is an hour out.
+
 - **Print options** is a section of its own, beside Display options. Everything
   in it changes nothing until the sheet comes out of the printer, which is a
   different question from what the reader is looking at on screen. It held a row
@@ -930,6 +976,7 @@ paste lands.
   "showDuration": true,
   "showGaps": true,
   "showQr": false,
+  "calMine": true,
   "printMargin": 5,
   "printSheet": "a4",
   "printWidth": 210,

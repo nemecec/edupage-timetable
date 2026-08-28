@@ -349,6 +349,56 @@ class TwoQuestionsInOnePicker(unittest.TestCase):
         self.assertEqual([d["groups"] for d in got], [["I A", "I B"], ["I A"]])
 
 
+class TheTermTheExportCovers(unittest.TestCase):
+    """Dates for the calendar file. Nothing else on the page needs any."""
+
+    def test_it_takes_out_the_school_days_and_leaves_the_rest(self):
+        got = tt.term_days({"start": "2026-08-24", "end": "2026-12-18",
+                            "off": [("2026-10-26", "2026-11-01", "Sügis")]})
+        self.assertEqual(got[:2], ("2026-08-24", "2026-12-18"))
+        # Monday to Friday of that week. The weekend was never a school day and
+        # taking it out would say a lesson was cancelled that never ran.
+        self.assertEqual(got[2], ["2026-10-26", "2026-10-27", "2026-10-28",
+                                  "2026-10-29", "2026-10-30"])
+
+    def test_a_day_off_outside_the_window_costs_nothing(self):
+        """The winter break opens after this timetable stops, and the August
+        holiday falls before it starts. Both are in the config so the next
+        timetable needs only its own two dates."""
+        got = tt.term_days({"start": "2026-08-24", "end": "2026-12-18",
+                            "off": [("2026-12-21", "2027-01-04", "Jõulu"),
+                                    ("2026-08-20", "2026-08-20", "Taas")]})
+        self.assertEqual(got[2], [])
+
+    def test_no_dates_means_no_export(self):
+        for year in ({}, None, {"start": "2026-08-24"}, {"end": "2026-12-18"}):
+            self.assertIsNone(tt.term_days(year), year)
+        # And a window that runs backwards is not a window.
+        self.assertIsNone(tt.term_days({"start": "2026-12-18",
+                                        "end": "2026-08-24", "off": []}))
+
+    def test_each_school_opens_its_week_on_its_own_day(self):
+        """The year starts for everyone on 24.08, but the timetable does not:
+        the first days are spent with the class. TäheTERA joins the plan on the
+        27th and ProTERA on the 26th, and a school that has said nothing keeps
+        the year's first day."""
+        self.assertEqual(tt.year_for_school("TäheTERA", "")["start"], "2026-08-27")
+        self.assertEqual(tt.year_for_school("ProTERA ja TERA gümnaasium", "")["start"],
+                         "2026-08-26")
+        self.assertEqual(tt.year_for_school("SädeTERA", "")["start"],
+                         tt.SCHOOL_YEAR["start"])
+
+    def test_a_schools_own_days_off_are_added_to_the_shared_ones(self):
+        """Not instead of them: TäheTERA's self-study day is one more day
+        without lessons, and it still keeps every break the school publishes."""
+        _, _, off = tt.term_days(tt.year_for_school("TäheTERA", ""))
+        self.assertIn("2026-09-21", off, "the iseõppepäev")
+        self.assertIn("2026-10-26", off, "and the autumn break with it")
+        _, _, protera = tt.term_days(tt.year_for_school("ProTERA", ""))
+        self.assertIn("2026-08-31", protera, "the TERA20 aktus")
+        self.assertNotIn("2026-09-21", protera, "which is TäheTERA's day, not this one")
+
+
 class MergingABlock(unittest.TestCase):
     """A published block holding two subjects in sequence is one box."""
 

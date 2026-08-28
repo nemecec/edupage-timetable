@@ -639,6 +639,58 @@ class TheControls(InABrowser):
         self.assertEqual(got["name"], "")
         self.assertNotIn("klass", json.loads(got["box"]))
 
+    def test_the_calendar_button_hands_over_a_file(self):
+        """The whole download path, which nothing else reaches: a Blob, an
+        anchor with a download name, and the click that starts it. Everything
+        around it is tested under the stub, and none of it exists there."""
+        self.show("103", "5.l")
+        got = self.js(
+            "var seen = null;"
+            "var made = URL.createObjectURL, freed = 0;"
+            "URL.createObjectURL = function (blob) { seen = blob; return 'blob:x'; };"
+            "URL.revokeObjectURL = function () { freed += 1; };"
+            "var href = null, name = null, clicked = 0;"
+            "var add = document.body.appendChild.bind(document.body);"
+            "document.body.appendChild = function (node) {"
+            "  if (node.tagName === 'A') {"
+            "    href = node.href; name = node.download;"
+            "    node.click = function () { clicked += 1; };"
+            "  }"
+            "  return add(node);"
+            "};"
+            "document.getElementById('calGet').click();"
+            "URL.createObjectURL = made;"
+            "return {href: href, name: name, clicked: clicked,"
+            "        type: seen && seen.type, size: seen && seen.size,"
+            "        left: document.querySelectorAll('body > a[download]').length};")
+        self.assertEqual(got["clicked"], 1, "the download was never started")
+        self.assertEqual(got["href"], "blob:x")
+        self.assertEqual(got["type"], "text/calendar")
+        self.assertGreater(got["size"], 1000, "an empty calendar")
+        self.assertTrue(got["name"].endswith(".ics"), got["name"])
+        # The class is in the name, because a parent with two children tells
+        # the two calendars apart by it and nothing else.
+        self.assertIn("5-l", got["name"])
+        self.assertEqual(got["left"], 0, "the anchor was left on the page")
+
+    def test_a_school_with_no_term_dates_is_offered_no_calendar(self):
+        """An export with guessed dates would put a child in a lesson on a day
+        nobody has said there is one, so the panel goes rather than the
+        button."""
+        self.show("103", "5.l")
+        got = self.js(
+            "var was = currentSchool().cal;"
+            "delete currentSchool().cal;"
+            "render();"
+            "var gone = document.getElementById('calendarPanel').hidden;"
+            "var empty = icsFile(true);"
+            "currentSchool().cal = was; render();"
+            "return {gone: gone, empty: empty,"
+            "        back: document.getElementById('calendarPanel').hidden};")
+        self.assertTrue(got["gone"], "the panel stayed with nothing behind it")
+        self.assertEqual(got["empty"], "", "a file was built with no dates")
+        self.assertFalse(got["back"], "the panel did not come back")
+
     def test_a_subject_row_can_be_switched_off_and_back_on(self):
         """Through the checkbox, not through the function behind it."""
         self.show("68", "8")

@@ -95,6 +95,11 @@ const defaults = () => ({
      that is where anybody gets a timetable of their own. */
   showQr: false,
 
+  /* Whether the calendar file carries the reader's own events as well as the
+     school's lessons. On, because somebody who has written them down wants
+     them where their week is. */
+  calMine: true,
+
   /* Millimetres of paper left blank around the sheet. Five is about as narrow
      as a laser printer will take without clipping, and every millimetre saved
      is a millimetre the timetable can use — which on a tight class is the
@@ -1952,6 +1957,276 @@ function footHeight() {
          (parseFloat(s.marginTop) || 0) + (parseFloat(s.marginBottom) || 0);
 }
 
+/* ----- the calendar file ---------------------------------------------------
+   The reader's own week as one .ics they import. Everything here is text: no
+   account, no key, nothing running nightly, and the same file opens in Google
+   Calendar, Apple Calendar and Outlook.
+
+   The timetable is a repeating week and carries no dates of its own, so the
+   window comes from the school's `cal` — see SCHOOL_YEAR in tt.py. A school
+   with none is offered no export.
+
+   An import is not a sync. It can add an event and it can correct one, but
+   nothing in the format says "this lesson is gone", so a lesson the school
+   drops stays until somebody removes it. That is why every recurrence stops at
+   the end of the published term, and why the panel asks for a calendar of its
+   own: replacing one is two clicks, weeding one is not.                     */
+
+const ICS_TZ = "Europe/Tallinn";
+
+/* The last Sunday of a month, which is where the EU moves its clocks. */
+function lastSunday(year, month) {
+  const end = new Date(Date.UTC(year, month, 0));   // day 0 is the month's last
+  return end.getUTCDate() - end.getUTCDay();
+}
+
+/* Whether a school day is on summer time. Estonia goes forward on the last
+   Sunday of March and back on the last Sunday of October, and the file carries
+   the same rule as a VTIMEZONE. A lesson never falls on either Sunday, so the
+   boundary needs no care about the hour. The autumn term straddles the change
+   — the clocks go back the day before the autumn break — so this is not
+   theoretical: without it every lesson after October is an hour out. */
+function summerTime(day) {
+  const y = day.getUTCFullYear(), m = day.getUTCMonth() + 1;
+  if (m > 3 && m < 10) return true;
+  if (m === 3) return day.getUTCDate() >= lastSunday(y, 3);
+  if (m === 10) return day.getUTCDate() < lastSunday(y, 10);
+  return false;
+}
+
+/* Dates are held at UTC midnight and read with getUTC*, never with the local
+   accessors: the reader's browser can be in any zone, and a page opened in
+   Perth must write the same file as one opened in Tartu. */
+function icsDay(iso) {
+  const parts = String(iso).split("-").map(Number);
+  return new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
+}
+
+const pad2 = (n) => String(n).padStart(2, "0");
+const ymd = (d) => String(d.getUTCFullYear()) + pad2(d.getUTCMonth() + 1) +
+                   pad2(d.getUTCDate());
+
+/* A local wall-clock stamp, which is what a TZID value carries. */
+function stampLocal(day, minutes) {
+  return ymd(day) + "T" + pad2(Math.floor(minutes / 60)) + pad2(minutes % 60) + "00";
+}
+
+/* The same instant in UTC, which is the only form a recurrence may stop at. */
+function stampUtc(day, minutes) {
+  const z = new Date(Date.UTC(day.getUTCFullYear(), day.getUTCMonth(),
+                              day.getUTCDate(), 0,
+                              minutes - (summerTime(day) ? 180 : 120)));
+  return ymd(z) + "T" + pad2(z.getUTCHours()) + pad2(z.getUTCMinutes()) + "00Z";
+}
+
+/* Monday is day 0 here and 1 in getUTCDay, which is the only place the two
+   disagree. */
+const weekdayOf = (dayIdx) => (dayIdx + 1) % 7;
+
+function firstOnOrAfter(from, dayIdx) {
+  const out = new Date(from.getTime());
+  out.setUTCDate(out.getUTCDate() + (weekdayOf(dayIdx) - out.getUTCDay() + 7) % 7);
+  return out;
+}
+
+function lastOnOrBefore(until, dayIdx) {
+  const out = new Date(until.getTime());
+  out.setUTCDate(out.getUTCDate() - (out.getUTCDay() - weekdayOf(dayIdx) + 7) % 7);
+  return out;
+}
+
+/* A list of names as one field. The school's rooms and teachers carry stray
+   spaces — "406 ", "Öebius  Sandra-Ly" — which the sheet hides and a calendar
+   field would keep. */
+const icsList = (values, join) =>
+  (values || []).map(x => String(x).replace(/\s+/g, " ").trim())
+                .filter(Boolean).join(join);
+
+/* A value, with the four characters the format reserves taken out of it. */
+function icsText(value) {
+  return String(value == null ? "" : value)
+    .replace(/\\/g, "\\\\").replace(/;/g, "\\;")
+    .replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
+}
+
+/* A line is at most 75 octets, and what will not fit goes on continuation
+   lines that open with a space. The count is of octets and never of
+   characters: Estonian subject names are multi-byte, and folded by character a
+   line can break inside a letter and arrive as two broken ones. */
+function icsFold(line) {
+  const bytes = new TextEncoder().encode(line);
+  if (bytes.length <= 75) return line;
+  const decoder = new TextDecoder(), out = [];
+  let at = 0, room = 75;
+  while (at < bytes.length) {
+    let take = Math.min(room, bytes.length - at);
+    /* Back off to the start of a character. A continuation octet is 10xxxxxx,
+       so step back while the next one is still inside a letter. */
+    while (take > 1 && at + take < bytes.length &&
+           (bytes[at + take] & 0xC0) === 0x80) take--;
+    out.push(decoder.decode(bytes.slice(at, at + take)));
+    at += take;
+    room = 74;                   // a continuation gives one octet to its space
+  }
+  return out.join("\r\n ");
+}
+
+/* Something that survives being an identifier. aSc writes "*117" and a class
+   can be "1. S", and neither belongs in a UID as it stands. */
+const icsSafe = (value) => String(value).replace(/[^A-Za-z0-9]+/g, "-")
+                                        .replace(/^-+|-+$/g, "") || "x";
+
+/* Why importing the same file twice does not draw the week twice.
+
+   The identifier is the school's own id for the placed lesson, so a lesson
+   moved to another hour keeps it and a second import corrects the entry rather
+   than adding one beside it. The class is in it as well, because one aSc
+   lesson serves several classes at once and a parent with two children may put
+   both in one calendar. */
+function icsUid(school, cls, entry) {
+  return icsSafe(entry.i || (entry.s + "-" + entry.d + "-" + entry.p)) +
+         "-" + entry.d + "-" + icsSafe(school.n) + "-" + icsSafe(cls.n) +
+         "@little.tools";
+}
+
+/* A number that goes up when the timetable is rebuilt, so a calendar takes the
+   second file as a correction of the first rather than as old news. */
+function icsSequence() {
+  const built = icsDay(DATA.built || "");
+  return isNaN(built.getTime()) ? 0
+    : Math.max(0, Math.round((built.getTime() - Date.UTC(2026, 0, 1)) / 86400000));
+}
+
+/* One repeating lesson: its first sitting, and the weeks it skips. */
+function icsRepeat(dayIdx, from, to, off) {
+  const first = firstOnOrAfter(from, dayIdx), last = lastOnOrBefore(to, dayIdx);
+  if (first > last) return null;             // never sits inside the term
+  return {
+    first: first, last: last,
+    skip: off.map(icsDay).filter(day => day.getUTCDay() === weekdayOf(dayIdx) &&
+                                        day >= first && day <= last),
+  };
+}
+
+/* One event, as the lines it is made of. Empty fields are left out rather than
+   written blank: a calendar shows an empty LOCATION as an empty line. */
+function icsEvent(uid, when, a, z, summary, where, note, stampNow, sequence) {
+  const lines = [
+    "BEGIN:VEVENT",
+    "UID:" + uid,
+    "DTSTAMP:" + stampNow,
+    "SEQUENCE:" + sequence,
+    "DTSTART;TZID=" + ICS_TZ + ":" + stampLocal(when.first, a),
+    "DTEND;TZID=" + ICS_TZ + ":" + stampLocal(when.first, z),
+    "RRULE:FREQ=WEEKLY;UNTIL=" + stampUtc(when.last, a),
+  ];
+  if (when.skip.length) {
+    lines.push("EXDATE;TZID=" + ICS_TZ + ":" +
+               when.skip.map(day => stampLocal(day, a)).join(","));
+  }
+  lines.push("SUMMARY:" + icsText(summary));
+  if (where) lines.push("LOCATION:" + icsText(where));
+  if (note) lines.push("DESCRIPTION:" + icsText(note));
+  lines.push("END:VEVENT");
+  return lines;
+}
+
+/* Estonia's clock rule, written the way a calendar reads it. Without this the
+   file says "09:00 in Europe/Tallinn" to a program that may not know the zone,
+   and the hour after October is anyone's guess. */
+const ICS_VTIMEZONE = [
+  "BEGIN:VTIMEZONE",
+  "TZID:" + ICS_TZ,
+  "BEGIN:STANDARD",
+  "DTSTART:19701025T040000",
+  "RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU",
+  "TZOFFSETFROM:+0300",
+  "TZOFFSETTO:+0200",
+  "TZNAME:EET",
+  "END:STANDARD",
+  "BEGIN:DAYLIGHT",
+  "DTSTART:19700329T030000",
+  "RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU",
+  "TZOFFSETFROM:+0200",
+  "TZOFFSETTO:+0300",
+  "TZNAME:EEST",
+  "END:DAYLIGHT",
+  "END:VTIMEZONE",
+];
+
+/* Which lessons go in: exactly the ones on screen. The reader's groups, and
+   nothing they have turned off. A lesson with no clock cannot be an event, and
+   a continuation row is the same lesson a second time. */
+function icsLessons(school, cls) {
+  const picked = mine().studyGroups;
+  return cls.e.filter(e => !e.c && e.a != null && e.z != null &&
+                           !hidden(e.s) && visible(e, picked, cls.v));
+}
+
+/* The whole file. Times come from the timetable, dates from the school's term,
+   and the words from whatever the reader has renamed things to — a calendar
+   they cannot read in their own words is no better than the sheet. */
+function icsFile(withMine) {
+  const school = currentSchool(), cls = currentClass(), term = school.cal;
+  if (!term) return "";
+  const from = icsDay(term.a), to = icsDay(term.z), off = term.x || [];
+  const now = new Date();
+  const stampNow = ymd(now) + "T" + pad2(now.getUTCHours()) +
+                   pad2(now.getUTCMinutes()) + pad2(now.getUTCSeconds()) + "Z";
+  const sequence = icsSequence();
+  let body = [];
+
+  for (const e of icsLessons(school, cls)) {
+    const when = icsRepeat(e.d, from, to, off);
+    if (!when) continue;
+    const note = [icsList(teacherNames(e, "full"), " / "), icsList(e.g, "/")]
+                 .filter(Boolean).join(" · ");
+    body = body.concat(icsEvent(icsUid(school, cls, e), when, e.a, e.z,
+                                subjectName(e, false), icsList(e.r, " / "), note,
+                                stampNow, sequence));
+  }
+
+  if (withMine) {
+    readEvents(mine().events).events.forEach((ev, i) => {
+      const when = icsRepeat(ev.day, from, to, off);
+      if (!when) return;
+      /* The reader's own events have no id of their own, so the row they sit
+         on is the identity. Reordering the table renames them, which costs one
+         stale entry in a calendar that is replaced wholesale anyway. */
+      const uid = "own-" + i + "-" + ev.day + "-" + icsSafe(school.n) + "-" +
+                  icsSafe(cls.n) + "@little.tools";
+      body = body.concat(icsEvent(uid, when, ev.a, ev.z, ev.label, "",
+                                  ev.note, stampNow, sequence));
+    });
+  }
+
+  const head = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//little.tools//timetable//ET",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    "X-WR-CALNAME:" + icsText(icsCalendarName()),
+    "X-WR-TIMEZONE:" + ICS_TZ,
+  ];
+  return head.concat(ICS_VTIMEZONE, body, ["END:VCALENDAR"])
+             .map(icsFold).join("\r\n") + "\r\n";
+}
+
+/* What the calendar and the file are called. Google offers the file's name
+   when it makes a calendar, so this is what the reader will see in the list —
+   and with two children in two classes, the class is the thing that tells them
+   apart. */
+function icsCalendarName() {
+  const cls = currentClass();
+  return t("cal.name", classLabel(cls));
+}
+
+function icsFileName() {
+  const term = currentSchool().cal || {};
+  return icsSafe(icsCalendarName()).toLowerCase() + "-" + (term.a || "") + ".ics";
+}
+
 /* Repaint the grid but leave the legend alone. Its color inputs are live DOM
    nodes, and replacing one while the native picker is open closes the picker —
    which made the swatches impossible to use. */
@@ -2342,6 +2617,31 @@ function bindChoice(name, key) {
 ["showStudentName", "showSchoolName", "showClassName",
  "showTeacher", "showRoom", "showGroup", "showSubject",
  "showDuration", "showGaps", "showQr"].forEach(key => bindToggle(key, key));
+/* Not through bindToggle: nothing on screen changes, so a redraw would be a
+   redraw for nothing. */
+document.getElementById("calMine").addEventListener("change", (ev) => {
+  state.calMine = ev.target.checked;
+  save();
+});
+
+/* The file is built when it is asked for, never before: it is the only thing
+   on the page that costs anything to make and is wanted once a term. */
+document.getElementById("calGet").addEventListener("click", () => {
+  const text = icsFile(state.calMine !== false);
+  if (!text) return;
+  /* A blob rather than a data: URL — a term of lessons runs past what some
+     browsers will take in one. */
+  const url = URL.createObjectURL(new Blob([text], { type: "text/calendar" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = icsFileName();
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  /* Freed on the next turn of the loop, not this one: revoking it while the
+     click is still being handled cancels the download in some browsers. */
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+});
 /* Six selects, two per kind of type. Every one of them writes one setting and
    redraws, so they are bound in a loop rather than one at a time. */
 for (const role of ["time", "name", "detail"]) {
@@ -2397,12 +2697,34 @@ bindChoice("subjectColorStyle", "subjectColorStyle");
 /* The controls follow the state, and the two that only make sense alongside
    something else — how to write a name, which colors to pick — dim or vanish
    when that something is switched off. */
+/* The Calendar panel, and the dates it says it covers.
+
+   A school that has published none gets no panel at all rather than a button
+   that cannot do anything: an export with guessed dates would put a child in
+   a lesson on a day nobody has said there is one. */
+function showCalendarPanel() {
+  const panel = document.getElementById("calendarPanel");
+  const term = currentSchool().cal;
+  panel.hidden = !term;
+  if (!term) return;
+  document.getElementById("calCovers").textContent =
+    t("cal.covers", plainDate(term.a), plainDate(term.z));
+}
+
+/* An ISO date the way it is written in Estonia. Only the calendar panel says a
+   date at all — everywhere else the page speaks in weekdays and clock times. */
+function plainDate(iso) {
+  const p = String(iso).split("-");
+  return p.length === 3 ? p[2] + "." + p[1] + "." + p[0] : String(iso);
+}
+
 function syncDisplayControls() {
   for (const key of ["showStudentName", "showSchoolName", "showClassName",
                      "showTeacher", "showRoom", "showGroup", "showSubject",
-                     "showDuration", "showGaps", "showQr"]) {
+                     "showDuration", "showGaps", "showQr", "calMine"]) {
     document.getElementById(key).checked = !!state[key];
   }
+  showCalendarPanel();
   for (const name of ["teacherNameStyle", "teacherNameOrder",
                       "subjectNameStyle", "subjectColorStyle"]) {
     const key = name;

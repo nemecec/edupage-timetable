@@ -1095,13 +1095,13 @@ class Documentation(unittest.TestCase):
         page, _ = build()
         raw, wire = len(page.encode("utf-8")), len(gzip.compress(page.encode("utf-8"), 9))
         # Within a tolerance, since the school's own data moves it about.
-        self.assertLess(abs(raw / 1024 - 700), 60, "%.0f KB raw" % (raw / 1024))
-        self.assertLess(abs(wire / 1024 - 104), 12, "%.0f KB over the wire" % (wire / 1024))
+        self.assertLess(abs(raw / 1024 - 760), 60, "%.0f KB raw" % (raw / 1024))
+        self.assertLess(abs(wire / 1024 - 123), 12, "%.0f KB over the wire" % (wire / 1024))
         # The main README is where the size is quoted. The deploy notes are
         # about bringing it up, and the site's own repository has no idea how
         # large any tool on it is.
         with open(os.path.join(ROOT, "README.md"), encoding="utf-8") as fh:
-            self.assertIn("104 KB", fh.read())
+            self.assertIn("123 KB", fh.read())
 
     def test_the_interface_is_british_and_the_code_is_american(self):
         """Two spellings, each in its own place.

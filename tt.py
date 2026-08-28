@@ -77,6 +77,15 @@ STRINGS = {
         "school": "School", "class": "Class", "classN": "class {0}",
         "display": "Display options",
         "print.summary": "Print options",
+        "cal.summary": "Calendar",
+        "cal.covers": "Covers {0} to {1}",
+        "cal.mine": "Include my own events",
+        "cal.download": "Download calendar file",
+        "cal.name": "Timetable {0}",
+        "cal.advice": "Import this into a new calendar of its own. A calendar "
+                      "cannot be told that a lesson has gone, so when the "
+                      "timetable changes, delete that calendar and export "
+                      "again.",
         "advanced": "Save and restore settings",
         "showHeading": "For each lesson, show:",
         "dayHeading": "In the day, show:",
@@ -240,6 +249,14 @@ STRINGS = {
         "school": "Kool", "class": "Klass", "classN": "{0}. klass",
         "display": "Kuvamise seaded",
         "print.summary": "Väljatrüki seaded",
+        "cal.summary": "Kalender",
+        "cal.covers": "Katab {0} kuni {1}",
+        "cal.mine": "Lisa ka minu enda sündmused",
+        "cal.download": "Laadi kalendrifail alla",
+        "cal.name": "Tunniplaan {0}",
+        "cal.advice": "Impordi see eraldi uude kalendrisse. Kalendrile ei saa "
+                      "öelda, et tund on ära jäänud, seega kui tunniplaan "
+                      "muutub, kustuta see kalender ja ekspordi uuesti.",
         "advanced": "Seadete salvestamine ja taastamine",
         "showHeading": "Iga tunni juures näita:",
         "dayHeading": "Päevas näita:",
@@ -423,6 +440,88 @@ LANGUAGES = [("en", "English"), ("et", "Eesti")]
 # published combination included.
 #
 # To add a school: key by any substring of its timetable title.
+
+# When the published timetable is in force, and which days inside it are not
+# school days. Needed only by the calendar export: everything else on the page
+# is a repeating week and never asks what date it is.
+#
+# aSc carries none of this. Its `terms` table is one nameless "Semester 1" with
+# no dates at all, and two of the four timetables leave even the free-text
+# "Kehtivus:" line empty. So the dates are written here, from the school's own
+# calendar and from what the schools tell parents.
+#
+# Source: tartuerakool.ee/<school>/koolielu/ and /tera-gumnaasium/, 28.08.2026.
+SCHOOL_YEAR = {
+    # "Kooliaasta algus on 24. augustil." The first days are not on the
+    # timetable, though — see FIRST_LESSONS. This is the fallback for a school
+    # that has not said which day its own week starts on.
+    "start": "2026-08-24",
+    # The last day this timetable covers. EduPage says so itself for two of the
+    # four — "Kehtivus: 24/08/2026-18/12/2026" — and the winter break settles
+    # the other two, because it opens on Monday 21.12 and leaves Friday 18.12
+    # as the last teaching day either way.
+    #
+    # The gümnaasium's first half-year runs to 17.01.2027, past this date. What
+    # it teaches between the winter break and then is not in this timetable, so
+    # the export stops here rather than inventing a fortnight. A reader whose
+    # school publishes a new plan exports again.
+    "end": "2026-12-18",
+    # Whole days with no lessons, as ranges, ends included. Every break the
+    # school publishes is here and every national holiday of both years, not
+    # only the ones that bite: then a new timetable needs no more than its own
+    # two dates above. Only the autumn break falls inside the window as it
+    # stands — the winter break opens after the last day, 20.08 falls before
+    # the first, and the rest are next year's.
+    "off": [
+        ("2026-10-26", "2026-11-01", "Sügisvaheaeg"),
+        ("2026-12-21", "2027-01-04", "Jõuluvaheaeg"),
+        ("2027-02-22", "2027-02-28", "Talvevaheaeg"),
+        ("2027-04-12", "2027-04-18", "Kevadvaheaeg"),
+        ("2027-06-02", "2027-08-31", "Suvevaheaeg"),
+        # Riigipühad. Christmas and Midsummer sit inside a break already; these
+        # are the ones that would otherwise fall on a school day.
+        ("2026-08-20", "2026-08-20", "Taasiseseisvumispäev"),
+        ("2027-02-24", "2027-02-24", "Iseseisvuspäev"),
+        ("2027-03-26", "2027-03-26", "Suur reede"),
+        ("2027-05-01", "2027-05-01", "Kevadpüha"),
+        ("2027-06-23", "2027-06-23", "Võidupüha"),
+        ("2027-06-24", "2027-06-24", "Jaanipäev"),
+    ],
+}
+
+# What one school does that the others do not. Keyed the way BELLS is.
+#
+# The year opens before the timetable does: the first days are spent with the
+# class rather than on the published plan, and each school starts its own week
+# on its own day. A school missing here falls back to SCHOOL_YEAR, which is the
+# year's first day and so the earliest the week could start.
+#
+# Source: the schools, through parents. Both entries below are first-hand;
+# SädeTERA and LõunaTERA have said nothing, and their readers get the fallback.
+SCHOOL_DATES = {
+    "TäheTERA": {
+        "start": "2026-08-27",
+        "off": [
+            # Iseõppepäevad: the class works, but not at school and not to this
+            # plan, so the day carries no lesson.
+            ("2026-09-21", "2026-09-21", "Iseõppepäev"),
+            ("2027-01-05", "2027-01-05", "Iseõppepäev"),
+            ("2027-03-25", "2027-03-25", "Iseõppepäev"),
+        ],
+    },
+    # This one also reaches the gümnaasium, which shares ProTERA's timetable
+    # and is matched by the same name. Whether the gümnaasium keeps the same
+    # two days has not been confirmed.
+    "ProTERA": {
+        "start": "2026-08-26",
+        "off": [
+            # "Sellel päeval õppetunde ei toimu" — the TERA20 aktus.
+            ("2026-08-31", "2026-08-31", "TERA20 aktus"),
+            ("2027-01-05", "2027-01-05", "Iseõppepäev"),
+        ],
+    },
+}
+
 
 BELLS = {
     "ProTERA": {
@@ -1563,6 +1662,11 @@ def extract(result, class_name, n_periods=None, cfg=None, period_times=None,
         if not grp and lesson["id"] in unnamed:
             grp = [unnamed[lesson["id"]][0]]
         base = {
+            # aSc's own id for this placed lesson. Nothing on the page shows
+            # it; the calendar export names its events after it, so a lesson
+            # the school later moves keeps its identity and a second import
+            # corrects the entry instead of drawing a second one beside it.
+            "card": card["id"],
             "subject": subject.get("name", "?"),
             "subjectShort": subject.get("short", "?"),
             "schoolColor": subject.get("color", ""),
@@ -2169,6 +2273,49 @@ HEX_COLOR = re.compile(r"^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$")
 SUBJECT_PREFIXES = ("Gümn ",)
 
 
+def year_for_school(label, text):
+    """The year one school keeps: the shared one, with its own dates over it.
+
+    Matched the way bell_config matches, so "ProTERA ja TERA gümnaasium" finds
+    ProTERA. A school that has told us nothing keeps the shared dates.
+    """
+    year = dict(SCHOOL_YEAR)
+    for key, mine in SCHOOL_DATES.items():
+        if key.casefold() in (label or "").casefold() or \
+           key.casefold() in (text or "").casefold():
+            year = dict(year, **mine)
+            year["off"] = list(SCHOOL_YEAR["off"]) + list(mine.get("off", ()))
+            break
+    return year
+
+
+def term_days(year):
+    """The window the export covers, and the school days taken out of it.
+
+    Returns (start, end, [dates off]) as ISO strings, or None where no dates
+    are written down — which is also what nothing at all answers, so a school
+    with no year is asked about the same way as one with half of one. The dates
+    off are only the ones that cost a lesson: inside the window, and on a
+    weekday, because a Saturday holiday takes nothing away from a timetable
+    that never runs then.
+    """
+    if not (year or {}).get("start") or not (year or {}).get("end"):
+        return None
+    start = datetime.date.fromisoformat(year["start"])
+    end = datetime.date.fromisoformat(year["end"])
+    if end < start:
+        return None
+    off = set()
+    for first, last, _ in year.get("off", ()):
+        day = datetime.date.fromisoformat(first)
+        stop = datetime.date.fromisoformat(last)
+        while day <= stop:
+            if start <= day <= end and day.weekday() < 5:
+                off.add(day.isoformat())
+            day += datetime.timedelta(days=1)
+    return year["start"], year["end"], sorted(off)
+
+
 def plain_subject(name):
     """The subject's name without the prefix its own timetable puts on it."""
     for prefix in SUBJECT_PREFIXES:
@@ -2250,6 +2397,15 @@ def compact(schools):
             "sj": subject_meta.get(school["ttNum"], {}),
             "n": school["ttNum"],
             "l": school["label"],
+            # What the calendar export covers: first day, last day, and the
+            # school days taken out between them. Per school, because they do
+            # not open their weeks on the same day. Absent where no dates are
+            # written down, and then that school offers no export at all.
+            **({"cal": dict(zip(("a", "z", "x"),
+                                term_days(year_for_school(school["label"],
+                                                          school["text"]))))}
+               if term_days(year_for_school(school["label"], school["text"]))
+               else {}),
             "t": school["text"],
             "v": school["validity"],
             "d": [{"i": d["idx"], "n": d["name"]} for d in school["days"]],
@@ -2307,6 +2463,8 @@ def compact(schools):
                     "o": 1 if e.get("offSlot") else 0,
                     "B": 1 if e.get("isBreak") else 0,
                     "a": e.get("startMin"), "z": e.get("endMin"),
+                    # Only the calendar export reads this. See `card` above.
+                    "i": e.get("card", ""),
                 } for e in cls["entries"]],
             } for cls in school["classes"]],
         })
@@ -3045,6 +3203,28 @@ PAGE = """<!DOCTYPE html>
         </div>
       </div>
       <p class="sub help" id="cutNote" hidden></p>
+    </div>
+  </div>
+</details>
+
+<!-- Next to Print, because the two are the page's ways of taking a week
+     away with you. Hidden whole where the school has published no dates: an
+     export that guessed them would be worse than none. -->
+<details class="panel" id="calendarPanel">
+  <summary data-i18n="cal.summary"></summary>
+  <div class="row">
+    <div class="field" style="width:100%">
+      <div class="checklist">
+        <div class="line"><span class="sub" id="calCovers"></span></div>
+        <div class="line">
+          <label class="inline"><input type="checkbox" id="calMine">
+            <span data-i18n="cal.mine"></span></label>
+        </div>
+        <div class="line">
+          <button id="calGet" data-i18n="cal.download"></button>
+        </div>
+      </div>
+      <p class="sub help" data-i18n="cal.advice"></p>
     </div>
   </div>
 </details>

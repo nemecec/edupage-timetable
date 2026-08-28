@@ -428,6 +428,100 @@ test("a division carrying several subjects still filters all of them", () => {
   assert.equal(run(`visible({s: "Prantsuse keel", g: ["PK"]}, ${picks}, ${divisions})`), false);
 });
 
+const BS = String.fromCharCode(92);   // one backslash, unambiguously
+const CRLF = "\r\n";
+
+test("a lesson repeats weekly and stops at the end of the term", () => {
+  /* The whole of the calendar export in one shape: when the first sitting is,
+     when the last one is, and which weeks it skips. */
+  const term = `{a: "2026-08-27", z: "2026-12-18",
+                 x: ["2026-09-21", "2026-10-26", "2026-10-27", "2026-10-28",
+                     "2026-10-29", "2026-10-30"]}`;
+  // Monday. The term opens on a Thursday, so the first Monday is the 31st.
+  const mon = json(`icsRepeat(0, icsDay("2026-08-27"), icsDay("2026-12-18"),
+                              ${term}.x)`);
+  assert.equal(json(`stampLocal(icsDay("${mon.first.slice(0,10)}"), 540)`),
+               "20260831T090000", "the first Monday of the term");
+  // Only the Mondays are skipped, and only the ones inside the term.
+  assert.deepEqual(mon.skip.map(d => d.slice(0, 10)),
+                   ["2026-09-21", "2026-10-26"]);
+  // Friday: its last sitting is the term's own last day.
+  const fri = json(`icsRepeat(4, icsDay("2026-08-27"), icsDay("2026-12-18"),
+                              ${term}.x)`);
+  assert.equal(fri.last.slice(0, 10), "2026-12-18");
+  assert.deepEqual(fri.skip.map(d => d.slice(0, 10)), ["2026-10-30"],
+                   "the Friday of the break week, and nothing else");
+});
+
+test("a lesson that never sits inside the term is not an event", () => {
+  /* A one-day term on a Wednesday holds no Monday at all, and an event with
+     no occurrence is a line in the file that no calendar can draw. */
+  assert.equal(json(`icsRepeat(0, icsDay("2026-09-02"), icsDay("2026-09-02"), [])`),
+               null);
+});
+
+test("a recurrence stops at a UTC instant, and the clocks change inside a term", () => {
+  /* Estonia is +3 in September and +2 in December, and the autumn term crosses
+     the change. A recurrence may only stop in UTC, so this is the one place
+     the page has to know the offset — get it wrong and every lesson after
+     October is an hour out. */
+  assert.equal(json(`stampUtc(icsDay("2026-09-14"), 540)`), "20260914T060000Z",
+               "September is summer time, +3");
+  assert.equal(json(`stampUtc(icsDay("2026-12-14"), 540)`), "20261214T070000Z",
+               "December is not, +2");
+  // The clocks go back on the last Sunday of October, the day before the break.
+  assert.equal(json(`lastSunday(2026, 10)`), 25);
+  assert.equal(json(`summerTime(icsDay("2026-10-23"))`), true);
+  assert.equal(json(`summerTime(icsDay("2026-10-27"))`), false);
+});
+
+test("the file escapes what the format reserves and folds by octets", () => {
+  /* A subject can carry a comma and a room a semicolon, and both mean
+     something else in a calendar file. */
+  const esc = (input) => json(`icsText(${JSON.stringify(input)})`);
+  assert.equal(esc("Kunst; ja, joonistamine"),
+               "Kunst" + BS + "; ja" + BS + ", joonistamine");
+  assert.equal(esc("kaks\nrida"), "kaks" + BS + "nrida");
+  assert.equal(esc("pool" + BS + "pool"), "pool" + BS + BS + "pool");
+
+  /* Folding counts octets, not letters. Estonian names are two octets each, so
+     a line folded by length can break inside a letter and arrive as two
+     broken ones. */
+  const long = json(`icsFold("SUMMARY:" + "\u00fc".repeat(60))`);
+  assert.ok(long.includes(CRLF + " "), "a long line was not folded at all");
+  assert.equal(long.split(CRLF + " ").join(""),
+               "SUMMARY:" + "\u00fc".repeat(60),
+               "unfolding does not give back what went in");
+  for (const line of long.split(CRLF + " ")) {
+    assert.ok(new TextEncoder().encode(line).length <= 75,
+              "a folded line is still too long: " + line);
+  }
+  // A line that fits is left exactly as it is.
+  assert.equal(json(`icsFold("SUMMARY:Kunst")`), "SUMMARY:Kunst");
+});
+
+test("the same lesson keeps one name however the file is built again", () => {
+  /* Why a second import corrects the week instead of drawing it twice. The
+     name is the school's own id for the placed lesson, so it survives the
+     lesson moving to another hour — which is the change most likely to happen
+     mid-year. */
+  const school = `{n: "103"}`, cls = `{n: "5.l"}`;
+  const monday = `{i: "*117", d: 0, s: "Matemaatika", p: 7}`;
+  const moved = `{i: "*117", d: 0, s: "Matemaatika", p: 3}`;
+  assert.equal(json(`icsUid(${school}, ${cls}, ${monday})`),
+               "117-0-103-5-l@little.tools");
+  assert.equal(json(`icsUid(${school}, ${cls}, ${moved})`),
+               json(`icsUid(${school}, ${cls}, ${monday})`),
+               "an hour is not an identity");
+  // A different day of the same card is a different event.
+  assert.notEqual(json(`icsUid(${school}, ${cls}, {i: "*117", d: 2})`),
+                  json(`icsUid(${school}, ${cls}, ${monday})`));
+  // And so is the same card in another class: one aSc lesson serves several,
+  // and a parent with two children may put both in one calendar.
+  assert.notEqual(json(`icsUid(${school}, {n: "5.t"}, ${monday})`),
+                  json(`icsUid(${school}, ${cls}, ${monday})`));
+});
+
 test("minutes read back as the clock", () => {
   assert.equal(run(`hhmm(540)`), "9.00");
   assert.equal(run(`hhmm(1095)`), "18.15");

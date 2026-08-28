@@ -334,6 +334,23 @@ const asClock = (mins) =>
 
 /* One saved event, or null if it is not one. Everything here comes from a file
    someone edited or a link someone sent, so nothing is assumed. */
+/* A name for one of the reader's own events, which nothing shows and only the
+   calendar reads.
+
+   The events table has no key of its own, so an event used to be identified by
+   where it sat in the list. That is not an identity: deleting the row above it,
+   reordering, or repairing a typo in somebody else's row all renamed it, and a
+   calendar told an event has a new name keeps the old one as well. An id given
+   once and kept survives every edit, including changing the event's own hour.
+
+   Eight characters of base 36. Two events would have to collide inside one
+   class for it to matter, and a collision costs one merged entry. */
+function newEventId() {
+  return Math.random().toString(36).slice(2, 10).padEnd(8, "0");
+}
+
+const EVENT_ID = /^[a-z0-9]{1,16}$/;
+
 function oneEvent(raw) {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
   const day = DAY_KEYS.indexOf(String(raw.day));
@@ -341,6 +358,10 @@ function oneEvent(raw) {
   if (day < 0 || a === null || z === null || z <= a) return null;
   const color = (v) => (typeof v === "string" && HEX.test(v.trim())) ? v.trim() : "";
   return {
+    /* Kept where there is one, and given where there is not: events written
+       before this existed are named on the first read and keep that name. */
+    id: (typeof raw.id === "string" && EVENT_ID.test(raw.id))
+        ? raw.id : newEventId(),
     day: DAY_KEYS[day],
     startTime: asClock(a),
     endTime: asClock(z),
@@ -1195,6 +1216,9 @@ function readEvents(list) {
     out.push({ day: day, a: a, z: z, fg: ev.textColor || null,
                bg: ev.backgroundColor || "#DDDDDD",
                label: String(ev.label || ""), note: String(ev.note || ""),
+               /* Carried through for the calendar, which is the only thing
+                  that asks. A row typed just now has none until it is saved. */
+               id: (typeof ev.id === "string" && EVENT_ID.test(ev.id)) ? ev.id : "",
                mine: true });
   });
   return { events: out, errors: errors };
@@ -2234,11 +2258,12 @@ function icsFile(withMine) {
          nine, and nobody but the reader can say otherwise. */
       const when = icsRepeat(ev.day, from, to, off, [], ev.a, ev.z);
       if (!when) return;
-      /* The reader's own events have no id of their own, so the row they sit
-         on is the identity. Reordering the table renames them, which costs one
-         stale entry in a calendar that is replaced wholesale anyway. */
-      const uid = "own-" + i + "-" + ev.day + "-" + icsTimetable(school) + "-" +
-                  icsSafe(cls.n) + "@little.tools";
+      /* By the event's own id, so moving it up the table or deleting the one
+         above it does not make a second copy on the next import. A row typed
+         in this very moment and not yet saved has none, and falls back to
+         where it sits. */
+      const uid = "own-" + icsSafe(ev.id || "row" + i) + "-" +
+                  icsTimetable(school) + "-" + icsSafe(cls.n) + "@little.tools";
       body = body.concat(icsEvent(uid, when, ev.a, ev.z, ev.label, "",
                                   ev.note, stampNow, sequence));
     });
@@ -3415,8 +3440,9 @@ evRows.addEventListener("click", (e) => {
 function renderEventsSoon() { setTimeout(() => { evRows.innerHTML = ""; renderEvents(); }, 0); }
 
 document.getElementById("evadd").addEventListener("click", () => {
-  myOwn().events.push({ day: "Mon", startTime: "16:00", endTime: "17:00", note: "",
-                        backgroundColor: "#F6F2C1", textColor: "", label: "" });
+  myOwn().events.push({ id: newEventId(), day: "Mon", startTime: "16:00",
+                        endTime: "17:00", note: "", backgroundColor: "#F6F2C1",
+                        textColor: "", label: "" });
   save(); renderEventsSoon(); paint();
 });
 

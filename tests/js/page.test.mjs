@@ -17,9 +17,18 @@ test("a saved event is read into a day, a span, a color and two lines", () => {
                                     backgroundColor: "#F6F2C1", textColor: "",
                                     label: "Dance training", note: "Studio 2 · Maret"}])`);
   assert.equal(parsed.errors.length, 0);
-  assert.deepEqual(parsed.events[0], { day: 0, a: 1035, z: 1095, fg: null,
-                                       bg: "#F6F2C1", label: "Dance training",
-                                       note: "Studio 2 · Maret", mine: true });
+  /* The id is the event's own and is not in what was handed in, so it is
+     checked for shape and then set aside. */
+  const read = parsed.events[0];
+  assert.equal(read.id, "", "an event given no id is read without one");
+  delete read.id;
+  assert.deepEqual(read, { day: 0, a: 1035, z: 1095, fg: null,
+                           bg: "#F6F2C1", label: "Dance training",
+                           note: "Studio 2 · Maret", mine: true });
+  // One that carries an id keeps it, because the calendar names it by that.
+  assert.equal(json(`readEvents([{id: "abc123", day: "Mon", startTime: "17:15",
+                                  endTime: "18:15", label: "x"}]).events[0].id`),
+               "abc123");
   // The second line is the reader's to leave out.
   const bare = json(`readEvents([{day: "Mon", startTime: "17:15", endTime: "18:15",
                                   backgroundColor: "#F6F2C1", label: "Dance"}])`);
@@ -56,11 +65,32 @@ test("a saved event of the wrong shape is dropped on the way in", () => {
     assert.equal(json(`oneEvent(${JSON.stringify(raw)})`), null, JSON.stringify(raw));
   }
   assert.deepEqual(json(`oneEvent({day: "Fri", startTime: "9:0", endTime: "10:00"})`), null);
-  assert.deepEqual(
-    json(`oneEvent({day: "Fri", startTime: "9:00", endTime: "10:00", backgroundColor: "nonsense",
-                    textColor: "#123", label: 7})`),
+  const kept = json(`oneEvent({day: "Fri", startTime: "9:00", endTime: "10:00",
+                               backgroundColor: "nonsense", textColor: "#123",
+                               label: 7})`);
+  /* An event with no id of its own is given one here, once, and keeps it. */
+  assert.match(kept.id, /^[a-z0-9]{8}$/, "no id was given: " + kept.id);
+  delete kept.id;
+  assert.deepEqual(kept,
     { day: "Fri", startTime: "09:00", endTime: "10:00", backgroundColor: "#DDDDDD",
       textColor: "#123", label: "", note: "" });
+});
+
+test("an event keeps the name it was given, and refuses a silly one", () => {
+  /* The whole point of the id: it survives the reader editing the event, and
+     every edit around it. A hand-edited file or an old link can carry anything
+     in that field, and "undefined" is a string like any other — which is how a
+     first attempt at this gave every event the same name. */
+  const id = (raw) => json(`oneEvent(Object.assign(
+      {day: "Fri", startTime: "9:00", endTime: "10:00"}, ${raw})).id`);
+  assert.equal(id(`{id: "kept0001"}`), "kept0001");
+  for (const silly of [`{}`, `{id: undefined}`, `{id: null}`, `{id: 7}`,
+                       `{id: ""}`, `{id: "has spaces"}`, `{id: "UPPER"}`,
+                       `{id: "x".repeat(40)}`, `{id: {}}`]) {
+    assert.match(id(silly), /^[a-z0-9]{8}$/, silly);
+  }
+  // Two events made at once do not share a name.
+  assert.notEqual(json(`newEventId()`), json(`newEventId()`));
 });
 
 test("only something that is plainly a color can be stored as one", () => {
@@ -485,6 +515,48 @@ test("an hour the school fills takes only the lessons it covers", () => {
 
 const BS = String.fromCharCode(92);   // one backslash, unambiguously
 const CRLF = "\r\n";
+
+test("an event keeps its calendar name through every edit around it", () => {
+  /* The reason the id exists, driven through the file the reader downloads and
+     not through a name rebuilt here — an earlier version of this test built the
+     identifier itself, so it went on passing with the old positional naming
+     still in place and proved nothing. */
+  const names = (ics, label) => ics.split("BEGIN:VEVENT")
+    .filter(b => b.includes("SUMMARY:" + label))
+    .map(b => b.match(/UID:(.*)/)[1].trim());
+  run(`myOwn().events = [
+         {id: "aaaa1111", day: "Mon", startTime: "16:00", endTime: "17:00",
+          backgroundColor: "#DDDDDD", textColor: "", label: "Ujumine", note: ""},
+         {id: "bbbb2222", day: "Mon", startTime: "18:00", endTime: "19:00",
+          backgroundColor: "#DDDDDD", textColor: "", label: "Trenn", note: ""}];`);
+  const before = json(`icsFile(true)`);
+  assert.ok(before.includes("SUMMARY:Trenn"), "no events reached the file");
+  const trenn = names(before, "Trenn");
+  assert.equal(trenn.length, 1);
+
+  /* The reader tidies up: the row above goes, and this one is renamed. Under
+     the old naming both of those moved it. */
+  run(`myOwn().events.shift();
+       myOwn().events[0].label = "Trenn (uus)";
+       myOwn().events[0].startTime = "18:30";`);
+  const after = json(`icsFile(true)`);
+  assert.deepEqual(names(after, "Trenn (uus)"), trenn,
+                   "the event was renamed by an edit to its neighbour");
+  assert.equal(names(after, "SUMMARY:Ujumine").length, 0);
+  run(`myOwn().events = [];`);
+});
+
+test("the calendar leaves out what the reader does not want in it", () => {
+  run(`myOwn().events = [
+         {id: "cccc3333", day: "Mon", startTime: "16:00", endTime: "17:00",
+          backgroundColor: "#DDDDDD", textColor: "", label: "Ujumine", note: ""}];`);
+  assert.ok(json(`icsFile(true)`).includes("SUMMARY:Ujumine"));
+  assert.ok(!json(`icsFile(false)`).includes("SUMMARY:Ujumine"),
+            "an event was exported after the reader said not to");
+  // And the school's own hours are in it either way.
+  assert.ok(json(`icsFile(false)`).includes("SUMMARY:Jõulukontsert"));
+  run(`myOwn().events = [];`);
+});
 
 test("a lesson repeats weekly and stops at the end of the term", () => {
   /* The whole of the calendar export in one shape: when the first sitting is,

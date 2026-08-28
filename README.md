@@ -1025,7 +1025,7 @@ paste lands.
       },
       "studentName": "Eva",
       "events": [
-        { "day": "Mon", "startTime": "16:15", "endTime": "17:10",
+        { "id": "k3n8xq2p", "day": "Mon", "startTime": "16:15", "endTime": "17:10",
           "backgroundColor": "#F6F2C1", "label": "Tantsutrenn",
           "note": "Stuudio 2 · Maret" }
       ]
@@ -1036,6 +1036,14 @@ paste lands.
 
 Some of these choices are not obvious:
 
+- **Each event carries an `id`**, given once and then kept. Nothing on the page
+  shows it and only the calendar file reads it, where it is what names the
+  event. Without one an event was identified by where it sat in the table, and
+  that is not an identity: deleting the row above it, reordering, or repairing
+  a typo in a different row all renamed it — and a calendar cannot be told that
+  an event has gone, so the reader got a second copy of a training session for
+  tidying up. An event written before this existed is given an id the first
+  time its settings are read, and keeps it.
 - **`studyGroups` is keyed by the choice on offer**, `"Alfa/Beeta/Gamma"`. It is
   not keyed by aSc's own identifier for that division, which is `"*5:1"` and
   means nothing outside the feed. Where one division is offered once per subject,

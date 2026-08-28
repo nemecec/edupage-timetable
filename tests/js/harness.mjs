@@ -43,7 +43,13 @@ const DATA = {
   palette: { Matemaatika: { bg: "#83EC9B", fg: "#14171A" },
              Kunst: { bg: "#F6C1ED", fg: "#14171A" } },
   schools: [{
-    n: "68", l: "A school", t: "A school 2026", v: "", b: true,
+    n: "68", tt: "68", l: "A school", t: "A school 2026", v: "", b: true,
+    /* A term, so the calendar export has dates to work from. Without one it
+       builds nothing at all, and every test of it passes by doing nothing.
+       One week off in the middle, and one hour the school fills itself. */
+    cal: { a: "2026-08-24", z: "2026-12-18",
+           x: ["2026-10-26", "2026-10-27", "2026-10-28", "2026-10-29", "2026-10-30"],
+           e: [{ d: "2026-12-16", a: 555, z: 615, n: "Jõulukontsert" }] },
     sj: { Matemaatika: { short: "Mat", color: "#123456" },
           Kunst: { short: "Ku" },
           /* One timetable, two schools. The prefix comes off the name shown

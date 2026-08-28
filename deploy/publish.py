@@ -6,7 +6,7 @@ beyond what `tt.py` already needs: nothing.
 
     BUCKET=... DISTRIBUTION=... python3 deploy/publish.py
 
-The address it publishes to comes from site.conf. The environment overrides
+The address it publishes to comes from tool.conf. The environment overrides
 it.
 """
 
@@ -33,7 +33,7 @@ HERE = _here
 
 
 def configured(name, fallback=""):
-    """From the environment, else from site.conf, which is the one place the
+    """From the environment, else from tool.conf, which is the one place the
     site's address is written down."""
     if os.environ.get(name):
         return os.environ[name]

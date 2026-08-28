@@ -19,7 +19,7 @@ set -euo pipefail
 
 here="$(cd "$(dirname "$0")" && pwd)"
 
-# site.conf is the one place the address is written down. The environment wins
+# tool.conf is the one place the address is written down. The environment wins
 # over it, so you can try something out without an edit to the file.
 from_env_domain="${DOMAIN:-}" from_env_prefix="${PREFIX:-}" from_env_region="${REGION:-}"
 from_env_gc="${GOATCOUNTER:-}" from_env_alarm="${ALARM_EMAIL:-}"

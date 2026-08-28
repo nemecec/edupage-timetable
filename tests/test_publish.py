@@ -205,10 +205,10 @@ class Reading(unittest.TestCase):
         # And the file, which is the one place the site's address is written.
         with open(os.path.join(ROOT, "deploy", "tool.conf"), encoding="utf-8") as fh:
             named = re.findall(r"^([A-Z_]+)=", fh.read(), re.M)
-        self.assertTrue(named, "site.conf names no settings")
+        self.assertTrue(named, "tool.conf names no settings")
         for name in named:
             self.assertNotEqual(self.publish.configured(name), "",
-                                f"{name} is in site.conf and reads as empty")
+                                f"{name} is in tool.conf and reads as empty")
 
 
 class Addressing(unittest.TestCase):

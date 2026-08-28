@@ -43,9 +43,9 @@ jobs:
         id: conf
         if: steps.ready.outputs.ready == 'true'
         run: |
-          # Read, not sourced: site.conf is a settings file, and `.` would run
+          # Read, not sourced: tool.conf is a settings file, and `.` would run
           # whatever a branch happened to put in it.
-          region=$(grep -m1 '^REGION=' deploy/site.conf | cut -d= -f2)
+          region=$(grep -m1 '^REGION=' deploy/tool.conf | cut -d= -f2)
           echo "region=$region" >> "$GITHUB_OUTPUT"
 
       - uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708  # v5

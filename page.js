@@ -12,11 +12,18 @@ const KEY = "tt:" + DATA.edupage + ":" + DATA.year;
  *
  * `report` is a function declaration, so it is ready before its own line is
  * reached, and it swallows anything that goes wrong inside it. */
-/* Globals a browser extension puts into every page it can reach. A wallet
-   extension failing to set window.ethereum has nothing to do with a timetable
-   and nothing here can fix it, so it is logged and not alarmed on. */
+/* Globals a browser puts into every page it can reach, or an extension the
+   reader installed does. A wallet extension failing to set window.ethereum has
+   nothing to do with a timetable and nothing here can fix it, so it is logged
+   and not alarmed on.
+
+   __gCrWeb is the bridge Chromium on iOS talks to its own page through, the
+   way __firefox__ is Firefox's. Its script is evaluated in the page and the
+   browser attributes the fault to this address, so a bridge that is not ready
+   yet reads exactly like a fault of ours. Brave on an iPhone raised the
+   page-broke alarm that way. */
 const INJECTED = ["ethereum", "solana", "web3", "tronWeb", "keplr",
-                  "__firefox__", "webkit.messageHandlers"];
+                  "__firefox__", "__gCrWeb", "webkit.messageHandlers"];
 
 /* Why a link was not used, where there was one. Empty means there was nothing
    wrong: either the fragment was ours and readable, or it was not ours at all.

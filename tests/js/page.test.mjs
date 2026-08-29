@@ -1415,6 +1415,21 @@ test("a wallet extension's error is not this page's fault", () => {
             "a real fault was written off");
 });
 
+test("the browser's own bridge is not this page's fault either", () => {
+  /* Word for word what Brave on an iPhone sent, and it raised the page-broke
+     alarm. __gCrWeb is how Chromium on iOS reaches into the page; its script
+     is evaluated here, so the browser blames this address for it. Nothing on
+     this page can make that bridge exist. */
+  run(`DATA.report = "/report"; reportsSent = 0; reportsSeen.clear();
+       window.__posted = null;
+       report("error", new Error("Can't find variable: __gCrWeb"),
+              "https://little.tools/timetable:1:9");`);
+  const sent = JSON.parse(json(`window.__posted`).body);
+  assert.equal(sent.opaque, 1, "the browser's own bridge would raise an alarm");
+  // Still logged: it did happen, and the line is the only way to see it.
+  assert.equal(sent.message, "Can't find variable: __gCrWeb");
+});
+
 test("an error the browser will not describe is logged, not alarmed on", () => {
   /* A script from another origin gives "Script error." and nothing else. It
      came from the counter's script, and it is not something to be woken for. */

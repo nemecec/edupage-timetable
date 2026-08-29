@@ -100,11 +100,6 @@ STRINGS = {
                       "import a file.",
         "cal.help.apple": "Apple's instructions",
         "cal.help.google": "Google's instructions",
-        # Only said once reminders are asked for. It cuts against the advice
-        # above it, and a reader who wants none of this does not need to weigh
-        # something that cannot affect them.
-        "cal.google.alarm": "Google keeps reminders only in your main calendar, "
-                            "not in a separate one.",
         "advanced": "Save and restore settings",
         "showHeading": "For each lesson, show:",
         "dayHeading": "In the day, show:",
@@ -291,8 +286,6 @@ STRINGS = {
         # told before they follow either one.
         "cal.help.apple": "Apple'i juhend (inglise keeles)",
         "cal.help.google": "Google'i juhend (inglise keeles)",
-        "cal.google.alarm": "Google säilitab meeldetuletused ainult "
-                            "põhikalendris, mitte eraldi kalendris.",
         "advanced": "Seadete salvestamine ja taastamine",
         "showHeading": "Iga tunni juures näita:",
         "dayHeading": "Päevas näita:",
@@ -3401,10 +3394,6 @@ PAGE = """<!DOCTYPE html>
         <a id="calHelpGoogle" target="_blank" rel="noopener noreferrer"
            href="https://support.google.com/calendar/answer/37118"
            data-i18n="cal.help.google"></a></p>
-      <!-- Shown only once reminders are asked for: it pulls against the advice
-           above about a calendar of its own, and a reader who wants no
-           reminders has nothing to weigh. -->
-      <p class="sub help" id="calAlarmNote" data-i18n="cal.google.alarm" hidden></p>
     </div>
   </div>
 </details>

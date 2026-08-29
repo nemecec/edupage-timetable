@@ -2916,12 +2916,8 @@ function showCalendarPanel() {
   box.disabled = !state.calMine;
   document.getElementById("calAlarmRow")
           .classList.toggle("off", !state.calMine);
-  const ringing = state.calMine && state.calAlarm;
-  document.getElementById("calLead").classList.toggle("off", !ringing);
-  /* Google drops reminders into any calendar but the primary one, which is the
-     one thing the advice above tells the reader not to use. Said where the
-     choice is made, and only to a reader the choice can reach. */
-  document.getElementById("calAlarmNote").hidden = !ringing;
+  document.getElementById("calLead")
+          .classList.toggle("off", !state.calMine || !state.calAlarm);
   /* Built here rather than written into the page, so the list and the values
      the settings accept cannot drift — the same bargain the margins make. */
   fillOptions(document.getElementById("calAlarmMinutes"),

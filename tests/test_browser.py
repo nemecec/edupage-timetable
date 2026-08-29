@@ -725,32 +725,6 @@ class TheControls(InABrowser):
         self.assertEqual(got["back"]["classes"], ["7", "8", "9"])
         self.assertEqual(got["again"]["classes"], got["gumn"]["classes"])
 
-    def test_the_google_reminder_caveat_shows_only_when_it_can_matter(self):
-        """Google drops reminders into any calendar but the primary one, which
-        is the one thing the panel tells the reader not to use. That is worth
-        saying to somebody weighing reminders and nothing but noise to somebody
-        who is not, so it appears with the choice and goes with it."""
-        self.show("103", "5.l")
-        got = self.js(
-            "var note = function () {"
-            "  return document.getElementById('calAlarmNote').hidden; };"
-            "var click = function (id) { var b = document.getElementById(id);"
-            "  b.checked = !b.checked;"
-            "  b.dispatchEvent(new Event('change', {bubbles: true})); };"
-            "var out = {off: note()};"
-            "click('calAlarm'); out.on = note();"
-            "click('calMine');  out.noEvents = note();"
-            "click('calMine');  out.back = note();"
-            "out.text = document.getElementById('calAlarmNote').textContent.trim();"
-            "return out;")
-        self.assertTrue(got["off"], "said before anybody asked for a reminder")
-        self.assertFalse(got["on"], "not said to the one reader it concerns")
-        self.assertTrue(got["noEvents"],
-                        "said with the events it depends on switched off")
-        self.assertFalse(got["back"])
-        # The page under test is built in English, so this is the English one.
-        self.assertIn("main calendar", got["text"])
-
     def test_a_subject_row_can_be_switched_off_and_back_on(self):
         """Through the checkbox, not through the function behind it."""
         self.show("68", "8")

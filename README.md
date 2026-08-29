@@ -599,13 +599,13 @@ period grid, which needs no times.
   swimming. A reminder that rings while the phone is in a bag during a lesson
   is one nobody sees, and by the time they look the thing has started.
 
-  Google drops reminders when the file is imported into any calendar but the
-  primary one, which is the one thing this page tells readers not to do. Apple
-  keeps them wherever the events go. So the panel says so — but only once
-  reminders are actually asked for. It pulls against the advice directly above
-  it, and a reader who wants none of this has nothing to weigh; a caveat shown
-  to everybody is a caveat nobody reads. The reminder stays off until asked
-  for, and the reader who turns it on is the one told what it costs.
+  Reminders survive the import into a separate calendar in both, which is
+  worth writing down because it is widely reported not to: the Google Calendar
+  community carries threads saying reminders are dropped into any calendar but
+  the primary one. Tested against Google in August 2026 with a calendar of its
+  own, and they arrived. The page said otherwise for about an hour on the
+  strength of those threads, which is what undated forum posts are worth
+  against one run of the real thing.
 
   **The two makers do not behave the same, and the panel says which is which.**
   On Apple — iPhone, iPad and Mac — opening the file is the whole procedure:

@@ -1968,9 +1968,9 @@ def split_by_subject(cfg, class_name, divisions, entries):
 
     Only the subjects the rule names are pulled apart, and only where the
     division carries more than one of them. Each half offers the groups that
-    take that subject, and is filed on its own so the two picks are free of one
-    another. The first keeps the key the whole division had, so a pick already
-    saved is not lost.
+    take that subject, and is filed under a key of its own so the two picks are
+    free of one another, and so that neither inherits an answer given before
+    the split.
     """
     rule = None
     for entry in (cfg or {}).get("perSubject", []):
@@ -1987,7 +1987,7 @@ def split_by_subject(cfg, class_name, divisions, entries):
         if len(wanted) < 2:
             out.append(div)
             continue
-        for n, subject in enumerate(wanted):
+        for subject in wanted:
             groups = [g for g in div["groups"]
                       if any(g in e["groups"] and e["subject"] == subject
                              for e in entries if not e["part"])]
@@ -1995,11 +1995,18 @@ def split_by_subject(cfg, class_name, divisions, entries):
                 continue
             part = dict(div, id=div["id"] + "/" + subject, only=subject,
                         groups=groups, subjects=[subject], label=subject)
-            # What the reader's pick is filed under. The page falls back to the
-            # group list, which is what every other division uses, so the first
-            # half needs no key of its own and inherits the saved answer.
-            if n:
-                part["key"] = subject + ": " + "/".join(groups)
+            # What the reader's pick is filed under. Every other division falls
+            # back to its group list, and both halves have the same one, so
+            # both are named here instead.
+            #
+            # Both, and not only the second: a pick saved before the split
+            # answered one of the two subjects, and nothing records which. Let
+            # the first half keep the plain key and that old answer lands on it
+            # whatever it meant, so a reader who picked their English set is
+            # shown that set's Estonian lessons and is told nothing. Neither
+            # half matches now, both are asked again, and an unanswered picker
+            # is on the screen where a wrong one was not.
+            part["key"] = subject + ": " + "/".join(groups)
             out.append(part)
     return out
 

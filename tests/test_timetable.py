@@ -309,16 +309,25 @@ class TwoQuestionsInOnePicker(unittest.TestCase):
                          [["I A", "I B"], ["I A", "I B"]])
         self.assertEqual([d["only"] for d in got], ["Eesti keel", "Inglise keel"])
 
-    def test_the_first_half_keeps_the_key_the_whole_division_had(self):
-        """Both halves offer the same groups, so the second needs a key of its
-        own or the two share one answer. The first keeps the old one, and a
-        pick already saved is not lost."""
+    def test_each_half_is_filed_under_a_key_naming_its_subject(self):
+        """Both halves offer the same groups, so a key each, or the two share
+        one answer.
+
+        Both halves and not only the second. A pick saved before the split
+        answered one of the two subjects and nothing records which, so a first
+        half left under the plain key takes that answer whatever it meant. A
+        reader who had picked their English set would be shown that set's
+        Estonian lessons, and told nothing.
+        """
         div = self.division(["I A", "I B"], ["Eesti keel", "Inglise keel"])
         entries = self.entries([("I A", "Eesti keel"), ("I B", "Eesti keel"),
                                 ("I A", "Inglise keel"), ("I B", "Inglise keel")])
         got = tt.split_by_subject(self.cfg, "9", [div], entries)
-        self.assertNotIn("key", got[0])
-        self.assertEqual(got[1]["key"], "Inglise keel: I A/I B")
+        self.assertEqual([d["key"] for d in got],
+                         ["Eesti keel: I A/I B", "Inglise keel: I A/I B"])
+        # And neither is the group list, which is what the page falls back to
+        # and therefore what a pick made before the split is filed under.
+        self.assertNotIn("I A/I B", [d["key"] for d in got])
 
     def test_a_subject_the_rule_does_not_name_stays_where_it_is(self):
         """The rule names two subjects. A third in the same division is not

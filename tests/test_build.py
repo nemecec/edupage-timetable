@@ -508,11 +508,14 @@ class WholePage(unittest.TestCase):
         english = dict(zip(both[1]["groups"], both[1]["w"]))
         self.assertEqual(estonian["II A"], [["Nursi Deisy", ""]])
         self.assertEqual(english["II A"], [["Kartašev Kristi", ""]])
-        # Both offer the same codes, so the second is filed on its own. The
-        # first keeps the key the whole division had, and a saved pick stands.
-        self.assertNotIn("k", both[0])
-        self.assertEqual(both[1]["k"],
-                         "Inglise keel: I A/I B/II A/II B/III A/III B")
+        # Both offer the same codes, so each is filed under a key of its own.
+        # Neither is filed under the group list, which is where a pick made
+        # before the split sits: that pick answered one of the two subjects and
+        # nothing records which, so inheriting it would show a reader who had
+        # picked their English set that set's Estonian, and say nothing.
+        self.assertEqual([d["k"] for d in both],
+                         ["Eesti keel: I A/I B/II A/II B/III A/III B",
+                          "Inglise keel: I A/I B/II A/II B/III A/III B"])
 
     def test_only_the_class_the_rule_names_is_split(self):
         """The seventh and eighth years keep English in a division of its own,

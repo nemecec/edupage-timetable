@@ -1535,6 +1535,140 @@ test("how long a lesson lasts is spelled out, and an exact hour drops the minute
   assert.equal(json(`clockText(540, 620)`), "9.00–10.20");
 });
 
+test("each end of the clock can go on its own", () => {
+  /* A card the size of a bus ticket has room for one end, and which one is the
+     reader's to say. The end kept alone keeps its dash: a bare "10.20" reads as
+     a start, and a sheet that says only when lessons stop gives a reader nothing
+     to read it against. */
+  run(`state = defaults(); state.lang = "en"; applyStrings();
+       state.showDuration = false;`);
+  assert.equal(json(`state.showStart`), true, "both ends to begin with");
+  assert.equal(json(`state.showEnd`), true);
+  assert.equal(json(`clockText(540, 620)`), "9.00–10.20");
+
+  run(`state.showEnd = false;`);
+  assert.equal(json(`clockText(540, 620)`), "9.00");
+  run(`state.showStart = false; state.showEnd = true;`);
+  assert.equal(json(`clockText(540, 620)`), "–10.20", "which end is this?");
+
+  /* Both gone, and the duration is all that is left. It loses the brackets it
+     has nothing to sit beside. */
+  run(`state.showEnd = false;`);
+  assert.equal(json(`clockText(540, 620)`), "");
+  run(`state.showDuration = true;`);
+  assert.equal(json(`clockText(540, 620)`), "1 hour 20 min");
+  run(`state.showStart = true;`);
+  assert.equal(json(`clockText(540, 620)`), "9.00 (1 hour 20 min)");
+
+  /* The fallback grid has no minutes to count with — a school lands there
+     because it published none — so its clock is cut off the string the
+     generator wrote. */
+  run(`state = defaults();`);
+  assert.equal(json(`slotClock("9.00–9.45")`), "9.00–9.45");
+  run(`state.showEnd = false;`);
+  assert.equal(json(`slotClock("9.00–9.45")`), "9.00");
+  run(`state.showStart = false; state.showEnd = true;`);
+  assert.equal(json(`slotClock("9.00–9.45")`), "–9.45");
+  run(`state.showEnd = false;`);
+  assert.equal(json(`slotClock("9.00–9.45")`), "");
+  /* Anything not shaped like two ends goes through whole rather than cut in a
+     guessed-at place. */
+  run(`state = defaults(); state.showEnd = false;`);
+  assert.equal(json(`slotClock("period 3")`), "period 3");
+  run(`state = defaults();`);
+});
+
+test("a box says nothing where a part was switched off", () => {
+  /* An empty part is left out rather than drawn empty. A reader who switched
+     the clock off gets the name where the clock was, not a blank line above
+     it — and a blank line in a box this size is the line the name needed. */
+  run(`state = defaults(); state.lang = "en"; applyStrings();`);
+  const body = (height, parts) =>
+    json(`boxBody(${height}, ${JSON.stringify(parts)})`);
+
+  const full = body(60, [{ role: "time", text: "9.00–9.45" },
+                         { role: "name", text: "Matemaatika" },
+                         { role: "detail", text: "204 · Mari Kask" }]);
+  assert.deepEqual(full.lines, ["time", "name", "detail"]);
+  assert.equal(full.packed, false);
+  assert.match(full.html, /<div class="when">9\.00–9\.45<\/div>/);
+  assert.match(full.html, /<div class="what">Matemaatika<\/div>/);
+  assert.match(full.html, /<div class="who2">204 · Mari Kask<\/div>/);
+
+  const noClock = body(60, [{ role: "time", text: "" },
+                            { role: "name", text: "Matemaatika" },
+                            { role: "detail", text: "204" }]);
+  assert.deepEqual(noClock.lines, ["name", "detail"]);
+  assert.ok(!noClock.html.includes("when"), "an empty clock kept its line");
+
+  /* Nothing left at all is an empty box, not a box of empty divs. */
+  assert.equal(body(60, [{ role: "name", text: "" }]).html, "");
+
+  /* The quiet line is what a short box gives up first. Three tight lines come
+     to 36, and 46 is where all three fit. */
+  const short = body(40, [{ role: "time", text: "9.00" },
+                          { role: "name", text: "Matemaatika" },
+                          { role: "detail", text: "204" }]);
+  assert.deepEqual(short.lines, ["time", "name"]);
+});
+
+test("everything the reader left on can share one line", () => {
+  /* On a 100 by 60 card a box is one line tall. Stacked, everything under the
+     first line falls off the bottom and is not drawn at all, so a reader asking
+     for the room got a box with no space to say it. Packed, the same parts fit
+     on the line the box has.
+
+     Which parts those are is not this setting's business. It packs whatever the
+     checkboxes above left standing. */
+  run(`state = defaults(); state.lang = "en"; applyStrings();
+       state.boxLayout = "packed";`);
+  const parts = [{ role: "time", text: "9.00" },
+                 { role: "name", text: "Mat" },
+                 { role: "detail", text: "204" }];
+  const packed = json(`boxBody(60, ${JSON.stringify(parts)})`);
+  assert.equal(packed.packed, true);
+  assert.deepEqual(packed.lines, ["time", "name", "detail"]);
+  assert.equal(packed.html,
+               '<div class="what oneline"><span class="clock">9.00</span> Mat' +
+               ' <span class="who3">204</span></div>');
+
+  /* Packed keeps the quiet line at any height, which is the whole point: it
+     costs no height there. Stacked, the same 20-pixel box drops it. */
+  assert.deepEqual(json(`boxBody(20, ${JSON.stringify(parts)})`).lines,
+                   ["time", "name", "detail"]);
+  /* And a box too short for two lines packs itself whatever was asked for.
+     There is no second line there to stack anything on — but it still gives up
+     the quiet line, which is what it has always done at that height. */
+  run(`state.boxLayout = "stacked";`);
+  const forced = json(`boxBody(20, ${JSON.stringify(parts)})`);
+  assert.equal(forced.packed, true, "stacked in a box with one line");
+  assert.deepEqual(forced.lines, ["time", "name"]);
+
+  /* Packed with the clock switched off is the name and the room, and no gap
+     where the clock was. */
+  run(`state.boxLayout = "packed";`);
+  const two = json(`boxBody(60, [{"role":"name","text":"Mat"},
+                                 {"role":"detail","text":"204"}])`);
+  assert.equal(two.html,
+               '<div class="what oneline">Mat <span class="who3">204</span></div>');
+  run(`state = defaults();`);
+});
+
+test("a packed line is measured as one line, not three", () => {
+  /* Stacked, three lines cost the sum of the three. Packed they cost the
+     largest of them, and that is the room a packed box has that the same box
+     stacked does not. */
+  run(`state = defaults(); state.nameSize = "150"; state.timeSize = "150";
+       state.detailSize = "150";`);
+  const room = (packed) =>
+    json(`growRoom(40, "", ["time", "name", "detail"], ${packed})`);
+  assert.ok(room(true) > room(false),
+            `packed ${room(true)} should beat stacked ${room(false)}`);
+  assert.equal(room(true), 1, "one line of 150% type fits a 40-pixel box");
+  assert.ok(room(false) < 1, "three do not");
+  run(`state = defaults();`);
+});
+
 test("a gap long enough to plan around is drawn, and belongs to the reader", () => {
   /* Fifteen minutes is where a hole stops being a corridor. The point is
      logistics: how long until the next thing. */

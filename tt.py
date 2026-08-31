@@ -107,7 +107,12 @@ STRINGS = {
         "showRoom": "Room",
         "showGroup": "Study group",
         "showSubject": "Subject",
+        "showStart": "Start time",
+        "showEnd": "End time",
         "showDuration": "How long it lasts",
+        "layoutHeading": "Fit these into a lesson box:",
+        "layoutStacked": "a line each",
+        "layoutPacked": "all on one line",
         "printMargin": "Paper edge",
         "printMargin.mm": "{0} mm",
         "printSheet": "Sheet",
@@ -295,7 +300,12 @@ STRINGS = {
         "showRoom": "Ruum",
         "showGroup": "Õpperühm",
         "showSubject": "Aine",
+        "showStart": "Algusaeg",
+        "showEnd": "Lõpuaeg",
         "showDuration": "Kui kaua kestab",
+        "layoutHeading": "Kuidas need tunni kastis ära mahutada:",
+        "layoutStacked": "igaüks oma real",
+        "layoutPacked": "kõik ühel real",
         "printMargin": "Paberi äär",
         "printMargin.mm": "{0} mm",
         "printSheet": "Leht",
@@ -2799,6 +2809,17 @@ PAGE = """<!DOCTYPE html>
   .lesson .time { font-size: calc(11px * var(--grid, 1) * var(--grow-time));
                   font-family: var(--face-time); opacity: .85;
                   font-variant-numeric: tabular-nums; }
+  /* Everything on one line, in this view too. The clock and the quiet line read
+     lighter than the name, as they do when the three are stacked. Nothing here
+     stops the line wrapping: a table cell grows with what is in it, so there is
+     no bottom edge to cut against and nothing to be gained by cutting. */
+  .lesson.packed .name .clock {
+      font-weight: 400; opacity: .85; font-family: var(--face-time);
+      font-variant-numeric: tabular-nums;
+      font-size: calc(11px * var(--grid, 1) * var(--grow-time)); }
+  .lesson.packed .name .who3 {
+      font-weight: 400; opacity: .85; font-family: var(--face-detail);
+      font-size: calc(11px * var(--grid, 1) * var(--grow-detail)); }
   .cont { opacity: .62; }
   .brk { background: #f2f3f5; min-width: 60px; }
   /* Scaled like every other clock. It was a fixed size, which is the same fault
@@ -2936,14 +2957,22 @@ PAGE = """<!DOCTYPE html>
   .ev.snug .what, .ev.snug .who2, .ev.snug .when {
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
       line-height: 1.1; }
-  /* One line in a box only tall enough for one. The clock reads lighter than
-     the name, as it does when the two are stacked, and a name too long for the
-     column is cut rather than wrapped out of sight. */
+  /* One line in a box only tall enough for one, and one line in every box
+     where the reader asked for one. The clock reads lighter than the name, as
+     it does when the two are stacked, and a name too long for the column is cut
+     rather than wrapped out of sight. */
   .ev .what.oneline { font-weight: 600; white-space: nowrap; overflow: hidden;
                       text-overflow: ellipsis; }
   .ev .what.oneline .clock { font-weight: 400; opacity: .85;
                              font-family: var(--face-time);
-                             font-variant-numeric: tabular-nums; }
+                             font-variant-numeric: tabular-nums;
+                             font-size: calc(10px * var(--grow-time)); }
+  /* Room, teacher and group where they share the line rather than have one of
+     their own. Same type as the line they came off, so a packed box reads as
+     the same box with the lines pushed together. */
+  .ev .what.oneline .who3 { font-weight: 400; opacity: .85;
+                            font-family: var(--face-detail);
+                            font-size: calc(10.5px * var(--grow-detail)); }
   .ev.approx { border-style: dashed; border-width: 2px; }
   /* Where the axis is cut, the clock strip is torn across: a piece the shape
      of the gap is lifted out, and the two edges left behind match each other
@@ -3238,7 +3267,13 @@ PAGE = """<!DOCTYPE html>
               <span data-i18n="nameFirstLast"></span></label>
           </span>
         </div>
+        <!-- The clock, one end at a time. A card the size of a bus ticket has
+             room for one of them, and which one is the reader's to say. -->
         <div class="line">
+          <label class="inline"><input type="checkbox" id="showStart">
+            <span data-i18n="showStart"></span></label>
+          <label class="inline"><input type="checkbox" id="showEnd">
+            <span data-i18n="showEnd"></span></label>
           <label class="inline"><input type="checkbox" id="showDuration">
             <span data-i18n="showDuration"></span></label>
         </div>
@@ -3259,6 +3294,23 @@ PAGE = """<!DOCTYPE html>
             <label class="inline"><input type="radio" name="subjectNameStyle" value="short">
               <span data-i18n="subjectShort"></span></label>
           </span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Which of the checkboxes above are on is one question; whether what they
+       leave on takes a line each or shares one is another. On a sheet the size
+       of a card a box is one line tall, so the second question is the one that
+       decides how much of the first a reader gets to keep. -->
+  <div class="row">
+    <div class="field" style="width:100%">
+      <label data-i18n="layoutHeading"></label>
+      <div class="checklist">
+        <div class="line">
+          <label class="inline"><input type="radio" name="boxLayout"
+            value="stacked"><span data-i18n="layoutStacked"></span></label>
+          <label class="inline"><input type="radio" name="boxLayout"
+            value="packed"><span data-i18n="layoutPacked"></span></label>
         </div>
       </div>
     </div>

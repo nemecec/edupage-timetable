@@ -95,6 +95,11 @@ const defaults = () => ({
   showTeacher: true, teacherNameStyle: "full",
   showRoom: true, showGroup: true,
   showDuration: true, showGaps: true,
+  /* The two ends of a lesson, each the reader's to drop. Both on, because a
+     timetable says when a lesson starts and when it stops. A card the size of a
+     bus ticket has room for one of them, and the start is the end somebody
+     reads a timetable for — so this is two checkboxes rather than one. */
+  showStart: true, showEnd: true,
   /* The code in the corner of the printed sheet, off until it is asked for.
      Most sheets are read as paper on a wall, and the corner is room the
      timetable could have used. A reader who wants to pick the sheet back up on
@@ -127,6 +132,13 @@ const defaults = () => ({
      because it is a size somebody can hold up against a sheet of A4 and see. */
   printSheet: "a4", printWidth: 210, printHeight: 148,
   showSubject: true, subjectNameStyle: "full",
+
+  /* How the parts of a lesson box are laid out. Stacked is a line each, which
+     is what a box with room for three lines wants. Packed puts the clock, the
+     name and the room on one line together: on a 100 by 60 card a box is one
+     line tall, and stacked, the room and the teacher fall off the bottom and
+     are not drawn at all. Packed, all three fit on the line that is there. */
+  boxLayout: "stacked",                 // "stacked" | "packed"
 
   /* The three kinds of type in a lesson box, each the reader's to set. The
      subject name is what a reader looks for first, so "automatic" already asks
@@ -441,7 +453,8 @@ function normalise(saved) {
                                 ["detailSize", SIZES],
                                 ["printMargin", MARGINS],
                                 ["calAlarmMinutes", LEAD_MINUTES],
-                                ["printSheet", SHEETS]]) {
+                                ["printSheet", SHEETS],
+                                ["boxLayout", ["stacked", "packed"]]]) {
     if (!allowed.includes(out[key])) out[key] = base[key];
   }
   /* Free numbers rather than one of a list, so they are checked rather than
@@ -1324,8 +1337,12 @@ function baseSizes(cls) {
  * Hands back a number from 0 to 1: 0 is the page's own sizes, 1 is everything
  * the reader asked for. A box with room to spare gets 1, a box with none gets
  * 0, and nothing is ever drawn smaller than it was before this setting
- * existed. */
-function growRoom(height, cls, lines) {
+ * existed.
+ *
+ * `packed` says the parts share one line rather than take one each. Then the
+ * line costs the largest of them and not the sum of them, which is the whole
+ * reason a packed box has room the same box stacked does not. */
+function growRoom(height, cls, lines, packed) {
   const base = baseSizes(cls);
   /* Each of these is the line height the stylesheet gives that box. */
   const leading = cls.includes("squeeze") ? 1
@@ -1338,8 +1355,14 @@ function growRoom(height, cls, lines) {
   const room = height - 2 - 4 - 1;
   let now = 0, want = 0;
   for (const role of lines) {
-    now += base[role] * leading;
-    want += base[role] * askedGrow(role) * leading;
+    const was = base[role] * leading, asked = was * askedGrow(role);
+    if (packed) {
+      now = Math.max(now, was);
+      want = Math.max(want, asked);
+    } else {
+      now += was;
+      want += asked;
+    }
   }
   if (want <= room) return 1;
   if (want <= now) return 1;                  // asked for smaller: always fits
@@ -1377,9 +1400,53 @@ function shrinkOverfull(root) {
   }
 }
 
+/* The inside of one box: the parts the reader left switched on, in the order
+   the box draws them, and nothing where a part is switched off.
+ *
+ * Two layouts. Stacked is a line each, which is what a box tall enough for
+ * three lines wants. Packed is one line for all of them — the clock, the name
+ * and the quiet line of room and teacher, side by side. A box on a 100 by 60
+ * card is one line tall, and stacked, everything under the first line falls off
+ * the bottom and is not drawn at all. Packed, all of it fits on the line the
+ * box has.
+ *
+ * A box too short for two lines packs itself whatever the reader asked for. It
+ * has no second line to stack anything on.
+ *
+ * The parts are whatever the checkboxes above left standing. Nothing here
+ * decides that a room belongs on the line and a teacher does not: an empty part
+ * is left out rather than drawn empty, so a reader who switched the clock off
+ * gets the name where the clock was and not a blank line above it.
+ *
+ * Hands back the markup, the roles that ended up on the box — which is what
+ * says how much larger type it can take — and whether they share a line. */
+function boxBody(height, parts) {
+  const packed = state.boxLayout === "packed";
+  const one = packed || height < 30;
+  /* The quiet line is the first thing a stacked box gives up. Three tight lines
+     come to 36, and 46 is where all three fit. Packed, it costs no height at
+     all, so it stays. */
+  const keep = parts.filter(p => p.text &&
+                                 (p.role !== "detail" || packed || height >= 46));
+  const lines = keep.map(p => p.role);
+  if (!keep.length) return { html: "", lines: lines, packed: one };
+  if (one) {
+    const inline = { time: "clock", detail: "who3" };
+    const bits = keep.map(p => inline[p.role]
+      ? '<span class="' + inline[p.role] + '">' + esc(p.text) + "</span>"
+      : esc(p.text));
+    return { html: '<div class="what oneline">' + bits.join(" ") + "</div>",
+             lines: lines, packed: true };
+  }
+  const stacked = { time: "when", name: "what", detail: "who2" };
+  return { html: keep.map(p => '<div class="' + stacked[p.role] + '">' +
+                               esc(p.text) + "</div>").join(""),
+           lines: lines, packed: false };
+}
+
 /* The three numbers a box carries, written where the stylesheet reads them. */
-function growStyle(height, cls, lines) {
-  const room = growRoom(height, cls, lines);
+function growStyle(height, cls, lines, packed) {
+  const room = growRoom(height, cls, lines, packed);
   return ["time", "name", "detail"]
     .map(role => "--grow-" + role + ":" +
                  Math.round((1 + (askedGrow(role) - 1) * room) * 1000) / 1000 + ";")
@@ -1611,22 +1678,21 @@ function tornEdge(width, shift, amp) {
            band with no times on it is the one thing a reader cannot work out
            from the lessons either side. */
         const label = breakLabel(band);
-        const inside = height >= 30
-          ? '<div class="what">' + esc(label) + "</div>" +
-            '<div class="when">' + esc(when) + "</div>"
-          : '<div class="what oneline">' + esc(label) +
-            ' <span class="clock">' + esc(when) + "</span></div>";
+        /* The name first and the clock under it, which is the other way round
+           from a lesson: a band is read for what it is, and a lesson for when
+           it is. */
+        const inside = boxBody(height, [{ role: "name", text: label },
+                                        { role: "time", text: when }]);
         /* Ten minutes is the shortest band anything is written in — TäheTERA
            has one between its second and third lessons — and at that height
            the padding is the difference between a line and a cut line. */
         const brkCls = height < 17 ? " tiny squeeze" : height < 22 ? " tiny" : "";
         h += '<div class="ev brk' + brkCls + '" style="' +
-             growStyle(height, "brk" + brkCls,
-                       height >= 30 ? ["name", "time"] : ["name"]) +
+             growStyle(height, "brk" + brkCls, inside.lines, inside.packed) +
              geom + "background-color:" + esc(col.bg) +
              ";color:" + esc(col.fg) + ";" + hatch(col.bg) +
              '" data-subject="' + esc(band) + '" title="' +
-             esc(breakName(band) + "\n" + when) + '">' + inside + "</div>";
+             esc(breakName(band) + "\n" + when) + '">' + inside.html + "</div>";
         continue;
       }
       const e = it.lesson, col = colorFor(e.s), info = subjectFacts()[e.s] || {};
@@ -1636,23 +1702,10 @@ function tornEdge(width, shift, amp) {
                    e.r.join(" / "), when, e.u > 1 ? t("paired") : t("single"),
                    e.o ? t("noExactTime") : ""].filter(Boolean).join("\n");
       const name = lessonTitle(e);
-      /* A twenty-minute box has room for one line. Stacked, the time takes it
-         and the name falls off the bottom, so a short lesson showed a clock
-         and nothing else. LõunaTERA writes its breaks as lessons, and Puder
-         is twenty minutes. */
-      let body = height >= 30
-        ? '<div class="when">' + esc(when) + (e.o ? " ?" : "") + "</div>" +
-          '<div class="what">' + esc(name) + "</div>"
-        : '<div class="what oneline"><span class="clock">' +
-          esc(when + (e.o ? " ?" : "")) + "</span> " + esc(name) + "</div>";
-      /* Room, teacher and group are a third line. A box gives its content its
-         height less 2px of border and 4px of padding, and three tight lines
-         come to 36, so 46 is where all three fit — which is exactly a
-         45-minute lesson. The old threshold of 54 refused those, and a
-         SädeTERA week is mostly 45-minute lessons. */
-      if (height >= 46 && meta.length) {
-        body += '<div class="who2">' + esc(meta.join(" · ")) + "</div>";
-      }
+      /* A lesson the school gave no minutes for says so on its clock, and says
+         it there even where the reader switched both ends of the clock off. The
+         dashed border alone is not a sentence. */
+      const clock = e.o ? (when ? when + " ?" : t("noTimeShort")) : when;
       /* A school that writes its breaks as lessons still gets breaks. The
          hatch is what says "not a lesson", whatever the timetable calls it. */
       /* A box only just tall enough for three lines gets them only if the
@@ -1661,14 +1714,15 @@ function tornEdge(width, shift, amp) {
          was let in here. */
       const lessonCls = (e.B ? " brk" : "") + (height < 40 ? " tight" : "") +
                         (height < 62 ? " snug" : "");
-      const lessonLines = height >= 30
-        ? (height >= 46 && meta.length ? ["time", "name", "detail"] : ["time", "name"])
-        : ["name"];
+      const body = boxBody(height, [{ role: "time", text: clock },
+                                    { role: "name", text: name },
+                                    { role: "detail", text: meta.join(" · ") }]);
       h += '<div class="ev' + lessonCls + (e.o ? " approx" : "") +
            '" data-subject="' + esc(e.s) + '" style="' +
-           growStyle(height, lessonCls, lessonLines) + geom +
+           growStyle(height, lessonCls, body.lines, body.packed) + geom +
            "background-color:" + esc(col.bg) +
-           ";color:" + esc(col.fg) + '" title="' + esc(tip) + '">' + body + "</div>";
+           ";color:" + esc(col.fg) + '" title="' + esc(tip) + '">' + body.html +
+           "</div>";
     }
     /* The layer on top. Events are packed among themselves, so two of them at
        once still sit side by side rather than hiding one another. */
@@ -1678,27 +1732,18 @@ function tornEdge(width, shift, amp) {
       const height = Math.max(14, Math.round(y(it.z) - y(it.a)) - 1);
       const when = clockText(it.a, it.z);
       const fg = eventFg(it);
-      /* A twenty-minute box has room for one line, so the time joins the label
-         rather than pushing it out of sight. */
-      let body = height >= 30
-        ? '<div class="when">' + esc(when) + "</div>" +
-          '<div class="what">' + esc(it.label) + "</div>"
-        : '<div class="what oneline"><span class="clock">' + esc(when) +
-          "</span> " + esc(it.label) + "</div>";
-      /* A third line, where a lesson puts its room and teacher. Same height to
-         earn it: three tight lines come to 36, and 46 is where all three fit. */
-      if (height >= 46 && it.note) {
-        body += '<div class="who2">' + esc(it.note) + "</div>";
-      }
+      /* A note goes where a lesson puts its room and teacher, and is given up
+         the same way when the box is too short to hold it. */
+      const body = boxBody(height, [{ role: "time", text: when },
+                                    { role: "name", text: it.label },
+                                    { role: "detail", text: it.note || "" }]);
       const mineCls = height < 40 ? " tight" : "";
-      const mineLines = height >= 30
-        ? (height >= 46 && it.note ? ["time", "name", "detail"] : ["time", "name"])
-        : ["name"];
       h += '<div class="ev mine' + mineCls + '" style="' +
-           growStyle(height, mineCls, mineLines) + place(it, over ? 16 : 0) +
+           growStyle(height, mineCls, body.lines, body.packed) +
+           place(it, over ? 16 : 0) +
            "background-color:" + esc(it.bg) + ";color:" + esc(fg) + '" title="' +
            esc([it.label, it.note, when].filter(Boolean).join("\n")) + '">' +
-           body + "</div>";
+           body.html + "</div>";
     }
     h += "</div>";
   }
@@ -1773,10 +1818,33 @@ function durationText(minutes) {
 }
 
 /* The clock, and how long that is. Subtracting one from the other is work a
-   reader should not have to do to find out whether a lesson is a single. */
+   reader should not have to do to find out whether a lesson is a single.
+ *
+ * Each end is the reader's to drop. The end kept on its own keeps its dash: a
+ * bare "10.20" reads as a start, and a sheet that says only when lessons stop
+ * gives a reader nothing to read it against. With both ends gone the duration
+ * stands on its own, so it loses brackets it has nothing left to sit beside. */
 function clockText(from, to) {
-  const when = hhmm(from) + "–" + hhmm(to);
-  return state.showDuration ? when + " (" + durationText(to - from) + ")" : when;
+  const when = state.showStart && state.showEnd ? hhmm(from) + "–" + hhmm(to)
+             : state.showStart ? hhmm(from)
+             : state.showEnd ? "–" + hhmm(to)
+             : "";
+  if (!state.showDuration) return when;
+  const how = durationText(to - from);
+  return when ? when + " (" + how + ")" : how;
+}
+
+/* The same two ends, taken off a string. The fallback grid is drawn for a
+   school that published no minutes, so its only clock is the one the generator
+   wrote out — there are no numbers here to count with. Anything not shaped like
+   two ends is passed through whole rather than cut in a guessed-at place. */
+function slotClock(text) {
+  const ends = String(text).split("–");
+  if (state.showStart && state.showEnd) return text;
+  if (ends.length !== 2) return state.showStart || state.showEnd ? text : "";
+  if (state.showStart) return ends[0];
+  if (state.showEnd) return "–" + ends[1];
+  return "";
 }
 
 /* What goes on a lesson's second line: room, teacher and group are each
@@ -1907,17 +1975,41 @@ function tidy() {
   }
 }
 
+/* The inside of one cell of the fallback grid. A table cell grows with what is
+   in it, so nothing is ever given up here for want of height — the only
+   question is whether the parts take a line each or share one.
+
+   The classes are the grid's own. It is a different box from a timeline box and
+   has always been drawn from its own rules, but the two answer to the one
+   setting: a reader who asked for everything on one line asked it of the page,
+   not of one of its two views. */
+function gridBody(parts) {
+  const keep = parts.filter(p => p.text);
+  if (!keep.length) return { html: "", packed: false };
+  if (state.boxLayout !== "packed") {
+    return { html: keep.map(p => '<div class="' + p.role + '">' + esc(p.text) +
+                                 "</div>").join(""), packed: false };
+  }
+  const inline = { time: "clock", meta: "who3", who: "who3" };
+  return { html: '<div class="name">' + keep.map(p => inline[p.role]
+             ? '<span class="' + inline[p.role] + '">' + esc(p.text) + "</span>"
+             : esc(p.text)).join(" ") + "</div>",
+           packed: true };
+}
+
 /* A personal event belongs to no slot, so the table gives it a column of its
    own rather than pretending it is a lesson. */
 function mineCell(list) {
   if (!list.length) return "<td></td>";
-  return "<td>" + list.slice().sort((p, q) => p.a - q.a).map(ev =>
-    '<div class="lesson" style="background-color:' + esc(ev.bg) + ";color:" + esc(eventFg(ev)) +
-    (ev.fg ? ";border:1px solid " + esc(ev.fg) : "") +
-    '"><div class="name">' + esc(ev.label) + "</div>" +
-    (ev.note ? '<div class="who">' + esc(ev.note) + "</div>" : "") +
-    '<div class="time">' + esc(hhmm(ev.a) + "–" + hhmm(ev.z)) +
-    "</div></div>").join("") + "</td>";
+  return "<td>" + list.slice().sort((p, q) => p.a - q.a).map(ev => {
+    const body = gridBody([{ role: "name", text: ev.label },
+                           { role: "who", text: ev.note || "" },
+                           { role: "time", text: clockText(ev.a, ev.z) }]);
+    return '<div class="lesson' + (body.packed ? " packed" : "") +
+      '" style="background-color:' + esc(ev.bg) + ";color:" + esc(eventFg(ev)) +
+      (ev.fg ? ";border:1px solid " + esc(ev.fg) : "") + '">' + body.html +
+      "</div>";
+  }).join("") + "</td>";
 }
 
 function lessonHtml(e, time) {
@@ -1929,15 +2021,17 @@ function lessonHtml(e, time) {
                time, e.u > 1 ? t("paired") : t("single"), note]
               .filter(Boolean).join("\n");
   const col = colorFor(e.s);
+  /* The clock the generator wrote, cut to whichever ends the reader asked for.
+     A lesson the school gave no time for says so instead, and says it whatever
+     the clock is set to. */
+  const clock = e.o ? t("noTimeShort") : slotClock(time);
+  const body = gridBody([{ role: "name", text: label },
+                         { role: "time", text: clock },
+                         { role: "meta", text: meta.join(" · ") }]);
   return '<div class="lesson' + (e.c ? " cont" : "") + (e.B ? " brk" : "") +
-    '" data-subject="' + esc(e.s) +
+    (body.packed ? " packed" : "") + '" data-subject="' + esc(e.s) +
     '" style="background-color:' + esc(col.bg) + ";color:" + esc(col.fg) +
-    '" title="' + esc(tip) + '">' +
-    '<div class="name">' + esc(label) + "</div>" +
-    ((time || e.o)
-        ? '<div class="time">' + (e.o ? esc(t("noTimeShort")) : esc(time)) + "</div>" : "") +
-    (meta.length ? '<div class="meta">' + esc(meta.join(" · ")) + "</div>" : "") +
-    "</div>";
+    '" title="' + esc(tip) + '">' + body.html + "</div>";
 }
 
 /* Columns of the fallback grid. Only a school with no usable day plan gets
@@ -2848,7 +2942,8 @@ function bindChoice(name, key) {
 }
 ["showStudentName", "showSchoolName", "showClassName",
  "showTeacher", "showRoom", "showGroup", "showSubject",
- "showDuration", "showGaps", "showQr"].forEach(key => bindToggle(key, key));
+ "showStart", "showEnd", "showDuration", "showGaps",
+ "showQr"].forEach(key => bindToggle(key, key));
 /* Not through bindToggle: nothing on screen changes, so a redraw would be a
    redraw for nothing. */
 document.getElementById("calMine").addEventListener("change", (ev) => {
@@ -2937,6 +3032,7 @@ bindChoice("teacherNameStyle", "teacherNameStyle");
 bindChoice("teacherNameOrder", "teacherNameOrder");
 bindChoice("subjectNameStyle", "subjectNameStyle");
 bindChoice("subjectColorStyle", "subjectColorStyle");
+bindChoice("boxLayout", "boxLayout");
 
 /* The controls follow the state, and the two that only make sense alongside
    something else — how to write a name, which colors to pick — dim or vanish
@@ -3003,13 +3099,13 @@ function plainDate(iso) {
 function syncDisplayControls() {
   for (const key of ["showStudentName", "showSchoolName", "showClassName",
                      "showTeacher", "showRoom", "showGroup", "showSubject",
-                     "showDuration", "showGaps", "showQr", "calMine",
-                     "calAlarm"]) {
+                     "showStart", "showEnd", "showDuration", "showGaps",
+                     "showQr", "calMine", "calAlarm"]) {
     document.getElementById(key).checked = !!state[key];
   }
   showCalendarPanel();
   for (const name of ["teacherNameStyle", "teacherNameOrder",
-                      "subjectNameStyle", "subjectColorStyle"]) {
+                      "subjectNameStyle", "subjectColorStyle", "boxLayout"]) {
     const key = name;
     document.querySelectorAll('input[name="' + name + '"]').forEach(radio => {
       radio.checked = radio.value === state[key];
@@ -3434,14 +3530,19 @@ const swatch = (cls, value) =>
 /* `kind` is what the day would draw this as: a lesson, one of the school's
    breaks, or a gap this page worked out. A sample that does not look like the
    thing it stands for is worth less than no sample. */
+/* Drawn 46 pixels tall, the same as the box in the stylesheet, so the sample
+   gives up what a 45-minute lesson gives up and packs where a packed box packs.
+   A break puts its name first here as it does in the day. */
 function sampleBox(bg, fg, when, label, meta, kind) {
   const style = "background-color:" + esc(bg) + ";color:" + esc(fg) +
                 (kind === "brk" ? ";" + hatch(bg) : "");
+  const parts = kind === "brk"
+    ? [{ role: "name", text: label }, { role: "time", text: when }]
+    : [{ role: "time", text: when }, { role: "name", text: label },
+       { role: "detail", text: meta }];
   const body = kind === "gap"
     ? '<div class="what">' + esc(label) + " · " + esc(durationText(45)) + "</div>"
-    : '<div class="when">' + esc(when) + "</div>" +
-      '<div class="what">' + esc(label) + "</div>" +
-      (meta ? '<div class="who2">' + esc(meta) + "</div>" : "");
+    : boxBody(46, parts).html;
   return '<div class="ev' + (kind ? " " + kind : "") + '" style="' + style + '">' +
     body + "</div>";
 }
@@ -3477,10 +3578,11 @@ function textColorCell(row, color, auto) {
 }
 
 /* 45 minutes from wherever the row starts, so the sample reads as a real span
-   without pretending to be the row's own. */
+   without pretending to be the row's own. Written the way the day writes it: a
+   sample showing a clock the day no longer draws is a sample of nothing. */
 function sampleWhen(from) {
   const a = clock(from);
-  return a === null ? "" : hhmm(a) + "–" + hhmm(a + 45);
+  return a === null ? "" : clockText(a, a + 45);
 }
 
 function eventRow(ev, i) {

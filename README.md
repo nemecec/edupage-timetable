@@ -522,12 +522,14 @@ period grid, which needs no times.
   as having said it, since it names the class itself. The page is shipped with
   the panel open, so a browser running no script at all gets the answer that
   helps somebody who cannot collapse it either.
-- **Display options** is five sections, and each holds only what belongs to it.
-  The title, then what each lesson box says, then what the day shows, then the
-  type, then how lessons look. A control under the wrong heading is a control nobody finds, and
+- **Display options** is six sections, and each holds only what belongs to it.
+  The title, then what each lesson box says, then how those parts are fitted
+  into the box, then what the day shows, then the type, then how lessons look.
+  A control under the wrong heading is a control nobody finds, and
   a test holds each one where it belongs. Free time lives under the day rather
   than the lesson, because it is a box the page adds where the school left a
-  hole and not a label on a lesson.
+  hole and not a label on a lesson. Which parts a box says and whether they take
+  a line each are two questions, so they are two sections.
 - **Calendar** is the other way of taking a week away with you, and sits next
   to Print options for that reason. One button writes an `.ics` file holding
   exactly what is on screen — the reader's groups, without the subjects they
@@ -663,6 +665,30 @@ period grid, which needs no times.
   **For each lesson, show:** the teacher, the room, the study group and the
   subject are independent of each other. The teacher and the
   subject each choose between the full name and the school's abbreviation.
+
+  The clock is two checkboxes rather than one, one per end, and how long the
+  lesson lasts is a third. A sheet the size of a card has room for one end, and
+  the start is the end somebody reads a timetable for. The end kept on its own
+  keeps its dash — `–10.20` — because a bare `10.20` reads as a start, and a
+  sheet showing nothing else gives a reader nothing to read it against. Drop
+  both ends and the duration stands on its own, without the brackets it has
+  nothing left to sit beside.
+
+  **Fit these into a lesson box** is a second question about the same
+  checkboxes. Whichever parts they leave switched on either take a line each or
+  share one. Stacked is a line each, which is what a box tall enough for three
+  lines wants. Packed sets them side by side on one line.
+
+  On a 100 by 60 card a box is one line tall. Stacked, everything under the
+  first line falls off the bottom and is not drawn at all: a reader asking for
+  the room gets a box with no space to say it. Packed, the same parts fit on the
+  line the box has. Which parts those are is not this setting's business — that
+  is the checkboxes above it — so a reader who wants the start time, the short
+  subject name and the room on one line switches the rest off and asks for
+  packed.
+
+  A box too short for two lines packs itself whatever the setting says. There is
+  no second line there to stack anything on.
 
   A teacher's name arrives family name first and abbreviated, which is how a
   school files a name and fits it in a cell — not how a family says it. So the
@@ -1068,6 +1094,7 @@ paste lands.
   "showSubject": true,
   "subjectNameStyle": "full",
   "teacherNameOrder": "first",
+  "boxLayout": "stacked",
 
   "nameFace": "sans",
   "nameSize": "150",
@@ -1075,6 +1102,8 @@ paste lands.
   "timeSize": "125",
   "detailFace": "sans",
   "detailSize": "100",
+  "showStart": true,
+  "showEnd": true,
   "showDuration": true,
   "showGaps": true,
   "showQr": false,

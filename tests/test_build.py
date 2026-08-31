@@ -1036,6 +1036,7 @@ class Documentation(unittest.TestCase):
             "showTeacher": "showHeading", "showDuration": "showHeading",
             "showRoom": "showHeading", "showGroup": "showHeading",
             "showSubject": "showHeading",
+            "showStart": "showHeading", "showEnd": "showHeading",
             "showGaps": "dayHeading",
         }
         for control, expected in want.items():
@@ -1047,9 +1048,9 @@ class Documentation(unittest.TestCase):
         settings left the panel."""
         panel = self.section("displayPanel", "printPanel")
         headings = re.findall(r'data-i18n="(\w+Heading)"', panel)
-        self.assertEqual(len(headings), 5, headings)
+        self.assertEqual(len(headings), 6, headings)
         with open(os.path.join(ROOT, "README.md"), encoding="utf-8") as fh:
-            self.assertIn("**Display options** is five sections", fh.read())
+            self.assertIn("**Display options** is six sections", fh.read())
 
     def test_the_print_settings_are_a_section_of_their_own(self):
         """They change nothing until the sheet comes out of the printer, so they

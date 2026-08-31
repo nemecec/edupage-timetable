@@ -690,6 +690,25 @@ period grid, which needs no times.
   A box too short for two lines packs itself whatever the setting says. There is
   no second line there to stack anything on.
 
+  Nothing hides the clock inside a box. Any sheet under 170mm used to, on screen
+  as well as on paper, because the rule followed the size of the sheet and not
+  the printing. The reason was sound while it was the only answer available: the
+  strip down the side already says when a lesson is, and a copy of it inside a
+  59-pixel box costs the subject its name — every card read `9.00…` where it
+  should have read the lesson.
+
+  It was still the page reversing the reader, and once the clock became three
+  checkboxes it left all three doing nothing on the one sheet they were added
+  for. What it cost is real, and the reader pays it with the controls instead.
+  On a 100 by 60 card, class 7 with a study group picked:
+
+  | | lines that fit whole |
+  |---|---|
+  | as the page opens | 0 of 17 |
+  | start time, short names, room, packed, 70% | 11 of 17 |
+  | the same at 60% | 16 of 17 |
+  | the same at 50% | 17 of 17 |
+
   A teacher's name arrives family name first and abbreviated, which is how a
   school files a name and fits it in a cell — not how a family says it. So the
   page writes it out in full and turns it round, and both are the reader's to

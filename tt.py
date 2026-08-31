@@ -2907,12 +2907,17 @@ PAGE = """<!DOCTYPE html>
      ran into each other and read as a grey smear. The rules behind them stay,
      so the half hours are still there to be seen. */
   body.tight .tlaxis .t:not(.hour) { display: none; }
-  /* And a box that small has room for one line. The clock down the side
-     already says when the lesson is, so a copy of it inside the box costs the
-     subject its name — every card read "9.00…" where it should have read the
-     lesson. */
-  body.tight .ev .when,
-  body.tight .ev .what.oneline .clock { display: none; }
+  /* Nothing here hides the clock inside a box. It did, on any sheet under
+     170mm, and on screen as well as on paper because the class follows the size
+     of the sheet rather than the printing. The reason was sound while it was
+     the only answer available: the strip already says when a lesson is, and a
+     copy of it inside a 59-pixel box costs the subject its name.
+   *
+   * It was still the page reversing the reader. Now that the clock is three
+   * checkboxes, a rule here leaves all three doing nothing on the one sheet
+   * they were added for — which is how it reads from the outside: a switch that
+   * does not switch. What it cost is real, and the reader pays it with the
+   * controls instead. */
   /* The half-hour rules, one gradient rather than two stacked. An hour is
      exactly two halves, so one period holds both lines: the darker one on the
      hour and the lighter one between. Stacking them needed the top layer to be

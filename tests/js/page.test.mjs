@@ -1670,6 +1670,23 @@ test("a packed line is measured as one line, not three", () => {
   run(`state = defaults();`);
 });
 
+test("a narrow sheet does not overrule the clock the reader asked for", () => {
+  /* Any sheet under 170mm hid the clock inside every box, on screen as well as
+     on paper. The reason was sound while it was the only answer available: the
+     strip down the side already says when a lesson is, and a copy of it in a
+     59-pixel box costs the subject its name. It was still the page reversing
+     the reader, and it left the three clock checkboxes doing nothing on the one
+     sheet they were added for. */
+  const css = readFileSync(join(root, "tt.py"), "utf8");
+  const rule = /body\.tight[^{]*\.(when|clock)[^{]*\{[^}]*display:\s*none/;
+  assert.ok(!rule.test(css),
+            "a narrow sheet hides a clock the reader switched on");
+  /* The half-hour labels are a different matter. They are the page's own scale
+     rather than the reader's choice, and on a small sheet they ran into each
+     other and read as a grey smear. */
+  assert.match(css, /body\.tight \.tlaxis \.t:not\(\.hour\) \{ display: none; \}/);
+});
+
 test("a gap long enough to plan around is drawn, and belongs to the reader", () => {
   /* Fifteen minutes is where a hole stops being a corridor. The point is
      logistics: how long until the next thing. */

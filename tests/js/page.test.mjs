@@ -1844,6 +1844,32 @@ test("the page's own sizes are what a box falls back to", () => {
   assert.deepEqual(json(`baseSizes("")`), { time: 10, name: 12, detail: 10.5 });
   assert.deepEqual(json(`baseSizes(" tight")`),
                    { time: 10, name: 11, detail: 10.5 });
+  /* And a break is not a lesson. It is set smaller at every one of its three
+     heights, and measuring it as a lesson gave every break room it did not
+     have. These are the numbers the stylesheet draws. */
+  assert.equal(json(`baseSizes("brk").name`), 11, "a break at its full height");
+  assert.equal(json(`baseSizes("brk tiny").name`), 10.5);
+  assert.equal(json(`baseSizes("brk tiny squeeze").name`), 9);
+  assert.equal(json(`baseSizes("brk tiny squeeze").time`), 8.5,
+               "the clock is what a squeezed band keeps");
+  assert.equal(json(`baseSizes("gap").name`), 9.5);
+
+  /* The stylesheet says the same, and says it as a multiple of what the reader
+     asked for rather than as a fixed number of pixels. A break drawn at a fixed
+     size was the one box that ignored the setting: on a card small enough to
+     need 60% type, the breaks came out the largest words on it. */
+  const css = readFileSync(join(root, "tt.py"), "utf8");
+  for (const [rule, px, role] of [[".ev.brk .what", "11px", "name"],
+                                  [".ev.brk.tiny .what", "10.5px", "name"],
+                                  [".ev.brk.squeeze .what", "9px", "name"],
+                                  [".ev.brk.squeeze .clock", "8.5px", "time"],
+                                  [".ev.gap .what", "9.5px", "name"]]) {
+    const block = css.slice(css.indexOf(rule + " {"));
+    const decl = block.slice(0, block.indexOf("}"));
+    assert.match(decl, new RegExp("font-size:\\s*calc\\(" + px +
+                                  "\\s*\\* var\\(--grow-" + role + "\\)\\)"),
+                 rule + " draws a size the reader cannot change");
+  }
 });
 
 test("a typeface is one of the three every machine has", () => {

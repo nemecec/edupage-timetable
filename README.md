@@ -688,6 +688,14 @@ period grid, which needs no times.
   is the floor, because under that a room number is a smudge rather than small
   print.
 
+  Every box answers to these, breaks included. A break and a worked-out gap are
+  set smaller than a lesson, and the stylesheet scales both off the reader's
+  number rather than off a fixed count of pixels. Fixed, they were the one thing
+  on a card that ignored the setting: a reader asking for 60% got it everywhere
+  but the breaks, which stayed at full size and came out the largest words on
+  the sheet. `baseSizes` in `page.js` carries the same numbers, so the
+  arithmetic that decides how much a box can grow measures what is drawn.
+
   Nothing is fetched. A page that asks for a font from somewhere else is a page
   that does not open on a train, so the choices are the three families every
   machine has: sans-serif, serif and monospace.

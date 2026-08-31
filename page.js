@@ -1286,12 +1286,21 @@ function askedGrow(role) {
 }
 
 /* The sizes the page has always drawn, per line, before anybody asked for
-   more. Two of them depend on how tall the box is, which is why this takes a
-   box and not just a role. */
+   more. They depend on how tall the box is and on what kind of box it is,
+   which is why this takes a box and not just a role.
+ *
+ * A break is set smaller than a lesson at every height, and a worked-out gap
+ * smaller again. The stylesheet says the same numbers, and a test holds the two
+ * together — measuring a break as though it were a lesson gave every break
+ * room it did not have. */
 function baseSizes(cls) {
   return {
-    time: 10,
-    name: cls.includes("tight") ? 11 : 12,
+    time: cls.includes("squeeze") ? 8.5 : 10,
+    name: cls.includes("gap") ? 9.5
+        : cls.includes("squeeze") ? 9
+        : cls.includes("tiny") ? 10.5
+        : cls.includes("brk") || cls.includes("tight") ? 11
+        : 12,
     detail: 10.5,
   };
 }
@@ -1311,7 +1320,12 @@ function baseSizes(cls) {
  * existed. */
 function growRoom(height, cls, lines) {
   const base = baseSizes(cls);
-  const leading = cls.includes("snug") ? 1.1 : 1.25;
+  /* Each of these is the line height the stylesheet gives that box. */
+  const leading = cls.includes("squeeze") ? 1
+                : cls.includes("tiny") ? 1.2
+                : cls.includes("gap") ? 1.15
+                : cls.includes("snug") ? 1.1
+                : 1.25;
   /* The border is 1px each side and the padding 2px each side. A dashed box
      draws 2px, and half a pixel of slack is cheaper than a second branch. */
   const room = height - 2 - 4 - 1;
@@ -1566,13 +1580,12 @@ function tornEdge(width, shift, amp) {
       if (it.gap === GAP) {
         /* Worked out here rather than published, so it says only the one thing
            the lessons around it do not: how long it is. The outline is what
-           says it was inferred; the color is the reader's like any other. */
-        /* No growth here, and that is a decision rather than an omission. A
-           worked-out hole is the least of what a day says — it is there to be
-           counted, not read — and it is the one box whose whole content is a
-           duration the lessons either side already imply. */
+           says it was inferred; the color is the reader's like any other, and so
+           is the size — a reader who asks for half-size type on a card means
+           this box too. */
         const kind = it.gap, col = colorFor(kind), how = durationText(it.z - it.a);
-        h += '<div class="ev gap" data-subject="' + esc(kind) + '" style="' + geom +
+        h += '<div class="ev gap" data-subject="' + esc(kind) + '" style="' +
+             growStyle(height, "gap", ["name"]) + geom +
              "background-color:" + esc(col.bg) + ";color:" + esc(col.fg) +
              '" title="' + esc(breakLabel(kind) + " " + how) +
              '"><div class="what">' + esc(breakLabel(kind)) + " · " + esc(how) +
@@ -1601,7 +1614,8 @@ function tornEdge(width, shift, amp) {
            the padding is the difference between a line and a cut line. */
         const brkCls = height < 17 ? " tiny squeeze" : height < 22 ? " tiny" : "";
         h += '<div class="ev brk' + brkCls + '" style="' +
-             growStyle(height, brkCls, height >= 30 ? ["name", "time"] : ["name"]) +
+             growStyle(height, "brk" + brkCls,
+                       height >= 30 ? ["name", "time"] : ["name"]) +
              geom + "background-color:" + esc(col.bg) +
              ";color:" + esc(col.fg) + ";" + hatch(col.bg) +
              '" data-subject="' + esc(band) + '" title="' +

@@ -2797,7 +2797,11 @@ PAGE = """<!DOCTYPE html>
                   font-variant-numeric: tabular-nums; }
   .cont { opacity: .62; }
   .brk { background: #f2f3f5; min-width: 60px; }
-  .brk .time { font-size: 11px; color: #3d444d; font-variant-numeric: tabular-nums; }
+  /* Scaled like every other clock. It was a fixed size, which is the same fault
+     the timeline's breaks had: a reader who asked the page for smaller type got
+     it everywhere but here. */
+  .brk .time { font-size: calc(11px * var(--grid, 1) * var(--grow-time));
+               color: #3d444d; font-variant-numeric: tabular-nums; }
   thead th.brk, tbody th.brk { font-weight: 500; color: var(--muted); font-size: 11px;
                                white-space: normal; min-width: 80px; }
   /* The period column. It holds "1" or "HA", not a weekday, so it needs no
@@ -2955,7 +2959,8 @@ PAGE = """<!DOCTYPE html>
      the padding comes off so the one line still fits. */
   .ev.gap { border-style: dashed; border-color: #c3c9d1; padding: 0 5px;
             display: flex; align-items: center; justify-content: center; }
-  .ev.gap .what { font-weight: 500; font-size: 9.5px; line-height: 1.15;
+  .ev.gap .what { font-weight: 500; font-size: calc(9.5px * var(--grow-name));
+                  line-height: 1.15;
                   text-align: center; white-space: nowrap; overflow: hidden;
                   text-overflow: ellipsis; width: 100%; }
   /* The stripes are translucent, so the color underneath shows through. A
@@ -2966,19 +2971,26 @@ PAGE = """<!DOCTYPE html>
      translucent white, and a printer turned the translucent part solid black
      — on paper only, never in a PDF. */
   .ev.brk { color: #6b7280; border-color: #e2e5ea; }
-  .ev.brk .what { font-weight: 500; font-size: 11px; }
+  /* Smaller than a lesson, and the reader's to size like one. Fixed in pixels,
+     these were the one set of boxes that ignored the setting: on a card small
+     enough to need 60% type, the breaks stayed at full size and came out the
+     largest words on the sheet. `baseSizes` in page.js carries the same three
+     numbers, and a test holds the two together. */
+  .ev.brk .what { font-weight: 500; font-size: calc(11px * var(--grow-name)); }
   /* A ten-minute band, which at 1.8 pixels a minute is 18 tall. Barely room
      for a line, so the padding thins rather than disappears. */
   .ev.brk.tiny { padding: 1px 4px; }
-  .ev.brk.tiny .what { font-size: 10.5px; line-height: 1.2; }
+  .ev.brk.tiny .what { font-size: calc(10.5px * var(--grow-name));
+                       line-height: 1.2; }
   /* Shorter than one line of type. A printed sheet is scaled to fit the paper,
      and a ten-minute band on a full week comes out under fourteen pixels —
      where the line no longer fits and the box cuts it. The clock is what a
      reader cannot work out from the lessons either side, so it stays, and the
      type gives way instead. */
   .ev.brk.squeeze { padding: 0 3px; }
-  .ev.brk.squeeze .what { font-size: 9px; line-height: 1; }
-  .ev.brk.squeeze .clock { font-size: 8.5px; }
+  .ev.brk.squeeze .what { font-size: calc(9px * var(--grow-name));
+                          line-height: 1; }
+  .ev.brk.squeeze .clock { font-size: calc(8.5px * var(--grow-time)); }
   /* A personal event is drawn over the timetable, so it needs to be above it —
      but it should not look like a different kind of thing. It is a lesson in
      every visible respect, whichever way its text color was arrived at: the

@@ -93,7 +93,7 @@ class WholePage(unittest.TestCase):
         self.assertEqual((len(rows), len(boxes)), (1782, 1468))
         # 70 subject names, plus the five named breaks. A break is drawn and
         # recolored like a lesson, so it needs a color of its own.
-        self.assertEqual(len(self.data["palette"]), 75)
+        self.assertEqual(len(self.data["palette"]), 76)
         # Every class carries lessons, and the group pickers are populated.
         self.assertTrue(all(c["e"] for s in self.data["schools"] for c in s["c"]))
         self.assertEqual(sum(len(c["v"]) for s in self.data["schools"]
@@ -339,10 +339,51 @@ class WholePage(unittest.TestCase):
                                   "Lõuna + loovaeg", "Söömine"})
         for name in breaks:
             with self.subTest(name=name):
-                self.assertEqual(self.data["palette"][name],
-                                 {"bg": tt.BREAK_BG, "fg": tt.BREAK_FG})
+                self.assertIn(self.data["palette"][name]["bg"],
+                              (tt.BREAK_BG, tt.MEAL_BG))
+                self.assertEqual(self.data["palette"][name]["fg"], tt.BREAK_FG)
         # A subject still gets a colour of its own from its family.
         self.assertNotEqual(self.data["palette"]["Ajalugu"]["bg"], tt.BREAK_BG)
+        self.assertNotEqual(self.data["palette"]["Ajalugu"]["bg"], tt.MEAL_BG)
+
+    def test_eating_and_free_time_do_not_share_a_colour(self):
+        """In one grey, with labels of much the same length, a column of them
+        was a column of identical boxes. Eating is one answer to "what is this
+        hour" and free time is another."""
+        palette = self.data["palette"]
+        breaks = {b["n"] for s in self.data["schools"] for c in s["c"]
+                  for day in c["h"].values() for b in day["b"] if b["n"]}
+        meals = {n for n in breaks if n in tt.MEAL_BREAKS}
+        rest = breaks - meals
+        self.assertEqual(meals, {"Söömine", "Amps", "Hommikuamps", "Lõuna",
+                                 "Lõuna + loovaeg"})
+        self.assertEqual(rest, {"Vaba aeg"})
+        for name in meals:
+            self.assertEqual(palette[name]["bg"], tt.MEAL_BG, name)
+        for name in rest:
+            self.assertEqual(palette[name]["bg"], tt.BREAK_BG, name)
+        # A lunch the page works out for itself is still lunch, so it is the
+        # same colour as a lunch the school named. Same hour, same meal.
+        self.assertEqual(palette[tt.WORKED_OUT_LUNCH]["bg"], tt.MEAL_BG)
+
+    def test_the_two_break_colours_survive_a_printer_with_no_colour(self):
+        """A card is printed as often as it is looked at. A hue is the fastest
+        thing to read at a glance and the first thing a mono printer throws
+        away, so the two differ in lightness as well."""
+        def grey(hex_colour):
+            r, g, b = (int(hex_colour[i:i + 2], 16) for i in (1, 3, 5))
+            return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+        self.assertGreater(grey(tt.BREAK_BG) - grey(tt.MEAL_BG), 10,
+                           "the two are the same shade of grey on paper")
+        # And both stay quiet enough to read the label on.
+        for bg in (tt.BREAK_BG, tt.MEAL_BG):
+            with self.subTest(bg=bg):
+                lit = tt._relative_luminance(*(int(bg[i:i + 2], 16)
+                                               for i in (1, 3, 5)))
+                dark = tt._relative_luminance(*(int(tt.BREAK_FG[i:i + 2], 16)
+                                                for i in (1, 3, 5)))
+                self.assertGreater(tt._contrast(lit, dark), 4.5)
 
     def test_the_gumnaasium_keeps_its_own_day(self):
         """One published timetable, two schools. Read against the grades below

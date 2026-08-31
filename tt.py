@@ -2669,6 +2669,33 @@ def break_names(schools):
 # The reader can still recolor it.
 BREAK_BG, BREAK_FG = "#EDEFF2", "#4a5058"
 
+# Except the ones that are a meal, which are their own thing. Eating and free
+# time are two different answers to "what is this hour", and in one grey with
+# labels of much the same length they were a column of identical boxes.
+#
+# Warm rather than another grey, because a hue is the fastest thing to read at a
+# glance — and a step darker as well, because a card is printed as often as it
+# is looked at and a printer with no color has only the step. Fifteen points of
+# greyscale between them.
+#
+# Quiet all the same: this is the beige that lost to the lessons, thinned until
+# it reads as background. A meal is still a gap in the day.
+MEAL_BG = "#EADFC8"
+
+# Which breaks those are. The names are the schools' own, and a school that
+# invents another one fails the test that pins every break name — which is the
+# moment to decide which of the two it is, rather than have it quietly land in
+# whichever came first.
+MEAL_BREAKS = frozenset({"Söömine", "Amps", "Hommikuamps", "Lõuna",
+                         "Lõuna + loovaeg"})
+
+# And the page's own name for a hole it worked out to be lunch, where the school
+# left the meal to arithmetic instead of naming a band. Same hour, same meal,
+# same color — a reader should not be told two different things about it
+# depending on which school wrote the timetable. The page calls it this; see
+# gapKind in page.js.
+WORKED_OUT_LUNCH = "lunch"
+
 # The page's own mark: a week, one column a day, hanging from the morning
 # down. Inline, so no browser asks for /favicon.ico and is handed the 404
 # page as an image.
@@ -2676,7 +2703,9 @@ ICON = "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox
 
 
 def break_palette(names):
-    return {name: {"bg": BREAK_BG, "fg": BREAK_FG} for name in names}
+    meals = MEAL_BREAKS | {WORKED_OUT_LUNCH}
+    return {name: {"bg": MEAL_BG if name in meals else BREAK_BG,
+                   "fg": BREAK_FG} for name in names}
 
 
 def compact(schools):
@@ -3871,7 +3900,9 @@ def render_html(schools, edupage, year, initial_school, initial_class, lang="en"
     # One palette across all four timetables, so a subject looks the same
     # whichever school is on screen. Only the school's own abbreviation and its
     # own color are per-school. Those live on the school, not here.
-    gaps = break_names(schools)
+    # The worked-out lunch is not a name any school wrote, so it is not among
+    # the names collected from them. It is drawn all the same.
+    gaps = break_names(schools) | {WORKED_OUT_LUNCH}
     all_subjects = sorted({name for per in subject_meta.values() for name in per}
                           - gaps)
     # How much paper each subject covers. The most common one in its family

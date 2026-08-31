@@ -135,8 +135,9 @@ out of the clock. The clock gets two details right:
   the school has told us about. Every other class keeps the plain hour, which is
   what the page drew before and is not wrong, only less.
 
-  A sitting is a break like any other, so it takes the same quiet grey and the
-  reader can rename or recolor it from the subject table.
+  A sitting is a break like any other, so the reader can rename or recolor it
+  from the subject table — and it takes the meal color, not the plain one. See
+  **Two quiet colors, not one** below.
 - **A day can hold two sittings, and then the page asks a question aSc cannot
   hold.** The eighth year's Friday is that day: everybody has Praktikum at the
   same hour, and whether yours is inside the schoolhouse or outside decides
@@ -1392,7 +1393,23 @@ Some of these choices are not obvious:
   lines and the hour reads darker again. The default
   color is a quiet grey rather than one from the subject palette. A break runs
   the full width of the day, so a palette color wins every glance, which is
-  backwards for a gap. Each row says what that subject
+  backwards for a gap.
+
+  **Two quiet colors, not one.** A break that is a meal — *Söömine*, *Amps*,
+  *Hommikuamps*, *Lõuna*, *Lõuna + loovaeg*, and a lunch the page worked out for
+  itself — is drawn in a warm `#EADFC8` rather than the grey `#EDEFF2` the rest
+  take. Eating is one answer to "what is this hour" and free time is another,
+  and in one grey with labels of much the same length a column of them was a
+  column of identical boxes.
+
+  A hue because it is the fastest thing to read at a glance, and a step darker
+  as well because a card is printed as often as it is looked at and a printer
+  with no color has only the step: fifteen points of greyscale between them, and
+  a test that says so. Both stay above 4.5:1 against the label.
+
+  The worked-out lunch takes the meal color too. Same hour and same meal, so a
+  reader should not be told two different things about it depending on whether
+  their school named the band or left it to arithmetic. Each row says what that subject
   really does: **own color**, **from the timetable**, or **automatic**. A subject
   set to "own color" with no color behind it reads as automatic, because that is
   what gets drawn. The sample at the end of the row takes the room and teacher

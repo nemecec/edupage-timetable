@@ -1410,6 +1410,53 @@ function shrinkOverfull(root) {
   }
 }
 
+/* A packed line the box cannot fit on one line, in a box with room for a second
+   one, is given the second line rather than an ellipsis.
+ *
+ * Measured rather than worked out. Whether "9.00 Eesti k A212" fits 64 pixels is
+ * a question about the font the reader's machine has and the size they asked
+ * for, and only the browser knows the answer. It runs after the type has given
+ * back whatever the box had no room for, so it measures what is drawn.
+ *
+ * A second line costs the sheet nothing. Every box is positioned by the clock
+ * and its height is fixed before any of this, so the space under the first line
+ * is space the box already owns and was leaving empty.
+ *
+ * A box with room for one line is left alone, and that is the point of the
+ * measurement rather than an omission. Told it may wrap, such a box breaks at
+ * the space before the part that does not fit and then has nowhere to put it:
+ * "9.00…" where it had shown "9.00 Ees…", which is less of the lesson and not
+ * more. */
+function wrapPacked(root) {
+  if (!root || !root.querySelectorAll) return;
+  for (const line of root.querySelectorAll(".ev .what.oneline")) {
+    /* Cleared first, so a second pass over the same boxes asks the same
+       question rather than measuring its own last answer. */
+    line.classList.remove("wrap");
+    if (line.style && line.style.removeProperty) line.style.removeProperty("--lines");
+    const box = line.parentElement;
+    if (!box) continue;
+    if (line.scrollWidth <= line.clientWidth + 1) continue;   // it fits as it is
+    const face = getComputedStyle(line), edge = getComputedStyle(box);
+    const step = parseFloat(face.lineHeight) || 1.25 * parseFloat(face.fontSize);
+    const room = box.clientHeight - parseFloat(edge.paddingTop) -
+                 parseFloat(edge.paddingBottom);
+    if (!(step > 0) || !(room > 0)) continue;
+    const lines = Math.floor(room / step);
+    if (lines < 2) continue;
+    line.style.setProperty("--lines", String(lines));
+    line.classList.add("wrap");
+  }
+}
+
+/* Both passes, in the order they have to run: the type settles first, and what
+   wraps is then measured against the size it ended up at. Every caller wants
+   both, and one that remembered only the first left the rooms cut. */
+function fitBoxes(root) {
+  shrinkOverfull(root);
+  wrapPacked(root);
+}
+
 /* The inside of one box: the parts the reader left switched on, in the order
    the box draws them, and nothing where a part is switched off.
  *
@@ -2131,7 +2178,7 @@ function fitTimeline(school, cls, shown, mine) {
     grid.innerHTML = renderTimeline(school, cls, shown, mine, scale);
     /* Measured before it is judged: a box that gave its growth back is shorter
        than the one the arithmetic drew, and the sheet is measured after. */
-    shrinkOverfull(grid);
+    fitBoxes(grid);
     return RESTORE_PREVIOUS;      // render() draws the real one with the answer
   }, 0.25, 3.0);
 }
@@ -2577,7 +2624,7 @@ function render() {
     grid.innerHTML =
       renderTimeline(school, cls, drawn, parsed.events,
                      printing ? fitTimeline(school, cls, drawn, parsed.events) : 0);
-    shrinkOverfull(grid);
+    fitBoxes(grid);
     document.getElementById("count").textContent =
       t("lessonCount", drawn.length) + (parsed.events.length ?
         " · " + t("mineCount", parsed.events.length) : "");

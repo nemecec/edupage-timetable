@@ -403,6 +403,57 @@ class ThePrintedSheet(InABrowser):
                                msg="the original is %.0fpx and the copy %.0fpx"
                                    % (got["week"], got["tile"]))
 
+    def test_a_room_that_does_not_fit_the_line_takes_the_next_one(self):
+        """Packed, the parts of a lesson share one line. Where that line is too
+        long for the column and the box has a second line to spare, the room
+        goes on it rather than being cut off the first — the space under the
+        first line is space the box already owns and was leaving empty.
+
+        Only where it fits. A box with room for one line, told it may wrap,
+        breaks at the space before the part that does not fit and then has
+        nowhere to put it: "9.00…" where it showed "9.00 Mus A2…", which is less
+        of the lesson rather than more."""
+        self.show("68", "7")
+        got = self.js(
+            "state.printSheet = 'custom'; state.printWidth = 100;"
+            "state.printHeight = 70; state.printMargin = 5;"
+            "state.showEnd = false; state.showDuration = false;"
+            "state.subjectNameStyle = 'short'; state.showAxis = false;"
+            "state.boxLayout = 'packed';"
+            "state.showTeacher = false; state.showGroup = false;"
+            "state.nameSize = '70'; state.timeSize = '70'; state.detailSize = '70';"
+            "for (var i = 0; i < currentClass().v.length; i++) {"
+            "  var d = currentClass().v[i];"
+            "  myOwn().studyGroups[choiceKey(d)] = d.groups[0]; }"
+            "printing = true; render();"
+            "var tile = document.querySelector('#tiles .tile');"
+            "var lines = [].slice.call(tile.querySelectorAll('.ev .what.oneline'));"
+            "var wrapped = lines.filter(function (l) {"
+            "  return l.classList.contains('wrap'); });"
+            "var out = {"
+            "  lines: lines.length,"
+            "  wrapped: wrapped.length,"
+            "  clamps: wrapped.map(function (l) {"
+            "    return Number(l.style.getPropertyValue('--lines')); }),"
+            "  spill: wrapped.filter(function (l) {"
+            "    return l.scrollHeight > l.parentElement.clientHeight + 1; }).length,"
+            "  shortOnes: lines.filter(function (l) {"
+            "    return !l.classList.contains('wrap') &&"
+            "           l.parentElement.clientHeight < 20; }).length};"
+            "printing = false; render();"
+            "return out;")
+        self.assertGreater(got["wrapped"], 0,
+                           "no packed line took a second line on a 100x70 card")
+        self.assertLess(got["wrapped"], got["lines"],
+                        "every line wrapped, so the measurement decided nothing")
+        # Never one line, which is the no-op, and never more than the box holds.
+        for clamp in got["clamps"]:
+            self.assertGreaterEqual(clamp, 2, "a clamp of one is not a wrap")
+        self.assertEqual(got["spill"], 0,
+                         "a wrapped line ran past the bottom of its box")
+        self.assertGreater(got["shortOnes"], 0,
+                           "no short box was left on one line to compare")
+
     def test_a_small_sheet_is_copied_across_the_page(self):
         """A card a third the size of the paper leaves the rest of it blank, so
         the page is filled with copies and the paper is turned when turning it

@@ -2978,6 +2978,21 @@ PAGE = """<!DOCTYPE html>
      rather than wrapped out of sight. */
   .ev .what.oneline { font-weight: 600; white-space: nowrap; overflow: hidden;
                       text-overflow: ellipsis; }
+  /* Given a second line by `wrapPacked`, because the line did not fit on one and
+     the box had another to spare. The clamp is however many lines the box
+     measured room for, and it puts the ellipsis on the last of them.
+
+     The clock and the quiet line never break inside themselves: a room number
+     split over two lines is not a room number, and neither is half a time. So
+     the break falls between the parts, which is what moves the room to the next
+     line whole. The subject name is left breakable on purpose — it is the long
+     one, and an atom wider than the column has nowhere to go but over the
+     edge. */
+  .ev .what.oneline.wrap { white-space: normal; text-overflow: clip;
+                           display: -webkit-box; -webkit-box-orient: vertical;
+                           -webkit-line-clamp: var(--lines, 2); }
+  .ev .what.oneline.wrap .clock,
+  .ev .what.oneline.wrap .who3 { white-space: nowrap; }
   .ev .what.oneline .clock { font-weight: 400; opacity: .85;
                              font-family: var(--face-time);
                              font-variant-numeric: tabular-nums;

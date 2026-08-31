@@ -690,6 +690,27 @@ period grid, which needs no times.
   A box too short for two lines packs itself whatever the setting says. There is
   no second line there to stack anything on.
 
+  Where the packed line is too long for the column and the box does have a
+  second line to spare, the room goes on it rather than being cut off the first.
+  That space is space the box already owns and was leaving empty, and the box
+  height is fixed by the clock before any of this, so the second line costs the
+  sheet nothing.
+
+  It is measured, not worked out. Whether `9.00 Eesti k A212` fits 64 pixels is a
+  question about the font on the reader's machine and the size they asked for,
+  and only the browser knows. The pass runs after the type has given back
+  whatever the box had no room for, so it measures what is drawn.
+
+  A box with room for exactly one line is left alone, and that is what the
+  measurement is for. Told it may wrap, such a box breaks at the space before the
+  part that does not fit and then has nowhere to put it: `9.00…` where it had
+  shown `9.00 Mus A2…`, which is less of the lesson rather than more.
+
+  The clock and the line of room and teacher never break inside themselves — a
+  room number split over two lines is not a room number — so the break falls
+  between the parts. The subject name is left breakable, because it is the long
+  one and an atom wider than the column has nowhere to go but over the edge.
+
   Nothing hides the clock inside a box. Any sheet under 170mm used to, on screen
   as well as on paper, because the rule followed the size of the sheet and not
   the printing. The reason was sound while it was the only answer available: the

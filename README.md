@@ -710,6 +710,14 @@ period grid, which needs no times.
   | the same at 50% | 17 of 17 |
   | the same at 60% with the strip switched off | 17 of 17 |
 
+  Those figures are measured on the original, and for a while they could not
+  have been. The copies that tile a page are cloned from it, so the original has
+  to stand at the width of a card while everything is measured on it — and
+  `body.printview #grid` sets the A4 width, which an id wins. So the original
+  stood at 1054px against a card's 378, and the pass that gives type back to a
+  box too small to hold it had nothing to act on. The rule that narrows it is
+  written against the id now.
+
   **In the day, show: Times down the side** is that strip, and it switches. On,
   because it is the scale every box is positioned against and a week with no
   scale is a week of colored blocks. Off is for a card: the strip costs a fixed

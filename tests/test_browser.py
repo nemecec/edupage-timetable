@@ -377,6 +377,32 @@ class ThePrintedSheet(InABrowser):
         self.assertEqual(got["w"], 269, "a wider edge left it off the page")
         self.assertEqual(got["max"], "269")
 
+    def test_the_original_is_measured_at_the_width_it_will_be_printed_at(self):
+        """The copies are drawn at the width of a card; the original they are
+        cloned from has to stand at that width too, because it is the one every
+        measurement is taken on. `body.printview #grid` sets the A4 width and an
+        id beats any number of classes, so the rule meant to narrow it lost and
+        the original stood at 1054px — three times the card. Everything measured
+        there was measured against the wrong week."""
+        self.show("68", "7")
+        got = self.js(
+            "state.printSheet = 'custom'; state.printWidth = 100;"
+            "state.printHeight = 70; state.printMargin = 5;"
+            "printing = true; render();"
+            "var tile = document.querySelector('#tiles .tile');"
+            "document.body.classList.remove('copied');"
+            "var out = {"
+            "  week: document.getElementById('grid').getBoundingClientRect().width,"
+            "  tile: tile ? tile.querySelector('.week').getBoundingClientRect().width"
+            "             : 0};"
+            "document.body.classList.add('copied');"
+            "printing = false; render();"
+            "return out;")
+        self.assertGreater(got["tile"], 0, "no copy to compare against")
+        self.assertAlmostEqual(got["week"], got["tile"], delta=2,
+                               msg="the original is %.0fpx and the copy %.0fpx"
+                                   % (got["week"], got["tile"]))
+
     def test_a_small_sheet_is_copied_across_the_page(self):
         """A card a third the size of the paper leaves the rest of it blank, so
         the page is filled with copies and the paper is turned when turning it

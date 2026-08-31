@@ -3099,7 +3099,14 @@ PAGE = """<!DOCTYPE html>
      one it is going on — and a hidden original measures nothing at all, which
      scaled it not at all. It goes out of sight only once the copies are made,
      which is what `copied` says. */
-  body.printview.tiled > .scroll .week,
+  /* `#grid` and not `.week`, which is the same element: `body.printview #grid`
+     sets the A4 width above, and an id beats any number of classes. With that
+     rule winning, the original stood at 1054px while the copies were drawn at
+     the width of a card, so everything measured on it was measured against a
+     week three times wider than the one going on the paper — and the pass that
+     gives type back to a box that cannot hold it never had anything to act on.
+     The copies have their ids taken off, so this does not catch them. */
+  body.printview.tiled > .scroll #grid,
   body.printview.tiled > .foot { width: calc(var(--cutw) - 2 * var(--cutpad)); }
   body.printview.copied > .scroll, body.printview.copied > .foot { display: none; }
   #tiles .tile > .week { width: auto; }

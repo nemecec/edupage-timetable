@@ -1217,6 +1217,40 @@ test("a subject can be given a name of the reader's own", () => {
   assert.deepEqual(json(`state.subjects`), {}, "an empty name leaves nothing behind");
 });
 
+test("a subject can be given a short name of the reader's own", () => {
+  /* Two overrides, not one, because one word cannot be both: a reader who
+     writes "Maths" for a wall chart wants "Ma" on a card. Writing either leaves
+     the other alone. */
+  run(`state = defaults(); state.subjects = {};`);
+  assert.equal(json(`subjectLabel("Matemaatika", true)`), "Mat",
+               "the school's abbreviation to begin with");
+
+  run(`setSubjectShort("Matemaatika", "Ma");`);
+  assert.equal(json(`subjectLabel("Matemaatika", true)`), "Ma");
+  assert.equal(json(`subjectLabel("Matemaatika", false)`), "Matemaatika",
+               "the long name was left alone");
+  assert.deepEqual(json(`state.subjects.Matemaatika`), { short: "Ma" });
+
+  run(`setSubjectLabel("Matemaatika", "Maths");`);
+  assert.equal(json(`subjectLabel("Matemaatika", false)`), "Maths");
+  assert.equal(json(`subjectLabel("Matemaatika", true)`), "Ma",
+               "the short one still wins where the short one is wanted");
+
+  /* A long name of your own with no short one still stands in for the short
+     one. You wrote it as short as you wanted it, and the school's abbreviation
+     of a word the school does not use is a name from neither. */
+  run(`setSubjectShort("Matemaatika", "  ");`);
+  assert.equal(json(`subjectLabel("Matemaatika", true)`), "Maths");
+  assert.deepEqual(json(`state.subjects.Matemaatika`), { label: "Maths" });
+
+  // And it survives a round trip through the settings.
+  assert.deepEqual(json(`normalise({subjects: {Kunst: {short: "Ku"}}}).subjects`),
+                   { Kunst: { short: "Ku" } });
+  assert.deepEqual(json(`normalise({subjects: {Kunst: {short: "   "}}}).subjects`),
+                   {}, "an empty one is nothing at all");
+  run(`state = defaults(); state.subjects = {};`);
+});
+
 test("a break is renamed and recolored like a subject", () => {
   /* Breaks are drawn on the timetable, so they are the reader's to change too.
      They carry no groups and no room, but everything else is the same. */
@@ -2349,6 +2383,53 @@ test("a short break keeps its clock, on one line", () => {
   assert.match(band, /^ tiny/, "a ten-minute band kept its padding");
   assert.ok(band.includes("Break"), "no name on the band");
   assert.ok(/10\.20.10\.30/.test(band), "no clock on the band: " + band.slice(0, 160));
+});
+
+test("the short name is a column of its own, beside the school's", () => {
+  /* The school's abbreviation is what a card shows, so a reader deciding
+     whether to replace it has to be able to see it. It sits read-only beside
+     the field that replaces it, the same bargain the long name makes.
+
+     The headings live in tt.py and the cells in page.js. A cell without a
+     heading, or a heading without a cell, is silent drift, so the two are
+     counted against each other and against the heading that spans the row. */
+  run(`state = defaults(); state.lang = "en"; applyStrings();
+       state.subjects = {}; state.school = "68"; state.class = "8";
+       renderLegend(currentClass().e);`);
+  const html = json(`document.getElementById("legend").innerHTML`);
+  const rows = html.split("<tr").slice(1);
+
+  const template = readFileSync(join(root, "tt.py"), "utf8");
+  const table = template.slice(template.indexOf('<tbody id="legend">') - 900,
+                               template.indexOf('<tbody id="legend">'));
+  const heads = table.match(/<th data-i18n="col\w+"><\/th>/g) || [];
+  assert.deepEqual(heads.map(h => /"col(\w+)"/.exec(h)[1]),
+                   ["Show", "Subject", "Label", "Short", "ShortLabel",
+                    "Background", "TextColor", "Sample"]);
+
+  for (const row of rows) {
+    if (row.includes("grouphead")) {
+      assert.match(row, new RegExp('colspan="' + heads.length + '"'),
+                   "the break heading no longer spans the row");
+      continue;
+    }
+    assert.equal((row.match(/<td[ >]/g) || []).length, heads.length,
+                 "a row with the wrong number of cells: " + row.slice(0, 60));
+  }
+
+  /* A lesson row carries the school's abbreviation and a field to replace it,
+     with that abbreviation behind the field as its placeholder. */
+  const maths = rows.find(r => r.includes('data-subject="Matemaatika"'));
+  assert.ok(maths, "no maths row");
+  assert.match(maths, /<td class="rowlabel">Mat<\/td>/);
+  assert.match(maths, /class="subjshort" value="" placeholder="Mat"/);
+
+  /* A break has no abbreviation of any kind — it is drawn under one name
+     whatever the subject setting says — so those two cells stay empty rather
+     than carry a field that does nothing. */
+  const brk = rows.find(r => r.includes('data-subject="Break, and more"'));
+  assert.ok(brk, "no break row");
+  assert.ok(!brk.includes("subjshort"), "a break was offered a short name");
 });
 
 test("the breaks come last, under a heading of their own", () => {

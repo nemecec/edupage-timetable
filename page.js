@@ -327,9 +327,14 @@ function onlySubjects(bag) {
         kept[field] = value[field].trim();
       }
     }
-    /* A name of the reader's own. Blank means "use the school's". */
-    if (typeof value.label === "string" && value.label.trim()) {
-      kept.label = value.label;
+    /* A name of the reader's own, long and short. Blank means "use the
+       school's". The two are asked for separately because one word cannot be
+       both: a reader who writes "Maths" for a wall chart wants "Ma" on a
+       card. */
+    for (const field of ["label", "short"]) {
+      if (typeof value[field] === "string" && value[field].trim()) {
+        kept[field] = value[field];
+      }
     }
     /* Only true is worth keeping. False is what every other row already says. */
     if (value.hide === true) kept.hide = true;
@@ -1175,7 +1180,7 @@ function hidden(name) {
 function tidySubjects() {
   for (const [subject, entry] of Object.entries(state.subjects || {})) {
     if (entry.style === state.subjectColorStyle) delete entry.style;
-    if (!entry.label && !entry.style && !entry.backgroundColor &&
+    if (!entry.label && !entry.short && !entry.style && !entry.backgroundColor &&
         !entry.textColor && !entry.hide) {
       delete state.subjects[subject];
     }
@@ -1815,11 +1820,19 @@ function plainSubject(name) {
   return (subjectFacts()[name] || {}).label || name;
 }
 
+/* A name of the reader's own, or the school's. The long name and the short one
+   are asked for separately, so a reader can leave the long one alone and still
+   write a short one that fits a card.
+ *
+ * A long name of your own still stands in where the short one is wanted and
+ * none was given. You already wrote it as short as you wanted it, and the
+ * school's abbreviation of a word the school does not use would be a name from
+ * neither. */
 function subjectLabel(name, short) {
-  const own = ((state.subjects || {})[name] || {}).label;
-  if (own) return own;
+  const own = (state.subjects || {})[name] || {};
   const plain = plainSubject(name);
-  return short ? ((subjectFacts()[name] || {}).short || plain) : plain;
+  if (!short) return own.label || plain;
+  return own.short || own.label || (subjectFacts()[name] || {}).short || plain;
 }
 
 function subjectName(e, short) {
@@ -2579,10 +2592,15 @@ function renderLegend(shown) {
        and an empty field means "use the school's" — the same bargain the title
        fields make. */
     const shown = isBreak ? breakName(name) : plainSubject(name);
+    /* And the school's abbreviation of it, which is what a card shows and what
+       the reader is being asked whether to replace. A break has no abbreviation:
+       it is drawn under one name whatever the subject setting says, so those two
+       cells are left empty rather than filled with a field that does nothing. */
+    const brief = isBreak ? "" : ((subjectFacts()[name] || {}).short || shown);
     /* One heading above the first break, so the two kinds do not read as one
-       list. Five columns, because the table has five. */
+       list. As many columns as the table has. */
     const head = (isBreak && name === breaks[0])
-      ? '<tr class="grouphead"><td colspan="6">' + esc(t("breaks.heading")) + "</td></tr>"
+      ? '<tr class="grouphead"><td colspan="8">' + esc(t("breaks.heading")) + "</td></tr>"
       : "";
     return head + '<tr data-subject="' + esc(name) + '"' +
       (hidden(name) ? ' class="hide"' : "") + ">" +
@@ -2592,6 +2610,10 @@ function renderLegend(shown) {
       '<td class="rowlabel">' + esc(shown) + "</td>" +
       '<td><input type="text" class="subjlabel" value="' + esc(own.label || "") +
         '" placeholder="' + esc(shown) + '"></td>' +
+      '<td class="rowlabel">' + esc(brief) + "</td>" +
+      '<td>' + (isBreak ? ""
+        : '<input type="text" class="subjshort" value="' + esc(own.short || "") +
+          '" placeholder="' + esc(brief) + '">') + "</td>" +
       backgroundCell(row, subjectMode(name), col.bg,
         [["school", t("color.fromTimetable"), ""],
          ["palette", t("color.automatic"), ""]]) +
@@ -2644,8 +2666,18 @@ function setSubjectShown(name, on) {
 /* A name of the reader's own for one subject or break. Empty means "use the
    school's", so the entry goes rather than holding an empty string. */
 function setSubjectLabel(name, value) {
+  setSubjectField(name, "label", value);
+}
+
+/* The short name of the reader's own, kept apart from the long one so that
+   writing either leaves the other alone. */
+function setSubjectShort(name, value) {
+  setSubjectField(name, "short", value);
+}
+
+function setSubjectField(name, field, value) {
   const entry = state.subjects[name] || (state.subjects[name] = {});
-  if (value.trim()) entry.label = value; else delete entry.label;
+  if (value.trim()) entry[field] = value; else delete entry[field];
   tidySubjects();
   save();
   refreshSubjectSample(name);
@@ -2663,6 +2695,8 @@ document.getElementById("legend").addEventListener("input", (e) => {
   const tr = e.target.closest("tr");
   if (e.target.classList.contains("subjlabel")) {
     setSubjectLabel(name, e.target.value);
+  } else if (e.target.classList.contains("subjshort")) {
+    setSubjectShort(name, e.target.value);
   } else if (e.target.classList.contains("bgpick")) {
     choose(tr, "bg", "own");
     setColor(name, e.target.value);

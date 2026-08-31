@@ -1088,7 +1088,7 @@ paste lands.
 
   "subjectColorStyle": "school",
   "subjects": {
-        "Matemaatika": { "label": "Maths", "style": "custom",
+        "Matemaatika": { "label": "Maths", "short": "Ma", "style": "custom",
                      "backgroundColor": "#83EC9B" },
     "Kunst": { "style": "palette" },
     "Lastekoor": { "hide": true },
@@ -1149,6 +1149,16 @@ Some of these choices are not obvious:
   changed without retyping the rest, and an empty field means "use the
   school's". A name of your own is never abbreviated, because you already wrote
   it as short as you wanted it.
+
+  Every row also carries a **Short label**, beside the school's own
+  abbreviation. The two overrides are separate fields because one word cannot be
+  both: a reader who writes *Maths* for a wall chart wants *Ma* on a card.
+  Writing either leaves the other alone. A long name of your own still stands in
+  where the short one is wanted and none was given — you already wrote it as
+  short as you wanted it, and the school's abbreviation of a word the school does
+  not use would be a name from neither. Breaks have no short name of any kind:
+  they are drawn under one name whatever the subject setting says, so those two
+  cells are left empty rather than filled with a field that does nothing.
 
   A subject can carry three names, and they are three different strings. The
   school files it as `Gümn Inglise keel`; the page shows `Inglise keel`, with

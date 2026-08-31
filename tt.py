@@ -135,6 +135,8 @@ STRINGS = {
         "schoolColors": "Colours from the timetable",
         "customColors": "Colours of my own",
         "colLabel": "Label",
+        "colShort": "Short name",
+        "colShortLabel": "Short label",
         "colShow": "Show",
         "colNote": "Second line",
         "fontHeading": "Type in a lesson box:",
@@ -321,6 +323,8 @@ STRINGS = {
         "schoolColors": "Tunniplaani värvid",
         "customColors": "Minu omad värvid",
         "colLabel": "Nimetus",
+        "colShort": "Lühinimi",
+        "colShortLabel": "Lühinimetus",
         "colShow": "Näita",
         "colNote": "Teine rida",
         "fontHeading": "Kiri tunni kastis:",
@@ -3319,6 +3323,8 @@ PAGE = """<!DOCTYPE html>
               <th data-i18n="colShow"></th>
               <th data-i18n="colSubject"></th>
               <th data-i18n="colLabel"></th>
+              <th data-i18n="colShort"></th>
+              <th data-i18n="colShortLabel"></th>
               <th data-i18n="colBackground"></th>
               <th data-i18n="colTextColor"></th>
               <th data-i18n="colSample"></th>

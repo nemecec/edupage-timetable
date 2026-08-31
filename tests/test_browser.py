@@ -504,11 +504,13 @@ class ThePrintedSheet(InABrowser):
             "return out;")
         self.assertTrue(got["spanish"], "no Spanish box on the card")
         self.assertIn("305", got["spanish"], "the room is not even in the box")
-        # It was set down, and it fits.
+        # The room is there to read, whether the box needed setting down to do
+        # it or fitted as it was. Which of the two depends on the font the
+        # machine has, so it is not what this asserts.
         self.assertLessEqual(got["spanishOver"], 0,
                              "the room is still cut: %r" % got["spanish"])
-        self.assertLess(got["spanishGrow"], got["askedGrow"],
-                        "nothing was given up, so nothing was gained")
+        self.assertLessEqual(got["spanishGrow"], got["askedGrow"],
+                             "the box was drawn larger than the reader asked")
         self.assertGreaterEqual(got["spanishGrow"],
                                 got["askedGrow"] * got["floor"] - 0.001,
                                 "the box went past the floor")
@@ -516,6 +518,52 @@ class ThePrintedSheet(InABrowser):
         # saved it. That is the whole rule, checked against every box.
         self.assertEqual(got["reachable"], [],
                          "cut although a squeeze inside the floor would fit")
+
+    def test_the_squeeze_fires_below_the_floor_and_refuses_above_it(self):
+        """The card tests read whatever font the machine has, so whether any
+        real box needs setting down is not theirs to promise. This builds a line
+        of a known width and asks the rule directly."""
+        self.show("68", "8")
+        got = self.js(
+            "var grid = document.getElementById('grid');"
+            "var box = document.createElement('div');"
+            "box.className = 'ev';"
+            "box.style.cssText = 'position:absolute;top:0;left:0;height:20px;"
+            "  --grow-time:1;--grow-name:1;--grow-detail:1';"
+            "var line = document.createElement('div');"
+            "line.className = 'what oneline';"
+            "line.innerHTML = '<span class=clock>12.55</span> Hisp "
+            "<span class=who3>305</span>';"
+            "box.appendChild(line);"
+            "grid.appendChild(box);"
+            "var natural = function () {"
+            "  box.style.width = '1000px';"
+            "  var r = document.createRange();"
+            "  r.selectNodeContents(line);"
+            "  return r.getBoundingClientRect().width; };"
+            "var wide = natural();"
+            "var run = function (fraction) {"
+            "  delete box.dataset.grow;"
+            "  ['time','name','detail'].forEach(function (r) {"
+            "    box.style.setProperty('--grow-' + r, '1'); });"
+            "  box.style.width = (wide * fraction + 10) + 'px';"
+            "  squeezeToFit(box, line);"
+            "  return {grow: Number(box.style.getPropertyValue('--grow-name')),"
+            "          over: lineOver(line)}; };"
+            "var near = run(0.95);"
+            "var far = run(0.5);"
+            "box.remove();"
+            "return {near: near, far: far, floor: SQUEEZE_FLOOR};")
+        # A line a hair too long is set down, and then it fits.
+        self.assertLess(got["near"]["grow"], 1, "the line was not set down")
+        self.assertGreaterEqual(got["near"]["grow"], got["floor"] - 0.001,
+                                "it went past the floor")
+        self.assertLessEqual(got["near"]["over"], 0, "and it still does not fit")
+        # A line far too long keeps its size and takes the ellipsis: a box that
+        # gave up its size and was cut anyway gave it up for nothing.
+        self.assertEqual(got["far"]["grow"], 1,
+                         "the box was left smaller and cut all the same")
+        self.assertGreater(got["far"]["over"], 0)
 
     def test_the_measurement_is_finer_than_a_whole_pixel(self):
         """`scrollWidth` and `clientWidth` are whole numbers. The line that

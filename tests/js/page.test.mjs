@@ -979,11 +979,12 @@ test("the picker offers every sheet the settings accept", () => {
 test("the type can be asked for smaller than the page draws it", () => {
   /* The steps under a hundred are what a small sheet needs. A name the box
      cannot fit is cut with an ellipsis, and on a 100 by 60 card twelve of the
-     thirty-three names were cut at 90% against six at 70%. Sixty is the floor:
-     under that a room number is a smudge rather than small print. */
+     thirty-three names were cut at 90% against six at 70%. Fifty is the floor:
+     six point is small print rather than a smudge, and on a card that size it is
+     the step that fits a room number beside the name. */
   const sizes = json(`SIZES`).map(Number);
   assert.ok(Math.min(...sizes) <= 70, "the type cannot be asked for smaller");
-  assert.equal(Math.min(...sizes), 60, "the floor moved");
+  assert.equal(Math.min(...sizes), 50, "the floor moved");
   assert.equal(Math.max(...sizes), 150);
   // Ordered, so the picker reads as a scale rather than a bag of numbers.
   assert.deepEqual(sizes, [...sizes].sort((a, b) => a - b));

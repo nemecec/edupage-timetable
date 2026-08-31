@@ -224,9 +224,11 @@ const FACE_STACK = {
 /* How large a reader asks their type to be, as a percentage of the size the
    page draws by default. The steps below a hundred are the useful ones on a
    small sheet: a name the box cannot fit is cut with an ellipsis, and a size
-   down costs nothing but reading distance while it buys whole words. Sixty is
-   the floor — under that a room number is a smudge rather than small print. */
-const SIZES = ["60", "70", "80", "90", "100", "115", "125", "150"];
+   down costs nothing but reading distance while it buys whole words. Fifty is
+   the floor. It is six point rather than a smudge, and on a card the size of a
+   bus ticket it is the step that fits a room number beside the name instead of
+   cutting one of the two. */
+const SIZES = ["50", "60", "70", "80", "90", "100", "115", "125", "150"];
 
 const MARGINS = [5, 9, 14];
 

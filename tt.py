@@ -127,6 +127,7 @@ STRINGS = {
         "sheet.cutMany": ("{0} of this sheet fit on one A4 page. Print it at "
                           "full size, then cut along the dashed lines."),
         "showGaps": "Free time between lessons",
+        "showAxis": "Times down the side",
         "gap": "Break",
         "dur.hour": "{0} hour",
         "dur.hours": "{0} hours",
@@ -320,6 +321,7 @@ STRINGS = {
         "sheet.cutMany": ("Ühele A4 lehele mahub {0} sellist lehte. Trüki "
                           "täissuuruses ja lõika mööda katkendjooni."),
         "showGaps": "Vaba aeg tundide vahel",
+        "showAxis": "Kellaajad ääres",
         "gap": "Paus",
         "dur.hour": "{0} tund",
         "dur.hours": "{0} tundi",
@@ -2899,6 +2901,14 @@ PAGE = """<!DOCTYPE html>
             background: linear-gradient(to right,
               var(--panel) 0 var(--gut), var(--bg) var(--gut)); }
   .tlaxis { flex: 0 0 var(--gut); position: relative; }
+  /* Switched off, the strip takes no width and the days have all of it. The
+     gradient behind the body is drawn to the same --gut, so zeroing the one
+     variable moves the panel edge with it.
+     What goes with it is the mark for an axis cut, which is drawn on the strip.
+     A day with hours taken out of it then says so only through the boxes either
+     side of the join. */
+  .tl.noaxis { --gut: 0px; }
+  .tl.noaxis .tlaxis, .tl.noaxis .tlhead .gut { display: none; }
   .tlaxis .t { position: absolute; right: 6px; color: var(--muted);
                font-size: max(5.5px, calc(10.5px * var(--sheetscale, 1)));
                transform: translateY(-50%); font-variant-numeric: tabular-nums; }
@@ -3330,6 +3340,12 @@ PAGE = """<!DOCTYPE html>
         <div class="line">
           <label class="inline"><input type="checkbox" id="showGaps">
             <span data-i18n="showGaps"></span></label>
+        </div>
+        <!-- The scale, which is a thing the day has and not a thing a lesson
+             says about itself. -->
+        <div class="line">
+          <label class="inline"><input type="checkbox" id="showAxis">
+            <span data-i18n="showAxis"></span></label>
         </div>
       </div>
     </div>

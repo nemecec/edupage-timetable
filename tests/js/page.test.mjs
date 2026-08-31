@@ -1670,6 +1670,36 @@ test("a packed line is measured as one line, not three", () => {
   run(`state = defaults();`);
 });
 
+test("the clock down the side is the reader's to switch off", () => {
+  /* It is the scale every box is positioned against, so it is on. Off is for a
+     card: the strip costs a fixed slice of the width whatever the sheet, and a
+     reader who asked for the start time inside each box has already said where
+     they want the clock. */
+  run(`state = defaults(); state.lang = "en"; applyStrings();
+       state.school = "68"; state.class = "8";`);
+  assert.equal(json(`state.showAxis`), true);
+  const draw = () => run(`renderTimeline(currentSchool(), currentClass(),
+                            currentClass().e, readEvents(myOwn().events).events, 0)`);
+  const on = draw();
+  assert.match(on, /<div class="tlaxis">/, "no clock strip to switch off");
+  assert.ok(!/class="tl noaxis"/.test(on));
+
+  run(`state.showAxis = false;`);
+  const off = draw();
+  assert.match(off, /class="tl noaxis"/, "the stylesheet was never told");
+  /* The strip is still written. The axis cuts are drawn on it, and it is the
+     stylesheet that takes its width away, so what matters is that the switch
+     reaches the class and not that the markup went. */
+  assert.match(off, /<div class="tlaxis">/);
+
+  /* And the stylesheet zeroes the one variable every part of the strip is sized
+     from, so the days take the width back. */
+  const css = readFileSync(join(root, "tt.py"), "utf8");
+  assert.match(css, /\.tl\.noaxis \{ --gut: 0px; \}/);
+  assert.match(css, /\.tl\.noaxis \.tlaxis, \.tl\.noaxis \.tlhead \.gut \{ display: none; \}/);
+  run(`state = defaults();`);
+});
+
 test("a narrow sheet does not overrule the clock the reader asked for", () => {
   /* Any sheet under 170mm hid the clock inside every box, on screen as well as
      on paper. The reason was sound while it was the only answer available: the

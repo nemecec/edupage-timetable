@@ -708,6 +708,17 @@ period grid, which needs no times.
   | start time, short names, room, packed, 70% | 11 of 17 |
   | the same at 60% | 16 of 17 |
   | the same at 50% | 17 of 17 |
+  | the same at 60% with the strip switched off | 17 of 17 |
+
+  **In the day, show: Times down the side** is that strip, and it switches. On,
+  because it is the scale every box is positioned against and a week with no
+  scale is a week of colored blocks. Off is for a card: the strip costs a fixed
+  slice of the width whatever the size of the sheet, and a reader who has asked
+  for the start time inside each box has already said where they want the clock.
+
+  What goes with it is the mark for an axis cut, which is drawn on the strip. A
+  day with hours taken out of the middle then says so only through the boxes
+  either side of the join.
 
   A teacher's name arrives family name first and abbreviated, which is how a
   school files a name and fits it in a cell — not how a family says it. So the
@@ -1125,6 +1136,7 @@ paste lands.
   "showEnd": true,
   "showDuration": true,
   "showGaps": true,
+  "showAxis": true,
   "showQr": false,
   "calMine": true,
   "calAlarm": false,

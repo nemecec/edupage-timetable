@@ -1037,7 +1037,7 @@ class Documentation(unittest.TestCase):
             "showRoom": "showHeading", "showGroup": "showHeading",
             "showSubject": "showHeading",
             "showStart": "showHeading", "showEnd": "showHeading",
-            "showGaps": "dayHeading",
+            "showGaps": "dayHeading", "showAxis": "dayHeading",
         }
         for control, expected in want.items():
             self.assertEqual(where.get(control), expected,

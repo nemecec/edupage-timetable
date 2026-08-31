@@ -95,6 +95,16 @@ const defaults = () => ({
   showTeacher: true, teacherNameStyle: "full",
   showRoom: true, showGroup: true,
   showDuration: true, showGaps: true,
+
+  /* The clock ruled down the side of the timeline. On, because it is the scale
+     every box is positioned against and a week with no scale is a week of
+     colored blocks.
+
+     Off is for a card. The strip costs a fixed slice of the width whatever the
+     sheet, which on a 100 by 60 card is room five days could have used — and a
+     reader who has asked for the start time inside each box has already said
+     where they want the clock. */
+  showAxis: true,
   /* The two ends of a lesson, each the reader's to drop. Both on, because a
      timetable says when a lesson starts and when it stops. A card the size of a
      bus ticket has room for one of them, and the start is the end somebody
@@ -1588,7 +1598,8 @@ function tornEdge(width, shift, amp) {
      it — a printed sheet with no school, class or name on it is of no use to
      anyone. */
   let h = sheetTitle(school, cls);
-  h += '<div class="tl" style="--ppm:' + ppm + ";--half:" + (30 * ppm) +
+  h += '<div class="tl' + (state.showAxis ? "" : " noaxis") +
+          '" style="--ppm:' + ppm + ";--half:" + (30 * ppm) +
           "px;--hour:" + (60 * ppm) + 'px">';
   h += '<div class="tlhead"><div class="cell gut"></div>' +
        dayIdx.map(i => '<div class="cell">' + esc(dayLabel(school, i)) + "</div>").join("") +
@@ -2948,7 +2959,7 @@ function bindChoice(name, key) {
 }
 ["showStudentName", "showSchoolName", "showClassName",
  "showTeacher", "showRoom", "showGroup", "showSubject",
- "showStart", "showEnd", "showDuration", "showGaps",
+ "showStart", "showEnd", "showDuration", "showGaps", "showAxis",
  "showQr"].forEach(key => bindToggle(key, key));
 /* Not through bindToggle: nothing on screen changes, so a redraw would be a
    redraw for nothing. */
@@ -3106,7 +3117,7 @@ function syncDisplayControls() {
   for (const key of ["showStudentName", "showSchoolName", "showClassName",
                      "showTeacher", "showRoom", "showGroup", "showSubject",
                      "showStart", "showEnd", "showDuration", "showGaps",
-                     "showQr", "calMine", "calAlarm"]) {
+                     "showAxis", "showQr", "calMine", "calAlarm"]) {
     document.getElementById(key).checked = !!state[key];
   }
   showCalendarPanel();

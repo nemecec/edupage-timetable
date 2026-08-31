@@ -641,16 +641,44 @@ BELLS = {
         # Hand-copied, so it goes stale when the sittings move. The build stops
         # on a sitting that does not land inside a break of the day plan, which
         # is what a changed plan looks like from here.
+        # A question the timetable does not answer and the school does. aSc
+        # holds a division only where the lessons differ, so a split that
+        # changes nothing about which lesson you sit in cannot be written there
+        # at all — and the eighth year's Friday is exactly that.
+        #
+        # Offered like any other division, so a reader answers it in the same
+        # place as the rest and it rides in a shared link with them. It hides no
+        # lesson, because no lesson carries these groups.
+        #
+        # The seventh and ninth years split the same way and their sittings are
+        # not written down yet. When the school gives them, they come here.
+        "asked": [
+            {"classes": ["8"],
+             "label": "Praktikum",
+             "groups": ["Väljaspool koolimaja", "Koolimajas"]},
+        ],
         "meals": {
             "8": [
                 {"day": "Mon", "at": "12:10", "until": "12:30"},
                 {"day": "Tue", "at": "12:30", "until": "12:50"},
                 {"day": "Wed", "at": "11:50", "until": "12:10"},
                 {"day": "Thu", "at": "12:10", "until": "12:30"},
+                # Friday splits the class, and not in a way aSc can hold:
+                # everybody has Praktikum at the same hour, and whether yours
+                # is outside the schoolhouse or in it decides which sitting is
+                # yours and nothing else. Those going out eat first, because
+                # they have the walk. So the page asks — see "asked" below.
+                # A name each as well as a group. The group is what the
+                # reader's answer is matched against; the name is what the box
+                # says, and two bands one above the other called the same thing
+                # tell a reader nothing until they have answered. A twenty
+                # minute band has no room for a second line to say it on.
                 {"day": "Fri", "at": "11:50", "until": "12:10",
-                 "name": "Söömine (Praktikum)"},
+                 "name": "Söömine (väljaspool)",
+                 "group": "Väljaspool koolimaja"},
                 {"day": "Fri", "at": "12:10", "until": "12:50",
-                 "name": "Söömine (teised)"},
+                 "name": "Söömine (koolimajas)",
+                 "group": "Koolimajas"},
             ],
         },
         # TERA gümnaasium is in the same published timetable and does not keep
@@ -1291,6 +1319,27 @@ MEAL_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 MEAL_NAME = "Söömine"
 
 
+def asked_divisions(cfg, class_name):
+    """The questions the school answers and the timetable cannot.
+
+    A division exists in aSc only where the lessons differ. A split that changes
+    nothing about which lesson you sit in has nowhere to live there, so it lives
+    here and is offered to the reader in the same row as the rest.
+
+    It carries no lessons of its own on purpose: `visible` skips a division
+    whose groups no lesson names, so answering this one hides nothing.
+    """
+    out = []
+    for rule in (cfg or {}).get("asked", []):
+        wanted = [c.strip() for c in rule["classes"]]
+        if (class_name or "").strip() not in wanted:
+            continue
+        out.append({"id": rule["label"], "groups": list(rule["groups"]),
+                    "label": rule["label"], "subjects": [], "who": 0,
+                    "lessons": []})
+    return out
+
+
 def meals_for(cfg, class_name, day):
     """This class's sittings on this day, earliest first."""
     wanted = (cfg or {}).get("meals", {}).get((class_name or "").strip(), [])
@@ -1333,7 +1382,8 @@ def with_meals(breaks, cfg, class_name, day):
                                 start=_fmt_time(clock), end=_fmt_time(at)))
             out.append(dict(band, name=meal.get("name", MEAL_NAME), at=at,
                             until=until, start=_fmt_time(at),
-                            end=_fmt_time(until)))
+                            end=_fmt_time(until),
+                            group=meal.get("group", "")))
             clock = until
         if clock < band["until"]:
             out.append(dict(band, at=clock, until=band["until"],
@@ -1957,6 +2007,9 @@ def extract(result, class_name, n_periods=None, cfg=None, period_times=None,
     divisions = split_by_subject(cfg, class_name, divisions, entries)
     name_the_groups(divisions, entries)
     divisions = [d for d in divisions if d["lessons"]]
+    # After the filter above, which drops a division no lesson uses. These are
+    # exactly that by construction.
+    divisions += asked_divisions(cfg, class_name)
 
     return {
         "name": cls["name"],
@@ -2709,7 +2762,10 @@ def compact(schools):
                           for s in v["slots"]],
                     "b": [{"a": b["after"], "n": b["name"],
                            "s": b["start"], "e": b["end"],
-                           "m": b["at"], "x": b["until"]} for b in v["breaks"]],
+                           "m": b["at"], "x": b["until"],
+                           # Whose sitting this is, where the class splits.
+                           **({"g": b["group"]} if b.get("group") else {})}
+                          for b in v["breaks"]],
                 } for day, v in cls["shape"].items()},
                 "e": [{
                     "d": e["day"], "p": e["period"], "s": e["subject"],

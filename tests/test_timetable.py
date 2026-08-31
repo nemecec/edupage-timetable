@@ -105,13 +105,41 @@ class TheCanteenSitting(unittest.TestCase):
                           ("Amps", "14.10", "14.30")])
 
     def test_two_sittings_in_one_hour_are_told_apart(self):
-        # Friday splits the class: one sitting before the walk to Praktikum and
-        # one for everybody else. Drawn under one name a reader could not tell
-        # which was theirs, so the name is what says so.
+        # Friday splits the class: whoever has Praktikum outside the schoolhouse
+        # eats first, because they have the walk. Drawn under one name a reader
+        # could not tell which was theirs, and a twenty-minute band has no
+        # second line to say it on, so the name is what says so.
         self.assertEqual(self.breaks("8", self.FRI),
-                         [("Söömine (Praktikum)", "11.50", "12.10"),
-                          ("Söömine (teised)", "12.10", "12.50"),
+                         [("Söömine (väljaspool)", "11.50", "12.10"),
+                          ("Söömine (koolimajas)", "12.10", "12.50"),
                           ("Amps", "14.10", "14.30")])
+
+    def test_each_friday_sitting_carries_the_group_it_belongs_to(self):
+        """The name is for the reader to read and the group is for the page to
+        match against their answer. Both, because neither does the other's job."""
+        _, plain = tt.day_times(["P", "P", "P", "L", "L"], self.cfg)
+        got = tt.with_meals(plain, self.cfg, "8", self.FRI)
+        self.assertEqual([(b["name"], b.get("group", "")) for b in got],
+                         [("Söömine (väljaspool)", "Väljaspool koolimaja"),
+                          ("Söömine (koolimajas)", "Koolimajas"),
+                          ("Amps", "")])
+        # Every other day is the whole class's, so no group and nothing to ask.
+        monday = tt.with_meals(plain, self.cfg, "8", self.MON)
+        self.assertEqual([b.get("group", "") for b in monday], ["", "", "", ""])
+
+    def test_the_question_is_asked_of_the_class_that_splits_and_no_other(self):
+        """aSc holds a division only where the lessons differ, and this one
+        changes no lesson at all — everybody has Praktikum at the same hour. So
+        it is not in the timetable and cannot be, and the page asks it."""
+        asked = tt.asked_divisions(self.cfg, "8")
+        self.assertEqual([(d["label"], d["groups"]) for d in asked],
+                         [("Praktikum",
+                           ["Väljaspool koolimaja", "Koolimajas"])])
+        # It carries no lessons on purpose: `visible` skips a division whose
+        # groups no lesson names, so answering it hides nothing.
+        self.assertEqual(asked[0]["lessons"], [])
+        self.assertEqual(tt.asked_divisions(self.cfg, "7"), [])
+        self.assertEqual(tt.asked_divisions(self.cfg, "9"), [])
 
     def test_a_class_the_school_has_not_told_us_about_keeps_the_plain_hour(self):
         self.assertEqual(self.breaks("7", self.MON),

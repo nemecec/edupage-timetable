@@ -1782,6 +1782,103 @@ test("a gap long enough to plan around is drawn, and belongs to the reader", () 
   run(`state = defaults(); myOwn().events = [];`);
 });
 
+test("a band the class splits is drawn for whoever answered for it", () => {
+  /* ProTERA's eighth year eats in two sittings on a Friday, and the timetable
+     cannot say which is whose: everybody has Praktikum at that hour, and only
+     whether it is inside the schoolhouse or outside decides. Those going out
+     eat first, because they have the walk. So the page asks a question of its
+     own, and this is the answer being applied to the bands. */
+  const divisions = [{ groups: ["Väljaspool koolimaja", "Koolimajas"],
+                       l: "Praktikum", sj: [], w: 0 }];
+  const KEY = "Väljaspool koolimaja/Koolimajas";
+  const outside = { n: "Söömine (väljaspool)", g: "Väljaspool koolimaja" };
+  const inside = { n: "Söömine (koolimajas)", g: "Koolimajas" };
+  const whole = { n: "Söömine" };
+  const drawn = (band, pick) => json(
+    `bandIsMine(${JSON.stringify(band)}, ` +
+    `${JSON.stringify(pick ? { [KEY]: pick } : {})}, ` +
+    `${JSON.stringify(divisions)})`);
+
+  /* Unanswered, both are drawn. Before a reader picks, every group's lessons
+     are on the screen and their sittings belong there with them. */
+  assert.equal(drawn(outside, ""), true);
+  assert.equal(drawn(inside, ""), true);
+
+  // Answered, theirs and not the other.
+  assert.equal(drawn(outside, "Väljaspool koolimaja"), true);
+  assert.equal(drawn(inside, "Väljaspool koolimaja"), false);
+  assert.equal(drawn(outside, "Koolimajas"), false);
+  assert.equal(drawn(inside, "Koolimajas"), true);
+
+  // A band carrying no group is the whole class's, whatever was answered.
+  assert.equal(drawn(whole, "Koolimajas"), true);
+  assert.equal(drawn(whole, ""), true);
+
+  /* An answer to some other question leaves it alone. The reader has said
+     nothing about this one. */
+  assert.equal(json(`bandIsMine(${JSON.stringify(outside)},
+                     {"Alfa/Beeta": "Alfa"},
+                     ${JSON.stringify(divisions)})`), true);
+});
+
+test("the day drawn keeps only the sittings the reader answered for", () => {
+  /* The rule above, reaching the boxes. The harness class is made up, so the
+     question and its two sittings are put on it here the way the generator
+     puts them on ProTERA's eighth year: a division no lesson carries, and two
+     bands that name its groups. */
+  run(`state = defaults(); state.lang = "en"; applyStrings();
+       state.school = "68"; state.class = "8";
+       window.__bands = currentClass().h["0"].b;
+       window.__divs = currentClass().v;
+       currentClass().v = currentClass().v.concat([
+         {groups: ["Väljaspool koolimaja", "Koolimajas"], l: "Praktikum",
+          sj: [], w: 0}]);
+       currentClass().h["0"].b = [
+         {a: 1, n: "Söömine (väljaspool)", s: "11.50", e: "12.10",
+          m: 710, x: 730, g: "Väljaspool koolimaja"},
+         {a: 1, n: "Söömine (koolimajas)", s: "12.10", e: "12.50",
+          m: 730, x: 770, g: "Koolimajas"}];`);
+  const restore = () => run(`currentClass().h["0"].b = window.__bands;
+       currentClass().v = window.__divs;
+       state = defaults();`);
+  try {
+    const KEY = "Väljaspool koolimaja/Koolimajas";
+    const monday = () => {
+      const html = run(`renderTimeline(currentSchool(), currentClass(),
+                          currentClass().e, readEvents(myOwn().events).events, 0)`);
+      const col = html.split('<div class="tlcol">')[1] || "";
+      return (col.match(/data-subject="Söömine[^"]*"/g) || [])
+               .map(m => /"([^"]*)"/.exec(m)[1]);
+    };
+    assert.deepEqual(monday(),
+                     ["Söömine (väljaspool)", "Söömine (koolimajas)"]);
+    run(`myOwn().studyGroups[${JSON.stringify(KEY)}] = "Väljaspool koolimaja";`);
+    assert.deepEqual(monday(), ["Söömine (väljaspool)"]);
+    run(`myOwn().studyGroups[${JSON.stringify(KEY)}] = "Koolimajas";`);
+    assert.deepEqual(monday(), ["Söömine (koolimajas)"]);
+
+    /* And no lesson moves. No lesson carries these groups, so `visible` skips
+       the division for every one of them — which is what lets a question with
+       nothing behind it be asked at all. */
+    const lessons = () => {
+      const html = run(`renderTimeline(currentSchool(), currentClass(),
+                          currentClass().e.filter(e => visible(e, myPicks(),
+                            currentClass().v)),
+                          readEvents(myOwn().events).events, 0)`);
+      return (html.match(/class="ev(?! brk)(?! gap)/g) || []).length;
+    };
+    const answered = lessons();
+    run(`myOwn().studyGroups = {};`);
+    assert.equal(lessons(), answered, "answering the question moved a lesson");
+
+    /* Put the made-up class back whatever happened above. The harness is shared,
+       and a failure here used to leave the injected bands behind and take five
+       later tests down with it. */
+  } finally {
+    restore();
+  }
+});
+
 test("a hole in the middle of the day is called lunch where the school says so", () => {
   /* Some schools leave lunch to arithmetic: it is whatever the lessons leave,
      and at TäheTERA that is a different hour for each language group. The

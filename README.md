@@ -135,11 +135,29 @@ out of the clock. The clock gets two details right:
   the school has told us about. Every other class keeps the plain hour, which is
   what the page drew before and is not wrong, only less.
 
-  A day can hold two sittings where the class splits, and then the name is what
-  says which is yours — the eighth year's Friday has one before the walk to
-  Praktikum and one for everybody else. A sitting is a break like any other, so
-  it takes the same quiet grey and the reader can rename or recolor it from the
-  subject table.
+  A sitting is a break like any other, so it takes the same quiet grey and the
+  reader can rename or recolor it from the subject table.
+- **A day can hold two sittings, and then the page asks a question aSc cannot
+  hold.** The eighth year's Friday is that day: everybody has Praktikum at the
+  same hour, and whether yours is inside the schoolhouse or outside decides
+  which sitting is yours and nothing else. Those going out eat first, because
+  they have the walk.
+
+  aSc keeps a division only where the lessons differ, so a split that changes no
+  lesson has nowhere to live there. It lives in the day plan's `asked` list
+  instead and is offered in the same row as the real divisions, so a reader
+  answers it in the same place and it rides in a shared link with the rest. It
+  hides nothing, because no lesson carries its groups.
+
+  Each sitting carries both a name and a group. The group is what the answer is
+  matched against; the name is what the box says. Both, because a twenty-minute
+  band has no second line to say a group on, and two bands one above the other
+  called the same thing tell a reader nothing until they have answered.
+
+  Unanswered, both sittings are drawn — before a reader picks, every group's
+  lessons are on the screen and their sittings belong there with them. Answered,
+  the other one goes and the hour it stood in is read like any other hole: free
+  time.
 
   The times are hand-copied. The build stops on a sitting that lands inside no
   break of the day plan, which is what a moved plan looks like from here — a

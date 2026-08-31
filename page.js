@@ -1210,6 +1210,25 @@ function tidySubjects() {
   }
 }
 
+/* A band is mine the same way a lesson is, where the school splits one.
+   ProTERA's eighth year eats in two sittings on a Friday and the timetable
+   cannot say which is whose — everybody has Praktikum at that hour, and only
+   whether it is inside the schoolhouse or outside decides. So the page asks,
+   and this is the answer being applied.
+
+   A band with no group belongs to the whole class. A band whose group nobody
+   has answered for yet is drawn too: before a reader picks, every group's
+   lessons are on the screen, and their sittings belong there with them. */
+function bandIsMine(band, picked, divisions) {
+  if (!band.g) return true;
+  for (const div of divisions) {
+    if (!div.groups.includes(band.g)) continue;
+    const pick = picked[choiceKey(div)];
+    if (pick && pick !== band.g) return false;
+  }
+  return true;
+}
+
 /* A lesson is mine when every division it belongs to matches one of my picks.
    Whole-class lessons carry no groups and are always mine. */
 function visible(entry, picked, divisions) {
@@ -1636,7 +1655,8 @@ function renderTimeline(school, cls, shown, mine, scale) {
          and this draws what it is given. */
       for (const b of shape.b) {
         if (hidden(b.n)) continue;
-        perDay.get(i).push({ a: b.m, z: b.x, brk: b.n });
+        if (!bandIsMine(b, myPicks(), cls.v)) continue;
+        perDay.get(i).push({ a: b.m, z: b.x, brk: b.n, group: b.g || "" });
       }
     }
   }
@@ -1864,7 +1884,8 @@ function tornEdge(width, shift, amp) {
              geom + "background-color:" + esc(col.bg) +
              ";color:" + esc(col.fg) + ";" + hatch(col.bg) +
              '" data-subject="' + esc(band) + '" title="' +
-             esc(breakName(band) + "\n" + when) + '">' + inside.html + "</div>";
+             esc([breakName(band), it.group, when].filter(Boolean).join("\n")) +
+             '">' + inside.html + "</div>";
         continue;
       }
       const e = it.lesson, col = colorFor(e.s), info = subjectFacts()[e.s] || {};
@@ -2124,6 +2145,13 @@ function teacherText(e) {
 function mine() {
   const got = (state.classes || {})[classKey()];
   return (got && typeof got === "object") ? got : classDefaults();
+}
+
+/* The reader's picks, as a function rather than through `mine()` at the call
+   site: `renderTimeline` takes a parameter called `mine`, and inside it the
+   name is the parameter and not this. Resolved here, where it is not. */
+function myPicks() {
+  return mine().studyGroups || {};
 }
 
 /* The same subtree, to write into — so it has to exist. */

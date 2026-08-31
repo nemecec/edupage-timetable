@@ -454,6 +454,92 @@ class ThePrintedSheet(InABrowser):
         self.assertGreater(got["shortOnes"], 0,
                            "no short box was left on one line to compare")
 
+    def test_a_line_a_hair_too_long_is_set_down_rather_than_cut(self):
+        """An ellipsis is about a character wide, so cutting a line that is a
+        character too long spends as much width as it saves and loses a fact for
+        nothing. A line within fifteen per cent of fitting is drawn smaller and
+        says everything.
+
+        TäheTERA 5.a on a 100 by 70 card is where this was found. The Spanish
+        box is a 45-minute lesson, 19 pixels tall, with room for one line and no
+        more — and "12.55 Hisp 305" missed that line by a fraction."""
+        self.show("103", "5.a")
+        got = self.js(
+            "state.printSheet = 'custom'; state.printWidth = 100;"
+            "state.printHeight = 70; state.printMargin = 5;"
+            "state.showEnd = false; state.showDuration = false;"
+            "state.subjectNameStyle = 'short'; state.showAxis = false;"
+            "state.boxLayout = 'packed';"
+            "state.showTeacher = false; state.showGroup = false;"
+            "state.nameSize = '70'; state.timeSize = '70'; state.detailSize = '70';"
+            "for (var i = 0; i < currentClass().v.length; i++) {"
+            "  var d = currentClass().v[i];"
+            "  myOwn().studyGroups[choiceKey(d)] = d.groups[0]; }"
+            "printing = true; render();"
+            "var tile = document.querySelector('#tiles .tile');"
+            "var lines = [].slice.call(tile.querySelectorAll('.ev .what.oneline'))"
+            "  .filter(function (l) { return !l.classList.contains('wrap'); });"
+            "var over = function (l) {"
+            "  var r = document.createRange();"
+            "  r.selectNodeContents(l);"
+            "  return r.getBoundingClientRect().width -"
+            "         l.getBoundingClientRect().width; };"
+            "var spanish = null;"
+            "lines.forEach(function (l) {"
+            "  if (/Hisp/.test(l.textContent) && !spanish) spanish = l; });"
+            "var cut = lines.filter(function (l) { return over(l) > 0; });"
+            "var out = {"
+            "  lines: lines.length,"
+            "  spanish: spanish && spanish.textContent.replace(/\\s+/g, ' ').trim(),"
+            "  spanishOver: spanish && over(spanish),"
+            "  spanishGrow: spanish &&"
+            "    Number(spanish.parentElement.style.getPropertyValue('--grow-name')),"
+            "  askedGrow: askedGrow('name'),"
+            "  floor: SQUEEZE_FLOOR,"
+            "  reachable: cut.filter(function (l) {"
+            "    var w = l.getBoundingClientRect().width;"
+            "    return w / (w + over(l)) >= SQUEEZE_FLOOR; })"
+            "    .map(function (l) { return l.textContent.trim(); })};"
+            "printing = false; render();"
+            "return out;")
+        self.assertTrue(got["spanish"], "no Spanish box on the card")
+        self.assertIn("305", got["spanish"], "the room is not even in the box")
+        # It was set down, and it fits.
+        self.assertLessEqual(got["spanishOver"], 0,
+                             "the room is still cut: %r" % got["spanish"])
+        self.assertLess(got["spanishGrow"], got["askedGrow"],
+                        "nothing was given up, so nothing was gained")
+        self.assertGreaterEqual(got["spanishGrow"],
+                                got["askedGrow"] * got["floor"] - 0.001,
+                                "the box went past the floor")
+        # And no line anywhere on the card is cut where a squeeze would have
+        # saved it. That is the whole rule, checked against every box.
+        self.assertEqual(got["reachable"], [],
+                         "cut although a squeeze inside the floor would fit")
+
+    def test_the_measurement_is_finer_than_a_whole_pixel(self):
+        """`scrollWidth` and `clientWidth` are whole numbers. The line that
+        started this was 54.250 wide in a box of 54.203: both report 54, so the
+        arithmetic said it fitted while the browser drew an ellipsis over a
+        twentieth of a pixel. A range over the content measures what was laid
+        out."""
+        self.show("103", "5.a")
+        got = self.js(
+            "var host = document.createElement('div');"
+            "host.style.cssText = 'position:absolute;width:40.4px;overflow:hidden;"
+            "  white-space:nowrap;text-overflow:ellipsis;font:12px sans-serif';"
+            "host.textContent = 'wwwww';"
+            "document.body.appendChild(host);"
+            "var out = {rounded: host.scrollWidth <= host.clientWidth,"
+            "           precise: lineOver(host)};"
+            "host.remove();"
+            "return out;")
+        self.assertGreater(got["precise"], 0,
+                           "the fine measurement saw no overflow to see")
+        self.assertNotEqual(
+            got["rounded"], got["precise"] > 0,
+            "whole pixels happened to agree here, so this proves nothing")
+
     def test_a_small_sheet_is_copied_across_the_page(self):
         """A card a third the size of the paper leaves the rest of it blank, so
         the page is filled with copies and the paper is turned when turning it

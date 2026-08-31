@@ -84,7 +84,7 @@ The script needs the Python 3 standard library and nothing else. There is no
 pip install and no browser.
 
 For `tera` in 2026 the result is 5 schools, 40 classes and about 1,800 lesson
-slots, in a file of about 765 KB. That is 123 KB over the wire, because it
+slots, in a file of about 805 KB. That is 136 KB over the wire, because it
 compresses well.
 
     python3 -m unittest discover -s tests     # the generator
@@ -710,6 +710,28 @@ period grid, which needs no times.
   room number split over two lines is not a room number — so the break falls
   between the parts. The subject name is left breakable, because it is the long
   one and an atom wider than the column has nowhere to go but over the edge.
+
+  Where there is no second line either, a line within fifteen per cent of
+  fitting is set down in size instead of being cut. An ellipsis is about a
+  character wide, so cutting a line that is a character too long spends as much
+  width as it saves and loses a fact for nothing. The three sizes go down
+  together, so the box keeps the proportions the reader asked for and only gets
+  quieter. Either the whole line fits or nothing changes: a box set smaller and
+  still cut gave up its size for nothing and would sit among its neighbours
+  looking like a different kind of thing for no reason a reader could see.
+
+  This is measured finer than a whole pixel. `scrollWidth` and `clientWidth` are
+  integers, and the box that found this was 54.250 wide in a line of 54.203 —
+  both report 54, so the arithmetic said it fitted while the browser drew an
+  ellipsis over a twentieth of a pixel. A range over the content measures what
+  was laid out.
+
+  It is also measured twice. A card that tiles a page is drawn from copies, and
+  a copy comes out about a fifth of a pixel narrower than the original it was
+  measured on — enough to cut a line that had just been made to fit. So the
+  copies are measured again once they exist, and each box remembers the sizes it
+  started from so the second pass cannot set it down from where the first one
+  left it.
 
   Nothing hides the clock inside a box. Any sheet under 170mm used to, on screen
   as well as on paper, because the rule followed the size of the sheet and not

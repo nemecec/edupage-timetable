@@ -1410,6 +1410,43 @@ function shrinkOverfull(root) {
   }
 }
 
+/* How far a line may be set down to keep all of it. An ellipsis is about a
+   character wide, so cutting a line that is a character too long spends as much
+   width as it saves and loses a fact for nothing. A line within this much of
+   fitting is drawn smaller instead and says everything.
+ *
+ * Fifteen per cent. It is a step the reader can see if they look for it and not
+ * one they notice in a week of boxes, and it is about two characters on a card
+ * — past that the box is asking for a size its reader did not choose, and the
+ * ellipsis is the honest answer. */
+const SQUEEZE_FLOOR = 0.85;
+
+/* A pixel of daylight left at the end of a line that was set down to fit.
+   Landing exactly on the edge is landing just past it: the width of a run of
+   text is not a round number and neither is the box, and a line that measures
+   equal to its box is one rounding away from an ellipsis.
+ *
+ * A whole pixel rather than a half, because the box this is measured on is not
+ * quite the box it is printed in. A card that tiles a page is measured on the
+ * original and drawn from a copy of it, and the two come out a fifth of a pixel
+ * apart — which was enough to put the ellipsis back on a line that had just
+ * been made to fit. */
+const LINE_CLEAR = 1;
+
+/* How far the text runs past the end of its line, in real pixels.
+ *
+ * Not `scrollWidth` against `clientWidth`. Those are whole numbers, and the
+ * line that started all this was 54.250 wide in a box of 54.203 — both report
+ * 54, so the arithmetic said it fitted while the browser drew an ellipsis over
+ * a twentieth of a pixel. A range over the content measures what was actually
+ * laid out, ellipsis or no ellipsis. */
+function lineOver(line) {
+  const range = document.createRange();
+  range.selectNodeContents(line);
+  return range.getBoundingClientRect().width -
+         line.getBoundingClientRect().width;
+}
+
 /* A packed line the box cannot fit on one line, in a box with room for a second
    one, is given the second line rather than an ellipsis.
  *
@@ -1427,6 +1464,35 @@ function shrinkOverfull(root) {
  * the space before the part that does not fit and then has nowhere to put it:
  * "9.00…" where it had shown "9.00 Ees…", which is less of the lesson and not
  * more. */
+/* The three sizes a box carried before any line of it was set down, written on
+   the box itself so a second pass can find them.
+ *
+ * There is a second pass. A card that tiles a page is drawn from copies, and
+ * the copies are a fraction narrower than the original they were measured on —
+ * so they are measured again once they exist. Without a fixed starting point
+ * each pass would set the box down from wherever the last one left it, and a
+ * floor of fifteen per cent would be fifteen per cent of fifteen per cent.
+ *
+ * Taken the first time it is asked for, which is after the type has given back
+ * whatever the box had no room for. That give-back is a decision about height
+ * and it is the same on a copy as on the original, so it belongs in the base
+ * rather than under it. */
+function baseGrow(box) {
+  const roles = ["time", "name", "detail"];
+  if (box.dataset && box.dataset.grow) return box.dataset.grow.split(",").map(Number);
+  const now = roles.map(role =>
+    Number(box.style.getPropertyValue("--grow-" + role)) || 1);
+  if (box.dataset) box.dataset.grow = now.join(",");
+  return now;
+}
+
+function restoreGrow(box) {
+  if (!box.dataset || !box.dataset.grow || !box.style) return;
+  const was = box.dataset.grow.split(",");
+  ["time", "name", "detail"].forEach((role, i) =>
+    box.style.setProperty("--grow-" + role, was[i]));
+}
+
 function wrapPacked(root) {
   if (!root || !root.querySelectorAll) return;
   for (const line of root.querySelectorAll(".ev .what.oneline")) {
@@ -1436,17 +1502,59 @@ function wrapPacked(root) {
     if (line.style && line.style.removeProperty) line.style.removeProperty("--lines");
     const box = line.parentElement;
     if (!box) continue;
-    if (line.scrollWidth <= line.clientWidth + 1) continue;   // it fits as it is
+    restoreGrow(box);
+    if (lineOver(line) <= 0) continue;                        // it fits as it is
     const face = getComputedStyle(line), edge = getComputedStyle(box);
     const step = parseFloat(face.lineHeight) || 1.25 * parseFloat(face.fontSize);
     const room = box.clientHeight - parseFloat(edge.paddingTop) -
                  parseFloat(edge.paddingBottom);
-    if (!(step > 0) || !(room > 0)) continue;
-    const lines = Math.floor(room / step);
-    if (lines < 2) continue;
-    line.style.setProperty("--lines", String(lines));
-    line.classList.add("wrap");
+    const lines = step > 0 && room > 0 ? Math.floor(room / step) : 1;
+    if (lines >= 2) {
+      line.style.setProperty("--lines", String(lines));
+      line.classList.add("wrap");
+      continue;
+    }
+    /* One line and not enough of it. A small step down in size keeps the whole
+       line where an ellipsis would have spent the same width hiding it. */
+    squeezeToFit(box, line);
   }
+}
+
+/* Set the box down until its one line fits, or put it back.
+ *
+ * Down through the three sizes together, so the box keeps the proportions the
+ * reader asked for and only gets quieter. Measured between steps rather than
+ * solved: text does not scale exactly with its size, and two passes land closer
+ * than any arithmetic here would.
+ *
+ * Either the whole line fits or nothing changes. A box set smaller and still
+ * cut is a box that gave up its size and got nothing for it, and it would sit
+ * among its neighbours looking like a different kind of thing for no reason a
+ * reader could see. */
+function squeezeToFit(box, line) {
+  if (!box.style || !box.style.getPropertyValue) return;
+  const roles = ["time", "name", "detail"];
+  const asked = baseGrow(box);
+  const write = (by) => roles.forEach((role, i) =>
+    box.style.setProperty("--grow-" + role,
+                          String(Math.round(asked[i] * by * 1000) / 1000)));
+  let total = 1;
+  for (let pass = 0; pass < 4 && lineOver(line) > 0; pass++) {
+    const have = line.getBoundingClientRect().width - LINE_CLEAR;
+    const text = have + lineOver(line) + LINE_CLEAR;
+    const want = have / text;
+    if (!(want > 0)) break;
+    /* Held at the floor rather than abandoned there. Text does not scale
+       exactly with its size, so a line can need a second small step after the
+       first — and a step that would cross the floor used to end the whole
+       attempt, which threw away the ground already gained and put the ellipsis
+       back on a box that was a fraction from fitting. */
+    const next = Math.max(SQUEEZE_FLOOR, total * want);
+    if (!(next < total)) break;                 // no ground left to gain
+    total = next;
+    write(total);
+  }
+  if (lineOver(line) > 0) write(1);
 }
 
 /* Both passes, in the order they have to run: the type settles first, and what
@@ -3840,6 +3948,12 @@ function layOutTiles() {
     }
     host.appendChild(tile);
   }
+  /* Measured again now that they exist. A copy is a fraction narrower than the
+     original it came from — a fifth of a pixel, on a card — and a line that
+     fitted the original by less than that is cut here. This is the only place
+     the printed width can be measured, because this is the first moment the
+     printed thing is in the page. */
+  wrapPacked(host);
 }
 
 function enterPrint() {

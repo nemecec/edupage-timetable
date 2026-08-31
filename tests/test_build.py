@@ -1138,13 +1138,13 @@ class Documentation(unittest.TestCase):
         page, _ = build()
         raw, wire = len(page.encode("utf-8")), len(gzip.compress(page.encode("utf-8"), 9))
         # Within a tolerance, since the school's own data moves it about.
-        self.assertLess(abs(raw / 1024 - 760), 60, "%.0f KB raw" % (raw / 1024))
-        self.assertLess(abs(wire / 1024 - 123), 12, "%.0f KB over the wire" % (wire / 1024))
+        self.assertLess(abs(raw / 1024 - 805), 60, "%.0f KB raw" % (raw / 1024))
+        self.assertLess(abs(wire / 1024 - 136), 12, "%.0f KB over the wire" % (wire / 1024))
         # The main README is where the size is quoted. The deploy notes are
         # about bringing it up, and the site's own repository has no idea how
         # large any tool on it is.
         with open(os.path.join(ROOT, "README.md"), encoding="utf-8") as fh:
-            self.assertIn("123 KB", fh.read())
+            self.assertIn("136 KB", fh.read())
 
     def test_a_room_carries_no_whitespace_of_its_own(self):
         """The school writes some of them with a trailing space — "305 " — and

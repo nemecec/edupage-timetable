@@ -1146,6 +1146,18 @@ class Documentation(unittest.TestCase):
         with open(os.path.join(ROOT, "README.md"), encoding="utf-8") as fh:
             self.assertIn("123 KB", fh.read())
 
+    def test_a_room_carries_no_whitespace_of_its_own(self):
+        """The school writes some of them with a trailing space — "305 " — and
+        on a card the width of a bus ticket that space is the difference between
+        a room number and an ellipsis."""
+        _, data = build()
+        for school in data["schools"]:
+            for cls in school["c"]:
+                for entry in cls["e"]:
+                    for room in entry["r"]:
+                        self.assertEqual(room, room.strip(),
+                                         "%r has whitespace around it" % room)
+
     def test_the_interface_is_british_and_the_code_is_american(self):
         """Two spellings, each in its own place.
 

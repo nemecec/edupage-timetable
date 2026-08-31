@@ -1742,7 +1742,11 @@ def extract(result, class_name, n_periods=None, cfg=None, period_times=None,
             "groups": grp,
             "teachers": [teachers[t]["name"] for t in lesson["teacherids"] if t in teachers],
             "teacherShorts": [teachers[t]["short"] for t in lesson["teacherids"] if t in teachers],
-            "rooms": [classrooms[c]["short"] for c in card["classroomids"] if c in classrooms],
+            # Stripped: the school writes some of these with a trailing space
+            # — "305 " — and on a card the width of a bus ticket that space is
+            # the difference between a room number and an ellipsis.
+            "rooms": [classrooms[c]["short"].strip()
+                      for c in card["classroomids"] if c in classrooms],
             "duration": lesson.get("durationperiods") or 1,
         }
         start = int(card["period"])

@@ -1656,14 +1656,20 @@ function tornEdge(width, shift, amp) {
            the lessons around it do not: how long it is. The outline is what
            says it was inferred; the color is the reader's like any other, and so
            is the size — a reader who asks for half-size type on a card means
-           this box too. */
+           this box too.
+         *
+         * And so is the duration. "How long it lasts" is one checkbox and it
+         * governs every box, this one included: it read as dead against a day
+         * full of gaps still carrying "· 10 min". The box is then the word
+         * alone, which is all a reader asked to be told. The tooltip keeps the
+         * figure either way. */
         const kind = it.gap, col = colorFor(kind), how = durationText(it.z - it.a);
+        const label = breakLabel(kind) + (state.showDuration ? " · " + how : "");
         h += '<div class="ev gap" data-subject="' + esc(kind) + '" style="' +
              growStyle(height, "gap", ["name"]) + geom +
              "background-color:" + esc(col.bg) + ";color:" + esc(col.fg) +
              '" title="' + esc(breakLabel(kind) + " " + how) +
-             '"><div class="what">' + esc(breakLabel(kind)) + " · " + esc(how) +
-             "</div></div>";
+             '"><div class="what">' + esc(label) + "</div></div>";
         continue;
       }
       /* A worked-out lunch is still lunch. Drawn as a corridor it read as
@@ -3541,7 +3547,8 @@ function sampleBox(bg, fg, when, label, meta, kind) {
     : [{ role: "time", text: when }, { role: "name", text: label },
        { role: "detail", text: meta }];
   const body = kind === "gap"
-    ? '<div class="what">' + esc(label) + " · " + esc(durationText(45)) + "</div>"
+    ? '<div class="what">' +
+      esc(label + (state.showDuration ? " · " + durationText(45) : "")) + "</div>"
     : boxBody(46, parts).html;
   return '<div class="ev' + (kind ? " " + kind : "") + '" style="' + style + '">' +
     body + "</div>";

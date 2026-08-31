@@ -1533,6 +1533,7 @@ test("how long a lesson lasts is spelled out, and an exact hour drops the minute
   assert.equal(json(`clockText(540, 620)`), "9.00–10.20 (1 hour 20 min)");
   run(`state.showDuration = false;`);
   assert.equal(json(`clockText(540, 620)`), "9.00–10.20");
+
 });
 
 test("each end of the clock can go on its own", () => {
@@ -1712,8 +1713,24 @@ test("a gap long enough to plan around is drawn, and belongs to the reader", () 
   assert.match(draw(), /Waiting . 5 hours/, "a name of the reader's own was ignored");
   assert.ok(draw().includes("#ffe0b2"), "a color of the reader's own was ignored");
 
+  /* "How long it lasts" is one checkbox and it governs every box, this one
+     included. It was the single place the switch read as dead: a day full of
+     gaps still carrying "· 5 hours" while every lesson around them had dropped
+     theirs. Cleared, the box is the word alone — which is all a reader asked to
+     be told — and the tooltip keeps the figure. */
+  const gapWhat = () => {
+    const box = draw().split('class="ev gap"')[1] || "";
+    return (/<div class="what">([^<]*)</.exec(box) || [])[1];
+  };
+  run(`state.subjects = {};`);
+  assert.match(gapWhat(), /^Break · 5 hours/);
+  run(`state.showDuration = false;`);
+  assert.equal(gapWhat(), "Break", "the gap kept a duration nobody asked for");
+  assert.match(draw().split('class="ev gap"')[1], /title="Break 5 hours 5 min"/,
+               "the tooltip lost the figure");
+
   // And the switch removes it.
-  run(`state.subjects = {}; state.showGaps = false;`);
+  run(`state = defaults(); state.showGaps = false;`);
   assert.ok(!draw().includes('class="ev gap"'));
   run(`state = defaults(); myOwn().events = [];`);
 });

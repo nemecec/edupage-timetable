@@ -129,6 +129,16 @@ class TheCanteenSitting(unittest.TestCase):
         self.assertEqual([(b.get("group", ""), b.get("note", "")) for b in monday],
                          [("", ""), ("", ""), ("", ""), ("", "")])
 
+    def test_a_sitting_remembers_what_the_stretch_was_called(self):
+        """Two sittings tile the whole hour on a Friday, so the one that is not
+        the reader's leaves nothing behind. It has to fall back to something,
+        and what these minutes are called on every other day is Vaba aeg — read
+        off the band the sitting was cut out of rather than written down twice."""
+        _, plain = tt.day_times(["P", "P", "P", "L", "L"], self.cfg)
+        friday = tt.with_meals(plain, self.cfg, "8", self.FRI)
+        self.assertEqual([b.get("wasNamed", "") for b in friday],
+                         ["Vaba aeg", "Vaba aeg", ""])
+
     def test_the_question_is_asked_of_the_class_that_splits_and_no_other(self):
         """aSc holds a division only where the lessons differ, and this one
         changes no lesson at all — everybody has Praktikum at the same hour. So

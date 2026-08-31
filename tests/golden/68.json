@@ -292,7 +292,7 @@
    "Friday | ev gap | gap | t144 | h17 | l0 | w100 | Break · 10 min",
    "Friday | ev | Kunst | t162 | h143 | l0 | w100 | 10.30–11.50 (1 hour 20 min) Kunst A123 · Krista Vallimäe · Alfa",
    "Friday | ev brk | Söömine | t306 | h35 | l0 | w100 | Söömine 11.50–12.10 (20 min)",
-   "Friday | ev gap | gap | t342 | h71 | l0 | w100 | Break · 40 min",
+   "Friday | ev brk | Vaba aeg | t342 | h71 | l0 | w100 | Vaba aeg 12.10–12.50 (40 min)",
    "Friday | ev | Praktikum | t414 | h143 | l0 | w100 | 12.50–14.10 (1 hour 20 min) Praktikum",
    "axis | t hour | t0 | 9.00",
    "axis | t | t54 | 9.30",

@@ -339,9 +339,10 @@ class WholePage(unittest.TestCase):
                                   "Lõuna + loovaeg", "Söömine"})
         for name in breaks:
             with self.subTest(name=name):
-                self.assertIn(self.data["palette"][name]["bg"],
-                              (tt.BREAK_BG, tt.MEAL_BG))
-                self.assertEqual(self.data["palette"][name]["fg"], tt.BREAK_FG)
+                self.assertIn((self.data["palette"][name]["bg"],
+                               self.data["palette"][name]["fg"]),
+                              [(tt.BREAK_BG, tt.BREAK_FG),
+                               (tt.MEAL_BG, tt.MEAL_FG)])
         # A subject still gets a colour of its own from its family.
         self.assertNotEqual(self.data["palette"]["Ajalugu"]["bg"], tt.BREAK_BG)
         self.assertNotEqual(self.data["palette"]["Ajalugu"]["bg"], tt.MEAL_BG)
@@ -359,12 +360,15 @@ class WholePage(unittest.TestCase):
                                  "Lõuna + loovaeg"})
         self.assertEqual(rest, {"Vaba aeg"})
         for name in meals:
-            self.assertEqual(palette[name]["bg"], tt.MEAL_BG, name)
+            self.assertEqual(palette[name], {"bg": tt.MEAL_BG, "fg": tt.MEAL_FG},
+                             name)
         for name in rest:
-            self.assertEqual(palette[name]["bg"], tt.BREAK_BG, name)
+            self.assertEqual(palette[name], {"bg": tt.BREAK_BG, "fg": tt.BREAK_FG},
+                             name)
         # A lunch the page works out for itself is still lunch, so it is the
         # same colour as a lunch the school named. Same hour, same meal.
-        self.assertEqual(palette[tt.WORKED_OUT_LUNCH]["bg"], tt.MEAL_BG)
+        self.assertEqual(palette[tt.WORKED_OUT_LUNCH],
+                         {"bg": tt.MEAL_BG, "fg": tt.MEAL_FG})
 
     def test_the_two_break_colours_survive_a_printer_with_no_colour(self):
         """A card is printed as often as it is looked at. A hue is the fastest
@@ -376,14 +380,19 @@ class WholePage(unittest.TestCase):
 
         self.assertGreater(grey(tt.BREAK_BG) - grey(tt.MEAL_BG), 10,
                            "the two are the same shade of grey on paper")
-        # And both stay quiet enough to read the label on.
-        for bg in (tt.BREAK_BG, tt.MEAL_BG):
-            with self.subTest(bg=bg):
-                lit = tt._relative_luminance(*(int(bg[i:i + 2], 16)
-                                               for i in (1, 3, 5)))
-                dark = tt._relative_luminance(*(int(tt.BREAK_FG[i:i + 2], 16)
-                                                for i in (1, 3, 5)))
-                self.assertGreater(tt._contrast(lit, dark), 4.5)
+        # And both read easily. A meal is the one gap a reader plans around, so
+        # its label is the firmer of the two rather than merely legible.
+        def against(bg, fg):
+            pair = [tt._relative_luminance(*(int(c[i:i + 2], 16)
+                                             for i in (1, 3, 5)))
+                    for c in (bg, fg)]
+            return tt._contrast(*pair)
+
+        plain = against(tt.BREAK_BG, tt.BREAK_FG)
+        meal = against(tt.MEAL_BG, tt.MEAL_FG)
+        self.assertGreater(plain, 4.5)
+        self.assertGreater(meal, plain,
+                           "the meal label is no firmer than the quiet one")
 
     def test_the_gumnaasium_keeps_its_own_day(self):
         """One published timetable, two schools. Read against the grades below

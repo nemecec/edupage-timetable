@@ -1653,16 +1653,28 @@ function renderTimeline(school, cls, shown, mine, scale) {
       /* Every break the day plan gives this day. Whether one belongs on a
          short day is a question about the plan, so the generator answers it
          and this draws what it is given. */
-      const bands = shape.b.filter(b => !hidden(b.n) &&
-                                        bandIsMine(b, myPicks(), cls.v));
-      for (const b of bands) {
+      const bands = [];
+      for (const b of shape.b) {
+        /* A sitting that is not this reader's does not leave a hole. It leaves
+           the stretch it stood in, under the name the plan gave that stretch
+           before the sitting was cut out of it.
+         *
+           Dropped outright it read as a hole, and the day drew a worked-out
+           "Paus · 20 min" over the very minutes every other day of the week
+           calls Vaba aeg. Same plan, same hour, two different words for it. */
+        const ours = bandIsMine(b, myPicks(), cls.v);
+        const name = ours ? b.n : (b.f || "");
+        if (!name || hidden(name)) continue;
+        bands.push({ band: b, name: name, ours: ours });
+      }
+      for (const it of bands) {
         /* The note is only worth its width while there is something to tell
            apart. Two sittings on one day need it; once the reader has answered,
            theirs is the only one there and says what it says on every other day
            of the week. */
-        const twin = bands.some(other => other !== b && other.n === b.n);
-        perDay.get(i).push({ a: b.m, z: b.x, brk: b.n,
-                             note: twin ? (b.q || "") : "" });
+        const twin = bands.some(other => other !== it && other.name === it.name);
+        perDay.get(i).push({ a: it.band.m, z: it.band.x, brk: it.name,
+                             note: it.ours && twin ? (it.band.q || "") : "" });
       }
     }
   }

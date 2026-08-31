@@ -1835,9 +1835,9 @@ test("the day keeps the sitting the reader answered for, and drops the note", ()
           sj: [], w: 0}]);
        currentClass().h["0"].b = [
          {a: 1, n: "Söömine", s: "11.50", e: "12.10", m: 710, x: 730,
-          g: "Väljaspool koolimaja", q: "praktikum väljas"},
+          g: "Väljaspool koolimaja", q: "praktikum väljas", f: "Vaba aeg"},
          {a: 1, n: "Söömine", s: "12.10", e: "12.50", m: 730, x: 770,
-          g: "Koolimajas", q: "praktikum koolis"}];`);
+          g: "Koolimajas", q: "praktikum koolis", f: "Vaba aeg"}];`);
   const KEY = "Väljaspool koolimaja/Koolimajas";
   const restore = () => run(`currentClass().h["0"].b = window.__bands;
        currentClass().v = window.__divs;
@@ -1865,6 +1865,33 @@ test("the day keeps the sitting the reader answered for, and drops the note", ()
     assert.deepEqual(monday(), ["Söömine"]);
     run(`myOwn().studyGroups[${JSON.stringify(KEY)}] = "Koolimajas";`);
     assert.deepEqual(monday(), ["Söömine"]);
+
+    /* And the other sitting leaves the stretch it stood in, under the name the
+       plan gave it. Dropped outright the hour read as a hole and the day drew a
+       worked-out "Paus · 20 min" over minutes every other day calls Vaba aeg. */
+    const all = () => {
+      const html = run(`renderTimeline(currentSchool(), currentClass(),
+                          currentClass().e, readEvents(myOwn().events).events, 0)`);
+      const col = html.split('<div class="tlcol">')[1] || "";
+      return (col.match(/class="ev brk[^]*?class="what[^"]*">([^<]*)</g) || [])
+               .map(m => /class="what[^"]*">([^<]*)</.exec(m)[1]);
+    };
+    assert.deepEqual(all(), ["Vaba aeg", "Söömine"]);
+
+    /* And no hole was made. Answering the question must not add a worked-out
+       Paus to the day: the minutes are spoken for either way, and the day has
+       whatever holes it had before anybody answered anything. */
+    const holes = () => {
+      const html = run(`renderTimeline(currentSchool(), currentClass(),
+                          currentClass().e, readEvents(myOwn().events).events, 0)`);
+      const col = html.split('<div class="tlcol">')[1] || "";
+      return (col.match(/class="ev gap"/g) || []).length;
+    };
+    const answered = holes();
+    run(`myOwn().studyGroups = {};`);
+    assert.equal(holes(), answered,
+                 "answering the question left a hole the day drew as a Paus");
+    run(`myOwn().studyGroups[${JSON.stringify(KEY)}] = "Koolimajas";`);
 
     /* One name for all of them, so the subject table has one row and a reader
        who renames or recolors it does it once for the week. */

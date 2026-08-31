@@ -1386,7 +1386,14 @@ def with_meals(breaks, cfg, class_name, day):
                             until=until, start=_fmt_time(at),
                             end=_fmt_time(until),
                             group=meal.get("group", ""),
-                            note=meal.get("note", "")))
+                            note=meal.get("note", ""),
+                            # What the plan called this stretch before the
+                            # sitting was cut out of it. Where two sittings
+                            # tile the whole break, the one that is not the
+                            # reader's has to fall back to something, and this
+                            # is what the same minutes are called on every
+                            # other day.
+                            wasNamed=band["name"]))
             clock = until
         if clock < band["until"]:
             out.append(dict(band, at=clock, until=band["until"],
@@ -2682,6 +2689,13 @@ BREAK_BG, BREAK_FG = "#EDEFF2", "#4a5058"
 # it reads as background. A meal is still a gap in the day.
 MEAL_BG = "#EADFC8"
 
+# And a firmer label on it. The grey breaks are the quietest thing on the day
+# and a meal is not quite that quiet: it is the one gap a reader plans around.
+# Warm, so it belongs to the background it sits on rather than looking borrowed
+# from the grey ones, and darker — 8.9:1 against 7.1 for the grey — so the two
+# read as two even where the boxes are small and the labels the same length.
+MEAL_FG = "#453520"
+
 # Which breaks those are. The names are the schools' own, and a school that
 # invents another one fails the test that pins every break name — which is the
 # moment to decide which of the two it is, rather than have it quietly land in
@@ -2704,8 +2718,9 @@ ICON = "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox
 
 def break_palette(names):
     meals = MEAL_BREAKS | {WORKED_OUT_LUNCH}
-    return {name: {"bg": MEAL_BG if name in meals else BREAK_BG,
-                   "fg": BREAK_FG} for name in names}
+    return {name: ({"bg": MEAL_BG, "fg": MEAL_FG} if name in meals
+                   else {"bg": BREAK_BG, "fg": BREAK_FG})
+            for name in names}
 
 
 def compact(schools):
@@ -2799,7 +2814,9 @@ def compact(schools):
                            # and what the box adds to its name while the other
                            # one is still on the day beside it.
                            **({"g": b["group"]} if b.get("group") else {}),
-                           **({"q": b["note"]} if b.get("note") else {})}
+                           **({"q": b["note"]} if b.get("note") else {}),
+                           **({"f": b["wasNamed"]}
+                              if b.get("wasNamed") and b.get("group") else {})}
                           for b in v["breaks"]],
                 } for day, v in cls["shape"].items()},
                 "e": [{

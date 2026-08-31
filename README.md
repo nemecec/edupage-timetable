@@ -164,8 +164,16 @@ out of the clock. The clock gets two details right:
 
   Answered, theirs is the only one there. The note then has nothing left to tell
   it apart from, so it goes and the box says what it says on every other day of
-  the week. The hour the other sitting stood in is read like any other hole:
-  free time.
+  the week.
+
+  The other sitting does not leave a hole. It leaves the stretch it stood in,
+  under the name the plan gave that stretch before the sitting was cut out of
+  it — which on Friday is `Vaba aeg`, the same word the other four days use for
+  the minutes around their sitting. Dropped outright it read as a hole, and the
+  day drew a worked-out `Paus · 20 min` across it: the same plan and the same
+  hour, described two different ways depending on which day you were looking
+  at. Each sitting carries the name of the band it was cut from for exactly
+  this.
 
   The times are hand-copied. The build stops on a sitting that lands inside no
   break of the day plan, which is what a moved plan looks like from here — a
@@ -1405,7 +1413,12 @@ Some of these choices are not obvious:
   A hue because it is the fastest thing to read at a glance, and a step darker
   as well because a card is printed as often as it is looked at and a printer
   with no color has only the step: fifteen points of greyscale between them, and
-  a test that says so. Both stay above 4.5:1 against the label.
+  a test that says so.
+
+  The label is firmer on a meal too — a warm `#453520` at 8.9:1, against 7.1:1
+  for the grey ones. A meal is the one gap a reader plans around, so it is not
+  quite as quiet as free time, and where the boxes are small and the labels the
+  same length the text is the other half of telling them apart.
 
   The worked-out lunch takes the meal color too. Same hour and same meal, so a
   reader should not be told two different things about it depending on whether

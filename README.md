@@ -1129,9 +1129,13 @@ Some of these choices are not obvious:
 - **`studyGroups` is keyed by the choice on offer**, `"Alfa/Beeta/Gamma"`. It is
   not keyed by aSc's own identifier for that division, which is `"*5:1"` and
   means nothing outside the feed. Where one division is offered once per subject,
-  both halves carry the same codes, so the second is keyed
-  `"Inglise keel: I A/I B/…"` and the first keeps the plain list. A pick saved
-  before the split still answers the first.
+  both halves carry the same codes, so each is keyed by its own subject:
+  `"Eesti keel: I A/I B/…"` and `"Inglise keel: I A/I B/…"`. Both, and not only
+  the second. A pick saved before the split answered one of the two subjects and
+  nothing records which, so a half left under the plain group list took that
+  answer whatever it meant — a reader who had picked their English set was shown
+  that set's Estonian lessons, and told nothing. Neither key matches the old
+  one now, so both pickers stand unanswered until the reader answers them.
 - **`subjectColorStyle` says what every subject does**: `palette` (the generated
   one), `school` (the timetable's own), or `custom` (yours). It was two
   checkboxes that layered on each other. Nobody can guess that by looking.

@@ -124,6 +124,26 @@ out of the clock. The clock gets two details right:
   at 14.10-14.30 on others. The hour before it, `Vaba aeg`, is fixed at 11.50-12.50. It comes after slot 2, and the first two slots are
   always pairs. Where a school writes a break as a list, the grid shows the part before the
   first comma.
+- **That hour is one hour for every class, and the canteen is not.** So each
+  class is given a sitting inside it, and which one is something the school
+  says rather than something the plan holds. Where a sitting is written down,
+  the hour is cut around it: free time, the sitting, free time. Drawn as a band
+  over the top the two would be packed side by side at half the width each,
+  which says the class is doing both at once.
+
+  Only ProTERA's eighth year has one written down, because it is the only class
+  the school has told us about. Every other class keeps the plain hour, which is
+  what the page drew before and is not wrong, only less.
+
+  A day can hold two sittings where the class splits, and then the name is what
+  says which is yours — the eighth year's Friday has one before the walk to
+  Praktikum and one for everybody else. A sitting is a break like any other, so
+  it takes the same quiet grey and the reader can rename or recolor it from the
+  subject table.
+
+  The times are hand-copied. The build stops on a sitting that lands inside no
+  break of the day plan, which is what a moved plan looks like from here — a
+  meal drawn at the wrong hour is worse than a build that says it cannot.
 
 **One timetable can hold two schools.** School 68 is published as "ProTERA ja
 TERA gümnaasium", and the gümnaasium does not keep the ProTERA day. Its

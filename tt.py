@@ -625,6 +625,34 @@ BELLS = {
         "perSubject": [
             {"classes": ["9"], "subjects": ["Eesti keel", "Inglise keel"]},
         ],
+        # When a class eats. The hour of free time after the second lesson is
+        # the same hour for every class, and the canteen does not hold them all
+        # at once, so each class is given a sitting inside it. The plan does not
+        # say which — the school does, class by class.
+        #
+        # Only the eighth year is written here, because it is the only one the
+        # school has told us. Every other class keeps the plain hour, which is
+        # what the page drew before this and is not wrong, only less.
+        #
+        # A day can have two sittings where the class splits, and then the name
+        # is what says which is yours. Friday is that: one before the walk to
+        # Praktikum and one for everybody else.
+        #
+        # Hand-copied, so it goes stale when the sittings move. The build stops
+        # on a sitting that does not land inside a break of the day plan, which
+        # is what a changed plan looks like from here.
+        "meals": {
+            "8": [
+                {"day": "Mon", "at": "12:10", "until": "12:30"},
+                {"day": "Tue", "at": "12:30", "until": "12:50"},
+                {"day": "Wed", "at": "11:50", "until": "12:10"},
+                {"day": "Thu", "at": "12:10", "until": "12:30"},
+                {"day": "Fri", "at": "11:50", "until": "12:10",
+                 "name": "Söömine (Praktikum)"},
+                {"day": "Fri", "at": "12:10", "until": "12:50",
+                 "name": "Söömine (teised)"},
+            ],
+        },
         # TERA gümnaasium is in the same published timetable and does not keep
         # the same day. Four lessons of eighty minutes, its own two breaks, and
         # nothing after half past three. Read against the grades below it, its
@@ -1258,6 +1286,67 @@ def _minutes(text):
     return int(hour) * 60 + int(minute)
 
 
+# The order aSc counts days in, which is what a sitting is written against.
+MEAL_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+MEAL_NAME = "Söömine"
+
+
+def meals_for(cfg, class_name, day):
+    """This class's sittings on this day, earliest first."""
+    wanted = (cfg or {}).get("meals", {}).get((class_name or "").strip(), [])
+    return sorted((m for m in wanted if MEAL_DAYS.index(m["day"]) == day),
+                  key=lambda m: _minutes(m["at"]))
+
+
+def with_meals(breaks, cfg, class_name, day):
+    """Cut a class's own sittings out of the break they fall in.
+
+    The plan gives every class the same hour of free time. Twenty minutes of it
+    is this class's turn in the canteen and the rest is still free time, so the
+    hour becomes up to three bands rather than two that overlap. Overlapping,
+    the two would be packed side by side at half the width each, which says the
+    class is doing both at once.
+
+    A sitting that lands in no break is refused rather than drawn somewhere
+    near. It means the day plan moved under the copied times, and a meal drawn
+    at the wrong hour is worse than a build that stops and says so.
+    """
+    sittings = meals_for(cfg, class_name, day)
+    if not sittings:
+        return breaks
+    out, taken = [], set()
+    for band in breaks:
+        inside = [m for m in sittings
+                  if band["at"] <= _minutes(m["at"])
+                  and _minutes(m["until"]) <= band["until"]]
+        if not inside:
+            out.append(band)
+            continue
+        # Free time, sitting, free time, sitting, ... in clock order. A stretch
+        # of no minutes between two of them is not a band and is left out.
+        clock = band["at"]
+        for meal in inside:
+            taken.add(id(meal))
+            at, until = _minutes(meal["at"]), _minutes(meal["until"])
+            if at > clock:
+                out.append(dict(band, at=clock, until=at,
+                                start=_fmt_time(clock), end=_fmt_time(at)))
+            out.append(dict(band, name=meal.get("name", MEAL_NAME), at=at,
+                            until=until, start=_fmt_time(at),
+                            end=_fmt_time(until)))
+            clock = until
+        if clock < band["until"]:
+            out.append(dict(band, at=clock, until=band["until"],
+                            start=_fmt_time(clock), end=_fmt_time(band["until"])))
+    missed = [m for m in sittings if id(m) not in taken]
+    if missed:
+        raise SystemExit(
+            "%s on %s: no break of the day plan holds %s-%s. The plan moved "
+            "under the sittings written in BELLS." %
+            (class_name, MEAL_DAYS[day], missed[0]["at"], missed[0]["until"]))
+    return out
+
+
 def block_gaps(cfg, slots, class_name=""):
     """Lunch, on a day the school publishes as a list of blocks.
 
@@ -1792,6 +1881,7 @@ def extract(result, class_name, n_periods=None, cfg=None, period_times=None,
             if cfg and not cfg.get("bands"):
                 kinds = ["P" if s["periods"] > 1 else "L" for s in slots]
                 times, breaks = day_times(kinds, cfg)
+                breaks = with_meals(breaks, cfg, class_name, day)
                 for slot, time in zip(slots, times):
                     slot.update(time)
             elif clock:

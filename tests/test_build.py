@@ -93,7 +93,7 @@ class WholePage(unittest.TestCase):
         self.assertEqual((len(rows), len(boxes)), (1782, 1468))
         # 70 subject names, plus the five named breaks. A break is drawn and
         # recolored like a lesson, so it needs a color of its own.
-        self.assertEqual(len(self.data["palette"]), 74)
+        self.assertEqual(len(self.data["palette"]), 77)
         # Every class carries lessons, and the group pickers are populated.
         self.assertTrue(all(c["e"] for s in self.data["schools"] for c in s["c"]))
         self.assertEqual(sum(len(c["v"]) for s in self.data["schools"]
@@ -336,7 +336,8 @@ class WholePage(unittest.TestCase):
         breaks = {b["n"] for s in self.data["schools"] for c in s["c"]
                   for day in c["h"].values() for b in day["b"] if b["n"]}
         self.assertEqual(breaks, {"Vaba aeg", "Amps", "Hommikuamps", "Lõuna",
-                                  "Lõuna + loovaeg"})
+                                  "Lõuna + loovaeg", "Söömine",
+                                  "Söömine (Praktikum)", "Söömine (teised)"})
         for name in breaks:
             with self.subTest(name=name):
                 self.assertEqual(self.data["palette"][name],
@@ -371,10 +372,15 @@ class WholePage(unittest.TestCase):
                          ["10.30–11.50", "12.40–14.00", "14.10–15.30", "9.00–10.20"])
         self.assertEqual(breaks, [("Hommikuamps", "8.30", "8.55"),
                                   ("Lõuna", "11.50", "12.40")])
-        # The grades below it are untouched.
+        # The grades below it are untouched. Their hour of free time still
+        # starts at 11.50 and their snack is still at 13.35 — the eighth year
+        # has its canteen sitting cut out of the hour, which is its own doing
+        # and not the gümnaasium's day leaking downwards.
         lessons, breaks = monday("8", protera)
         self.assertIn("12.50–13.35", lessons)
-        self.assertEqual(breaks, [("Vaba aeg", "11.50", "12.50"),
+        self.assertEqual(breaks, [("Vaba aeg", "11.50", "12.10"),
+                                  ("Söömine", "12.10", "12.30"),
+                                  ("Vaba aeg", "12.30", "12.50"),
                                   ("Amps", "13.35", "13.55")])
 
     def test_the_fifth_years_split_around_lunch(self):
@@ -564,17 +570,27 @@ class WholePage(unittest.TestCase):
         self.assertLess(written, page.index("</head>"),
                         "the page rule is not in the head")
 
-    def test_no_break_is_named_twice_on_one_day(self):
+    def test_no_two_bands_on_one_day_overlap(self):
         """A school can name a band per class, and two windows for the same
         meal can both catch the same hole. TäheTERA feeds its two halves at
         hours that overlap around 12.20, and a class in both lists was given
-        lunch twice over."""
+        lunch twice over.
+
+        Asked as an overlap rather than as a repeated name. ProTERA's eighth
+        year has its canteen sitting cut out of the free hour, which leaves free
+        time on both sides of it — two bands rightly called the same thing, and
+        neither one standing where the other does.
+        """
         for s in self.data["schools"]:
             for cls in s["c"]:
                 for day, shape in (cls.get("h") or {}).items():
-                    names = [b["n"] for b in shape["b"]]
-                    self.assertEqual(sorted(set(names)), sorted(names),
-                                     "%s %s day %s" % (s["l"], cls["n"], day))
+                    bands = sorted(shape["b"], key=lambda b: b["m"])
+                    for one, two in zip(bands, bands[1:]):
+                        self.assertLessEqual(
+                            one["x"], two["m"],
+                            "%s %s day %s: %s %d-%d and %s %d-%d overlap" %
+                            (s["l"], cls["n"], day, one["n"], one["m"], one["x"],
+                             two["n"], two["m"], two["x"]))
 
     def test_the_snack_break_opens_when_the_morning_stops(self):
         """Amps is 25 minutes after a double first block, 10 after two singles,
@@ -677,10 +693,55 @@ class WholePage(unittest.TestCase):
 
     def test_the_named_breaks_survive_into_the_page(self):
         school = next(s for s in self.data["schools"] if s["n"] == "68")
+        # The seventh year has no sitting written down, so it keeps the plain
+        # hour the plan gives every class.
+        seven = next(c for c in school["c"] if c["n"] == "7")
+        self.assertEqual([(b["n"], b["s"], b["e"]) for b in seven["h"]["0"]["b"]],
+                         [("Vaba aeg", "11.50", "12.50"),
+                          ("Amps", "13.35", "13.55")])
+        # The eighth year eats inside that hour, so the hour is cut around it.
         klass = next(c for c in school["c"] if c["n"] == "8")
         breaks = [(b["n"], b["s"], b["e"]) for b in klass["h"]["0"]["b"]]
-        self.assertEqual(breaks, [("Vaba aeg", "11.50", "12.50"),
+        self.assertEqual(breaks, [("Vaba aeg", "11.50", "12.10"),
+                                  ("Söömine", "12.10", "12.30"),
+                                  ("Vaba aeg", "12.30", "12.50"),
                                   ("Amps", "13.35", "13.55")])
+
+    def test_only_the_class_the_school_named_gets_a_sitting(self):
+        """One class was told to us and the rest were not. A sitting invented
+        for a class is a child sent to the canteen at the wrong time."""
+        eating = {(s["n"], c["n"])
+                  for s in self.data["schools"] for c in s["c"]
+                  for day in c.get("h", {}).values()
+                  for b in day["b"] if b["n"].startswith("Söömine")}
+        self.assertEqual(eating, {("68", "8")})
+
+    def test_the_week_of_sittings_is_the_one_the_school_gave(self):
+        school = next(s for s in self.data["schools"] if s["n"] == "68")
+        klass = next(c for c in school["c"] if c["n"] == "8")
+        got = [(day, b["n"], b["s"], b["e"])
+               for day, shape in sorted(klass["h"].items())
+               for b in shape["b"] if b["n"].startswith("Söömine")]
+        self.assertEqual(got, [
+            ("0", "Söömine", "12.10", "12.30"),
+            ("1", "Söömine", "12.30", "12.50"),
+            ("2", "Söömine", "11.50", "12.10"),
+            ("3", "Söömine", "12.10", "12.30"),
+            # Friday splits the class, and the name is what says which is
+            # yours: one sitting before the walk to Praktikum, one for the
+            # rest.
+            ("4", "Söömine (Praktikum)", "11.50", "12.10"),
+            ("4", "Söömine (teised)", "12.10", "12.50"),
+        ])
+
+    def test_a_sitting_is_as_quiet_as_any_other_break(self):
+        """It is a gap, not a lesson, so it takes the same grey the plan's own
+        breaks take and the reader can recolor it like any of them."""
+        school = next(s for s in self.data["schools"] if s["n"] == "68")
+        for name in ("Söömine", "Söömine (Praktikum)", "Söömine (teised)"):
+            with self.subTest(name=name):
+                self.assertEqual(self.data["palette"][name],
+                                 self.data["palette"]["Amps"])
 
     def test_each_school_abbreviates_and_colors_in_its_own_words(self):
         """The four timetables are separate aSc documents that spell the same

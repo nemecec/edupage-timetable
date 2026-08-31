@@ -74,6 +74,60 @@ class BellClock(unittest.TestCase):
         self.assertEqual(breaks[1]["start"], "13.35")
 
 
+class TheCanteenSitting(unittest.TestCase):
+    """The hour of free time is the same hour for every ProTERA class, and the
+    canteen does not hold them all at once. So each class is given a sitting
+    inside it, and the hour becomes free time, the sitting, and free time."""
+
+    cfg = tt.BELLS["ProTERA"]
+    MON, FRI = 0, 4
+
+    def breaks(self, class_name, day):
+        _, plain = tt.day_times(["P", "P", "P", "L", "L"], self.cfg)
+        got = tt.with_meals(plain, self.cfg, class_name, day)
+        return [(b["name"], b["start"], b["end"]) for b in got]
+
+    def test_the_hour_is_cut_around_the_sitting(self):
+        # Twenty minutes of the hour is this class's turn. The rest is still
+        # free time, so it is still drawn as free time.
+        self.assertEqual(self.breaks("8", self.MON),
+                         [("Vaba aeg", "11.50", "12.10"),
+                          ("Söömine", "12.10", "12.30"),
+                          ("Vaba aeg", "12.30", "12.50"),
+                          ("Amps", "14.10", "14.30")])
+
+    def test_a_sitting_at_the_edge_leaves_no_empty_band(self):
+        # Wednesday eats first. A stretch of no minutes in front of it is not a
+        # band, and drawing one would put a nought-minute box on the day.
+        self.assertEqual(self.breaks("8", 2),
+                         [("Söömine", "11.50", "12.10"),
+                          ("Vaba aeg", "12.10", "12.50"),
+                          ("Amps", "14.10", "14.30")])
+
+    def test_two_sittings_in_one_hour_are_told_apart(self):
+        # Friday splits the class: one sitting before the walk to Praktikum and
+        # one for everybody else. Drawn under one name a reader could not tell
+        # which was theirs, so the name is what says so.
+        self.assertEqual(self.breaks("8", self.FRI),
+                         [("Söömine (Praktikum)", "11.50", "12.10"),
+                          ("Söömine (teised)", "12.10", "12.50"),
+                          ("Amps", "14.10", "14.30")])
+
+    def test_a_class_the_school_has_not_told_us_about_keeps_the_plain_hour(self):
+        self.assertEqual(self.breaks("7", self.MON),
+                         [("Vaba aeg", "11.50", "12.50"),
+                          ("Amps", "14.10", "14.30")])
+
+    def test_a_sitting_outside_every_break_stops_the_build(self):
+        """It means the day plan moved under the copied times. A meal drawn at
+        the wrong hour is worse than a build that stops and says so."""
+        cfg = dict(self.cfg, meals={"8": [{"day": "Mon", "at": "9:30",
+                                           "until": "9:50"}]})
+        _, plain = tt.day_times(["P", "P", "P", "L", "L"], cfg)
+        with self.assertRaises(SystemExit) as caught:
+            tt.with_meals(plain, cfg, "8", self.MON)
+        self.assertIn("9:30", str(caught.exception))
+
 class PublishedBlocks(unittest.TestCase):
     """LõunaTERA lists fixed blocks instead, one table per band of grades."""
 

@@ -668,17 +668,19 @@ BELLS = {
                 # is outside the schoolhouse or in it decides which sitting is
                 # yours and nothing else. Those going out eat first, because
                 # they have the walk. So the page asks — see "asked" below.
-                # A name each as well as a group. The group is what the
-                # reader's answer is matched against; the name is what the box
-                # says, and two bands one above the other called the same thing
-                # tell a reader nothing until they have answered. A twenty
-                # minute band has no room for a second line to say it on.
+                # A group and a note. The group is what the reader's answer is
+                # matched against. The note is what the box adds to its name
+                # while both sittings are on the day, because two bands one
+                # above the other called the same thing tell a reader nothing —
+                # and a twenty-minute band has no second line to say it on.
+                #
+                # Once the reader has answered, only one is left and the note
+                # goes with the other: the box then says what it says on every
+                # other day of the week.
                 {"day": "Fri", "at": "11:50", "until": "12:10",
-                 "name": "Söömine (väljaspool)",
-                 "group": "Väljaspool koolimaja"},
+                 "group": "Väljaspool koolimaja", "note": "praktikum väljas"},
                 {"day": "Fri", "at": "12:10", "until": "12:50",
-                 "name": "Söömine (koolimajas)",
-                 "group": "Koolimajas"},
+                 "group": "Koolimajas", "note": "praktikum koolis"},
             ],
         },
         # TERA gümnaasium is in the same published timetable and does not keep
@@ -1383,7 +1385,8 @@ def with_meals(breaks, cfg, class_name, day):
             out.append(dict(band, name=meal.get("name", MEAL_NAME), at=at,
                             until=until, start=_fmt_time(at),
                             end=_fmt_time(until),
-                            group=meal.get("group", "")))
+                            group=meal.get("group", ""),
+                            note=meal.get("note", "")))
             clock = until
         if clock < band["until"]:
             out.append(dict(band, at=clock, until=band["until"],
@@ -2763,8 +2766,11 @@ def compact(schools):
                     "b": [{"a": b["after"], "n": b["name"],
                            "s": b["start"], "e": b["end"],
                            "m": b["at"], "x": b["until"],
-                           # Whose sitting this is, where the class splits.
-                           **({"g": b["group"]} if b.get("group") else {})}
+                           # Whose sitting this is, where the class splits,
+                           # and what the box adds to its name while the other
+                           # one is still on the day beside it.
+                           **({"g": b["group"]} if b.get("group") else {}),
+                           **({"q": b["note"]} if b.get("note") else {})}
                           for b in v["breaks"]],
                 } for day, v in cls["shape"].items()},
                 "e": [{

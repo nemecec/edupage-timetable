@@ -93,7 +93,7 @@ class WholePage(unittest.TestCase):
         self.assertEqual((len(rows), len(boxes)), (1782, 1468))
         # 70 subject names, plus the five named breaks. A break is drawn and
         # recolored like a lesson, so it needs a color of its own.
-        self.assertEqual(len(self.data["palette"]), 77)
+        self.assertEqual(len(self.data["palette"]), 75)
         # Every class carries lessons, and the group pickers are populated.
         self.assertTrue(all(c["e"] for s in self.data["schools"] for c in s["c"]))
         self.assertEqual(sum(len(c["v"]) for s in self.data["schools"]
@@ -336,9 +336,7 @@ class WholePage(unittest.TestCase):
         breaks = {b["n"] for s in self.data["schools"] for c in s["c"]
                   for day in c["h"].values() for b in day["b"] if b["n"]}
         self.assertEqual(breaks, {"Vaba aeg", "Amps", "Hommikuamps", "Lõuna",
-                                  "Lõuna + loovaeg", "Söömine",
-                                  "Söömine (väljaspool)",
-                                  "Söömine (koolimajas)"})
+                                  "Lõuna + loovaeg", "Söömine"})
         for name in breaks:
             with self.subTest(name=name):
                 self.assertEqual(self.data["palette"][name],
@@ -729,18 +727,19 @@ class WholePage(unittest.TestCase):
             ("2", "Söömine", "11.50", "12.10"),
             ("3", "Söömine", "12.10", "12.30"),
             # Friday splits the class: whoever has Praktikum outside the
-            # schoolhouse eats first, because they have the walk. A name each,
-            # because a twenty-minute band has no second line to say it on.
-            ("4", "Söömine (väljaspool)", "11.50", "12.10"),
-            ("4", "Söömine (koolimajas)", "12.10", "12.50"),
+            # schoolhouse eats first, because they have the walk. One name for
+            # all six, so a reader who renames or recolors the row does it once
+            # — what tells the two Friday sittings apart is a note the page
+            # adds while both of them are on the day.
+            ("4", "Söömine", "11.50", "12.10"),
+            ("4", "Söömine", "12.10", "12.50"),
         ])
 
     def test_a_sitting_is_as_quiet_as_any_other_break(self):
         """It is a gap, not a lesson, so it takes the same grey the plan's own
         breaks take and the reader can recolor it like any of them."""
         school = next(s for s in self.data["schools"] if s["n"] == "68")
-        for name in ("Söömine", "Söömine (väljaspool)",
-                     "Söömine (koolimajas)"):
+        for name in ("Söömine",):
             with self.subTest(name=name):
                 self.assertEqual(self.data["palette"][name],
                                  self.data["palette"]["Amps"])

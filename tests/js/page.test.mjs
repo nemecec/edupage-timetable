@@ -1791,8 +1791,8 @@ test("a band the class splits is drawn for whoever answered for it", () => {
   const divisions = [{ groups: ["Väljaspool koolimaja", "Koolimajas"],
                        l: "Praktikum", sj: [], w: 0 }];
   const KEY = "Väljaspool koolimaja/Koolimajas";
-  const outside = { n: "Söömine (väljaspool)", g: "Väljaspool koolimaja" };
-  const inside = { n: "Söömine (koolimajas)", g: "Koolimajas" };
+  const outside = { n: "Söömine (praktikum väljas)", g: "Väljaspool koolimaja" };
+  const inside = { n: "Söömine (praktikum koolis)", g: "Koolimajas" };
   const whole = { n: "Söömine" };
   const drawn = (band, pick) => json(
     `bandIsMine(${JSON.stringify(band)}, ` +
@@ -1821,11 +1821,11 @@ test("a band the class splits is drawn for whoever answered for it", () => {
                      ${JSON.stringify(divisions)})`), true);
 });
 
-test("the day drawn keeps only the sittings the reader answered for", () => {
+test("the day keeps the sitting the reader answered for, and drops the note", () => {
   /* The rule above, reaching the boxes. The harness class is made up, so the
-     question and its two sittings are put on it here the way the generator
-     puts them on ProTERA's eighth year: a division no lesson carries, and two
-     bands that name its groups. */
+     question and its two sittings are put on it here the way the generator puts
+     them on ProTERA's eighth year: a division no lesson carries, and two bands
+     under one name that differ by their group and their note. */
   run(`state = defaults(); state.lang = "en"; applyStrings();
        state.school = "68"; state.class = "8";
        window.__bands = currentClass().h["0"].b;
@@ -1834,28 +1834,45 @@ test("the day drawn keeps only the sittings the reader answered for", () => {
          {groups: ["Väljaspool koolimaja", "Koolimajas"], l: "Praktikum",
           sj: [], w: 0}]);
        currentClass().h["0"].b = [
-         {a: 1, n: "Söömine (väljaspool)", s: "11.50", e: "12.10",
-          m: 710, x: 730, g: "Väljaspool koolimaja"},
-         {a: 1, n: "Söömine (koolimajas)", s: "12.10", e: "12.50",
-          m: 730, x: 770, g: "Koolimajas"}];`);
+         {a: 1, n: "Söömine", s: "11.50", e: "12.10", m: 710, x: 730,
+          g: "Väljaspool koolimaja", q: "praktikum väljas"},
+         {a: 1, n: "Söömine", s: "12.10", e: "12.50", m: 730, x: 770,
+          g: "Koolimajas", q: "praktikum koolis"}];`);
+  const KEY = "Väljaspool koolimaja/Koolimajas";
   const restore = () => run(`currentClass().h["0"].b = window.__bands;
        currentClass().v = window.__divs;
        state = defaults();`);
   try {
-    const KEY = "Väljaspool koolimaja/Koolimajas";
     const monday = () => {
       const html = run(`renderTimeline(currentSchool(), currentClass(),
                           currentClass().e, readEvents(myOwn().events).events, 0)`);
       const col = html.split('<div class="tlcol">')[1] || "";
-      return (col.match(/data-subject="Söömine[^"]*"/g) || [])
-               .map(m => /"([^"]*)"/.exec(m)[1]);
+      /* Every band keyed to the meal, by what its box says. Keyed rather than
+         matched on the word, because the point below is that a reader can
+         rename it. */
+      return col.split('data-subject="Söömine"').slice(1)
+                .map(part => (/class="what[^"]*">([^<]*)</.exec(part) || [])[1]);
     };
-    assert.deepEqual(monday(),
-                     ["Söömine (väljaspool)", "Söömine (koolimajas)"]);
+
+    /* Unanswered, both are drawn, and the note is what tells them apart. Two
+       bands one above the other called the same thing say nothing. */
+    assert.deepEqual(monday(), ["Söömine (praktikum väljas)",
+                                "Söömine (praktikum koolis)"]);
+
+    /* Answered, theirs is the only one there — so the note has nothing left to
+       tell it apart from, and the box says what it says on every other day. */
     run(`myOwn().studyGroups[${JSON.stringify(KEY)}] = "Väljaspool koolimaja";`);
-    assert.deepEqual(monday(), ["Söömine (väljaspool)"]);
+    assert.deepEqual(monday(), ["Söömine"]);
     run(`myOwn().studyGroups[${JSON.stringify(KEY)}] = "Koolimajas";`);
-    assert.deepEqual(monday(), ["Söömine (koolimajas)"]);
+    assert.deepEqual(monday(), ["Söömine"]);
+
+    /* One name for all of them, so the subject table has one row and a reader
+       who renames or recolors it does it once for the week. */
+    run(`state.subjects = { "Söömine": { label: "Lõunasöök" } };`);
+    assert.deepEqual(monday(), ["Lõunasöök"]);
+    run(`state.subjects = {}; myOwn().studyGroups = {};`);
+    assert.deepEqual(monday(), ["Söömine (praktikum väljas)",
+                                "Söömine (praktikum koolis)"]);
 
     /* And no lesson moves. No lesson carries these groups, so `visible` skips
        the division for every one of them — which is what lets a question with
@@ -1867,14 +1884,13 @@ test("the day drawn keeps only the sittings the reader answered for", () => {
                           readEvents(myOwn().events).events, 0)`);
       return (html.match(/class="ev(?! brk)(?! gap)/g) || []).length;
     };
-    const answered = lessons();
-    run(`myOwn().studyGroups = {};`);
-    assert.equal(lessons(), answered, "answering the question moved a lesson");
-
-    /* Put the made-up class back whatever happened above. The harness is shared,
-       and a failure here used to leave the injected bands behind and take five
-       later tests down with it. */
+    const open = lessons();
+    run(`myOwn().studyGroups[${JSON.stringify(KEY)}] = "Koolimajas";`);
+    assert.equal(lessons(), open, "answering the question moved a lesson");
   } finally {
+    /* Put the made-up class back whatever happened above. The harness is
+       shared, and a failure here left the injected bands behind and took five
+       later tests down with it. */
     restore();
   }
 });

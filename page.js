@@ -1653,10 +1653,16 @@ function renderTimeline(school, cls, shown, mine, scale) {
       /* Every break the day plan gives this day. Whether one belongs on a
          short day is a question about the plan, so the generator answers it
          and this draws what it is given. */
-      for (const b of shape.b) {
-        if (hidden(b.n)) continue;
-        if (!bandIsMine(b, myPicks(), cls.v)) continue;
-        perDay.get(i).push({ a: b.m, z: b.x, brk: b.n, group: b.g || "" });
+      const bands = shape.b.filter(b => !hidden(b.n) &&
+                                        bandIsMine(b, myPicks(), cls.v));
+      for (const b of bands) {
+        /* The note is only worth its width while there is something to tell
+           apart. Two sittings on one day need it; once the reader has answered,
+           theirs is the only one there and says what it says on every other day
+           of the week. */
+        const twin = bands.some(other => other !== b && other.n === b.n);
+        perDay.get(i).push({ a: b.m, z: b.x, brk: b.n,
+                             note: twin ? (b.q || "") : "" });
       }
     }
   }
@@ -1869,7 +1875,7 @@ function tornEdge(width, shift, amp) {
            ProTERA's Amps is one, and so is a SädeTERA Tuesday lunch — and a
            band with no times on it is the one thing a reader cannot work out
            from the lessons either side. */
-        const label = breakLabel(band);
+        const label = breakLabel(band) + (it.note ? " (" + it.note + ")" : "");
         /* The name first and the clock under it, which is the other way round
            from a lesson: a band is read for what it is, and a lesson for when
            it is. */
@@ -1884,7 +1890,7 @@ function tornEdge(width, shift, amp) {
              geom + "background-color:" + esc(col.bg) +
              ";color:" + esc(col.fg) + ";" + hatch(col.bg) +
              '" data-subject="' + esc(band) + '" title="' +
-             esc([breakName(band), it.group, when].filter(Boolean).join("\n")) +
+             esc([label, when].filter(Boolean).join("\n")) +
              '">' + inside.html + "</div>";
         continue;
       }

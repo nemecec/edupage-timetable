@@ -149,15 +149,22 @@ out of the clock. The clock gets two details right:
   answers it in the same place and it rides in a shared link with the rest. It
   hides nothing, because no lesson carries its groups.
 
-  Each sitting carries both a name and a group. The group is what the answer is
-  matched against; the name is what the box says. Both, because a twenty-minute
-  band has no second line to say a group on, and two bands one above the other
-  called the same thing tell a reader nothing until they have answered.
+  All six sittings share one name. Each of the two on Friday carries a group and
+  a note as well: the group is what the answer is matched against, and the note
+  is what the box adds to its name while both of them are on the day. A note
+  rather than a name of its own, so the subject table holds one row and a reader
+  who renames or recolors it does it once for the week.
 
-  Unanswered, both sittings are drawn — before a reader picks, every group's
-  lessons are on the screen and their sittings belong there with them. Answered,
-  the other one goes and the hour it stood in is read like any other hole: free
-  time.
+  Unanswered, both sittings are drawn and the note is what tells them apart —
+  before a reader picks, every group's lessons are on the screen and their
+  sittings belong there with them. Two bands one above the other called the same
+  thing say nothing, and a twenty-minute band has no second line to say a group
+  on.
+
+  Answered, theirs is the only one there. The note then has nothing left to tell
+  it apart from, so it goes and the box says what it says on every other day of
+  the week. The hour the other sitting stood in is read like any other hole:
+  free time.
 
   The times are hand-copied. The build stops on a sitting that lands inside no
   break of the day plan, which is what a moved plan looks like from here — a

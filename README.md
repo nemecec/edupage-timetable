@@ -170,6 +170,33 @@ out of the clock. The clock gets two details right:
   Answered, theirs is the only one there. The note then has nothing left to tell
   it apart from, so it goes and the box says what it says on every other day of
   the week.
+- **The answer decides the afternoon as well as the meal.** The Päevakava
+  carries what aSc cannot: a bus at 12.15, and the same Praktikum in another
+  building from 12.30 to 14.00. aSc has one Praktikum row for the whole class at
+  12.50, which is the one held in the schoolhouse.
+
+  So the row becomes one per group, each with its own clock, and the page
+  filters them the way it filters any lesson a class splits for. The moved one
+  waits to be asked for: drawn beside the other it is half a column, and a day
+  showing both alternatives has no room left to say which is which. Until the
+  reader answers, the day keeps the row aSc published.
+
+  The bus waits the same way, and for a plainer reason — it leaves in the middle
+  of the other group's meal. Two sittings can stand on one day because they
+  follow one another; a bus across one of them cannot.
+
+  A break gives way to what the same plan puts inside it. Answering "outside the
+  schoolhouse" leaves the reader eating at 11.50, on a bus at 12.15 and gone at
+  12.30, so the rest of the Proaeg hour is not theirs — and it is only on their
+  day at all because the other group's sitting fell back to it. It is cut to the
+  five minutes that really are theirs.
+
+  Only the plan's own, and only once answered. Where aSc and the plan disagree —
+  TäheTERA has a two-hour Loovloodus with the school's lunch band sitting inside
+  it — that is the school's disagreement and not ours to settle by deleting one
+  of them. And before the reader answers, both groups' Fridays are on the screen
+  at once: the page draws alternatives side by side, and trimming then would
+  take one group's meal away because the other group's lesson runs across it.
 
   The other sitting does not leave a hole. It leaves the stretch it stood in,
   under the name the plan gave that stretch before the sitting was cut out of

@@ -1210,6 +1210,54 @@ function tidySubjects() {
   }
 }
 
+/* A break gives way to the things the same day plan puts inside it.
+ *
+ * ProTERA's Friday is why. A reader whose Praktikum is out of the schoolhouse
+ * eats at 11.50, takes the 12.15 bus and is gone at 12.30; the rest of the
+ * Proaeg hour is not theirs, and it is only on the day at all because the other
+ * group's sitting fell back to it. Left whole it would run under the bus and
+ * under the lesson, and the three would be packed side by side saying the
+ * reader is in all of them.
+ *
+ * Only the plan's own: a bus, and a lesson whose hours the plan gave rather than
+ * aSc. Where aSc and the plan disagree — TäheTERA has a two-hour Loovloodus
+ * with the school's lunch band sitting inside it — that is the school's
+ * disagreement and not ours to settle by deleting one of them.
+ *
+ * And only what the reader has answered for. Before they answer, both groups'
+ * Fridays are on the screen at once and the page draws alternatives side by
+ * side, which is what it does everywhere two groups share an hour. Trimming
+ * then would take one group's meal away because the other group's lesson runs
+ * across it.
+ *
+ * The band can come out in pieces, so the subtraction is a real one rather than
+ * a trim at each end. Nothing here reorders or drops a lesson. */
+function trimBands(items, answered) {
+  const chosen = (groups) => (groups || []).some(g => answered.has(g));
+  const solid = items.filter(x => x.ride ||
+                                  (x.lesson && x.lesson.D && chosen(x.lesson.g)))
+                     .map(x => [x.a, x.z]);
+  if (!solid.length) return items;
+  const out = [];
+  for (const item of items) {
+    if (!item.brk || item.ride) { out.push(item); continue; }
+    let pieces = [[item.a, item.z]];
+    for (const [a, z] of solid) {
+      const kept = [];
+      for (const [from, to] of pieces) {
+        if (z <= from || a >= to) { kept.push([from, to]); continue; }
+        if (from < a) kept.push([from, a]);
+        if (z < to) kept.push([z, to]);
+      }
+      pieces = kept;
+    }
+    for (const [from, to] of pieces) {
+      out.push(Object.assign({}, item, { a: from, z: to }));
+    }
+  }
+  return out;
+}
+
 /* A band is mine the same way a lesson is, where the school splits one.
    ProTERA's eighth year eats in two sittings on a Friday and the timetable
    cannot say which is whose — everybody has Praktikum at that hour, and only
@@ -1224,6 +1272,12 @@ function bandIsMine(band, picked, divisions) {
   for (const div of divisions) {
     if (!div.groups.includes(band.g)) continue;
     const pick = picked[choiceKey(div)];
+    /* Some bands wait to be asked for. Two sittings can stand on one day
+       because they follow one another, so both are drawn until the reader says
+       which is theirs. A bus that leaves in the middle of the other group's
+       meal cannot: drawn beside it the two would be half a column each, and the
+       day would be saying the class is doing both. */
+    if (band.o) return pick === band.g;
     if (pick && pick !== band.g) return false;
   }
   return true;
@@ -1236,6 +1290,19 @@ function visible(entry, picked, divisions) {
      pick rules it out — both fall out of the loop below reaching its end, so
      neither needs a guard of its own. One was here, and no test can tell
      whether it works, because its removal changes nothing. */
+  /* Some lessons wait to be asked for, and that is asked before anything else
+     — including before the shortcut below, which is what "nothing picked yet"
+     means for every other lesson.
+
+     ProTERA's Friday Praktikum is one lesson the school runs twice: the same
+     hour in aSc, and in the Päevakava a bus at 12.15 and the other building
+     from 12.30. Drawn side by side the two are half a column each, and a day
+     showing both alternatives has no room left to say which is which. So until
+     the reader answers, the day keeps the one aSc published. */
+  if (entry.A) {
+    return divisions.some(div => entry.g.some(g => div.groups.includes(g)) &&
+                                 entry.g.includes(picked[choiceKey(div)]));
+  }
   if (!Object.values(picked).filter(Boolean).length) return true;
   for (const div of divisions) {
     /* A division split per subject offers every one of the same groups, so the
@@ -1462,8 +1529,13 @@ const LINE_CLEAR = 1;
 function lineOver(line) {
   const range = document.createRange();
   range.selectNodeContents(line);
-  return range.getBoundingClientRect().width -
-         line.getBoundingClientRect().width;
+  const laid = range.getBoundingClientRect().width -
+               line.getBoundingClientRect().width;
+  /* A label that wraps lays out inside its box, so the range says it fits even
+     where one word does not — "(praktikum" is wider than half a Friday column.
+     The browser's own count catches that, in whole pixels, and the wider of the
+     two answers is the one to act on. */
+  return Math.max(laid, line.scrollWidth - line.clientWidth);
 }
 
 /* A packed line the box cannot fit on one line, in a box with room for a second
@@ -1536,6 +1608,16 @@ function wrapPacked(root) {
     /* One line and not enough of it. A small step down in size keeps the whole
        line where an ellipsis would have spent the same width hiding it. */
     squeezeToFit(box, line);
+  }
+  /* And a stacked label, which wraps rather than running on but can still have
+     one word too wide for the box. The same answer: a step down in size beats
+     a word with its end cut off. */
+  for (const label of root.querySelectorAll(".ev .what:not(.oneline)")) {
+    const box = label.parentElement;
+    if (!box) continue;
+    restoreGrow(box);
+    if (lineOver(label) <= 0) continue;
+    squeezeToFit(box, label);
   }
 }
 
@@ -1674,8 +1756,11 @@ function renderTimeline(school, cls, shown, mine, scale) {
            of the week. */
         const twin = bands.some(other => other !== it && other.name === it.name);
         perDay.get(i).push({ a: it.band.m, z: it.band.x, brk: it.name,
+                             ride: !!it.band.o,
                              note: it.ours && twin ? (it.band.q || "") : "" });
       }
+      perDay.set(i, trimBands(perDay.get(i),
+                             new Set(Object.values(myPicks()).filter(Boolean))));
     }
   }
 

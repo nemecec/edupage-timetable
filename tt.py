@@ -655,6 +655,39 @@ BELLS = {
              "label": "Praktikum",
              "groups": ["Väljaspool koolimaja", "Koolimajas"]},
         ],
+        # And the lesson the question is about. aSc carries one Praktikum for
+        # the whole class at 12.50, which is the one in the schoolhouse. The
+        # Päevakava carries the other: a bus at 12.15 and Praktikum in the other
+        # building from 12.30 to 14.00.
+        #
+        # So the one entry becomes two, one per group, and the page filters them
+        # the way it filters any lesson a class splits for. A reader who has not
+        # answered sees both side by side, which is what the page does with two
+        # groups at one hour everywhere else.
+        # How they get there. The Päevakava puts a bus at 12.15, which is why
+        # this group eats in the first sitting.
+        #
+        # Only for a reader who has answered, and that is the difference between
+        # this and a sitting. Both sittings can stand on a Friday at once
+        # because they follow one another; a bus at 12.15 stands in the middle
+        # of the other group's meal, and drawn beside it the two would be half a
+        # column each saying the class is doing both.
+        "rides": [
+            {"classes": ["7", "8", "9"], "day": "Fri",
+             "at": "12:15", "until": "12:30", "name": "Buss praktikumi",
+             "group": "Väljaspool koolimaja"},
+        ],
+        "splitLessons": [
+            {"classes": ["7", "8", "9"], "day": "Fri", "subject": "Praktikum",
+             # The moved one waits to be asked for. Drawn beside the other
+             # group's meal it is half a column, and a Friday showing both
+             # alternatives at once has no room left to say which is which.
+             # Unanswered the day keeps aSc's Praktikum, which is the one in
+             # the schoolhouse and the one most of the class has.
+             "into": [{"group": "Väljaspool koolimaja", "whenAnswered": True,
+                       "at": "12:30", "until": "14:00"},
+                      {"group": "Koolimajas"}]},
+        ],
         "meals": {
             "7": [
                 {"day": "Mon", "at": "11:50", "until": "12:10"},
@@ -1340,6 +1373,60 @@ MEAL_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 MEAL_NAME = "Söömine"
 
 
+def rides_for(cfg, class_name, day):
+    """A bus this class takes on this day, for the group that takes it.
+
+    Drawn only for a reader who has answered, unlike a sitting. Two sittings can
+    stand on one day because they follow one another; a bus that leaves in the
+    middle of the other group's meal cannot stand beside it without both being
+    half a column wide and the day saying the class is doing both.
+    """
+    wanted = (cfg or {}).get("rides", [])
+    return [r for r in wanted
+            if (class_name or "").strip() in [c.strip() for c in r["classes"]]
+            and MEAL_DAYS.index(r["day"]) == day]
+
+
+def split_lessons(cfg, class_name, entries):
+    """One lesson the school runs twice, which aSc records once.
+
+    ProTERA's Friday Praktikum is one row for the whole class, and it is the one
+    held in the schoolhouse. The Päevakava carries the other: a bus at 12.15 and
+    the same lesson in another building from 12.30. Nothing in aSc says who goes
+    where, because as far as the timetable is concerned it is one lesson.
+
+    So the row becomes one per group, each with its own clock, and the page
+    filters them the way it filters any lesson a class splits for. Answering the
+    question is what picks one.
+    """
+    rules = [r for r in (cfg or {}).get("splitLessons", [])
+             if (class_name or "").strip() in [c.strip() for c in r["classes"]]]
+    if not rules:
+        return entries
+    out = []
+    for entry in entries:
+        rule = next((r for r in rules
+                     if entry["subject"] == r["subject"]
+                     and entry["day"] == MEAL_DAYS.index(r["day"])), None)
+        if not rule or entry["part"]:
+            out.append(entry)
+            continue
+        for half in rule["into"]:
+            copy = dict(entry, groups=[half["group"]])
+            if half.get("whenAnswered"):
+                copy["onlyAnswered"] = True
+            if half.get("at"):
+                at, until = _minutes(half["at"]), _minutes(half["until"])
+                # Marked as the day plan's hours rather than aSc's. A break of
+                # the same plan gives way to it; a break the school's own data
+                # happens to overlap is left where it is, because that
+                # disagreement is the school's and not ours to settle.
+                copy.update(startMin=at, endMin=until, fromPlan=True,
+                            time=f"{_fmt_time(at)}–{_fmt_time(until)}")
+            out.append(copy)
+    return out
+
+
 def asked_divisions(cfg, class_name):
     """The questions the school answers and the timetable cannot.
 
@@ -1423,6 +1510,13 @@ def with_meals(breaks, cfg, class_name, day):
             "%s on %s: no break of the day plan holds %s-%s. The plan moved "
             "under the sittings written in BELLS." %
             (class_name, MEAL_DAYS[day], missed[0]["at"], missed[0]["until"]))
+    for ride in rides_for(cfg, class_name, day):
+        at, until = _minutes(ride["at"]), _minutes(ride["until"])
+        out.append({"after": out[0]["after"] if out else 0, "name": ride["name"],
+                    "at": at, "until": until, "start": _fmt_time(at),
+                    "end": _fmt_time(until), "group": ride["group"],
+                    "note": "", "wasNamed": "", "onlyAnswered": True})
+    out.sort(key=lambda b: b["at"])
     return out
 
 
@@ -2031,6 +2125,7 @@ def extract(result, class_name, n_periods=None, cfg=None, period_times=None,
                                         for d in shape):
         entries = merge_blocks(entries)
 
+    entries = split_lessons(cfg, class_name, entries)
     label_divisions(divisions, entries)
     # A division that asks two questions at once. See split_by_subject.
     divisions = split_by_subject(cfg, class_name, divisions, entries)
@@ -2835,7 +2930,10 @@ def compact(schools):
                            **({"g": b["group"]} if b.get("group") else {}),
                            **({"q": b["note"]} if b.get("note") else {}),
                            **({"f": b["wasNamed"]}
-                              if b.get("wasNamed") and b.get("group") else {})}
+                              if b.get("wasNamed") and b.get("group") else {}),
+                           # Drawn only once the reader has answered. See
+                           # rides_for.
+                           **({"o": 1} if b.get("onlyAnswered") else {})}
                           for b in v["breaks"]],
                 } for day, v in cls["shape"].items()},
                 "e": [{
@@ -2845,6 +2943,11 @@ def compact(schools):
                     "T": e["teachers"], "r": e["rooms"], "c": e["part"],
                     "k": e["slot"], "u": e["duration"], "w": e.get("time", ""),
                     "o": 1 if e.get("offSlot") else 0,
+                    # Its hours come from the day plan and not from aSc. See
+                    # split_lessons and trimBands.
+                    **({"D": 1} if e.get("fromPlan") else {}),
+                    # Drawn only for a reader who answered for it. See visible.
+                    **({"A": 1} if e.get("onlyAnswered") else {}),
                     "B": 1 if e.get("isBreak") else 0,
                     "a": e.get("startMin"), "z": e.get("endMin"),
                     # Only the calendar export reads this. See `card` above.

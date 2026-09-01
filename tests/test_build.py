@@ -90,10 +90,13 @@ class WholePage(unittest.TestCase):
         # two periods is one box. Fewer rows than periods with a card, too —
         # SädeTERA has two lessons its own day plan leaves no room for, and the
         # build says so rather than drawing them at a guessed time.
-        self.assertEqual((len(rows), len(boxes)), (1782, 1468))
+        # Three more than aSc holds: ProTERA's Friday Praktikum is one row for
+        # the whole class and the school runs it twice, so each of the three
+        # years carries one per group.
+        self.assertEqual((len(rows), len(boxes)), (1785, 1471))
         # 70 subject names, plus the five named breaks. A break is drawn and
         # recolored like a lesson, so it needs a color of its own.
-        self.assertEqual(len(self.data["palette"]), 76)
+        self.assertEqual(len(self.data["palette"]), 77)
         # Every class carries lessons, and the group pickers are populated.
         self.assertTrue(all(c["e"] for s in self.data["schools"] for c in s["c"]))
         self.assertEqual(sum(len(c["v"]) for s in self.data["schools"]
@@ -336,7 +339,8 @@ class WholePage(unittest.TestCase):
         breaks = {b["n"] for s in self.data["schools"] for c in s["c"]
                   for day in c["h"].values() for b in day["b"] if b["n"]}
         self.assertEqual(breaks, {"Proaeg", "Amps", "Hommikuamps", "Lõuna",
-                                  "Lõuna + loovaeg", "Söömine"})
+                                  "Lõuna + loovaeg", "Söömine",
+                                  "Buss praktikumi"})
         for name in breaks:
             with self.subTest(name=name):
                 self.assertIn((self.data["palette"][name]["bg"],
@@ -358,7 +362,9 @@ class WholePage(unittest.TestCase):
         rest = breaks - meals
         self.assertEqual(meals, {"Söömine", "Amps", "Hommikuamps", "Lõuna",
                                  "Lõuna + loovaeg"})
-        self.assertEqual(rest, {"Proaeg"})
+        # A bus is not a meal. It is how one group gets to the lesson, so it
+        # is as quiet as the free time it leaves out of.
+        self.assertEqual(rest, {"Proaeg", "Buss praktikumi"})
         for name in meals:
             self.assertEqual(palette[name], {"bg": tt.MEAL_BG, "fg": tt.MEAL_FG},
                              name)
@@ -619,27 +625,46 @@ class WholePage(unittest.TestCase):
         self.assertLess(written, page.index("</head>"),
                         "the page rule is not in the head")
 
-    def test_no_two_bands_on_one_day_overlap(self):
+    def test_no_two_bands_a_reader_sees_at_once_overlap(self):
         """A school can name a band per class, and two windows for the same
         meal can both catch the same hole. TäheTERA feeds its two halves at
         hours that overlap around 12.20, and a class in both lists was given
         lunch twice over.
 
-        Asked as an overlap rather than as a repeated name. ProTERA's eighth
-        year has its canteen sitting cut out of the free hour, which leaves free
-        time on both sides of it — two bands rightly called the same thing, and
-        neither one standing where the other does.
+        Asked of what one reader sees, and not of the day's whole list. Bands
+        that belong to different answers never stand together — ProTERA's Friday
+        holds one group's sitting across the hour the other group's bus leaves
+        in — so the question is put once for every answer the day can be given,
+        including no answer at all.
         """
+        def visible(band, answer):
+            """The rule bandIsMine follows in page.js."""
+            if not band.get("g"):
+                return True
+            if band.get("o"):
+                return answer == band["g"]
+            return answer is None or answer == band["g"]
+
+        checked = 0
         for s in self.data["schools"]:
             for cls in s["c"]:
                 for day, shape in (cls.get("h") or {}).items():
-                    bands = sorted(shape["b"], key=lambda b: b["m"])
-                    for one, two in zip(bands, bands[1:]):
-                        self.assertLessEqual(
-                            one["x"], two["m"],
-                            "%s %s day %s: %s %d-%d and %s %d-%d overlap" %
-                            (s["l"], cls["n"], day, one["n"], one["m"], one["x"],
-                             two["n"], two["m"], two["x"]))
+                    answers = [None] + sorted({b["g"] for b in shape["b"]
+                                               if b.get("g")})
+                    for answer in answers:
+                        shown = sorted((b for b in shape["b"]
+                                        if visible(b, answer)),
+                                       key=lambda b: b["m"])
+                        checked += 1
+                        for one, two in zip(shown, shown[1:]):
+                            self.assertLessEqual(
+                                one["x"], two["m"],
+                                "%s %s day %s answering %r: %s %d-%d and "
+                                "%s %d-%d overlap" %
+                                (s["l"], cls["n"], day, answer,
+                                 one["n"], one["m"], one["x"],
+                                 two["n"], two["m"], two["x"]))
+        self.assertGreater(checked, 100, "hardly a day was checked")
 
     def test_the_snack_break_opens_when_the_morning_stops(self):
         """Amps is 25 minutes after a double first block, 10 after two singles,

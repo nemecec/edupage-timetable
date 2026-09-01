@@ -1922,6 +1922,72 @@ test("the day keeps the sitting the reader answered for, and drops the note", ()
   }
 });
 
+test("a lesson that waits to be asked for is drawn for nobody else", () => {
+  /* ProTERA's Friday Praktikum is one lesson the school runs twice: aSc has the
+     one in the schoolhouse, and the Päevakava has the other in another building
+     from 12.30. Drawn side by side the two are half a column each, and a day
+     showing both alternatives has no room left to say which is which — so until
+     the reader answers, the day keeps the one aSc published. */
+  const divisions = [{ groups: ["Väljaspool koolimaja", "Koolimajas"],
+                       l: "Praktikum", sj: [], w: 0 }];
+  const KEY = "Väljaspool koolimaja/Koolimajas";
+  const moved = { s: "Praktikum", g: ["Väljaspool koolimaja"], A: 1, D: 1 };
+  const kept = { s: "Praktikum", g: ["Koolimajas"] };
+  const shown = (entry, pick) => json(
+    `visible(${JSON.stringify(entry)}, ` +
+    `${JSON.stringify(pick ? { [KEY]: pick } : {})}, ` +
+    `${JSON.stringify(divisions)})`);
+
+  // Unanswered: the published one, and not the one that waits.
+  assert.equal(shown(kept, ""), true);
+  assert.equal(shown(moved, ""), false);
+  // Answered: theirs, and only theirs.
+  assert.equal(shown(moved, "Väljaspool koolimaja"), true);
+  assert.equal(shown(kept, "Väljaspool koolimaja"), false);
+  assert.equal(shown(moved, "Koolimajas"), false);
+  assert.equal(shown(kept, "Koolimajas"), true);
+  /* Answering some other question is not an answer to this one. The shortcut
+     for "nothing picked yet" is what this used to fall through. */
+  assert.equal(json(`visible(${JSON.stringify(moved)}, {"Alfa/Beeta": "Alfa"},
+                     ${JSON.stringify(divisions)})`), false);
+});
+
+test("a break gives way to what the same plan puts inside it", () => {
+  /* A reader whose Praktikum is out of the schoolhouse eats at 11.50, takes the
+     12.15 bus and is gone at 12.30. The rest of the Proaeg hour is not theirs —
+     it is only on the day because the other group's sitting fell back to it —
+     and left whole it would run under both the bus and the lesson. */
+  const band = (a, z, extra) => Object.assign({ a: a, z: z, brk: "Proaeg" }, extra);
+  const ride = { a: 735, z: 750, brk: "Buss praktikumi", ride: true };
+  const lesson = (a, z, groups, fromPlan) =>
+    ({ a: a, z: z, lesson: { s: "Praktikum", g: groups, D: fromPlan ? 1 : 0 } });
+  const cut = (items, answered) => json(
+    `trimBands(${JSON.stringify(items)}, new Set(${JSON.stringify(answered)}))`)
+      .filter(x => x.brk && !x.ride)
+      .map(x => [x.a, x.z]);
+
+  /* Answered: the hour comes out in the pieces the bus and the lesson leave. */
+  assert.deepEqual(
+    cut([band(730, 770), ride, lesson(750, 840, ["Väljaspool koolimaja"], true)],
+        ["Väljaspool koolimaja"]),
+    [[730, 735]]);
+
+  /* Unanswered: nothing is trimmed. Both groups' Fridays are on the screen and
+     the page draws alternatives side by side, so trimming would take one
+     group's meal away because the other group's lesson runs across it. */
+  assert.deepEqual(
+    cut([band(730, 770), lesson(750, 840, ["Väljaspool koolimaja"], true)], []),
+    [[730, 770]]);
+
+  /* And a lesson whose hours are aSc's own never trims a band. TäheTERA has a
+     two-hour Loovloodus with the school's lunch band inside it; that
+     disagreement is the school's and not ours to settle by deleting one. */
+  assert.deepEqual(
+    cut([band(730, 770), lesson(750, 840, ["Väljaspool koolimaja"], false)],
+        ["Väljaspool koolimaja"]),
+    [[730, 770]]);
+});
+
 test("a hole in the middle of the day is called lunch where the school says so", () => {
   /* Some schools leave lunch to arithmetic: it is whatever the lessons leave,
      and at TäheTERA that is a different hour for each language group. The

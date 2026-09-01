@@ -115,6 +115,7 @@ class TheCanteenSitting(unittest.TestCase):
         self.assertEqual(self.breaks("8", self.FRI),
                          [("Söömine", "11.50", "12.10"),
                           ("Söömine", "12.10", "12.50"),
+                          ("Buss praktikumi", "12.15", "12.30"),
                           ("Amps", "14.10", "14.30")])
 
     def test_each_friday_sitting_carries_a_group_and_a_note(self):
@@ -126,6 +127,9 @@ class TheCanteenSitting(unittest.TestCase):
         self.assertEqual([(b.get("group", ""), b.get("note", "")) for b in got],
                          [("Väljaspool koolimaja", "praktikum väljas"),
                           ("Koolimajas", "praktikum koolis"),
+                          # The bus, which belongs to the group that takes it
+                          # and has nothing to be told apart from.
+                          ("Väljaspool koolimaja", ""),
                           ("", "")])
         # Every other day is the whole class's, so no group and nothing to say.
         monday = tt.with_meals(plain, self.cfg, "8", self.MON)
@@ -140,7 +144,7 @@ class TheCanteenSitting(unittest.TestCase):
         _, plain = tt.day_times(["P", "P", "P", "L", "L"], self.cfg)
         friday = tt.with_meals(plain, self.cfg, "8", self.FRI)
         self.assertEqual([b.get("wasNamed", "") for b in friday],
-                         ["Proaeg", "Proaeg", ""])
+                         ["Proaeg", "Proaeg", "", ""])
 
     def test_the_question_is_asked_of_the_class_that_splits_and_no_other(self):
         """aSc holds a division only where the lessons differ, and this one
@@ -187,6 +191,69 @@ class TheCanteenSitting(unittest.TestCase):
         with self.assertRaises(SystemExit) as caught:
             tt.with_meals(plain, cfg, "8", self.MON)
         self.assertIn("9:30", str(caught.exception))
+
+class TheFridayPraktikum(unittest.TestCase):
+    """One lesson the school runs twice, which aSc records once.
+
+    The Päevakava carries what the timetable cannot: a bus at 12.15 and the
+    same Praktikum in another building from 12.30, for whoever is going there."""
+
+    cfg = tt.BELLS["ProTERA"]
+    FRI = 4
+
+    def entries(self, year="8"):
+        one = {"subject": "Praktikum", "day": self.FRI, "part": 0,
+               "groups": [], "startMin": 770, "endMin": 850,
+               "time": "12.50–14.10"}
+        other = dict(one, subject="Kunst")
+        return tt.split_lessons(self.cfg, year, [one, other])
+
+    def test_the_one_row_becomes_one_per_group(self):
+        got = [(e["subject"], e["groups"], e.get("time"))
+               for e in self.entries()]
+        self.assertEqual(got, [
+            ("Praktikum", ["Väljaspool koolimaja"], "12.30–14.00"),
+            ("Praktikum", ["Koolimajas"], "12.50–14.10"),
+            # A lesson the rule does not name is left exactly as it was.
+            ("Kunst", [], "12.50–14.10"),
+        ])
+
+    def test_the_moved_one_says_where_its_hours_came_from(self):
+        """A break of the same plan gives way to it. A break the school's own
+        data happens to overlap is left alone, because that disagreement is the
+        school's and not ours to settle."""
+        moved, kept, _ = self.entries()
+        self.assertTrue(moved["fromPlan"])
+        self.assertNotIn("fromPlan", kept)
+
+    def test_the_moved_one_waits_to_be_asked_for(self):
+        """Drawn beside the other it is half a column, and a day showing both
+        alternatives has no room left to say which is which. Unanswered, the day
+        keeps the one aSc published."""
+        moved, kept, _ = self.entries()
+        self.assertTrue(moved["onlyAnswered"])
+        self.assertNotIn("onlyAnswered", kept)
+
+    def test_every_year_with_a_sitting_is_split_and_no_other(self):
+        for year in ("7", "8", "9"):
+            self.assertEqual(len(self.entries(year)), 3, year)
+        self.assertEqual(len(self.entries("6")), 2)
+
+    def test_the_bus_belongs_to_the_group_that_takes_it(self):
+        """It is why that group eats in the first sitting, and it is drawn only
+        for a reader who said so: it leaves in the middle of the other group's
+        meal."""
+        _, plain = tt.day_times(["P", "P", "P", "L", "L"], self.cfg)
+        friday = tt.with_meals(plain, self.cfg, "8", self.FRI)
+        bus = [b for b in friday if b["name"] == "Buss praktikumi"]
+        self.assertEqual([(b["start"], b["end"], b["group"], b["onlyAnswered"])
+                          for b in bus],
+                         [("12.15", "12.30", "Väljaspool koolimaja", True)])
+        # And on no other day.
+        for day in range(4):
+            self.assertEqual(
+                [b for b in tt.with_meals(plain, self.cfg, "8", day)
+                 if b["name"] == "Buss praktikumi"], [], day)
 
 class PublishedBlocks(unittest.TestCase):
     """LõunaTERA lists fixed blocks instead, one table per band of grades."""

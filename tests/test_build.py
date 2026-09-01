@@ -97,7 +97,7 @@ class WholePage(unittest.TestCase):
         # Every class carries lessons, and the group pickers are populated.
         self.assertTrue(all(c["e"] for s in self.data["schools"] for c in s["c"]))
         self.assertEqual(sum(len(c["v"]) for s in self.data["schools"]
-                             for c in s["c"]), 61)
+                             for c in s["c"]), 63)
 
     def test_a_known_day_comes_out_exactly_as_it_should(self):
         """One day, pinned whole: subject, period, groups and clock time.
@@ -335,7 +335,7 @@ class WholePage(unittest.TestCase):
         a gap."""
         breaks = {b["n"] for s in self.data["schools"] for c in s["c"]
                   for day in c["h"].values() for b in day["b"] if b["n"]}
-        self.assertEqual(breaks, {"Vaba aeg", "Amps", "Hommikuamps", "Lõuna",
+        self.assertEqual(breaks, {"Proaeg", "Amps", "Hommikuamps", "Lõuna",
                                   "Lõuna + loovaeg", "Söömine"})
         for name in breaks:
             with self.subTest(name=name):
@@ -358,7 +358,7 @@ class WholePage(unittest.TestCase):
         rest = breaks - meals
         self.assertEqual(meals, {"Söömine", "Amps", "Hommikuamps", "Lõuna",
                                  "Lõuna + loovaeg"})
-        self.assertEqual(rest, {"Vaba aeg"})
+        self.assertEqual(rest, {"Proaeg"})
         for name in meals:
             self.assertEqual(palette[name], {"bg": tt.MEAL_BG, "fg": tt.MEAL_FG},
                              name)
@@ -427,9 +427,9 @@ class WholePage(unittest.TestCase):
         # and not the gümnaasium's day leaking downwards.
         lessons, breaks = monday("8", protera)
         self.assertIn("12.50–13.35", lessons)
-        self.assertEqual(breaks, [("Vaba aeg", "11.50", "12.10"),
+        self.assertEqual(breaks, [("Proaeg", "11.50", "12.10"),
                                   ("Söömine", "12.10", "12.30"),
-                                  ("Vaba aeg", "12.30", "12.50"),
+                                  ("Proaeg", "12.30", "12.50"),
                                   ("Amps", "13.35", "13.55")])
 
     def test_the_fifth_years_split_around_lunch(self):
@@ -742,28 +742,31 @@ class WholePage(unittest.TestCase):
 
     def test_the_named_breaks_survive_into_the_page(self):
         school = next(s for s in self.data["schools"] if s["n"] == "68")
-        # The seventh year has no sitting written down, so it keeps the plain
-        # hour the plan gives every class.
+        # The seventh year eats first on a Monday, so its hour opens with the
+        # sitting and the rest of it follows.
         seven = next(c for c in school["c"] if c["n"] == "7")
         self.assertEqual([(b["n"], b["s"], b["e"]) for b in seven["h"]["0"]["b"]],
-                         [("Vaba aeg", "11.50", "12.50"),
+                         [("Söömine", "11.50", "12.10"),
+                          ("Proaeg", "12.10", "12.50"),
                           ("Amps", "13.35", "13.55")])
-        # The eighth year eats inside that hour, so the hour is cut around it.
+        # The eighth year eats in the middle third, so the hour is cut around
+        # it and there is free time on both sides.
         klass = next(c for c in school["c"] if c["n"] == "8")
         breaks = [(b["n"], b["s"], b["e"]) for b in klass["h"]["0"]["b"]]
-        self.assertEqual(breaks, [("Vaba aeg", "11.50", "12.10"),
+        self.assertEqual(breaks, [("Proaeg", "11.50", "12.10"),
                                   ("Söömine", "12.10", "12.30"),
-                                  ("Vaba aeg", "12.30", "12.50"),
+                                  ("Proaeg", "12.30", "12.50"),
                                   ("Amps", "13.35", "13.55")])
 
-    def test_only_the_class_the_school_named_gets_a_sitting(self):
-        """One class was told to us and the rest were not. A sitting invented
-        for a class is a child sent to the canteen at the wrong time."""
+    def test_only_the_years_the_plan_names_get_a_sitting(self):
+        """The Proaeg table covers the three years ProTERA teaches and nothing
+        else. A sitting invented for a class is a child sent to the canteen at
+        the wrong time."""
         eating = {(s["n"], c["n"])
                   for s in self.data["schools"] for c in s["c"]
                   for day in c.get("h", {}).values()
                   for b in day["b"] if b["n"].startswith("Söömine")}
-        self.assertEqual(eating, {("68", "8")})
+        self.assertEqual(eating, {("68", "7"), ("68", "8"), ("68", "9")})
 
     def test_the_week_of_sittings_is_the_one_the_school_gave(self):
         school = next(s for s in self.data["schools"] if s["n"] == "68")

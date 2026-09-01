@@ -121,28 +121,33 @@ out of the clock. The clock gets two details right:
   The slot fixes the start. Each lesson's own length fixes the end.
 - Slot 3 shifts the rest of the day, because it can be a single or a pair. This
   is why the 20-minute break named `Amps` falls at 13.35-13.55 on some days and
-  at 14.10-14.30 on others. The hour before it, `Vaba aeg`, is fixed at 11.50-12.50. It comes after slot 2, and the first two slots are
+  at 14.10-14.30 on others. The hour before it, `Proaeg`, is fixed at 11.50-12.50. It comes after slot 2, and the first two slots are
   always pairs. Where a school writes a break as a list, the grid shows the part before the
   first comma.
-- **That hour is one hour for every class, and the canteen is not.** So each
-  class is given a sitting inside it, and which one is something the school
-  says rather than something the plan holds. Where a sitting is written down,
-  the hour is cut around it: free time, the sitting, free time. Drawn as a band
-  over the top the two would be packed side by side at half the width each,
-  which says the class is doing both at once.
+- **That hour is one hour for every class, and the canteen is not.** So the
+  plan gives each year a third of it and rotates which third through the week,
+  and the three never meet. The hour is cut around the sitting: Proaeg, the
+  sitting, Proaeg. Drawn as a band over the top the two would be packed side by
+  side at half the width each, which says the class is doing both at once.
 
-  Only ProTERA's eighth year has one written down, because it is the only class
-  the school has told us about. Every other class keeps the plain hour, which is
-  what the page drew before and is not wrong, only less.
+  | | E | T | K | N |
+  |---|---|---|---|---|
+  | 11.50–12.10 | 7 | 9 | 8 | 7 |
+  | 12.10–12.30 | 8 | 7 | 9 | 8 |
+  | 12.30–12.50 | 9 | 8 | 7 | 9 |
+
+  Read off the Proaeg table on the published Päevakava, and hand-copied, so it
+  goes stale when the sittings move. A class the table says nothing about keeps
+  the plain hour.
 
   A sitting is a break like any other, so the reader can rename or recolor it
   from the subject table — and it takes the meal color, not the plain one. See
   **Two quiet colors, not one** below.
-- **A day can hold two sittings, and then the page asks a question aSc cannot
-  hold.** The eighth year's Friday is that day: everybody has Praktikum at the
-  same hour, and whether yours is inside the schoolhouse or outside decides
-  which sitting is yours and nothing else. Those going out eat first, because
-  they have the walk.
+- **Friday is not split by class, and the page has to ask a question aSc cannot
+  hold.** Every year has Praktikum at the same hour that day, and the plan
+  splits the sitting by where yours is rather than by which year you are in.
+  Those going out of the schoolhouse eat first, because they take the 12.15
+  bus.
 
   aSc keeps a division only where the lessons differ, so a split that changes no
   lesson has nowhere to live there. It lives in the day plan's `asked` list
@@ -150,7 +155,7 @@ out of the clock. The clock gets two details right:
   answers it in the same place and it rides in a shared link with the rest. It
   hides nothing, because no lesson carries its groups.
 
-  All six sittings share one name. Each of the two on Friday carries a group and
+  Every sitting shares one name. Each of the two on Friday carries a group and
   a note as well: the group is what the answer is matched against, and the note
   is what the box adds to its name while both of them are on the day. A note
   rather than a name of its own, so the subject table holds one row and a reader
@@ -168,7 +173,7 @@ out of the clock. The clock gets two details right:
 
   The other sitting does not leave a hole. It leaves the stretch it stood in,
   under the name the plan gave that stretch before the sitting was cut out of
-  it — which on Friday is `Vaba aeg`, the same word the other four days use for
+  it — which on Friday is `Proaeg`, the same word the other four days use for
   the minutes around their sitting. Dropped outright it read as a hole, and the
   day drew a worked-out `Paus · 20 min` across it: the same plan and the same
   hour, described two different ways depending on which day you were looking
@@ -1257,7 +1262,7 @@ paste lands.
                      "backgroundColor": "#83EC9B" },
     "Kunst": { "style": "palette" },
     "Lastekoor": { "hide": true },
-    "Vaba aeg": { "label": "Free time" }
+    "Proaeg": { "label": "Free time" }
   },
 
   "classes": {
@@ -1356,7 +1361,7 @@ Some of these choices are not obvious:
   any other, so it becomes a break, or the day simply ends earlier. The switch
   rides in the settings with the names and the colors, so a shared link carries
   it.
-- **The named breaks are rows in that table too**, so *Vaba aeg* and *Amps* can
+- **The named breaks are rows in that table too**, so *Proaeg* and *Amps* can
   be renamed and recolored like any subject. They sit after the subjects, under
   a heading of their own, because a gap is a different kind of thing from a
   lesson. Among themselves they run in clock order, the order the day runs

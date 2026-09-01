@@ -66,7 +66,7 @@ class BellClock(unittest.TestCase):
     def test_the_named_breaks_land_where_the_plan_says(self):
         _, breaks = tt.day_times(["P", "P", "P", "L", "L"], self.cfg)
         self.assertEqual([(b["name"], b["start"], b["end"]) for b in breaks],
-                         [("Vaba aeg", "11.50", "12.50"), ("Amps", "14.10", "14.30")])
+                         [("Proaeg", "11.50", "12.50"), ("Amps", "14.10", "14.30")])
 
     def test_a_shorter_third_lesson_moves_the_rest_of_the_day(self):
         # The Päevaplaan puts Amps at 13.35 when slot 3 is a single, not a pair.
@@ -82,18 +82,21 @@ class TheCanteenSitting(unittest.TestCase):
     cfg = tt.BELLS["ProTERA"]
     MON, FRI = 0, 4
 
+    def plain(self):
+        _, breaks = tt.day_times(["P", "P", "P", "L", "L"], self.cfg)
+        return breaks
+
     def breaks(self, class_name, day):
-        _, plain = tt.day_times(["P", "P", "P", "L", "L"], self.cfg)
-        got = tt.with_meals(plain, self.cfg, class_name, day)
+        got = tt.with_meals(self.plain(), self.cfg, class_name, day)
         return [(b["name"], b["start"], b["end"]) for b in got]
 
     def test_the_hour_is_cut_around_the_sitting(self):
         # Twenty minutes of the hour is this class's turn. The rest is still
         # free time, so it is still drawn as free time.
         self.assertEqual(self.breaks("8", self.MON),
-                         [("Vaba aeg", "11.50", "12.10"),
+                         [("Proaeg", "11.50", "12.10"),
                           ("Söömine", "12.10", "12.30"),
-                          ("Vaba aeg", "12.30", "12.50"),
+                          ("Proaeg", "12.30", "12.50"),
                           ("Amps", "14.10", "14.30")])
 
     def test_a_sitting_at_the_edge_leaves_no_empty_band(self):
@@ -101,7 +104,7 @@ class TheCanteenSitting(unittest.TestCase):
         # band, and drawing one would put a nought-minute box on the day.
         self.assertEqual(self.breaks("8", 2),
                          [("Söömine", "11.50", "12.10"),
-                          ("Vaba aeg", "12.10", "12.50"),
+                          ("Proaeg", "12.10", "12.50"),
                           ("Amps", "14.10", "14.30")])
 
     def test_two_sittings_in_one_hour_share_one_name(self):
@@ -137,7 +140,7 @@ class TheCanteenSitting(unittest.TestCase):
         _, plain = tt.day_times(["P", "P", "P", "L", "L"], self.cfg)
         friday = tt.with_meals(plain, self.cfg, "8", self.FRI)
         self.assertEqual([b.get("wasNamed", "") for b in friday],
-                         ["Vaba aeg", "Vaba aeg", ""])
+                         ["Proaeg", "Proaeg", ""])
 
     def test_the_question_is_asked_of_the_class_that_splits_and_no_other(self):
         """aSc holds a division only where the lessons differ, and this one
@@ -150,12 +153,29 @@ class TheCanteenSitting(unittest.TestCase):
         # It carries no lessons on purpose: `visible` skips a division whose
         # groups no lesson names, so answering it hides nothing.
         self.assertEqual(asked[0]["lessons"], [])
-        self.assertEqual(tt.asked_divisions(self.cfg, "7"), [])
-        self.assertEqual(tt.asked_divisions(self.cfg, "9"), [])
+        # Every year with a sitting is asked, because the Friday split is not by
+        # class: the plan splits it by where your Praktikum is.
+        for year in ("7", "9"):
+            self.assertEqual([d["groups"] for d in
+                              tt.asked_divisions(self.cfg, year)],
+                             [["Väljaspool koolimaja", "Koolimajas"]], year)
+        # And a class the plan says nothing about is asked nothing.
+        self.assertEqual(tt.asked_divisions(self.cfg, "6"), [])
 
-    def test_a_class_the_school_has_not_told_us_about_keeps_the_plain_hour(self):
-        self.assertEqual(self.breaks("7", self.MON),
-                         [("Vaba aeg", "11.50", "12.50"),
+    def test_every_year_eats_in_its_own_third_of_the_hour(self):
+        """The plan gives each year a third and rotates which third through the
+        week, so the three never meet in the canteen. Read straight off the
+        Proaeg table: a column per weekday, a row per twenty minutes."""
+        at = lambda year, day: [b for b in
+                                tt.with_meals(self.plain(), self.cfg, year, day)
+                                if b["name"] == "Söömine"][0]["start"]
+        self.assertEqual([[at(y, d) for d in range(4)] for y in ("7", "8", "9")],
+                         [["11.50", "12.10", "12.30", "11.50"],
+                          ["12.10", "12.30", "11.50", "12.10"],
+                          ["12.30", "11.50", "12.10", "12.30"]])
+        # A class the plan says nothing about keeps the plain hour.
+        self.assertEqual(self.breaks("6", self.MON),
+                         [("Proaeg", "11.50", "12.50"),
                           ("Amps", "14.10", "14.30")])
 
     def test_a_sitting_outside_every_break_stops_the_build(self):

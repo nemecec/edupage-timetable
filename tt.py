@@ -587,7 +587,11 @@ BELLS = {
         # Gap in minutes after slot N. Named gaps are drawn in the grid.
         "gaps": [
             {"after": 1, "minutes": 10},
-            {"after": 2, "minutes": 60, "name": "Vaba aeg"},
+            # The school's own word for it, off the published Päevakava:
+            # "*PROAEG (sh SÖÖMINE) 11:50 - 12:50". The hour is Proaeg and
+            # the sitting is inside it, which is why a class's sitting is
+            # cut out of this band rather than laid over it.
+            {"after": 2, "minutes": 60, "name": "Proaeg"},
             {"after": 3, "minutes": 20, "name": "Amps"},
         ],
         "defaultGap": 5,
@@ -625,18 +629,12 @@ BELLS = {
         "perSubject": [
             {"classes": ["9"], "subjects": ["Eesti keel", "Inglise keel"]},
         ],
-        # When a class eats. The hour of free time after the second lesson is
-        # the same hour for every class, and the canteen does not hold them all
-        # at once, so each class is given a sitting inside it. The plan does not
-        # say which — the school does, class by class.
-        #
-        # Only the eighth year is written here, because it is the only one the
-        # school has told us. Every other class keeps the plain hour, which is
-        # what the page drew before this and is not wrong, only less.
-        #
-        # A day can have two sittings where the class splits, and then the name
-        # is what says which is yours. Friday is that: one before the walk to
-        # Praktikum and one for everybody else.
+        # When each class eats. The hour after the second lesson is the same
+        # hour for every class and the canteen does not hold them all at once,
+        # so the plan gives each year a third of it and rotates which third
+        # through the week. Read off the Proaeg table on the published
+        # Päevakava: a column per weekday, a row per twenty minutes, and the
+        # year that eats in it.
         #
         # Hand-copied, so it goes stale when the sittings move. The build stops
         # on a sitting that does not land inside a break of the day plan, which
@@ -650,33 +648,54 @@ BELLS = {
         # place as the rest and it rides in a shared link with them. It hides no
         # lesson, because no lesson carries these groups.
         #
-        # The seventh and ninth years split the same way and their sittings are
-        # not written down yet. When the school gives them, they come here.
+        # Every year that has a Proaeg sitting, because the Friday split is not
+        # by class: the plan splits it by where your Praktikum is.
         "asked": [
-            {"classes": ["8"],
+            {"classes": ["7", "8", "9"],
              "label": "Praktikum",
              "groups": ["Väljaspool koolimaja", "Koolimajas"]},
         ],
         "meals": {
+            "7": [
+                {"day": "Mon", "at": "11:50", "until": "12:10"},
+                {"day": "Tue", "at": "12:10", "until": "12:30"},
+                {"day": "Wed", "at": "12:30", "until": "12:50"},
+                {"day": "Thu", "at": "11:50", "until": "12:10"},
+                # Friday is not split by class at all. Every year has
+                # Praktikum at the same hour, and the plan splits the sitting by
+                # where yours is: out of the schoolhouse first, because they
+                # take the 12.15 bus. That is a thing about the reader and not
+                # about their class, so the page asks — see "asked" below.
+                #
+                # A group and a note. The group is what the answer is matched
+                # against. The note is what the box adds to its name while both
+                # sittings are on the day, because two bands one above the other
+                # called the same thing tell a reader nothing — and a twenty
+                # minute band has no second line to say it on. Once the reader
+                # has answered, only one is left and the note goes with the
+                # other.
+                {"day": "Fri", "at": "11:50", "until": "12:10",
+                 "group": "Väljaspool koolimaja", "note": "praktikum väljas"},
+                {"day": "Fri", "at": "12:10", "until": "12:50",
+                 "group": "Koolimajas", "note": "praktikum koolis"},
+            ],
             "8": [
                 {"day": "Mon", "at": "12:10", "until": "12:30"},
                 {"day": "Tue", "at": "12:30", "until": "12:50"},
                 {"day": "Wed", "at": "11:50", "until": "12:10"},
                 {"day": "Thu", "at": "12:10", "until": "12:30"},
-                # Friday splits the class, and not in a way aSc can hold:
-                # everybody has Praktikum at the same hour, and whether yours
-                # is outside the schoolhouse or in it decides which sitting is
-                # yours and nothing else. Those going out eat first, because
-                # they have the walk. So the page asks — see "asked" below.
-                # A group and a note. The group is what the reader's answer is
-                # matched against. The note is what the box adds to its name
-                # while both sittings are on the day, because two bands one
-                # above the other called the same thing tell a reader nothing —
-                # and a twenty-minute band has no second line to say it on.
-                #
-                # Once the reader has answered, only one is left and the note
-                # goes with the other: the box then says what it says on every
-                # other day of the week.
+                # Friday, as above.
+                {"day": "Fri", "at": "11:50", "until": "12:10",
+                 "group": "Väljaspool koolimaja", "note": "praktikum väljas"},
+                {"day": "Fri", "at": "12:10", "until": "12:50",
+                 "group": "Koolimajas", "note": "praktikum koolis"},
+            ],
+            "9": [
+                {"day": "Mon", "at": "12:30", "until": "12:50"},
+                {"day": "Tue", "at": "11:50", "until": "12:10"},
+                {"day": "Wed", "at": "12:10", "until": "12:30"},
+                {"day": "Thu", "at": "12:30", "until": "12:50"},
+                # Friday, as above.
                 {"day": "Fri", "at": "11:50", "until": "12:10",
                  "group": "Väljaspool koolimaja", "note": "praktikum väljas"},
                 {"day": "Fri", "at": "12:10", "until": "12:50",

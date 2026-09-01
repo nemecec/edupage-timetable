@@ -1952,6 +1952,30 @@ test("a lesson that waits to be asked for is drawn for nobody else", () => {
                      ${JSON.stringify(divisions)})`), false);
 });
 
+test("a band too short to be what it is named is a corridor", () => {
+  /* What is left of the Proaeg hour after a sitting is still Proaeg, until the
+     leavings are five minutes — which is not an hour of anything. ProTERA's
+     Friday makes one: eat until 12.10, bus at 12.15. Ten minutes is where the
+     page already draws the line between a corridor and time you can plan
+     around, so the short piece goes to the box that says exactly that. */
+  const of = (a, z, extra) => json(
+    `shortIsACorridor(${JSON.stringify(Object.assign(
+       { a: a, z: z, brk: "Proaeg" }, extra))})`);
+
+  assert.deepEqual(of(730, 735), { a: 730, z: 735, gap: "gap" });
+  assert.equal(json(`GAP_AT_LEAST`), 10);
+
+  /* Ten is not under ten. A band the school really does write that short keeps
+     its name — TäheTERA has one between its second and third lessons. */
+  assert.equal(of(730, 740).brk, "Proaeg");
+  assert.equal(of(730, 770).brk, "Proaeg");
+
+  /* A bus is not a leftover, and neither is anything that is not a band. */
+  assert.equal(of(735, 738, { ride: true }).brk, "Proaeg");
+  assert.deepEqual(json(`shortIsACorridor({a: 730, z: 735, gap: "gap"})`),
+                   { a: 730, z: 735, gap: "gap" });
+});
+
 test("a break gives way to what the same plan puts inside it", () => {
   /* A reader whose Praktikum is out of the schoolhouse eats at 11.50, takes the
      12.15 bus and is gone at 12.30. The rest of the Proaeg hour is not theirs —

@@ -1210,6 +1210,26 @@ function tidySubjects() {
   }
 }
 
+/* A band too short to be the thing it is named after.
+ *
+ * The day plan's hour is Proaeg, and what is left of it after a sitting is
+ * still Proaeg — until the leavings are five minutes, which is not an hour of
+ * anything. ProTERA's Friday makes one: eat until 12.10, bus at 12.15.
+ *
+ * Ten minutes is where the page already draws the line, and it draws it for the
+ * same reason: under that a space is a corridor rather than time you can plan
+ * around. So a short piece is handed to the box that says exactly that, with
+ * the page's own word on it and the outline that says nobody named it.
+ *
+ * A band the school really does write that short keeps its name. TäheTERA has
+ * a ten-minute one between its second and third lessons, and ten is not under
+ * ten. */
+function shortIsACorridor(item) {
+  if (!item.brk || item.ride) return item;
+  if (item.z - item.a >= GAP_AT_LEAST) return item;
+  return { a: item.a, z: item.z, gap: GAP };
+}
+
 /* A break gives way to the things the same day plan puts inside it.
  *
  * ProTERA's Friday is why. A reader whose Praktikum is out of the schoolhouse
@@ -1761,6 +1781,7 @@ function renderTimeline(school, cls, shown, mine, scale) {
       }
       perDay.set(i, trimBands(perDay.get(i),
                              new Set(Object.values(myPicks()).filter(Boolean))));
+      perDay.set(i, perDay.get(i).map(shortIsACorridor));
     }
   }
 

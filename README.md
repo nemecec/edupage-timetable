@@ -189,7 +189,16 @@ out of the clock. The clock gets two details right:
   schoolhouse" leaves the reader eating at 11.50, on a bus at 12.15 and gone at
   12.30, so the rest of the Proaeg hour is not theirs — and it is only on their
   day at all because the other group's sitting fell back to it. It is cut to the
-  five minutes that really are theirs.
+  five minutes that really are theirs — and five minutes is not an hour of
+  anything, so it is drawn as `Paus`.
+
+  Ten minutes is where the page already draws that line, and for the same
+  reason: under it a space is a corridor rather than time you can plan around.
+  A band the leavings make shorter than that is handed to the box that says
+  exactly that, with the page's own word on it and the outline that says nobody
+  named it. A band the school really does write that short keeps its name —
+  TäheTERA has a ten-minute one between its second and third lessons, and ten
+  is not under ten.
 
   Only the plan's own, and only once answered. Where aSc and the plan disagree —
   TäheTERA has a two-hour Loovloodus with the school's lunch band sitting inside

@@ -250,12 +250,12 @@ class TheFridayPraktikum(unittest.TestCase):
         shape = {1: {"slots": [], "breaks": []}}
         got = tt.bus_to_lesson(self.cfg, "8", [dict(after), dict(before)], shape)
         self.assertEqual([(e["startMin"], e["endMin"], e["time"]) for e in got],
-                         [(790, 850, "13.10–14.10"),
+                         [(785, 850, "13.05–14.10"),
                           (540, 620, "9.00–10.20")])
         # The ride is on the day, and carries every group the lesson has.
         self.assertEqual([(b["name"], b["start"], b["end"], b["group"])
                           for b in shape[1]["breaks"]],
-                         [(tt.BUS, "12.50", "13.10", ["8.j", "8.r"])])
+                         [(tt.BUS, "12.50", "13.05", ["8.j", "8.r"])])
 
     def test_a_class_the_plan_does_not_name_takes_no_bus(self):
         after = {"subject": "Liikumisõpetus", "day": 1, "part": 0, "groups": [],

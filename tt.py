@@ -676,15 +676,16 @@ BELLS = {
         # so the ride comes out of the front of it: the bus is drawn for the
         # minutes it takes and the lesson begins when it lands.
         #
-        # Twenty minutes, which is the school's own figure. The plan does not
-        # carry it: it names the bus and leaves the arrival to whoever is on it.
+        # Fifteen minutes, which is the school's own figure. The plan does not
+        # carry it: it names the bus and leaves the arrival to whoever is on
+        # it.
         #
         # The end does not move with the start. The rest of the day is where it
         # was, and Amps follows at 14.10, so the ride comes out of the lesson
         # rather than pushing the afternoon along in front of it.
         "busToLesson": [
             {"classes": ["7", "8", "9"], "subject": "Liikumisõpetus",
-             "at": "12:50", "minutes": 20, "name": BUS},
+             "at": "12:50", "minutes": 15, "name": BUS},
         ],
         # How they get there. The Päevakava puts a bus at 12.15, which is why
         # this group eats in the first sitting.

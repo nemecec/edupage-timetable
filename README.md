@@ -188,9 +188,9 @@ out of the clock. The clock gets two details right:
   Proaeg is somewhere else in town, and the plan puts a bus to it at 12.50 —
   which is the same minute aSc starts the lesson. A lesson cannot start before
   the class arrives, so the ride comes out of the front of it: `Buss`
-  12.50–13.10, then Liikumisõpetus 13.10–14.10.
+  12.50–13.05, then Liikumisõpetus 13.05–14.10.
 
-  Twenty minutes is the school's figure. The plan does not carry it — it names
+  Fifteen minutes is the school's figure. The plan does not carry it — it names
   the bus and leaves the arrival to whoever is on it.
 
   The end does not move with the start. The rest of the day is where it was and
@@ -204,7 +204,7 @@ out of the clock. The clock gets two details right:
   day plan.
 
   Both rides are called `Buss`. Each sits immediately in front of the lesson it
-  serves, so the destination is already on the screen — and a twenty-minute band
+  serves, so the destination is already on the screen — and a band that short
   has no room for it anyway. One name is also one row in the subject table,
   which a reader recolors once.
 

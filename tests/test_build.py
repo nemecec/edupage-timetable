@@ -791,10 +791,10 @@ class WholePage(unittest.TestCase):
         moved = [(s["n"], c["n"], e["d"], e["w"], e["g"])
                  for s in self.data["schools"] for c in s["c"]
                  for e in c["e"]
-                 if e["s"] == "Liikumisõpetus" and not e["c"] and e["a"] == 790]
+                 if e["s"] == "Liikumisõpetus" and not e["c"] and e["a"] == 785]
         self.assertEqual(moved, [
-            ("68", "7", 3, "13.10–14.10", ["7.k", "7.g"]),
-            ("68", "8", 1, "13.10–14.10", ["8.j", "8.r"]),
+            ("68", "7", 3, "13.05–14.10", ["7.k", "7.g"]),
+            ("68", "8", 1, "13.05–14.10", ["8.j", "8.r"]),
         ])
         # And the ride is on the day in front of it, for the same groups, so a
         # reader who does not have the lesson does not have the bus either.
@@ -803,9 +803,9 @@ class WholePage(unittest.TestCase):
                  for day, shape in sorted((c.get("h") or {}).items())
                  for b in shape["b"] if b["n"] == "Buss"]
         self.assertEqual(rides, [
-            ("68", "7", "3", "12.50", "13.10", ["7.k", "7.g"]),
+            ("68", "7", "3", "12.50", "13.05", ["7.k", "7.g"]),
             ("68", "7", "4", "12.15", "12.30", ["Väljaspool koolimaja"]),
-            ("68", "8", "1", "12.50", "13.10", ["8.j", "8.r"]),
+            ("68", "8", "1", "12.50", "13.05", ["8.j", "8.r"]),
             ("68", "8", "4", "12.15", "12.30", ["Väljaspool koolimaja"]),
             ("68", "9", "4", "12.15", "12.30", ["Väljaspool koolimaja"]),
         ])

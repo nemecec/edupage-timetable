@@ -1288,17 +1288,20 @@ function trimBands(items, answered) {
    has answered for yet is drawn too: before a reader picks, every group's
    lessons are on the screen, and their sittings belong there with them. */
 function bandIsMine(band, picked, divisions) {
-  if (!band.g) return true;
+  /* Every group the band belongs to, because a lesson can have more than one
+     and the ride to it belongs to all of them. */
+  const groups = band.g || [];
+  if (!groups.length) return true;
   for (const div of divisions) {
-    if (!div.groups.includes(band.g)) continue;
+    if (!groups.some(g => div.groups.includes(g))) continue;
     const pick = picked[choiceKey(div)];
     /* Some bands wait to be asked for. Two sittings can stand on one day
        because they follow one another, so both are drawn until the reader says
        which is theirs. A bus that leaves in the middle of the other group's
        meal cannot: drawn beside it the two would be half a column each, and the
        day would be saying the class is doing both. */
-    if (band.o) return pick === band.g;
-    if (pick && pick !== band.g) return false;
+    if (band.o) return groups.includes(pick);
+    if (pick && !groups.includes(pick)) return false;
   }
   return true;
 }
@@ -2168,11 +2171,6 @@ function slotClock(text) {
    independently switchable, so the box can be as dense or as bare as wanted. */
 function detailLine(e) {
   const bits = [];
-  /* Where the day plan says this one is, in front of the room and under the
-     same switch. It is the answer to the same question, and for the lessons
-     that carry it aSc gives no room at all — so it fills the very blank the
-     reader is looking at rather than crowding anything. */
-  if (state.showRoom && e.N) bits.push(e.N);
   if (state.showRoom && e.r.length) bits.push(e.r.join(" / "));
   const who3 = teacherText(e);
   if (who3) bits.push(who3);

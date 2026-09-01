@@ -339,8 +339,7 @@ class WholePage(unittest.TestCase):
         breaks = {b["n"] for s in self.data["schools"] for c in s["c"]
                   for day in c["h"].values() for b in day["b"] if b["n"]}
         self.assertEqual(breaks, {"Proaeg", "Amps", "Hommikuamps", "Lõuna",
-                                  "Lõuna + loovaeg", "Söömine",
-                                  "Buss praktikumi"})
+                                  "Lõuna + loovaeg", "Söömine", "Buss"})
         for name in breaks:
             with self.subTest(name=name):
                 self.assertIn((self.data["palette"][name]["bg"],
@@ -364,7 +363,7 @@ class WholePage(unittest.TestCase):
                                  "Lõuna + loovaeg"})
         # A bus is not a meal. It is how one group gets to the lesson, so it
         # is as quiet as the free time it leaves out of.
-        self.assertEqual(rest, {"Proaeg", "Buss praktikumi"})
+        self.assertEqual(rest, {"Proaeg", "Buss"})
         for name in meals:
             self.assertEqual(palette[name], {"bg": tt.MEAL_BG, "fg": tt.MEAL_FG},
                              name)
@@ -639,18 +638,19 @@ class WholePage(unittest.TestCase):
         """
         def visible(band, answer):
             """The rule bandIsMine follows in page.js."""
-            if not band.get("g"):
+            groups = band.get("g") or []
+            if not groups:
                 return True
             if band.get("o"):
-                return answer == band["g"]
-            return answer is None or answer == band["g"]
+                return answer in groups
+            return answer is None or answer in groups
 
         checked = 0
         for s in self.data["schools"]:
             for cls in s["c"]:
                 for day, shape in (cls.get("h") or {}).items():
-                    answers = [None] + sorted({b["g"] for b in shape["b"]
-                                               if b.get("g")})
+                    answers = [None] + sorted({g for b in shape["b"]
+                                               for g in (b.get("g") or [])})
                     for answer in answers:
                         shown = sorted((b for b in shape["b"]
                                         if visible(b, answer)),
@@ -783,15 +783,31 @@ class WholePage(unittest.TestCase):
                                   ("Proaeg", "12.30", "12.50"),
                                   ("Amps", "13.35", "13.55")])
 
-    def test_the_bus_to_liikumine_is_on_the_lessons_that_take_it(self):
-        """Twice in the week, and both times aSc gives the lesson no room —
-        which is what the bus is answering."""
-        riding = [(s["n"], c["n"], e["d"], e["a"], e["s"], e["r"], e["N"])
-                  for s in self.data["schools"] for c in s["c"]
-                  for e in c["e"] if e.get("N") and not e["c"]]
-        self.assertEqual(riding, [
-            ("68", "7", 3, 770, "Liikumisõpetus", [], "buss 12.50"),
-            ("68", "8", 1, 770, "Liikumisõpetus", [], "buss 12.50"),
+    def test_the_ride_to_liikumine_comes_out_of_the_lesson(self):
+        """A lesson cannot start before the class arrives. The plan puts a bus
+        to Liikumisõpetus at 12.50, which is the minute aSc starts the lesson,
+        so the ride is drawn for the twenty minutes it takes and the lesson
+        begins when it lands. Its end does not move: Amps follows at 14.10."""
+        moved = [(s["n"], c["n"], e["d"], e["w"], e["g"])
+                 for s in self.data["schools"] for c in s["c"]
+                 for e in c["e"]
+                 if e["s"] == "Liikumisõpetus" and not e["c"] and e["a"] == 790]
+        self.assertEqual(moved, [
+            ("68", "7", 3, "13.10–14.10", ["7.k", "7.g"]),
+            ("68", "8", 1, "13.10–14.10", ["8.j", "8.r"]),
+        ])
+        # And the ride is on the day in front of it, for the same groups, so a
+        # reader who does not have the lesson does not have the bus either.
+        rides = [(s["n"], c["n"], day, b["s"], b["e"], b["g"])
+                 for s in self.data["schools"] for c in s["c"]
+                 for day, shape in sorted((c.get("h") or {}).items())
+                 for b in shape["b"] if b["n"] == "Buss"]
+        self.assertEqual(rides, [
+            ("68", "7", "3", "12.50", "13.10", ["7.k", "7.g"]),
+            ("68", "7", "4", "12.15", "12.30", ["Väljaspool koolimaja"]),
+            ("68", "8", "1", "12.50", "13.10", ["8.j", "8.r"]),
+            ("68", "8", "4", "12.15", "12.30", ["Väljaspool koolimaja"]),
+            ("68", "9", "4", "12.15", "12.30", ["Väljaspool koolimaja"]),
         ])
 
     def test_only_the_years_the_plan_names_get_a_sitting(self):

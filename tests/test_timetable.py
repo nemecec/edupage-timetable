@@ -115,7 +115,7 @@ class TheCanteenSitting(unittest.TestCase):
         self.assertEqual(self.breaks("8", self.FRI),
                          [("Söömine", "11.50", "12.10"),
                           ("Söömine", "12.10", "12.50"),
-                          ("Buss praktikumi", "12.15", "12.30"),
+                          (tt.BUS, "12.15", "12.30"),
                           ("Amps", "14.10", "14.30")])
 
     def test_each_friday_sitting_carries_a_group_and_a_note(self):
@@ -124,17 +124,17 @@ class TheCanteenSitting(unittest.TestCase):
         twenty-minute band has no second line to say it on."""
         _, plain = tt.day_times(["P", "P", "P", "L", "L"], self.cfg)
         got = tt.with_meals(plain, self.cfg, "8", self.FRI)
-        self.assertEqual([(b.get("group", ""), b.get("note", "")) for b in got],
-                         [("Väljaspool koolimaja", "praktikum väljas"),
-                          ("Koolimajas", "praktikum koolis"),
+        self.assertEqual([(b.get("group") or [], b.get("note", "")) for b in got],
+                         [(["Väljaspool koolimaja"], "praktikum väljas"),
+                          (["Koolimajas"], "praktikum koolis"),
                           # The bus, which belongs to the group that takes it
                           # and has nothing to be told apart from.
-                          ("Väljaspool koolimaja", ""),
-                          ("", "")])
+                          (["Väljaspool koolimaja"], ""),
+                          ([], "")])
         # Every other day is the whole class's, so no group and nothing to say.
         monday = tt.with_meals(plain, self.cfg, "8", self.MON)
-        self.assertEqual([(b.get("group", ""), b.get("note", "")) for b in monday],
-                         [("", ""), ("", ""), ("", ""), ("", "")])
+        self.assertEqual([(b.get("group") or [], b.get("note", "")) for b in monday],
+                         [([], ""), ([], ""), ([], ""), ([], "")])
 
     def test_a_sitting_remembers_what_the_stretch_was_called(self):
         """Two sittings tile the whole hour on a Friday, so the one that is not
@@ -239,28 +239,31 @@ class TheFridayPraktikum(unittest.TestCase):
             self.assertEqual(len(self.entries(year)), 3, year)
         self.assertEqual(len(self.entries("6")), 2)
 
-    def test_the_bus_to_liikumine_says_where_and_not_when(self):
-        """Liikumisõpetus after Proaeg is somewhere else in town, and aSc gives
-        it no room. The plan gives the bus, so the bus goes where the room would
-        be — which is the blank the reader is looking at.
-
-        The plan names the bus and no lesson hours to go with it, so nothing
-        moves the lesson to a time nobody wrote down."""
-        after = {"subject": "Liikumisõpetus", "day": 1, "part": 0, "groups": [],
-                 "startMin": 770, "endMin": 850, "time": "12.50–14.10"}
+    def test_the_ride_to_liikumine_comes_out_of_the_lesson(self):
+        """A lesson cannot start before the class arrives. So the ride is drawn
+        for the minutes it takes and the lesson begins when it lands — and its
+        end does not move, because the rest of the day has not moved either."""
+        after = {"subject": "Liikumisõpetus", "day": 1, "part": 0,
+                 "groups": ["8.j", "8.r"], "startMin": 770, "endMin": 850,
+                 "time": "12.50–14.10"}
         before = dict(after, startMin=540, endMin=620, time="9.00–10.20")
-        got = tt.note_lessons(self.cfg, "8", [dict(after), dict(before)])
-        self.assertEqual([e.get("note") for e in got], ["buss 12.50", None])
-        # And it moved neither of them.
-        self.assertEqual([(e["startMin"], e["endMin"]) for e in got],
-                         [(770, 850), (540, 620)])
+        shape = {1: {"slots": [], "breaks": []}}
+        got = tt.bus_to_lesson(self.cfg, "8", [dict(after), dict(before)], shape)
+        self.assertEqual([(e["startMin"], e["endMin"], e["time"]) for e in got],
+                         [(790, 850, "13.10–14.10"),
+                          (540, 620, "9.00–10.20")])
+        # The ride is on the day, and carries every group the lesson has.
+        self.assertEqual([(b["name"], b["start"], b["end"], b["group"])
+                          for b in shape[1]["breaks"]],
+                         [(tt.BUS, "12.50", "13.10", ["8.j", "8.r"])])
 
-    def test_a_class_the_plan_does_not_name_gets_no_bus(self):
+    def test_a_class_the_plan_does_not_name_takes_no_bus(self):
         after = {"subject": "Liikumisõpetus", "day": 1, "part": 0, "groups": [],
                  "startMin": 770, "endMin": 850, "time": "12.50–14.10"}
-        self.assertEqual(
-            [e.get("note") for e in tt.note_lessons(self.cfg, "6", [dict(after)])],
-            [None])
+        shape = {1: {"slots": [], "breaks": []}}
+        got = tt.bus_to_lesson(self.cfg, "6", [dict(after)], shape)
+        self.assertEqual([e["startMin"] for e in got], [770])
+        self.assertEqual(shape[1]["breaks"], [])
 
     def test_the_bus_belongs_to_the_group_that_takes_it(self):
         """It is why that group eats in the first sitting, and it is drawn only
@@ -268,15 +271,15 @@ class TheFridayPraktikum(unittest.TestCase):
         meal."""
         _, plain = tt.day_times(["P", "P", "P", "L", "L"], self.cfg)
         friday = tt.with_meals(plain, self.cfg, "8", self.FRI)
-        bus = [b for b in friday if b["name"] == "Buss praktikumi"]
+        bus = [b for b in friday if b["name"] == tt.BUS]
         self.assertEqual([(b["start"], b["end"], b["group"], b["onlyAnswered"])
                           for b in bus],
-                         [("12.15", "12.30", "Väljaspool koolimaja", True)])
+                         [("12.15", "12.30", ["Väljaspool koolimaja"], True)])
         # And on no other day.
         for day in range(4):
             self.assertEqual(
                 [b for b in tt.with_meals(plain, self.cfg, "8", day)
-                 if b["name"] == "Buss praktikumi"], [], day)
+                 if b["name"] == tt.BUS], [], day)
 
 class PublishedBlocks(unittest.TestCase):
     """LõunaTERA lists fixed blocks instead, one table per band of grades."""

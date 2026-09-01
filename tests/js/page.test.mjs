@@ -1791,8 +1791,11 @@ test("a band the class splits is drawn for whoever answered for it", () => {
   const divisions = [{ groups: ["Väljaspool koolimaja", "Koolimajas"],
                        l: "Praktikum", sj: [], w: 0 }];
   const KEY = "Väljaspool koolimaja/Koolimajas";
-  const outside = { n: "Söömine (praktikum väljas)", g: "Väljaspool koolimaja" };
-  const inside = { n: "Söömine (praktikum koolis)", g: "Koolimajas" };
+  const outside = { n: "Söömine (praktikum väljas)", g: ["Väljaspool koolimaja"] };
+  const inside = { n: "Söömine (praktikum koolis)", g: ["Koolimajas"] };
+  /* A band can belong to more than one group: the ride to Liikumisõpetus is
+     the lesson's own two, and a reader in either of them is on that bus. */
+  const both = { n: "Buss", g: ["8.j", "8.r"] };
   const whole = { n: "Söömine" };
   const drawn = (band, pick) => json(
     `bandIsMine(${JSON.stringify(band)}, ` +
@@ -1813,6 +1816,17 @@ test("a band the class splits is drawn for whoever answered for it", () => {
   // A band carrying no group is the whole class's, whatever was answered.
   assert.equal(drawn(whole, "Koolimajas"), true);
   assert.equal(drawn(whole, ""), true);
+
+  /* And a band of several groups belongs to a reader in any of them. */
+  const pairKey = "8.j/8.r";
+  const pair = [{ groups: ["8.j", "8.r"], l: "Liikumisõpetus", sj: [], w: 0 }];
+  const rides = (pick) => json(
+    `bandIsMine(${JSON.stringify(both)}, ` +
+    `${JSON.stringify(pick ? { [pairKey]: pick } : {})}, ` +
+    `${JSON.stringify(pair)})`);
+  assert.equal(rides(""), true);
+  assert.equal(rides("8.j"), true);
+  assert.equal(rides("8.r"), true);
 
   /* An answer to some other question leaves it alone. The reader has said
      nothing about this one. */
@@ -1835,9 +1849,9 @@ test("the day keeps the sitting the reader answered for, and drops the note", ()
           sj: [], w: 0}]);
        currentClass().h["0"].b = [
          {a: 1, n: "Söömine", s: "11.50", e: "12.10", m: 710, x: 730,
-          g: "Väljaspool koolimaja", q: "praktikum väljas", f: "Vaba aeg"},
+          g: ["Väljaspool koolimaja"], q: "praktikum väljas", f: "Vaba aeg"},
          {a: 1, n: "Söömine", s: "12.10", e: "12.50", m: 730, x: 770,
-          g: "Koolimajas", q: "praktikum koolis", f: "Vaba aeg"}];`);
+          g: ["Koolimajas"], q: "praktikum koolis", f: "Vaba aeg"}];`);
   const KEY = "Väljaspool koolimaja/Koolimajas";
   const restore = () => run(`currentClass().h["0"].b = window.__bands;
        currentClass().v = window.__divs;

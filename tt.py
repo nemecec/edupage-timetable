@@ -577,6 +577,12 @@ SCHOOL_DATES = {
 }
 
 
+# What a ride is called. One word for both of them: each sits immediately in
+# front of the lesson it serves, so the destination is already on the screen —
+# and a twenty-minute band has no room for it anyway. One name is also one row
+# in the subject table, which a reader recolors once.
+BUS = "Buss"
+
 BELLS = {
     "ProTERA": {
         "name": "Päevaplaan",
@@ -664,17 +670,21 @@ BELLS = {
         # the way it filters any lesson a class splits for. A reader who has not
         # answered sees both side by side, which is what the page does with two
         # groups at one hour everywhere else.
-        # Where a lesson is, when aSc does not say and the Päevakava does.
-        # Liikumisõpetus after Proaeg is not in the schoolhouse — the plan puts
-        # a bus to it at 12.50 — and aSc gives those lessons no room at all, so
-        # this fills the very blank the reader is looking at.
+        # A lesson you reach by bus. Liikumisõpetus after Proaeg is somewhere
+        # else in town, and the plan puts a bus to it at 12.50 — the same minute
+        # aSc starts the lesson. A lesson cannot start before the class arrives,
+        # so the ride comes out of the front of it: the bus is drawn for the
+        # minutes it takes and the lesson begins when it lands.
         #
-        # It says where and not when. The plan gives the bus and no lesson hours
-        # to go with it, so the lesson keeps the ones the timetable published
-        # rather than being moved to a time nobody wrote down.
-        "lessonNotes": [
+        # Twenty minutes, which is the school's own figure. The plan does not
+        # carry it: it names the bus and leaves the arrival to whoever is on it.
+        #
+        # The end does not move with the start. The rest of the day is where it
+        # was, and Amps follows at 14.10, so the ride comes out of the lesson
+        # rather than pushing the afternoon along in front of it.
+        "busToLesson": [
             {"classes": ["7", "8", "9"], "subject": "Liikumisõpetus",
-             "at": "12:50", "note": "buss 12.50"},
+             "at": "12:50", "minutes": 20, "name": BUS},
         ],
         # How they get there. The Päevakava puts a bus at 12.15, which is why
         # this group eats in the first sitting.
@@ -686,7 +696,7 @@ BELLS = {
         # column each saying the class is doing both.
         "rides": [
             {"classes": ["7", "8", "9"], "day": "Fri",
-             "at": "12:15", "until": "12:30", "name": "Buss praktikumi",
+             "at": "12:15", "until": "12:30", "name": BUS,
              "group": "Väljaspool koolimaja"},
         ],
         "splitLessons": [
@@ -1385,23 +1395,49 @@ MEAL_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 MEAL_NAME = "Söömine"
 
 
-def note_lessons(cfg, class_name, entries):
-    """What the Päevakava says about a lesson that aSc leaves blank.
+def bus_to_lesson(cfg, class_name, entries, shape):
+    """A lesson the class rides to, and the ride out of the front of it.
 
-    ProTERA's Liikumisõpetus after Proaeg is somewhere else in town, and aSc
-    gives it no room. The plan gives the bus. So the bus goes where the room
-    would be, which is where a reader looks to find out where to go.
+    ProTERA's Liikumisõpetus after Proaeg is somewhere else in town. The plan
+    puts a bus to it at 12.50, which is the same minute aSc starts the lesson —
+    and a lesson cannot start before the class arrives. So the ride is drawn for
+    the minutes it takes and the lesson begins when it lands.
 
-    Where and not when: the plan names the bus and no lesson hours to go with
-    it, so nothing here moves the lesson.
+    The end stays where it was. The rest of the day has not moved and Amps
+    follows at 14.10, so the ride comes out of the lesson rather than pushing
+    the afternoon along in front of it.
+
+    The band carries the lesson's own groups, so a reader who does not have the
+    lesson does not have the bus either.
     """
-    rules = [r for r in (cfg or {}).get("lessonNotes", [])
+    rules = [r for r in (cfg or {}).get("busToLesson", [])
              if (class_name or "").strip() in [c.strip() for c in r["classes"]]]
+    if not rules:
+        return entries
     for entry in entries:
         for rule in rules:
-            if (entry["subject"] == rule["subject"]
-                    and entry.get("startMin") == _minutes(rule["at"])):
-                entry["note"] = rule["note"]
+            leaves = _minutes(rule["at"])
+            if entry["subject"] != rule["subject"] or entry.get("startMin") != leaves:
+                continue
+            lands = leaves + rule["minutes"]
+            entry.update(startMin=lands,
+                         time=f"{_fmt_time(lands)}–{_fmt_time(entry['endMin'])}")
+            day = shape.get(entry["day"])
+            if not day:
+                continue
+            already = any(b["name"] == rule["name"] and b["at"] == leaves
+                          and b.get("group") == list(entry["groups"])
+                          for b in day["breaks"])
+            if already:
+                continue
+            day["breaks"].append(
+                {"after": 0, "name": rule["name"], "at": leaves, "until": lands,
+                 "start": _fmt_time(leaves), "end": _fmt_time(lands),
+                 # Every group the lesson has, so a reader in any of them keeps
+                 # the ride they are on.
+                 "group": list(entry["groups"]), "note": "",
+                 "wasNamed": "", "onlyAnswered": False})
+            day["breaks"].sort(key=lambda b: b["at"])
     return entries
 
 
@@ -1523,7 +1559,7 @@ def with_meals(breaks, cfg, class_name, day):
             out.append(dict(band, name=meal.get("name", MEAL_NAME), at=at,
                             until=until, start=_fmt_time(at),
                             end=_fmt_time(until),
-                            group=meal.get("group", ""),
+                            group=[meal["group"]] if meal.get("group") else [],
                             note=meal.get("note", ""),
                             # What the plan called this stretch before the
                             # sitting was cut out of it. Where two sittings
@@ -1546,7 +1582,7 @@ def with_meals(breaks, cfg, class_name, day):
         at, until = _minutes(ride["at"]), _minutes(ride["until"])
         out.append({"after": out[0]["after"] if out else 0, "name": ride["name"],
                     "at": at, "until": until, "start": _fmt_time(at),
-                    "end": _fmt_time(until), "group": ride["group"],
+                    "end": _fmt_time(until), "group": [ride["group"]],
                     "note": "", "wasNamed": "", "onlyAnswered": True})
     out.sort(key=lambda b: b["at"])
     return out
@@ -2157,7 +2193,8 @@ def extract(result, class_name, n_periods=None, cfg=None, period_times=None,
                                         for d in shape):
         entries = merge_blocks(entries)
 
-    entries = note_lessons(cfg, class_name, split_lessons(cfg, class_name, entries))
+    entries = bus_to_lesson(cfg, class_name,
+                            split_lessons(cfg, class_name, entries), shape)
     label_divisions(divisions, entries)
     # A division that asks two questions at once. See split_by_subject.
     divisions = split_by_subject(cfg, class_name, divisions, entries)
@@ -2980,9 +3017,7 @@ def compact(schools):
                     **({"D": 1} if e.get("fromPlan") else {}),
                     # Drawn only for a reader who answered for it. See visible.
                     **({"A": 1} if e.get("onlyAnswered") else {}),
-                    # What the day plan says about where this one is, where aSc
-                    # says nothing. See note_lessons.
-                    **({"N": e["note"]} if e.get("note") else {}),
+                    
                     "B": 1 if e.get("isBreak") else 0,
                     "a": e.get("startMin"), "z": e.get("endMin"),
                     # Only the calendar export reads this. See `card` above.

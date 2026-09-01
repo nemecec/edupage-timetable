@@ -184,20 +184,29 @@ out of the clock. The clock gets two details right:
   The bus waits the same way, and for a plainer reason — it leaves in the middle
   of the other group's meal. Two sittings can stand on one day because they
   follow one another; a bus across one of them cannot.
-- **There is a second bus, and it says where rather than when.** Liikumisõpetus
-  after Proaeg is somewhere else in town, and the plan puts a bus to it at
-  12.50. aSc gives those lessons no room at all, so the bus goes where the room
-  would be — the very blank the reader is looking at — and reads
-  `buss 12.50 · Hannes Tamm / Mari Nurklik · 8.j/8.r`.
+- **There is a second bus, and the lesson waits for it.** Liikumisõpetus after
+  Proaeg is somewhere else in town, and the plan puts a bus to it at 12.50 —
+  which is the same minute aSc starts the lesson. A lesson cannot start before
+  the class arrives, so the ride comes out of the front of it: `Buss`
+  12.50–13.10, then Liikumisõpetus 13.10–14.10.
 
-  Nothing moves the lesson. The plan names the bus and no lesson hours to go
-  with it, and a lesson drawn at a time nobody wrote down is worse than one
-  drawn at the time the timetable published.
+  Twenty minutes is the school's figure. The plan does not carry it — it names
+  the bus and leaves the arrival to whoever is on it.
 
-  It lands twice in a ProTERA week: the seventh year on Thursday and the eighth
-  on Tuesday, both at 12.50, both group lessons. The ninth year never has
-  Liikumisõpetus after Proaeg. The gümnaasium keeps its own day plan and is not
-  covered by this one.
+  The end does not move with the start. The rest of the day is where it was and
+  Amps follows at 14.10, so the ride comes out of the lesson rather than pushing
+  the afternoon along in front of it.
+
+  The band carries every group the lesson has, so a reader in any of them keeps
+  the ride and a reader in none of them never sees it. It lands twice in a
+  ProTERA week: the seventh year on Thursday and the eighth on Tuesday. The
+  ninth never has Liikumisõpetus after Proaeg, and the gümnaasium keeps its own
+  day plan.
+
+  Both rides are called `Buss`. Each sits immediately in front of the lesson it
+  serves, so the destination is already on the screen — and a twenty-minute band
+  has no room for it anyway. One name is also one row in the subject table,
+  which a reader recolors once.
 
   A break gives way to what the same plan puts inside it. Answering "outside the
   schoolhouse" leaves the reader eating at 11.50, on a bus at 12.15 and gone at

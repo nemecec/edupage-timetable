@@ -2168,6 +2168,11 @@ function slotClock(text) {
    independently switchable, so the box can be as dense or as bare as wanted. */
 function detailLine(e) {
   const bits = [];
+  /* Where the day plan says this one is, in front of the room and under the
+     same switch. It is the answer to the same question, and for the lessons
+     that carry it aSc gives no room at all — so it fills the very blank the
+     reader is looking at rather than crowding anything. */
+  if (state.showRoom && e.N) bits.push(e.N);
   if (state.showRoom && e.r.length) bits.push(e.r.join(" / "));
   const who3 = teacherText(e);
   if (who3) bits.push(who3);

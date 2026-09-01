@@ -664,6 +664,18 @@ BELLS = {
         # the way it filters any lesson a class splits for. A reader who has not
         # answered sees both side by side, which is what the page does with two
         # groups at one hour everywhere else.
+        # Where a lesson is, when aSc does not say and the Päevakava does.
+        # Liikumisõpetus after Proaeg is not in the schoolhouse — the plan puts
+        # a bus to it at 12.50 — and aSc gives those lessons no room at all, so
+        # this fills the very blank the reader is looking at.
+        #
+        # It says where and not when. The plan gives the bus and no lesson hours
+        # to go with it, so the lesson keeps the ones the timetable published
+        # rather than being moved to a time nobody wrote down.
+        "lessonNotes": [
+            {"classes": ["7", "8", "9"], "subject": "Liikumisõpetus",
+             "at": "12:50", "note": "buss 12.50"},
+        ],
         # How they get there. The Päevakava puts a bus at 12.15, which is why
         # this group eats in the first sitting.
         #
@@ -1371,6 +1383,26 @@ def _minutes(text):
 # The order aSc counts days in, which is what a sitting is written against.
 MEAL_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 MEAL_NAME = "Söömine"
+
+
+def note_lessons(cfg, class_name, entries):
+    """What the Päevakava says about a lesson that aSc leaves blank.
+
+    ProTERA's Liikumisõpetus after Proaeg is somewhere else in town, and aSc
+    gives it no room. The plan gives the bus. So the bus goes where the room
+    would be, which is where a reader looks to find out where to go.
+
+    Where and not when: the plan names the bus and no lesson hours to go with
+    it, so nothing here moves the lesson.
+    """
+    rules = [r for r in (cfg or {}).get("lessonNotes", [])
+             if (class_name or "").strip() in [c.strip() for c in r["classes"]]]
+    for entry in entries:
+        for rule in rules:
+            if (entry["subject"] == rule["subject"]
+                    and entry.get("startMin") == _minutes(rule["at"])):
+                entry["note"] = rule["note"]
+    return entries
 
 
 def rides_for(cfg, class_name, day):
@@ -2125,7 +2157,7 @@ def extract(result, class_name, n_periods=None, cfg=None, period_times=None,
                                         for d in shape):
         entries = merge_blocks(entries)
 
-    entries = split_lessons(cfg, class_name, entries)
+    entries = note_lessons(cfg, class_name, split_lessons(cfg, class_name, entries))
     label_divisions(divisions, entries)
     # A division that asks two questions at once. See split_by_subject.
     divisions = split_by_subject(cfg, class_name, divisions, entries)
@@ -2948,6 +2980,9 @@ def compact(schools):
                     **({"D": 1} if e.get("fromPlan") else {}),
                     # Drawn only for a reader who answered for it. See visible.
                     **({"A": 1} if e.get("onlyAnswered") else {}),
+                    # What the day plan says about where this one is, where aSc
+                    # says nothing. See note_lessons.
+                    **({"N": e["note"]} if e.get("note") else {}),
                     "B": 1 if e.get("isBreak") else 0,
                     "a": e.get("startMin"), "z": e.get("endMin"),
                     # Only the calendar export reads this. See `card` above.

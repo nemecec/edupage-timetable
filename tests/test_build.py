@@ -783,6 +783,17 @@ class WholePage(unittest.TestCase):
                                   ("Proaeg", "12.30", "12.50"),
                                   ("Amps", "13.35", "13.55")])
 
+    def test_the_bus_to_liikumine_is_on_the_lessons_that_take_it(self):
+        """Twice in the week, and both times aSc gives the lesson no room —
+        which is what the bus is answering."""
+        riding = [(s["n"], c["n"], e["d"], e["a"], e["s"], e["r"], e["N"])
+                  for s in self.data["schools"] for c in s["c"]
+                  for e in c["e"] if e.get("N") and not e["c"]]
+        self.assertEqual(riding, [
+            ("68", "7", 3, 770, "Liikumisõpetus", [], "buss 12.50"),
+            ("68", "8", 1, 770, "Liikumisõpetus", [], "buss 12.50"),
+        ])
+
     def test_only_the_years_the_plan_names_get_a_sitting(self):
         """The Proaeg table covers the three years ProTERA teaches and nothing
         else. A sitting invented for a class is a child sent to the canteen at

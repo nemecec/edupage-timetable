@@ -184,6 +184,20 @@ out of the clock. The clock gets two details right:
   The bus waits the same way, and for a plainer reason — it leaves in the middle
   of the other group's meal. Two sittings can stand on one day because they
   follow one another; a bus across one of them cannot.
+- **There is a second bus, and it says where rather than when.** Liikumisõpetus
+  after Proaeg is somewhere else in town, and the plan puts a bus to it at
+  12.50. aSc gives those lessons no room at all, so the bus goes where the room
+  would be — the very blank the reader is looking at — and reads
+  `buss 12.50 · Hannes Tamm / Mari Nurklik · 8.j/8.r`.
+
+  Nothing moves the lesson. The plan names the bus and no lesson hours to go
+  with it, and a lesson drawn at a time nobody wrote down is worse than one
+  drawn at the time the timetable published.
+
+  It lands twice in a ProTERA week: the seventh year on Thursday and the eighth
+  on Tuesday, both at 12.50, both group lessons. The ninth year never has
+  Liikumisõpetus after Proaeg. The gümnaasium keeps its own day plan and is not
+  covered by this one.
 
   A break gives way to what the same plan puts inside it. Answering "outside the
   schoolhouse" leaves the reader eating at 11.50, on a bus at 12.15 and gone at

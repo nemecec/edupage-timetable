@@ -239,6 +239,29 @@ class TheFridayPraktikum(unittest.TestCase):
             self.assertEqual(len(self.entries(year)), 3, year)
         self.assertEqual(len(self.entries("6")), 2)
 
+    def test_the_bus_to_liikumine_says_where_and_not_when(self):
+        """Liikumisõpetus after Proaeg is somewhere else in town, and aSc gives
+        it no room. The plan gives the bus, so the bus goes where the room would
+        be — which is the blank the reader is looking at.
+
+        The plan names the bus and no lesson hours to go with it, so nothing
+        moves the lesson to a time nobody wrote down."""
+        after = {"subject": "Liikumisõpetus", "day": 1, "part": 0, "groups": [],
+                 "startMin": 770, "endMin": 850, "time": "12.50–14.10"}
+        before = dict(after, startMin=540, endMin=620, time="9.00–10.20")
+        got = tt.note_lessons(self.cfg, "8", [dict(after), dict(before)])
+        self.assertEqual([e.get("note") for e in got], ["buss 12.50", None])
+        # And it moved neither of them.
+        self.assertEqual([(e["startMin"], e["endMin"]) for e in got],
+                         [(770, 850), (540, 620)])
+
+    def test_a_class_the_plan_does_not_name_gets_no_bus(self):
+        after = {"subject": "Liikumisõpetus", "day": 1, "part": 0, "groups": [],
+                 "startMin": 770, "endMin": 850, "time": "12.50–14.10"}
+        self.assertEqual(
+            [e.get("note") for e in tt.note_lessons(self.cfg, "6", [dict(after)])],
+            [None])
+
     def test_the_bus_belongs_to_the_group_that_takes_it(self):
         """It is why that group eats in the first sitting, and it is drawn only
         for a reader who said so: it leaves in the middle of the other group's

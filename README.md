@@ -1426,6 +1426,24 @@ Some of these choices are not obvious:
   lesson. Among themselves they run in clock order, the order the day runs
   them: the midday hour first, the afternoon snack after it.
 
+  **A break a lesson runs straight across is drawn over the lesson**, inset, the
+  way a reader's own event is — a layer, with the lesson keeping its full width.
+  Packed beside it the two are half a column each, which is how the day says
+  "two groups, one hour" everywhere else, and a reader wrote in to say that is
+  exactly how it read: lunch and handicraft as two groups' lessons. TäheTERA's
+  4.a has the case, a two-hour Loovloodus on a Thursday with the plan's Lõuna
+  inside it.
+
+  Only where one reader can have both. A break and a lesson of two different
+  groups are alternatives rather than layers, and side by side is what the day
+  should say about them: ProTERA's Tuesday has a bus for 8.j and 8.r across the
+  hour 8.e spends in Keemia. Whole-class on either side means one reader has
+  both, and so does any shared group.
+
+  The plan and the timetable disagree in that TäheTERA case, and the page does
+  not settle it. The plan gives 4.a a Lõuna at 13.15 and the timetable gives it
+  a lesson from 12.30 to 14.30, and only the school can say which is when.
+
   A break keeps its diagonal hatch, which is what says "not a lesson". The
   stripes are white at two strengths rather than white against black: the dark
   half of the old pair sat under the words, and a twenty-minute band writes its

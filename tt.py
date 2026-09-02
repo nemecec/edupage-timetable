@@ -3455,6 +3455,10 @@ PAGE = """<!DOCTYPE html>
      same event used to grow a heavier border for choosing its own, which made
      one choice about text look like a choice about borders. */
   .ev.mine { z-index: 2; }
+  /* A break a lesson runs across, drawn over the lesson rather than beside it.
+     Above, so the layer is the thing on top; inset by the caller, so the lesson
+     shows either side of it. */
+  .ev.layer { z-index: 2; }
   input[type=text] { font: inherit; padding: 5px 8px; border: 1px solid var(--line);
                      border-radius: 5px; background: #fff; color: inherit; }
   .hiddenpick { position: absolute; width: 1px; height: 1px; padding: 0; border: none;

@@ -588,6 +588,51 @@ class ThePrintedSheet(InABrowser):
             got["rounded"], got["precise"] > 0,
             "whole pixels happened to agree here, so this proves nothing")
 
+    def test_a_break_a_lesson_runs_across_is_drawn_over_it(self):
+        """Packed side by side the two are half a column each, which is how the
+        day says "two groups, one hour" everywhere else. A reader wrote in about
+        TäheTERA 4.a on a Thursday to say that is exactly how it read: lunch and
+        handicraft as two groups' lessons. It is a two-hour Loovloodus with the
+        plan's Lõuna inside it, and both are the whole class's.
+
+        A band and a lesson of two different groups are alternatives, not
+        layers, and stay side by side — ProTERA's Tuesday has a bus for 8.j and
+        8.r across the hour 8.e spends in Keemia."""
+        self.show("103", "4.a")
+        got = self.js(
+            "var col = document.querySelectorAll('#grid .tlcol')[3];"
+            "var box = function (word, wantBreak) {"
+            "  var found = null;"
+            "  [].forEach.call(col.querySelectorAll('.ev'), function (el) {"
+            "    var isBreak = /\\bbrk\\b/.test(el.className);"
+            "    if (found || isBreak !== wantBreak) return;"
+            "    if (el.textContent.indexOf(word) >= 0) found = el; });"
+            "  return found && {cls: found.className,"
+            "                   left: found.style.left,"
+            "                   width: found.style.width}; };"
+            "return {lesson: box('Loovloodus', false), lunch: box('Lõuna', true)};")
+        self.assertTrue(got["lesson"] and got["lunch"],
+                        "the reported pair is not on the day")
+        # The lesson keeps the whole column.
+        self.assertEqual(got["lesson"]["width"], "calc(100% - 4px)")
+        self.assertNotIn("layer", got["lesson"]["cls"])
+        # And the break is a layer inside it: inset, and marked to draw above.
+        self.assertIn("layer", got["lunch"]["cls"])
+        self.assertEqual(got["lunch"]["left"], "calc(16% + 2px)")
+        self.assertEqual(got["lunch"]["width"], "calc(84% - 4px)")
+
+        # Two different groups stay side by side, because they are two answers
+        # to the same hour rather than one thing inside another.
+        self.show("68", "8")
+        bus = self.js(
+            "var col = document.querySelectorAll('#grid .tlcol')[1];"
+            "var found = null;"
+            "[].forEach.call(col.querySelectorAll('.ev'), function (el) {"
+            "  if (!found && el.textContent.indexOf('Buss') >= 0) found = el; });"
+            "return found && {cls: found.className, width: found.style.width};")
+        self.assertTrue(bus, "no bus on the day")
+        self.assertNotIn("layer", bus["cls"])
+        self.assertIn("33.3", bus["width"])
     def test_a_small_sheet_is_copied_across_the_page(self):
         """A card a third the size of the paper leaves the rest of it blank, so
         the page is filled with copies and the paper is turned when turning it

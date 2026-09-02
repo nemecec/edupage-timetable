@@ -1779,7 +1779,7 @@ function renderTimeline(school, cls, shown, mine, scale) {
            of the week. */
         const twin = bands.some(other => other !== it && other.name === it.name);
         perDay.get(i).push({ a: it.band.m, z: it.band.x, brk: it.name,
-                             ride: !!it.band.o,
+                             ride: !!it.band.o, g: it.band.g || [],
                              note: it.ours && twin ? (it.band.q || "") : "" });
       }
       perDay.set(i, trimBands(perDay.get(i),
@@ -1960,9 +1960,37 @@ function tornEdge(width, shift, amp) {
   for (const i of dayIdx) {
     h += '<div class="tlcol">';
     const items = perDay.get(i);
-    for (const it of pack(items.filter(x => !x.mine))) {
+    /* A band a lesson runs straight across is not that lesson's neighbour.
+       Packed beside it the two are half a column each, which is how the day
+       says "two groups, one hour" everywhere else — and a reader wrote in to
+       say that is exactly how it read: lunch and handicraft as two groups'
+       lessons. TäheTERA's 4.a has the case, a two-hour Loovloodus on Thursday
+       with the plan's Lõuna inside it.
+
+       So it is drawn over the lesson instead, the way the reader's own events
+       are: a layer, and the lesson keeps its full width.
+
+       Only where one reader can have both. A band and a lesson of two
+       different groups are alternatives, not layers, and side by side is
+       exactly what the day should say about them — ProTERA's Friday bus sits
+       across the hour another group spends in Bioloogia. Whole-class on either
+       side means one reader has both, and so does any shared group. */
+    const together = (band, lesson) => {
+      const mine = band.g || [], theirs = lesson.g || [];
+      return !mine.length || !theirs.length ||
+             mine.some(g => theirs.includes(g));
+    };
+    const layered = items.filter(x => x.brk && items.some(
+      other => other.lesson && other.a < x.z && x.a < other.z &&
+               together(x, other.lesson)));
+    const packed = pack(items.filter(x => !x.mine && !layered.includes(x)));
+    for (const it of packed.concat(layered)) {
       const height = Math.max(14, Math.round(y(it.z) - y(it.a)) - 1);
-      const geom = place(it, 0);
+      /* A layer is inset, so what it sits on is visible either side of it and
+         the two read as one on top of the other rather than as two of a kind.
+         The same inset a personal event over a lesson gets, for the same
+         reason. */
+      const geom = place(it, layered.includes(it) ? 16 : 0);
       const when = clockText(it.a, it.z);
       if (it.gap === GAP) {
         /* Worked out here rather than published, so it says only the one thing
@@ -2006,7 +2034,8 @@ function tornEdge(width, shift, amp) {
            has one between its second and third lessons — and at that height
            the padding is the difference between a line and a cut line. */
         const brkCls = height < 17 ? " tiny squeeze" : height < 22 ? " tiny" : "";
-        h += '<div class="ev brk' + brkCls + '" style="' +
+        h += '<div class="ev brk' + brkCls +
+             (layered.includes(it) ? " layer" : "") + '" style="' +
              growStyle(height, "brk" + brkCls, inside.lines, inside.packed) +
              geom + "background-color:" + esc(col.bg) +
              ";color:" + esc(col.fg) + ";" + hatch(col.bg) +
@@ -2046,7 +2075,7 @@ function tornEdge(width, shift, amp) {
     }
     /* The layer on top. Events are packed among themselves, so two of them at
        once still sit side by side rather than hiding one another. */
-    const base = items.filter(x => !x.mine);
+    const base = items.filter(x => !x.mine && !layered.includes(x));
     for (const it of pack(items.filter(x => x.mine))) {
       const over = base.some(x => x.a < it.z && it.a < x.z);
       const height = Math.max(14, Math.round(y(it.z) - y(it.a)) - 1);

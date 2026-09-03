@@ -244,7 +244,7 @@ STRINGS = {
         "say.placeholder": "What would you like to say?",
         "say.who": "Your name or e-mail address (optional)",
         "say.whoHelp": ("Fill this in if you would like an answer. A name is "
-                        "enough."),
+                        "enough (I will answer in Stuudium)."),
         "say.withSettings": "Send my settings too, so we can see what you see",
         "say.shown": "This is what is sent with your message:",
         "say.send": "Send",
@@ -442,7 +442,8 @@ STRINGS = {
                       "soovid, et me loeksime."),
         "say.placeholder": "Mida soovid öelda?",
         "say.who": "Sinu nimi või e-posti aadress (valikuline)",
-        "say.whoHelp": "Täida see, kui soovid vastust. Nimest piisab.",
+        "say.whoHelp": ("Täida see, kui soovid vastust. Nimest piisab "
+                        "(vastan Stuudiumis)."),
         "say.withSettings": "Saada ka minu seaded, et näeksime sedasama mida sina",
         "say.shown": "Koos sõnumiga saadetakse see:",
         "say.send": "Saada",

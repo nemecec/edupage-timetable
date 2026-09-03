@@ -223,10 +223,9 @@ out of the clock. The clock gets two details right:
   TäheTERA has a ten-minute one between its second and third lessons, and ten
   is not under ten.
 
-  Only the plan's own, and only once answered. Where aSc and the plan disagree —
-  TäheTERA has a two-hour Loovloodus with the school's lunch band sitting inside
-  it — that is the school's disagreement and not ours to settle by deleting one
-  of them. And before the reader answers, both groups' Fridays are on the screen
+  Only the plan's own, and only once answered. Where aSc and the plan disagree,
+  that is the school's disagreement and not ours to settle by deleting one of
+  them. And before the reader answers, both groups' Fridays are on the screen
   at once: the page draws alternatives side by side, and trimming then would
   take one group's meal away because the other group's lesson runs across it.
 
@@ -1431,8 +1430,14 @@ Some of these choices are not obvious:
   Packed beside it the two are half a column each, which is how the day says
   "two groups, one hour" everywhere else, and a reader wrote in to say that is
   exactly how it read: lunch and handicraft as two groups' lessons. TäheTERA's
-  4.a has the case, a two-hour Loovloodus on a Thursday with the plan's Lõuna
+  4.a had the case, a two-hour Loovloodus on a Thursday with the plan's Lõuna
   inside it.
+
+  No timetable holds one now. The school answered on that Thursday, and the
+  answer is in the plan: 4.a eats at 12.20 and the lesson runs 12.40 to 14.00.
+  The layering stays, because the next block a school publishes across a lunch
+  has to read as one thing inside another rather than as two groups, and the
+  browser test puts the reader's own case back to prove it on.
 
   Only where one reader can have both. A break and a lesson of two different
   groups are alternatives rather than layers, and side by side is what the day
@@ -1440,9 +1445,10 @@ Some of these choices are not obvious:
   hour 8.e spends in Keemia. Whole-class on either side means one reader has
   both, and so does any shared group.
 
-  The plan and the timetable disagree in that TäheTERA case, and the page does
-  not settle it. The plan gives 4.a a Lõuna at 13.15 and the timetable gives it
-  a lesson from 12.30 to 14.30, and only the school can say which is when.
+  Where the plan and the timetable disagree, the page does not settle it: only
+  the school can say which is when. That is worth asking about rather than
+  drawing around. Asked about 4.a's Thursday, the school said the class eats at
+  12.20 and the lesson runs 12.40 to 14.00, and the plan says that now.
 
   A break keeps its diagonal hatch, which is what says "not a lesson". The
   stripes are white at two strengths rather than white against black: the dark

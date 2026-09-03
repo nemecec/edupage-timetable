@@ -810,6 +810,34 @@ class WholePage(unittest.TestCase):
             ("68", "9", "4", "12.15", "12.30", ["Väljaspool koolimaja"]),
         ])
 
+    def test_4a_eats_before_the_thursday_block_and_not_inside_it(self):
+        """The school publishes Thursday's sixth and seventh periods as two
+        45-minute lessons with lunch between them. 4.a takes Loovloodus across
+        both, so the lesson spanned 12.30 to 14.30 with the 13.15 lunch inside
+        it, and a parent wrote in to say the day read as two groups' lessons at
+        once. The school's answer: they eat at 12.20 and the lesson runs 12.40
+        to 14.00. Source: the school, on 4.a's Thursday."""
+        klass = [c for s in self.data["schools"] if s["l"] == "TäheTERA"
+                 for c in s["c"] if c["n"] == "4.a"][0]
+        lesson = [e for e in klass["e"]
+                  if e["d"] == 3 and e["s"] == "Loovloodus"]
+        self.assertTrue(lesson, "4.a has lost its Thursday Loovloodus")
+        for entry in lesson:
+            self.assertEqual((entry["a"], entry["z"]), (12 * 60 + 40, 14 * 60),
+                             "the lesson is not on the hours the school gave")
+        # Lunch is in front of it, in the hole the block leaves, and there is
+        # no second one inside it.
+        self.assertEqual([(b["n"], b["s"], b["e"]) for b in klass["h"]["3"]["b"]],
+                         [("Amps", "10.35", "10.45"),
+                          ("Lõuna", "12.20", "12.40")])
+        # The classes beside it are untouched: this is one class on one day.
+        for name, lunch in (("4.e", ("Lõuna", "13.15", "13.45")),
+                            ("4.i", ("Lõuna", "13.15", "13.30"))):
+            other = [c for s in self.data["schools"] if s["l"] == "TäheTERA"
+                     for c in s["c"] if c["n"] == name][0]
+            self.assertIn(lunch, [(b["n"], b["s"], b["e"])
+                                  for b in other["h"]["3"]["b"]], name)
+
     def test_only_the_years_the_plan_names_get_a_sitting(self):
         """The Proaeg table covers the three years ProTERA teaches and nothing
         else. A sitting invented for a class is a child sent to the canteen at

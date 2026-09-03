@@ -592,14 +592,33 @@ class ThePrintedSheet(InABrowser):
         """Packed side by side the two are half a column each, which is how the
         day says "two groups, one hour" everywhere else. A reader wrote in about
         TäheTERA 4.a on a Thursday to say that is exactly how it read: lunch and
-        handicraft as two groups' lessons. It is a two-hour Loovloodus with the
-        plan's Lõuna inside it, and both are the whole class's.
+        handicraft as two groups' lessons. It was a two-hour Loovloodus with the
+        plan's Lõuna inside it, and both were the whole class's.
+
+        That case is gone from the data: the school has since said 4.a eats at
+        12.20 and the lesson runs 12.40 to 14.00, so there is no longer a band
+        inside it. The band is put back here, because the next block a school
+        publishes across a lunch has to read as one thing inside another rather
+        than as two groups, and no timetable now holds one to prove it on.
 
         A band and a lesson of two different groups are alternatives, not
         layers, and stay side by side — ProTERA's Tuesday has a bus for 8.j and
-        8.r across the hour 8.e spends in Keemia."""
+        8.r across the hour 8.e spends in Keemia. That half is real data."""
         self.show("103", "4.a")
-        got = self.js(
+        # The Thursday the reader wrote about: Loovloodus 12.30 to 14.30 with
+        # the plan's own 13.15 Lõuna in the middle of it, whole class both.
+        self.js(
+            "var cls = currentClass();"
+            "window.__band = cls.h['3'].b.slice();"
+            "window.__hours = cls.e.filter(function (e) {"
+            "  return e.d === 3 && e.s === 'Loovloodus'; })"
+            "  .map(function (e) { return [e, e.a, e.z]; });"
+            "window.__hours.forEach(function (was) { was[0].a = 750; was[0].z = 870; });"
+            "cls.h['3'].b = [{a: 5, n: 'Lõuna', s: '13.15', e: '13.45',"
+            "                 m: 795, x: 825}];"
+            "render(); return {};")
+        try:
+            got = self.js(
             "var col = document.querySelectorAll('#grid .tlcol')[3];"
             "var box = function (word, wantBreak) {"
             "  var found = null;"
@@ -611,6 +630,13 @@ class ThePrintedSheet(InABrowser):
             "                   left: found.style.left,"
             "                   width: found.style.width}; };"
             "return {lesson: box('Loovloodus', false), lunch: box('Lõuna', true)};")
+        finally:
+            # Left behind, this day is every later test's starting point.
+            self.js("var cls = currentClass();"
+                    "cls.h['3'].b = window.__band;"
+                    "window.__hours.forEach(function (was) {"
+                    "  was[0].a = was[1]; was[0].z = was[2]; });"
+                    "render(); return {};")
         self.assertTrue(got["lesson"] and got["lunch"],
                         "the reported pair is not on the day")
         # The lesson keeps the whole column.

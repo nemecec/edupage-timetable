@@ -1127,9 +1127,18 @@ BELLS = {
                     (2,): [(1, 2, "9:00", "10:20"), (3, 1, "10:45", "11:30"),
                            (4, 1, "11:35", "12:20"), (6, 1, "12:30", "13:15"),
                            (7, 1, "13:45", "14:30"), (8, 1, "14:35", "15:20")],
+                    # Thursday's sixth and seventh are one block, not two.
+                    # 4.a takes Loovloodus across both, and the school states
+                    # its hours: the class eats at 12.20, the lesson runs 12.40
+                    # to 14.00. Written as two 45-minute lessons it spanned
+                    # 12.30 to 14.30 with the plan's 13.15 lunch inside it, and
+                    # a parent wrote in to say the day read as two groups'
+                    # lessons at once. One block puts the hole where the school
+                    # says it is, and Lõuna is found in it rather than asserted.
+                    # Source: the school, on 4.a's Thursday.
                     (3,): [(1, 1, "9:00", "9:45"), (2, 1, "9:50", "10:35"),
                            (3, 1, "10:45", "11:30"), (4, 1, "11:35", "12:20"),
-                           (6, 1, "12:30", "13:15"), (7, 1, "13:45", "14:30"),
+                           (6, 2, "12:40", "14:00"),
                            (8, 1, "14:35", "15:20")],
                     (4,): [(1, 1, "9:00", "9:45"), (2, 1, "9:50", "10:35"),
                            (3, 1, "10:45", "11:30"), (4, 1, "11:35", "12:20"),

@@ -311,6 +311,24 @@ one group takes the language at **12.10-12.55** and eats after, the other eats
 first and takes it at **12.55-13.40**. Two rows, two periods in the timetable,
 so both are drawn.
 
+**The fourth year's Friday ends at the canteen hour.** 4.a, 4.e and 4.i eat at
+13.15 from Monday to Thursday. On Friday all three finish their last lesson at
+13.15 exactly, and the only space in front of it is ten minutes — a corridor,
+under the fifteen this sitting needs. A sitting is normally found in the space
+between two lessons, and there is no second lesson, so the day drew no lunch at
+all and a reader asked where it had gone.
+
+It is drawn after the last lesson instead. Narrow on purpose: only the three
+classes the rule names, only where the day really does stop by then, and never
+where the day already carries that band. The general `lunch` window cannot do
+this job at TäheTERA — it is refused as soon as any other window matches, and
+Amps always matches, and it would take its name from the first window, which is
+Amps.
+
+This one is **assumed, not published.** Every other hour on this page comes off
+a sheet or out of an answer from the school. The four other days are the whole
+of the evidence for this one, which is why the config says so out loud.
+
 **EduPage's two Spanish groups are not groups.** It names one group per lesson,
 which assumes that a group meets at the same period every week. Here it does
 not. The half that goes first on Monday goes second on Thursday. What EduPage

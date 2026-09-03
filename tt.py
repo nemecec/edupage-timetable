@@ -996,6 +996,19 @@ BELLS = {
         # of the day and is long enough to eat in. Fifteen minutes between two
         # lessons is not lunch.
         "lunchGap": {"name": "Lõuna", "from": "12:00", "to": "13:00", "least": 30},
+        # The fourth year's Friday ends at 13.15, which is the minute all three
+        # classes eat on the other four days, and the only hole in front of it
+        # is ten minutes — a corridor, under the fifteen this sitting needs. So
+        # the sitting goes after the last lesson instead of nowhere.
+        #
+        # Assumed, not stated: the school has not been asked about the Friday,
+        # and the other four days are the whole of the evidence. Everything
+        # else here comes from a published sheet, so this one is worth saying
+        # out loud.
+        "lunchAtEnd": [
+            {"name": "Lõuna", "classes": ["4.a", "4.e", "4.i"],
+             "from": "13:15", "to": "13:45", "endsBy": "13:15"},
+        ],
         # 5.a takes Spanish in two groups, and aSc cannot say so. It names one
         # group per lesson, which assumes a group meets at the same period
         # every week, and here it does not. Both days hold a Spanish lesson at
@@ -1654,6 +1667,41 @@ def block_gaps(cfg, slots, class_name=""):
              "start": _fmt_time(at), "end": _fmt_time(until)}]
 
 
+def lunch_at_end(breaks, cfg, class_name, slots):
+    """A class whose day stops at the canteen's own hour, eating after it.
+
+    block_gaps finds a sitting in the space between two lessons. A day that
+    stops before the second lesson leaves no such space, and the class still
+    eats: the fourth year's Friday ends at 13.15, which is the minute they eat
+    on the other four days, and the only hole in front of it is ten minutes.
+    Drawn nowhere, the day said they do not eat at all.
+
+    Narrow on purpose. Only a class the rule names, only where the day really
+    does stop by then, and never where the day already carries that band. The
+    generic `lunch` window cannot do this job here: it is refused as soon as
+    any other window matches, and it takes its name from the first window,
+    which at TäheTERA is Amps.
+    """
+    for rule in (cfg or {}).get("lunchAtEnd", []):
+        if (class_name or "").strip() not in [c.strip() for c in rule["classes"]]:
+            continue
+        if not slots or any(b["name"] == rule["name"] for b in breaks):
+            continue
+        ends = _minutes(slots[-1]["end"].replace(".", ":"))
+        if ends > _minutes(rule["endsBy"]):
+            continue
+        # No earlier than the last lesson, so the band never runs back into it.
+        at, until = max(ends, _minutes(rule["from"])), _minutes(rule["to"])
+        if at >= until:
+            continue
+        # Last on the day by construction: it starts no earlier than the last
+        # lesson ends, and every other band lies between two lessons.
+        breaks = breaks + [{"after": len(slots), "name": rule["name"],
+                            "at": at, "until": until,
+                            "start": _fmt_time(at), "end": _fmt_time(until)}]
+    return breaks
+
+
 def class_grades(names, cfg):
     """Which year each class is in, and which names are not classes at all.
 
@@ -2128,7 +2176,8 @@ def extract(result, class_name, n_periods=None, cfg=None, period_times=None,
                     for k in range(e["duration"])}
             slots = [s for s in published
                      if any(s["period"] + k in used for k in range(s["periods"]))]
-            breaks = block_gaps(cfg, slots, class_name)
+            breaks = lunch_at_end(block_gaps(cfg, slots, class_name),
+                                  cfg, class_name, slots)
         else:
             blocks = {(e["startPeriod"], e["duration"]) for e in entries
                       if e["day"] == day and e["part"] == 0}

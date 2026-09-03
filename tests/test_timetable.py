@@ -192,6 +192,83 @@ class TheCanteenSitting(unittest.TestCase):
             tt.with_meals(plain, cfg, "8", self.MON)
         self.assertIn("9:30", str(caught.exception))
 
+class TheSittingAfterTheLastLesson(unittest.TestCase):
+    """A class whose day stops at the canteen's own hour eats after it.
+
+    A sitting is normally found in the space between two lessons. The fourth
+    year's Friday ends at 13.15 and has no second lesson, so there is no space
+    to find one in, and the day drew no lunch at all.
+    """
+
+    cfg = tt.BELLS["TäheTERA"]
+
+    def slots(self, last_end):
+        return [{"period": 1, "periods": 1, "start": "9.00", "end": "9.45"},
+                {"period": 6, "periods": 1, "start": "12.30", "end": last_end}]
+
+    def bands(self, class_name, last_end, already=()):
+        got = tt.lunch_at_end(list(already), self.cfg, class_name,
+                              self.slots(last_end))
+        return [(b["name"], b["start"], b["end"]) for b in got]
+
+    def test_a_day_ending_at_the_sitting_gets_it(self):
+        self.assertEqual(self.bands("4.a", "13.15"),
+                         [("Lõuna", "13.15", "13.45")])
+        # All three classes of the year, and nobody else.
+        for name in ("4.e", "4.i"):
+            self.assertEqual(self.bands(name, "13.15"),
+                             [("Lõuna", "13.15", "13.45")], name)
+        for name in ("5.a", "6.k", "3.a"):
+            self.assertEqual(self.bands(name, "13.15"), [], name)
+
+    def test_a_day_running_past_the_sitting_is_left_alone(self):
+        """The guard that keeps the assumption to the day it was made about.
+        A class still in a lesson at 13.15 is not in the canteen, and its own
+        lunch is somewhere this rule cannot see."""
+        for last_end in ("13.16", "14.30", "15.20"):
+            self.assertEqual(self.bands("4.a", last_end), [], last_end)
+
+    def test_a_day_that_already_has_one_is_not_given_a_second(self):
+        standing = [{"after": 1, "name": "Lõuna", "at": 795, "until": 825,
+                     "start": "13.15", "end": "13.45"}]
+        self.assertEqual(self.bands("4.a", "13.15", standing),
+                         [("Lõuna", "13.15", "13.45")])
+        # Under another name it is a different band, and lunch is still owed.
+        amps = [{"after": 1, "name": "Amps", "at": 635, "until": 645,
+                 "start": "10.35", "end": "10.45"}]
+        self.assertEqual(self.bands("4.a", "13.15", amps),
+                         [("Amps", "10.35", "10.45"),
+                          ("Lõuna", "13.15", "13.45")])
+
+    def test_a_class_with_no_lessons_left_is_not_sent_to_the_canteen(self):
+        self.assertEqual(tt.lunch_at_end([], self.cfg, "4.a", []), [])
+
+    def test_the_sitting_never_runs_back_into_the_lesson(self):
+        """Where a rule lets the day end part-way through the sitting, the band
+        starts when the class is actually free. Drawn from the sitting's own
+        start it would overlap the lesson, and the day would say the class is
+        in two places at once."""
+        cfg = {"lunchAtEnd": [{"name": "Lõuna", "classes": ["4.a"],
+                               "from": "13:15", "to": "13:45",
+                               "endsBy": "13:30"}]}
+        got = tt.lunch_at_end([], cfg, "4.a", self.slots("13.25"))
+        self.assertEqual([(b["start"], b["end"]) for b in got],
+                         [("13.25", "13.45")])
+        # What is left of the sitting, however little, is still the sitting.
+        got = tt.lunch_at_end([], cfg, "4.a", self.slots("13.29"))
+        self.assertEqual([(b["start"], b["end"]) for b in got],
+                         [("13.29", "13.45")])
+        # Nothing left of it, and no band: a zero-length box says the class
+        # ate in no time at all.
+        late = {"lunchAtEnd": [{"name": "Lõuna", "classes": ["4.a"],
+                                "from": "13:15", "to": "13:45",
+                                "endsBy": "14:00"}]}
+        for last_end in ("13.45", "13.50"):
+            self.assertEqual(tt.lunch_at_end([], late, "4.a",
+                                             self.slots(last_end)), [],
+                             last_end)
+
+
 class TheFridayPraktikum(unittest.TestCase):
     """One lesson the school runs twice, which aSc records once.
 

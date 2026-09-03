@@ -838,6 +838,38 @@ class WholePage(unittest.TestCase):
             self.assertIn(lunch, [(b["n"], b["s"], b["e"])
                                   for b in other["h"]["3"]["b"]], name)
 
+    def test_a_day_that_stops_at_the_canteen_hour_still_eats(self):
+        """The fourth year's Friday ends at 13.15, the minute all three classes
+        eat on the other four days, and the only hole in front of it is ten
+        minutes. A sitting is found in the space between two lessons, and there
+        is no second lesson, so the day said they do not eat at all.
+
+        Assumed rather than published, which is why it is written down."""
+        year4 = {c["n"]: c for s in self.data["schools"] if s["l"] == "TäheTERA"
+                 for c in s["c"] if c["n"] in ("4.a", "4.e", "4.i")}
+        self.assertEqual(sorted(year4), ["4.a", "4.e", "4.i"])
+        for name, klass in sorted(year4.items()):
+            friday = klass["h"]["4"]
+            lunch = [(b["s"], b["e"]) for b in friday["b"] if b["n"] == "Lõuna"]
+            self.assertEqual(lunch, [("13.15", "13.45")], name)
+            # After the last lesson, never running back into it.
+            self.assertLessEqual(_mins(friday["s"][-1]["z"]),
+                                 [b["m"] for b in friday["b"]
+                                  if b["n"] == "Lõuna"][0], name)
+        # The rule names the fourth year and nobody else. The fifth years sit
+        # in the same lunch window and have no band on a Monday either, but
+        # theirs is the hole their own language split leaves, which depends on
+        # the group the reader picks. Handed a class-wide sitting they would be
+        # given two. The guard on how late the day may end is held to its
+        # contract in TheSittingAfterTheLastLesson, not here: with this data
+        # every day it would judge already carries a band.
+        for name in ("5.a", "5.l", "5.t"):
+            klass = [c for s in self.data["schools"] if s["l"] == "TäheTERA"
+                     for c in s["c"] if c["n"] == name][0]
+            self.assertEqual(
+                [b["n"] for b in klass["h"]["0"]["b"] if b["n"] == "Lõuna"], [],
+                name + " was handed a sitting it works out for itself")
+
     def test_only_the_years_the_plan_names_get_a_sitting(self):
         """The Proaeg table covers the three years ProTERA teaches and nothing
         else. A sitting invented for a class is a child sent to the canteen at
@@ -1123,6 +1155,11 @@ def _every_string(root):
                 if isinstance(key, ast.Constant) and isinstance(key.value, str):
                     out.add(key.value)
     return out
+
+
+def _mins(text):
+    hour, _, minute = text.replace(".", ":").partition(":")
+    return int(hour) * 60 + int(minute)
 
 
 class Documentation(unittest.TestCase):

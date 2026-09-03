@@ -1375,6 +1375,53 @@ test("a very long message is cut before it leaves", () => {
   assert.equal(json(`feedbackPayload().text.length`), 2000);
 });
 
+test("a reader who wants an answer can leave a way back", () => {
+  run(`state = defaults(); state.school = "68"; state.class = "8";
+       document.getElementById("sayText").value = "Thursday lunch is wrong";
+       document.getElementById("sayWithSettings").checked = false;
+       document.getElementById("sayWho").value = "  Mari Tamm  ";`);
+  // Trimmed, but not checked against any shape of an address. A name is
+  // enough, and a mistyped address must not lose the message.
+  assert.equal(json(`feedbackPayload().who`), "Mari Tamm");
+  run(`document.getElementById("sayWho").value = "not@an@address";`);
+  assert.equal(json(`feedbackPayload().who`), "not@an@address");
+  // Empty, and the field is left out altogether rather than sent blank.
+  for (const value of ["", "   "]) {
+    run(`document.getElementById("sayWho").value = ${JSON.stringify(value)};`);
+    assert.ok(!("who" in JSON.parse(json(`JSON.stringify(feedbackPayload())`))),
+              `an empty contact was sent as ${JSON.stringify(value)}`);
+  }
+  // Long enough to be a paste rather than a contact, so it is cut.
+  run(`document.getElementById("sayWho").value = "y".repeat(5000);`);
+  assert.equal(json(`feedbackPayload().who.length`), 200);
+  run(`document.getElementById("sayWho").value = "";`);
+});
+
+test("the contact is never kept anywhere the settings go", async () => {
+  /* slim(state) is the shared link, the printed QR code and the browser
+     store, all three. An address typed to get one answer must not ride into
+     any of them. */
+  run(`state = defaults(); state.school = "68"; state.class = "8";
+       DATA.report = "/report"; window.__posted = null;
+       document.getElementById("sayText").value = "Thursday lunch is wrong";
+       document.getElementById("sayWho").value = "mari@example.test";
+       document.getElementById("sayWithSettings").checked = true;`);
+  await run(`sendFeedback()`);
+  const posted = JSON.parse(json(`window.__posted.body`));
+  assert.equal(posted.who, "mari@example.test");
+  assert.ok(!JSON.stringify(posted.settings).includes("mari@example.test"),
+            "the contact reached the settings");
+  assert.ok(!JSON.stringify(JSON.parse(json(`JSON.stringify(slim(state))`)))
+              .includes("mari@example.test"),
+            "the contact reached slim(state)");
+  // The message is cleared on the way out, the contact is not: a reader who
+  // writes twice in one sitting should not type their address twice.
+  assert.equal(json(`document.getElementById("sayText").value`), "");
+  assert.equal(json(`document.getElementById("sayWho").value`),
+               "mari@example.test");
+  run(`document.getElementById("sayWho").value = "";`);
+});
+
 test("a fault report carries the shape of the settings, not the words", () => {
   /* The whole reason a report is allowed to carry the settings at all. Every
      one of these strings is something a reader typed. */

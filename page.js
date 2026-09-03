@@ -3685,7 +3685,8 @@ document.addEventListener("click", (ev) => {
   if (box && box.focus) box.focus();
 });
 
-for (const [id, event] of [["sayWithSettings", "change"], ["sayText", "input"]]) {
+for (const [id, event] of [["sayWithSettings", "change"], ["sayText", "input"],
+                           ["sayWho", "input"]]) {
   const el = document.getElementById(id);
   if (el) el.addEventListener(event, refreshFeedbackPreview);
 }
@@ -4333,9 +4334,11 @@ function report(what, error, at) {
    purpose, so the panel shows the payload before it is sent — and shows this
    exact object, not a description of it. */
 const SAY_CAP = 2000;
+const WHO_CAP = 200;
 
 function feedbackPayload() {
   const text = (document.getElementById("sayText") || {}).value || "";
+  const who = ((document.getElementById("sayWho") || {}).value || "").trim();
   const withSettings = !!(document.getElementById("sayWithSettings") || {}).checked;
   const cls = currentClass();
   const body = {
@@ -4347,6 +4350,12 @@ function feedbackPayload() {
     built: DATA.built || "",
     agent: String(navigator.userAgent || "").slice(0, 200),
   };
+  /* Optional, and not checked against any shape of an address: a name we can
+     look up beats a well-formed address that is not theirs, and a reader who
+     mistypes one character should not be told their answer is refused. Left
+     out of the payload entirely when empty, so a report with no way back is
+     plainly that and not an empty string. */
+  if (who) body.who = who.slice(0, WHO_CAP);
   /* Their settings as they are, not scrubbed: they asked for them to go, and
      they can read every character of what goes before they press Send. */
   if (withSettings) body.settings = slim(state);
@@ -4382,6 +4391,8 @@ async function sendFeedback() {
     if (!answer.ok) throw new Error(String(answer.status));
     note.textContent = t("say.sent");
     document.getElementById("sayText").value = "";
+    /* The contact stays. A reader who writes again in the same sitting should
+       not have to type their address a second time. */
     refreshFeedbackPreview();
   } catch (e) {
     note.textContent = t("say.failed");

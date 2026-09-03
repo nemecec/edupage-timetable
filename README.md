@@ -1797,6 +1797,21 @@ them to go and can read every character of what goes, a child's name among them.
 That is the difference between a report the page sends by itself and a message
 somebody chose to write.
 
+Under the message box is one optional field: a name or an e-mail address, for
+a reader who wants an answer. Nothing about it is checked. It is `type="text"`,
+not `type="email"`, and it carries no `required` and no `pattern`, because a
+browser that refuses `Mari Tamm` throws away the message with it — and a name
+is enough to find somebody in Stuudium. An empty box is left out of the payload
+altogether rather than sent as `""`, so a report with no way back reads as one.
+It is capped at 200 characters, which is a paste rather than a contact.
+
+The contact is not kept. `slim(state)` is three things at once — the shared
+link, the printed QR code and the browser store — so an address put there would
+ride into all three, and an address typed to get one answer must not travel
+with a timetable somebody sends a friend. It survives a Send within the same
+sitting, because a reader who writes twice should not type it twice, and goes
+when the tab does.
+
 A second metric filter counts these apart from faults, so the mail says which
 arrived. The message is capped at 2000 characters, and the panel is not drawn at
 all when there is no endpoint to post to.

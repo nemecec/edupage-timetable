@@ -238,9 +238,13 @@ STRINGS = {
         "say.link": "feedback",
         "say.intro": ("Anything you want to say about this page: what is "
                       "missing, what is wrong, what can be better, or that it "
-                      "all works. This is the one thing on this page that is "
-                      "sent to us, so write only what you want us to read."),
+                      "all works. This panel is the one thing on this page "
+                      "that is sent to us, so write only what you want us to "
+                      "read."),
         "say.placeholder": "What would you like to say?",
+        "say.who": "Your name or e-mail address (optional)",
+        "say.whoHelp": ("Fill this in if you would like an answer. A name is "
+                        "enough."),
         "say.withSettings": "Send my settings too, so we can see what you see",
         "say.shown": "This is what is sent with your message:",
         "say.send": "Send",
@@ -433,10 +437,12 @@ STRINGS = {
         "say.link": "tagasiside",
         "say.intro": ("Kõik, mida soovid selle lehe kohta öelda: mis on puudu, "
                       "mis on valesti, mida saaks paremaks teha, või et kõik "
-                      "toimib. See on ainus asi sellel lehel, mis meile "
-                      "saadetakse, nii et kirjuta ainult seda, mida soovid, et "
-                      "me loeksime."),
+                      "toimib. See paneel on ainus koht sellel lehel, mille "
+                      "sisu meile saadetakse, nii et kirjuta ainult seda, mida "
+                      "soovid, et me loeksime."),
         "say.placeholder": "Mida soovid öelda?",
+        "say.who": "Sinu nimi või e-posti aadress (valikuline)",
+        "say.whoHelp": "Täida see, kui soovid vastust. Nimest piisab.",
         "say.withSettings": "Saada ka minu seaded, et näeksime sedasama mida sina",
         "say.shown": "Koos sõnumiga saadetakse see:",
         "say.send": "Saada",
@@ -3967,6 +3973,11 @@ PAGE = """<!DOCTYPE html>
   <div class="field" style="width:100%;margin-top:12px">
     <p class="sub help" data-i18n="say.intro"></p>
     <textarea id="sayText" rows="4" data-i18n-ph="say.placeholder"></textarea>
+  </div>
+  <div class="field" style="width:100%;margin-top:8px">
+    <label for="sayWho" data-i18n="say.who"></label>
+    <input type="text" id="sayWho" size="30" autocomplete="email">
+    <p class="sub help" data-i18n="say.whoHelp"></p>
   </div>
   <div class="field" style="width:100%;margin-top:8px">
     <label class="pick"><input type="checkbox" id="sayWithSettings">

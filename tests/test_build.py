@@ -1107,6 +1107,20 @@ class Documentation(unittest.TestCase):
         mark = '<details class="panel" id="%s">'
         return page[page.index(mark % first):page.index(mark % next_one)]
 
+    def test_the_contact_box_takes_a_name_as_readily_as_an_address(self):
+        """The reader is asked for a name or an address, and a name is enough:
+        we can look one up. type=email hands the browser a rule that refuses
+        "Mari Tamm" without ever reaching the page, and required refuses an
+        empty one — either way a message somebody wrote is lost at the door."""
+        with open(os.path.join(ROOT, "tt.py"), encoding="utf-8") as fh:
+            page = fh.read()
+        start = page.index('<details class="panel" id="sayPanel">')
+        panel = page[start:page.index("</details>", start)]
+        field = re.search(r"<input[^>]*\bid=\"sayWho\"[^>]*>", panel).group(0)
+        self.assertIn('type="text"', field)
+        self.assertNotIn("required", field)
+        self.assertNotIn("pattern", field)
+
     def test_no_two_strings_share_a_key(self):
         """A duplicate key is silent — the later value simply wins, and some
         label somewhere shows text meant for something else."""

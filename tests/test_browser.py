@@ -1521,6 +1521,40 @@ class WhenItBreaks(InABrowser):
         self.assertNotIn("z=", blob)
 
 
+    def test_a_bare_name_in_the_contact_box_is_not_refused(self):
+        """A reader is asked for a name or an address, and a name is enough.
+        With type=email a browser refuses "Mari Tamm" before the page sees it,
+        and the message the reader wrote goes nowhere."""
+        self.show("68", "8")
+        got = self.js(
+            "var who = document.getElementById('sayWho');"
+            "who.value = 'Mari Tamm';"
+            "var bare = who.checkValidity();"
+            "who.value = 'not@an@address';"
+            "return {bare: bare, wrong: who.checkValidity(),"
+            "        empty: (who.value = '', who.checkValidity())};")
+        self.assertTrue(got["bare"], "a plain name was refused")
+        self.assertTrue(got["wrong"], "a mistyped address was refused")
+        self.assertTrue(got["empty"], "an empty box was refused")
+
+    def test_what_the_contact_box_holds_shows_up_in_the_preview(self):
+        """The panel shows the payload before Send is pressed, and the reader
+        has to be able to see that their address is part of it."""
+        self.show("68", "8")
+        got = self.js(
+            "document.getElementById('sayPanel').open = true;"
+            "document.getElementById('sayText').value = 'Thursday lunch is wrong';"
+            "var who = document.getElementById('sayWho');"
+            "who.value = 'mari@example.test';"
+            "who.dispatchEvent(new Event('input'));"
+            "var box = document.getElementById('sayWithSettings');"
+            "box.checked = true; box.dispatchEvent(new Event('change'));"
+            "var shown = document.getElementById('sayShown').textContent;"
+            "who.value = ''; who.dispatchEvent(new Event('input'));"
+            "return {shown: shown, hidden: document.getElementById('sayPreview').hidden};")
+        self.assertFalse(got["hidden"], "the preview stayed shut")
+        self.assertEqual(json.loads(got["shown"])["who"], "mari@example.test")
+
 class NothingReachesTheNetwork(InABrowser):
     """The page is one file. A request leaving it is a fault, whatever it is
     for: it is served from a cache the school does not control, and a reader on

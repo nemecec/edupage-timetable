@@ -1512,6 +1512,44 @@ test("the browser's own bridge is not this page's fault either", () => {
   assert.equal(sent.message, "Can't find variable: __gCrWeb");
 });
 
+test("a script the browser hides the address of is not this page's fault", () => {
+  /* Word for word what Safari 27 on a Mac sent, and it raised the page-broke
+     alarm. webkit-masked-url is how Safari hides the address of a script it
+     did not load from the page — an extension's content script, or a user
+     script. This page's own code is inlined in the document, so every frame
+     of ours names the document. */
+  /* Wrapped, because run() evaluates in the page's own scope: a top-level
+     `var mine` here shadowed the page's own mine() and broke twelve later
+     tests. Nothing this test needs belongs in that scope. */
+  run(`DATA.report = "/report"; reportsSent = 0; reportsSeen.clear();
+       window.__posted = null;
+       (function () {
+         var hidden = new Error("undefined is not an object (evaluating 'e.useCache')");
+         hidden.stack = "he@webkit-masked-url://hidden/:18:81058";
+         report("rejection", hidden, "");
+       })();`);
+  const sent = JSON.parse(json(`window.__posted`).body);
+  assert.equal(sent.opaque, 1, "an extension's fault would raise an alarm");
+  // Still logged: it did happen, and the line is the only way to see it.
+  assert.equal(sent.message,
+               "undefined is not an object (evaluating 'e.useCache')");
+  assert.ok(!("masked" in sent), "the check left a field behind in the report");
+
+  /* Our own code, in a stack that also names a hidden frame, still alarms. An
+     extension that monkey-patches something we call must not buy silence for
+     a fault of ours underneath it. */
+  run(`reportsSent = 0; reportsSeen.clear(); window.__posted = null;
+       (function () {
+         var both = new Error("boxBody is not a function");
+         both.stack = ["he@webkit-masked-url://hidden/:18:81058",
+                       "renderTimeline@https://example.test/t/:900:12"]
+                      .join(String.fromCharCode(10));
+         report("error", both, "");
+       })();`);
+  const ours = JSON.parse(json(`window.__posted`).body);
+  assert.ok(!ours.opaque, "a fault of ours was written off as an extension's");
+});
+
 test("an error the browser will not describe is logged, not alarmed on", () => {
   /* A script from another origin gives "Script error." and nothing else. It
      came from the counter's script, and it is not something to be woken for. */

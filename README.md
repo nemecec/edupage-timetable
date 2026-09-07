@@ -1758,6 +1758,15 @@ Three decisions shape it, and all three come from what the page holds.
   not describe, which is what an injected script looks like when it is loaded
   from somewhere else.
 
+  A name in the message catches most of them. Safari hides the whole address
+  instead: a script it did not load from the page runs at
+  `webkit-masked-url://hidden/`, and the message can be about anything. This
+  page's own code is inlined in the document, so every frame of ours names the
+  document — a stack that names a hidden address and nothing of ours is
+  somebody else's code. A stack holding both still raises the alarm, because an
+  extension that patches something this page calls must not buy silence for a
+  fault underneath it.
+
 Five reports per page load, one per distinct message. A fault inside the
 drawing code fires on every repaint, and a reporter that reports its own
 reporting never stops.

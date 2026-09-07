@@ -4315,6 +4315,18 @@ function report(what, error, at) {
     }
     /* Injected by something the reader installed, not by this page. */
     if (INJECTED.some(name => body.message.includes(name))) body.opaque = 1;
+    /* Safari hides the address of a script it did not load from the page —
+       an extension's content script, or a user script — behind
+       webkit-masked-url. This page's own code is inlined in the document, so
+       every frame of ours names the document. A stack that names a hidden
+       address and nothing of ours is therefore somebody else's code.
+
+       Safari 27 on a Mac raised the page-broke alarm this way, with
+       "undefined is not an object (evaluating 'e.useCache')". No script this
+       page carries holds that word, and the frame it blamed — line 18, column
+       81058 — is past the end of the longest line we ship. */
+    if (/webkit-masked-url/.test(body.stack) &&
+        !body.stack.includes(location.pathname)) body.opaque = 1;
     /* A link cut short on its way through a chat window is not a fault here.
        Counted in the log, and never woken anybody up for. */
     if (what === "link") body.opaque = 1;

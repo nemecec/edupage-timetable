@@ -93,6 +93,11 @@ compresses well.
 Both run without a network. `tests/fixtures` holds frozen answers from the
 school's API.
 
+    node tests/js/live.mjs                    # what the school published today
+
+That one does reach the school, once. It is what the daily check runs, and it
+is described under [Watching the school](#watching-the-school).
+
 ## Lesson times and the day plan
 
 All four timetables are timed, from three different places.
@@ -1697,6 +1702,58 @@ Two of the tests guard the record rather than the page. One checks that every
 class got both, so the file cannot quietly stop covering a school. The
 other moves a box by a pixel and checks that the comparison would have caught
 it, because a record that cannot fail is worse than none.
+
+### Watching the school
+
+The records above are built from `tests/fixtures`, which is frozen. So they
+cannot notice the one thing nothing in this repository can see coming: the
+school editing its timetable in EduPage. Every test can be green while the page
+is wrong.
+
+`.github/workflows/watch.yml` runs `tests/js/live.mjs` at one o'clock UTC on
+weekdays, which is four in the afternoon in Estonia through the summer and
+three through the winter. It builds the page from the school's own server, into
+a cache directory it throws away, and renders every class exactly as the golden
+records are rendered. Then it asks two questions.
+
+The first is whether every class still draws a week. `tests/js/sane.mjs` holds
+the rules: a box the renderer could not place, a box with no height or no
+width, a box that starts above the day or runs past its foot, a box wider than
+the column it is in, an empty box, a class with no lessons at all, lessons with
+no clock beside them, a school with no classes. None of them is invented — each
+was measured first against the boxes the records already hold, and each is
+shown failing on one damaged line in `tests/js/sane.test.mjs`. They are faults
+rather than changes, and they are ours.
+
+The second is whether anything moved since the last week somebody accepted.
+That is a change rather than a fault, it is the school's, and only a person can
+say whether the page still reads correctly with it. The failure names the
+school, the class and the lines that differ, in the same words the golden
+failure uses, because both call the same reader.
+
+The reference week is not committed. It is an output, and committing it would
+turn every timetable edit into a commit. It lives in the workflow's cache under
+a `week-` key, restored by prefix so a run always compares against the newest
+one. It is written only after a clean run, so a change goes on failing every
+afternoon until somebody has read the page and accepted it:
+
+    run the workflow by hand with "accept" ticked
+
+The afternoon is the point. The rebuild that reaches the site runs in the
+middle of the night, and a failure then is a failure nobody can answer. This
+leaves the rest of the working day, and the page that is live stays live
+meanwhile.
+
+Two things it does not do. It does not stop the nightly publish — that has a
+guard of its own, which refuses to replace the live page with one carrying
+fewer timetables. And it does not know the difference between the school moving
+a lesson and us changing the renderer, so it records a hash of `tt.py` and
+`page.js` beside the week and says when that hash has moved.
+
+GitHub switches a scheduled workflow off after sixty days without a commit to
+the repository, and writes to the owner when it does. That is worth knowing
+here more than elsewhere, because this check matters most in the stretches when
+nobody is committing.
 
 ### Escaping
 

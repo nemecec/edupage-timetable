@@ -6,3 +6,6 @@ cache/
 __pycache__/
 *.pyc
 .DS_Store
+
+# The week the daily check compares against. An output, and a cached one.
+.live/

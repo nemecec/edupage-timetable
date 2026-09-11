@@ -1,0 +1,73 @@
+name: watch
+
+# The school edits its timetable in EduPage, and nothing in this repository
+# changes when it does. So every test here can be green while the page is
+# wrong. This builds from the school's own server and asks two questions: does
+# every class still draw a week, and has anything moved since the last week
+# somebody accepted.
+#
+# In the afternoon on purpose. The rebuild that reaches the site runs in the
+# middle of the night, which is no time to be fixing anything, and the school
+# rarely publishes after the school day. A failure here leaves the rest of the
+# afternoon to answer it, and the page that is live stays live meanwhile.
+#
+# The reference week is not committed. It is an output, and committing it would
+# turn every timetable edit into a commit. It is kept in the cache below, and
+# written only after a clean run — so a change goes on failing every afternoon
+# until somebody has read the page and accepted it.
+#
+# GitHub switches a scheduled workflow off after sixty days without a commit to
+# the repository, and writes to the owner when it does.
+
+on:
+  schedule:
+    # 16.00 in Estonia through the summer and 15.00 through the winter: GitHub
+    # reads this as UTC and does not follow the clocks. Too late is the failure
+    # that costs an afternoon, so the winter hour is the early one.
+    - cron: "0 13 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      accept:
+        description: "Take today's timetable as the reference"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: watch
+  cancel-in-progress: false
+
+jobs:
+  draws:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6
+        with:
+          python-version: "3.13"
+
+      # Restoring and saving are separate steps on purpose. The one-step cache
+      # action writes back at the end of the job whatever it finds, a failed
+      # job included, and a reference written over a failure is a warning that
+      # sounds once and then agrees with itself.
+      #
+      # The key never matches, so the run always falls back to the newest week
+      # saved under the prefix. GitHub drops a cache nothing has read for seven
+      # days, which a run every weekday keeps from happening; if it ever does,
+      # the next run has nothing to compare against, says so, and starts again.
+      - uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830  # v4
+        with:
+          path: .live
+          key: week-${{ github.run_id }}
+          restore-keys: week-
+
+      - name: Has the school changed anything?
+        run: node tests/js/live.mjs ${{ inputs.accept && '--accept' || '' }}
+
+      - uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830  # v4
+        if: success()
+        with:
+          path: .live
+          key: week-${{ github.run_id }}

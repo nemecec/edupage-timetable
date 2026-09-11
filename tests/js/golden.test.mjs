@@ -14,22 +14,12 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { buildPage, capture, goldenFile } from "./render.mjs";
+/* The same reading of a diff the daily check prints, so the two never learn to
+   describe a moved box differently. */
+import { firstDifferences } from "./sane.mjs";
 
 const data = buildPage();
 const shot = capture(data);
-
-/* Enough of the diff to see what happened, and not so much that the real line
-   is lost in it. */
-function firstDifferences(was, now, limit = 6) {
-  const lines = [];
-  for (let i = 0; i < Math.max(was.length, now.length) && lines.length < limit; i++) {
-    if (was[i] !== now[i]) {
-      lines.push("  was: " + (was[i] === undefined ? "(nothing)" : was[i]));
-      lines.push("  now: " + (now[i] === undefined ? "(nothing)" : now[i]));
-    }
-  }
-  return lines.join("\n");
-}
 
 for (const [number, record] of Object.entries(shot)) {
   test(`${record.school} draws what it drew before`, () => {

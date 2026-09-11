@@ -21,15 +21,12 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 /* The generator is in the loop on purpose. A bell schedule, a day plan or a
    subject prefix is as able to move a box as the renderer is, and a record of
-   the renderer alone would miss all three. The year is named because the
-   fixtures are one year's. */
-export function buildPage() {
-  const dir = mkdtempSync(join(tmpdir(), "golden-"));
+   the renderer alone would miss all three. */
+function built(args) {
+  const dir = mkdtempSync(join(tmpdir(), "render-"));
   try {
     const out = join(dir, "page.html");
-    execFileSync("python3", [join(root, "tt.py"), "--cache",
-                             join(root, "tests", "fixtures"),
-                             "--year", "2026", "-o", out],
+    execFileSync("python3", [join(root, "tt.py"), ...args, "-o", out],
                  { cwd: root, stdio: ["ignore", "ignore", "pipe"] });
     const html = readFileSync(out, "utf8");
     const found = /<script id="data" type="application\/json">([\s\S]*?)<\/script>/
@@ -38,6 +35,24 @@ export function buildPage() {
     return JSON.parse(found[1]);
   } finally {
     rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+/* The frozen copy, and the year it is a copy of. */
+export function buildPage() {
+  return built(["--cache", join(root, "tests", "fixtures"), "--year", "2026"]);
+}
+
+/* The same page, from the school's own server rather than the frozen copy, and
+   for the year the calendar is in. Into a cache directory of its own, thrown
+   away after: a check that can read a cache somebody else filled is a check
+   that can pass on yesterday's answer. */
+export function buildLivePage() {
+  const cache = mkdtempSync(join(tmpdir(), "live-"));
+  try {
+    return built(["--cache", cache, "--refresh"]);
+  } finally {
+    rmSync(cache, { recursive: true, force: true });
   }
 }
 

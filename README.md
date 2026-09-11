@@ -329,21 +329,30 @@ This one is **assumed, not published.** Every other hour on this page comes off
 a sheet or out of an answer from the school. The four other days are the whole
 of the evidence for this one, which is why the config says so out loud.
 
-**EduPage's two Spanish groups are not groups.** It names one group per lesson,
-which assumes that a group meets at the same period every week. Here it does
-not. The half that goes first on Monday goes second on Thursday. What EduPage
-holds is `HK` fixed to 12.10 and `HK1` fixed to 12.55, on both days. Neither is
-a set of children. A reader who picked one saw the right lesson on one day and
-the wrong one on the other, with lunch on the wrong side of it.
+**EduPage's Spanish group codes have meant two different things.** 5.a takes
+the language in two halves that swap: the half that goes first on Monday goes
+second on Thursday. `HK1` is the school's name for the half that takes it at
+12.10 on Monday, and `HK2` for the other.
 
-So 5.a's two are mapped onto the groups the school does name. `HK1` takes the
-language at 12.10 on Monday and at 12.55 on Thursday. `HK2` is the other way
-round. The mapping is per class and per day. It renames the picker as well as
-the lessons, because one EduPage group becomes two.
+The first export held `HK` fixed to 12.10 and `HK1` fixed to 12.55 on both
+days, which cannot describe a swap at all — neither code was a set of children.
+A per-day remapping repaired that. The school has since corrected the export,
+and each code now follows its own half. The repair then corrupted the corrected
+data: it cancelled the swap, both halves came out with Spanish at the same hour
+on both days, and every 5.a reader who had picked a group saw a wrong Monday.
+It shipped that way for a week, and a parent's own earlier printout is what
+caught it.
 
-5.l and 5.t sit in the same two lessons and are listed the same way. Whether
-they swap too is not in the data, and the school has said only for 5.a. It is
-one more line in the table once somebody says.
+So the codes are no longer asked. Which half a lesson belongs to is decided by
+**when the lesson runs** — the school's own definition, and the one thing that
+has not moved. Both exports give the same answer under that rule, and the
+golden record did not shift by a line when it replaced the old one. The rule
+names a subject and the codes it may replace, so the halves of one subject
+cannot rename the groups of another that meets at the same hour, and the picker
+is only rewritten for the division the codes are in.
+
+5.l and 5.t split the same way at the same hours, and carry EduPage's codes
+untouched. The corrected export gets them right.
 
 **EduPage calls the fourth maths group the whole class.** 5.l and 5.t split
 maths four ways. Three of the four lessons carry a group. The fourth carries

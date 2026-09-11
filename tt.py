@@ -1009,30 +1009,37 @@ BELLS = {
             {"name": "Lõuna", "classes": ["4.a", "4.e", "4.i"],
              "from": "13:15", "to": "13:45", "endsBy": "13:15"},
         ],
-        # 5.a takes Spanish in two groups, and aSc cannot say so. It names one
-        # group per lesson, which assumes a group meets at the same period
-        # every week, and here it does not. Both days hold a Spanish lesson at
-        # 12.10 and another at 12.55, and the half that goes first on Monday
-        # goes second on Thursday. aSc writes that as two groups fixed to their
-        # periods — "HK" always at 12.10, "HK1" always at 12.55 — so a reader
-        # who picks one is shown the wrong lesson on one of the two days.
+        # 5.a takes Spanish in two groups. Both Monday and Thursday hold a
+        # lesson at 12.10 and another at 12.55, and the half that goes first on
+        # Monday goes second on Thursday. The school names them HK1 and HK2,
+        # and HK1 is the half that takes the language at 12.10 on Monday.
         #
-        # Those two names mean nothing on their own, so they are mapped onto
-        # the two groups the school itself names. HK1 is the group that takes
-        # the language at 12.10 on Monday and at 12.55 on Thursday, HK2 the
-        # other way round.
+        # That sentence is the whole rule, so it is written as itself: which
+        # half a lesson belongs to is decided by when the lesson runs. aSc's
+        # own codes are not trusted to say, because they have meant two
+        # different things. The first export pinned each code to a period —
+        # "HK" always at 12.10 — which cannot describe a swap, and a per-day
+        # remapping stood here to repair it. The school has since corrected the
+        # export, and each code now follows its own half. The repair then
+        # corrupted the corrected data: it cancelled the swap, both halves came
+        # out at the same hour on both days, and every reader who had picked a
+        # group saw a wrong Monday.
         #
-        # This is 5.a as the school stated it. 5.l and 5.t sit in the same two
-        # lessons and are listed the same way, and whether they swap too is not
-        # in the data: it is one more line here once somebody says.
-        # Source: the school, on the split.
+        # Keyed on the hour, both exports give the same answer, and a third
+        # spelling of the codes would too.
+        #
+        # 5.l and 5.t split the same way at the same hours. They carry aSc's
+        # own codes, which the corrected export gets right.
         "regroup": [
             {
                 "classes": ["5.a"],
-                "days": {
-                    (0,): {"HK": "HK1", "HK1": "HK2"},
-                    (3,): {"HK": "HK2", "HK1": "HK1"},
-                },
+                "subject": "Hispaania keel",
+                # The two codes aSc uses for the halves. Only these are
+                # replaced, so Prantsuse and Saksa keep their own.
+                "replaces": ["HK", "HK1"],
+                # Period 5 is 12.10 and period 6 is 12.55.
+                "byPeriod": {(0, 5): "HK1", (0, 6): "HK2",
+                             (3, 5): "HK2", (3, 6): "HK1"},
             },
         ],
         "bands": [
@@ -1732,43 +1739,54 @@ def class_grades(names, cfg):
 
 
 def _regroup_rule(cfg, class_name):
-    """The day-by-day group remapping this class needs, if the school needs one."""
+    """The half-naming rule this class needs, if the school needs one."""
     for rule in (cfg or {}).get("regroup", []):
         # Trailing space and all, the way band_slots matches.
         if class_name.strip() in [c.strip() for c in rule["classes"]]:
-            return rule["days"]
+            return rule
     return None
 
 
-def regroup(cfg, class_name, day, names):
-    """What the class really calls these groups on this day.
+def regroup(cfg, class_name, day, period, subject, names):
+    """Which half of the class this lesson belongs to, by when it runs.
 
-    aSc names one group per lesson, which assumes that a group meets at the
-    same period every week. Where a school swaps two groups between two periods
-    from one day to the next, that assumption is wrong: the names aSc keeps are
-    placeholders, and a reader who picks one is shown the wrong lesson on one of
-    the days. This maps them onto the groups the school itself names.
+    Where a school splits a class into halves that swap periods between two
+    days, aSc's own group codes cannot be trusted to say which half is which:
+    one export pinned each code to a period, which cannot describe a swap at
+    all, and the next let each code follow its own half. A rule written on the
+    codes is right for one export and wrong for the other, and wrong here means
+    a reader is shown the wrong lesson.
+
+    The hour does not move, so the hour decides. Only the subject the rule
+    names, and only the codes it lists, so the halves of one subject cannot
+    rename the groups of another that meets at the same hour.
     """
-    days = _regroup_rule(cfg, class_name)
-    if not days:
+    rule = _regroup_rule(cfg, class_name)
+    if not rule or subject != rule.get("subject"):
         return names
-    for wanted, mapping in days.items():
-        if day in wanted:
-            return [mapping.get(n, n) for n in names]
-    return names
+    called = rule["byPeriod"].get((day, period))
+    if not called:
+        return names
+    swap = set(rule["replaces"])
+    return [called if n in swap else n for n in names]
 
 
 def regroup_all(cfg, class_name, names):
-    """Every name the remapping can produce, which is what a picker offers.
+    """Every name the rule can produce, which is what a picker offers.
 
-    One aSc group becomes two, because the two days disagree about which group
-    it is. A name no rule touches comes through as it is.
+    The codes the rule replaces are gone from the list, and the school's own
+    names stand in their place. A name no rule touches comes through as it is.
     """
-    days = _regroup_rule(cfg, class_name)
-    if not days:
+    rule = _regroup_rule(cfg, class_name)
+    if not rule:
         return names
-    return sorted({mapping.get(name, name)
-                   for name in names for mapping in days.values()})
+    swap = set(rule["replaces"])
+    # Only the division the codes are in. A class has other divisions, and
+    # handing the maths groups a Spanish half offers a pick nobody can make.
+    if not swap & set(names):
+        return names
+    return sorted({n for n in names if n not in swap} |
+                  set(rule["byPeriod"].values()))
 
 
 def band_slots(cfg, class_name, day, grade=None):
@@ -2148,8 +2166,10 @@ def extract(result, class_name, n_periods=None, cfg=None, period_times=None,
         for day_idx, flag in enumerate(card["days"]):
             if flag != "1":
                 continue
-            # Which group this is can depend on the day. See regroup.
-            here = dict(base, groups=regroup(cfg, class_name, day_idx, grp))
+            # Which half this is, where the class splits into halves that
+            # swap periods between two days. See regroup.
+            here = dict(base, groups=regroup(cfg, class_name, day_idx, start,
+                                             base["subject"], grp))
             for step in range(base["duration"]):
                 entries.append(dict(here, day=day_idx, period=start + step,
                                     startPeriod=start, part=step))

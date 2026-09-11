@@ -437,6 +437,44 @@ class WholePage(unittest.TestCase):
                                   ("Proaeg", "12.30", "12.50"),
                                   ("Amps", "13.35", "13.55")])
 
+    def test_a_spanish_half_keeps_its_group_across_both_days(self):
+        """A group is a set of children, so it follows its own half from one
+        day to the next. Both Monday and Thursday hold a Spanish lesson at
+        12.10 and another at 12.55, and the half that goes first on Monday goes
+        second on Thursday — so each name must appear at 12.10 on one day and
+        12.55 on the other.
+
+        The check that was missing. A per-day remapping in the plan cancelled
+        the swap and gave both halves the same hour on both days, which is a
+        wrong Monday for everybody who had picked a group. The old test pinned
+        the two periods and never the names, so it passed throughout.
+
+        5.a only. 5.l and 5.t split the same way but carry aSc's codes
+        untouched, and the export in the fixtures pins each code to a period
+        rather than to a half."""
+        school = next(s for s in self.data["schools"] if s["l"] == "TäheTERA")
+        for name in ("5.a",):
+            cls = next(c for c in school["c"] if c["n"].strip() == name)
+            hours = {}
+            for e in cls["e"]:
+                if e["s"] != "Hispaania keel" or e["c"]:
+                    continue
+                for group in e["g"]:
+                    hours.setdefault(group, set()).add((e["d"], e["a"]))
+            self.assertEqual(len(hours), 2, name + " does not split in two")
+            for group, when in sorted(hours.items()):
+                days = sorted(d for d, _ in when)
+                starts = sorted({at for _, at in when})
+                self.assertEqual(days, [0, 3],
+                                 f"{name} {group} is not on both days")
+                self.assertEqual(len(starts), 2,
+                                 f"{name} {group} takes Spanish at the same "
+                                 f"hour on both days, so the halves do not swap")
+            # And the two halves are never in the same room at the same time.
+            first, second = sorted(hours.values(), key=lambda w: sorted(w))
+            self.assertFalse(first & second,
+                             name + " puts both halves in one lesson")
+
     def test_the_fifth_years_split_around_lunch(self):
         """Two groups, opposite orders: one takes the language at 12.10 and
         eats after, the other eats first and takes it at 12.55. Two rows on the

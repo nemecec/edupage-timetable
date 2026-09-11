@@ -441,51 +441,85 @@ class PublishedBlocks(unittest.TestCase):
 
 
 class SwappedGroups(unittest.TestCase):
-    """TäheTERA 5.a takes Spanish in two groups that swap between two periods.
+    """TäheTERA 5.a takes Spanish in two halves that swap between two periods.
 
-    aSc names one group per lesson, so it holds "HK" always at 12.10 and "HK1"
-    always at 12.55. Neither is a group anybody is in.
+    Which half a lesson belongs to is decided by when it runs. aSc's own codes
+    have meant two different things across two exports — first pinned to a
+    period, then following a half — so they are not asked.
+
+    Period 5 is 12.10 and period 6 is 12.55. HK1 is the half that takes the
+    language at 12.10 on Monday.
     """
 
     def setUp(self):
         self.cfg = tt.BELLS["TäheTERA"]
+        self.SPANISH = "Hispaania keel"
 
-    def test_the_group_at_the_earlier_hour_swaps_between_the_two_days(self):
-        # Monday: HK is the earlier lesson, HK1 the later one.
-        self.assertEqual(tt.regroup(self.cfg, "5.a", 0, ["HK"]), ["HK1"])
-        self.assertEqual(tt.regroup(self.cfg, "5.a", 0, ["HK1"]), ["HK2"])
-        # Thursday the same two lessons belong to the other groups.
-        self.assertEqual(tt.regroup(self.cfg, "5.a", 3, ["HK"]), ["HK2"])
-        self.assertEqual(tt.regroup(self.cfg, "5.a", 3, ["HK1"]), ["HK1"])
+    def call(self, cls, day, period, names, subject=None):
+        return tt.regroup(self.cfg, cls, day, period,
+                          subject or self.SPANISH, names)
 
-    def test_a_group_the_rule_does_not_name_is_left_alone(self):
-        """French and German sit in the same division and do not swap."""
+    def test_the_half_is_named_by_the_hour_it_meets(self):
+        # Monday: the 12.10 lesson is HK1, the 12.55 one is HK2.
+        self.assertEqual(self.call("5.a", 0, 5, ["HK"]), ["HK1"])
+        self.assertEqual(self.call("5.a", 0, 6, ["HK1"]), ["HK2"])
+        # Thursday the same two hours belong to the other halves.
+        self.assertEqual(self.call("5.a", 3, 5, ["HK"]), ["HK2"])
+        self.assertEqual(self.call("5.a", 3, 6, ["HK1"]), ["HK1"])
+
+    def test_either_code_at_one_hour_gives_the_same_half(self):
+        """The whole point. Two exports have disagreed about which code sits
+        where, and the answer must not depend on which one is in the feed."""
+        for code in ("HK", "HK1"):
+            self.assertEqual(self.call("5.a", 0, 5, [code]), ["HK1"], code)
+            self.assertEqual(self.call("5.a", 3, 5, [code]), ["HK2"], code)
+
+    def test_another_subject_at_the_same_hour_keeps_its_groups(self):
+        """French and German sit in the same division and meet at 12.55."""
         for day in (0, 3):
-            self.assertEqual(tt.regroup(self.cfg, "5.a", day, ["PK"]), ["PK"])
-            self.assertEqual(tt.regroup(self.cfg, "5.a", day, ["SK"]), ["SK"])
+            for subject in ("Prantsuse keel", "Saksa keel"):
+                self.assertEqual(
+                    self.call("5.a", day, 6, ["PK"], subject), ["PK"], subject)
+                self.assertEqual(
+                    self.call("5.a", day, 6, ["SK"], subject), ["SK"], subject)
+        # And a code the rule does not list is left alone even in its subject.
+        self.assertEqual(self.call("5.a", 0, 5, ["PK"]), ["PK"])
+        # The guard that matters: the same code, at the same hour, under
+        # another subject. Only Spanish splits into these halves, so a French
+        # lesson carrying HK is French's own group and keeps its name.
+        self.assertEqual(self.call("5.a", 0, 5, ["HK"], "Prantsuse keel"),
+                         ["HK"])
 
-    def test_a_day_with_no_rule_is_left_alone(self):
-        """The split is Monday and Thursday. Nothing else is touched."""
+    def test_an_hour_with_no_rule_is_left_alone(self):
+        """The split is Monday and Thursday, at two periods."""
         for day in (1, 2, 4):
-            self.assertEqual(tt.regroup(self.cfg, "5.a", day, ["HK"]), ["HK"])
+            self.assertEqual(self.call("5.a", day, 5, ["HK"]), ["HK"])
+        for period in (4, 7):
+            self.assertEqual(self.call("5.a", 0, period, ["HK"]), ["HK"])
 
     def test_a_class_with_no_rule_is_left_alone(self):
-        """5.l and 5.t sit in the same two lessons, and whether they swap the
-        same way is not in the data and has not been stated."""
-        self.assertEqual(tt.regroup(self.cfg, "5.l", 0, ["HK"]), ["HK"])
-        self.assertEqual(tt.regroup(tt.BELLS["ProTERA"], "8", 0, ["HK"]), ["HK"])
+        """5.l and 5.t split the same way but carry aSc's codes untouched."""
+        self.assertEqual(self.call("5.l", 0, 5, ["HK"]), ["HK"])
+        self.assertEqual(
+            tt.regroup(tt.BELLS["ProTERA"], "8", 0, 5, "Keemia", ["HK"]),
+            ["HK"])
 
-    def test_the_picker_offers_both_groups_and_the_rest_untouched(self):
-        """One aSc group becomes two, because the two days disagree about which
-        group it is. A reader has to be able to pick either."""
+    def test_the_picker_offers_the_halves_and_the_rest_untouched(self):
         self.assertEqual(
             tt.regroup_all(self.cfg, "5.a", ["HK", "HK1", "PK", "SK"]),
             ["HK1", "HK2", "PK", "SK"])
 
+    def test_a_division_without_the_codes_is_not_given_a_half(self):
+        """A class has other divisions. Handing the maths groups a Spanish
+        half offers a pick nobody can make, and the maths picker grew two."""
+        maths = ["Mat 1", "Mat 2", "Mat 3", "Mat 4"]
+        self.assertEqual(tt.regroup_all(self.cfg, "5.a", maths), maths)
+        self.assertEqual(tt.regroup_all(self.cfg, "5.a", ["poisid", "tüdrukud"]),
+                         ["poisid", "tüdrukud"])
+
     def test_a_class_with_no_rule_keeps_the_list_it_came_with(self):
         self.assertEqual(tt.regroup_all(self.cfg, "5.l", ["HK", "HK1"]),
                          ["HK", "HK1"])
-
 
 class AGroupTheSchoolLeftUnnamed(unittest.TestCase):
     """A lesson marked "whole class" that in fact serves one group of it.

@@ -25,7 +25,7 @@ jobs:
           python-version: "3.13"
 
       - name: Compile
-        run: python3 -m compileall -q tt.py deploy/publish.py deploy/lambda_function.py
+        run: python3 -m compileall -q tt.py deploy/publish.py deploy/lambda_function.py deploy/unpack.py
 
       # A backslash typo in the page's JavaScript used to ship a blank page with
       # CI green. Now it does not.

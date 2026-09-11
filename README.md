@@ -95,8 +95,9 @@ school's API.
 
     node tests/js/live.mjs                    # what the school published today
 
-That one does reach the school, once. It is what the daily check runs, and it
-is described under [Watching the school](#watching-the-school).
+That one does reach the school, once, which works from a machine the school
+answers. It is what the daily check runs, and it is described under
+[Watching the school](#watching-the-school).
 
 ## Lesson times and the day plan
 
@@ -1712,9 +1713,24 @@ is wrong.
 
 `.github/workflows/watch.yml` runs `tests/js/live.mjs` at one o'clock UTC on
 weekdays, which is four in the afternoon in Estonia through the summer and
-three through the winter. It builds the page from the school's own server, into
-a cache directory it throws away, and renders every class exactly as the golden
-records are rendered. Then it asks two questions.
+three through the winter. It builds the page from what the school published
+that morning and renders every class exactly as the golden records are
+rendered. Then it asks two questions.
+
+The answers are asked for rather than fetched. **The school's server does not
+answer a GitHub runner.** A connection to it times out over IPv4, and a runner
+has no route to its IPv6 address, so Python reports `Network is unreachable`,
+which names the second address and not the cause. AWS is answered normally,
+which is why the nightly rebuild has always worked. So the workflow assumes the
+role it already holds, asks the build Lambda with `{"fetch": true}`, and gets
+the school's own responses back gzipped into one tar — about seventy kilobytes,
+where a reply may be six megabytes. `deploy/unpack.py` writes them out. Only
+the fetch happens in AWS: nothing is rendered there and nothing is published.
+
+That is worth knowing before adding any other job that reads from the school.
+`check.yml` has a `build` job that fetches, gated on manual dispatch, and it
+had never once been run — so nothing on GitHub had tried before, and the
+limitation went unnoticed for as long as the tool has existed.
 
 The first is whether every class still draws a week. `tests/js/sane.mjs` holds
 the rules: a box the renderer could not place, a box with no height or no

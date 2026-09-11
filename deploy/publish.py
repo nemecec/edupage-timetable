@@ -10,13 +10,16 @@ The address it publishes to comes from tool.conf. The environment overrides
 it.
 """
 
+import base64
 import datetime
+import io
 import json
 import os
 import pathlib
 import re
 import subprocess
 import sys
+import tarfile
 import tempfile
 import uuid
 
@@ -146,6 +149,34 @@ def build():
     return page.encode("utf-8"), len(schools), slots
 
 
+def fetched():
+    """Today's answers from the school, as one base64 gzipped tar.
+
+    The daily check runs on a GitHub runner, and the school's server does not
+    answer those: a connection to it times out, wherever the runner is. It
+    answers this, which is why the nightly build works. So the check asks here
+    for the data and then builds the page itself, with its own generator and
+    its own renderer, exactly as it would have.
+
+    Only the fetch. Nothing is rendered and nothing is published, so asking
+    costs the school one read and the site nothing at all.
+    """
+    with tempfile.TemporaryDirectory() as into:
+        client = tt.EduPage(EDUPAGE, cache_dir=into, refresh=True)
+        tt.collect(client, YEAR, None, False)
+        packed = io.BytesIO()
+        # Sorted and stripped of who wrote them, so two fetches of one week
+        # differ only where the week does.
+        with tarfile.open(fileobj=packed, mode="w:gz", compresslevel=9) as tar:
+            for name in sorted(os.listdir(into)):
+                info = tar.gettarinfo(os.path.join(into, name), arcname=name)
+                info.mtime, info.uid, info.gid = 0, 0, 0
+                info.uname = info.gname = ""
+                with open(os.path.join(into, name), "rb") as fh:
+                    tar.addfile(info, fh)
+    return base64.b64encode(packed.getvalue()).decode("ascii")
+
+
 def published(key):
     """What is on the site now, or None if nothing is."""
     return store.get(key)
@@ -185,7 +216,11 @@ def upload(text, key):
     store.put(key, text if isinstance(text, bytes) else text.encode("utf-8"))
 
 
-def main():
+def main(argv=None):
+    if (sys.argv[1:] if argv is None else argv) == ["--fetch"]:
+        print(fetched())
+        return 0
+
     body, schools, slots = build()
     key = f"{PREFIX}/index.html" if PREFIX else "index.html"
 

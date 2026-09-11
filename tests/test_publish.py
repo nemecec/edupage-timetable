@@ -475,3 +475,258 @@ class TheLambdaWrapper(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class HandingOverAFetch(unittest.TestCase):
+    """The fetch the daily check asks for.
+
+    The check runs on a GitHub runner, and the school's server does not answer
+    one: a connection times out. This function is on the network it does
+    answer, so the check asks here and builds the page itself afterwards.
+    Nothing is rendered and nothing is published on the way.
+    """
+
+    def setUp(self):
+        self.publish = load()
+        self.store = FakeStore()
+        self.publish.store = self.store
+        self.out = io.StringIO()
+
+    def stub_the_school(self, answers):
+        """A school that writes the given files where the client was told to."""
+        keep = self.publish.tt.EduPage, self.publish.tt.collect
+        seen = {}
+
+        class Client:
+            def __init__(self, edupage, cache_dir=None, refresh=False, **rest):
+                seen.update(edupage=edupage, cache_dir=cache_dir, refresh=refresh)
+                self.cache_dir = cache_dir
+
+        def collect(client, year, only, verbose):
+            seen["year"] = year
+            for name, body in answers.items():
+                with open(os.path.join(client.cache_dir, name), "w",
+                          encoding="utf-8") as fh:
+                    fh.write(body)
+            return []
+
+        self.publish.tt.EduPage, self.publish.tt.collect = Client, collect
+        self.addCleanup(lambda: setattr_pair(self.publish.tt, keep))
+        return seen
+
+    def unpack(self, packed):
+        """What a caller gets back out of the reply."""
+        import base64 as b64, io as bio, tarfile as tf
+        raw = b64.b64decode(packed)
+        with tf.open(fileobj=bio.BytesIO(raw), mode="r:gz") as tar:
+            return {m.name: tar.extractfile(m).read().decode("utf-8")
+                    for m in tar.getmembers()}
+
+    def test_what_the_school_answered_comes_back_whole(self):
+        answers = {"tera-tt-68.json": '{"a": 1}',
+                   "tera-ttlist-2026.json": '{"b": 2}'}
+        seen = self.stub_the_school(answers)
+        self.assertEqual(self.unpack(self.publish.fetched()), answers)
+        # Freshly, and for the year the rest of the publisher works in. A fetch
+        # that reads a cache would answer with yesterday and say nothing.
+        self.assertTrue(seen["refresh"])
+        self.assertEqual(seen["year"], self.publish.YEAR)
+        self.assertEqual(seen["edupage"], self.publish.EDUPAGE)
+
+    def test_the_answers_are_not_left_lying_about(self):
+        """The directory it fetched into is gone afterwards. A Lambda keeps
+        /tmp between runs, and a fetch that fills it stops working in a way
+        nothing points at."""
+        seen = self.stub_the_school({"one.json": "{}"})
+        self.publish.fetched()
+        self.assertFalse(os.path.exists(seen["cache_dir"]))
+
+    def test_it_carries_names_and_not_paths(self):
+        """Whatever comes back is unpacked by the caller, so a name that walks
+        out of the directory is the one thing that must not be in it."""
+        self.stub_the_school({"tera-tt-68.json": "{}", "tera-tt-103.json": "{}"})
+        for name in self.unpack(self.publish.fetched()):
+            self.assertNotIn("/", name)
+            self.assertFalse(name.startswith(".."))
+
+    def test_two_fetches_of_one_week_read_the_same(self):
+        """Stamped with who wrote them and when, two tars of identical answers
+        would differ, and the check would report a change every afternoon."""
+        self.stub_the_school({"tera-tt-68.json": '{"a": 1}'})
+        self.assertEqual(self.publish.fetched(), self.publish.fetched())
+
+    def test_asking_for_a_fetch_publishes_nothing(self):
+        self.stub_the_school({"tera-tt-68.json": '{"a": 1}'})
+        self.publish.build = lambda: self.fail("a fetch must not build a page")
+        keep, sys.stdout = sys.stdout, self.out
+        try:
+            self.assertEqual(self.publish.main(["--fetch"]), 0)
+        finally:
+            sys.stdout = keep
+        self.assertEqual(self.store.objects, {})
+        self.assertEqual(self.store.invalidations, [])
+        self.assertEqual(self.unpack(self.out.getvalue().strip()),
+                         {"tera-tt-68.json": '{"a": 1}'})
+
+    def test_asking_for_nothing_in_particular_still_publishes(self):
+        """The nightly run passes no arguments, and it must keep meaning what
+        it meant."""
+        self.publish.PREFIX = ""
+        self.publish.build = lambda: (page_of(2), 2, 200)
+        keep, sys.stdout = sys.stdout, self.out
+        try:
+            self.assertEqual(self.publish.main([]), 0)
+        finally:
+            sys.stdout = keep
+        self.assertEqual(set(self.store.objects), {"index.html"})
+
+
+def setattr_pair(module, pair):
+    module.EduPage, module.collect = pair
+
+
+class TheLambdaWrapperAskedForAFetch(unittest.TestCase):
+    """The handler's second errand, and that it did not disturb the first."""
+
+    def load(self):
+        sys.path.insert(0, os.path.join(ROOT, "deploy"))
+        sys.modules.pop("lambda_function", None)
+        return importlib.import_module("lambda_function")
+
+    def setUp(self):
+        self.said = io.StringIO()
+        self.keep = sys.stdout, sys.stderr
+        sys.stdout = sys.stderr = self.said
+        self.module = self.load()
+        self.ran = []
+        self.answer = subprocess.CompletedProcess([], 0, "KLUWRQ==", "")
+        self.before = self.module.subprocess.run
+
+        def watch(argv, **kwargs):
+            self.ran.append(argv)
+            return self.answer
+
+        self.module.subprocess.run = watch
+
+    def tearDown(self):
+        self.module.subprocess.run = self.before
+        sys.stdout, sys.stderr = self.keep
+
+    def test_a_fetch_is_asked_for_and_handed_straight_back(self):
+        self.assertEqual(self.module.handler({"fetch": True}, None),
+                         {"ok": True, "cache": "KLUWRQ=="})
+        self.assertIn("--fetch", self.ran[0])
+
+    def test_the_answers_stay_out_of_the_log(self):
+        """They are a hundred kilobytes, every weekday, and the caller reads
+        them off the reply rather than out of CloudWatch."""
+        self.module.handler({"fetch": True}, None)
+        self.assertNotIn("KLUWRQ==", self.said.getvalue())
+        self.assertIn("fetched 8 characters", self.said.getvalue())
+
+    def test_nothing_else_asks_for_one(self):
+        for event in ({}, None, {"fetch": False}):
+            self.ran.clear()
+            self.answer = subprocess.CompletedProcess([], 0, "published it", "")
+            self.assertEqual(self.module.handler(event, None),
+                             {"ok": True, "output": "published it"})
+            self.assertNotIn("--fetch", self.ran[0])
+
+    def test_a_fetch_that_failed_is_raised_like_any_other(self):
+        self.answer = subprocess.CompletedProcess([], 1, "", "the school said no")
+        with self.assertRaises(RuntimeError):
+            self.module.handler({"fetch": True}, None)
+
+
+class UnpackingWhatCameBack(unittest.TestCase):
+    """The other end of the hand-over.
+
+    `aws lambda invoke` exits nought even when the function raised, so a reply
+    that is an error otherwise reads as success. And what comes back is written
+    to disk, so a name in it decides where. Both are decided here.
+    """
+
+    def load(self):
+        sys.path.insert(0, os.path.join(ROOT, "deploy"))
+        sys.modules.pop("unpack", None)
+        return importlib.import_module("unpack")
+
+    def setUp(self):
+        self.unpack = self.load()
+
+    def packed(self, files, kind=None):
+        """A reply carrying the given names, whatever they are."""
+        import base64 as b64, io as bio, tarfile as tf
+        raw = bio.BytesIO()
+        with tf.open(fileobj=raw, mode="w:gz") as tar:
+            for name, body in files.items():
+                info = tf.TarInfo(name)
+                info.size = len(body)
+                if kind is not None:
+                    info.type = kind
+                    info.size = 0
+                    tar.addfile(info)
+                else:
+                    tar.addfile(info, bio.BytesIO(body))
+        return {"ok": True, "cache": b64.b64encode(raw.getvalue()).decode("ascii")}
+
+    def test_what_the_function_sent_is_what_comes_out(self):
+        files = {"tera-tt-68.json": b'{"a": 1}', "tera-ttlist-2026.json": b"{}"}
+        self.assertEqual(self.unpack.answers(self.packed(files)), files)
+
+    def test_a_reply_that_is_not_an_answer_stops_it(self):
+        """The CLI is happy either way, so this is the only place it is read."""
+        import tarfile as tf
+        for reply in ({"errorMessage": "publish.py exited 1"},
+                      {"ok": False, "cache": "x"},
+                      {"ok": True},
+                      "not even an object",
+                      None):
+            with self.assertRaises(SystemExit):
+                self.unpack.answers(reply)
+
+    def test_the_error_says_what_came_back(self):
+        with self.assertRaises(SystemExit) as caught:
+            self.unpack.answers({"errorMessage": "publish.py exited 1"})
+        self.assertIn("publish.py exited 1", str(caught.exception))
+
+    def test_a_name_that_walks_out_is_refused(self):
+        import tarfile as tf
+        for name in ("../escaped.json", "nested/one.json", "/absolute.json",
+                     ".hidden.json", ".ssh/authorized_keys"):
+            with self.assertRaises(SystemExit) as caught:
+                self.unpack.answers(self.packed({name: b"{}"}))
+            self.assertIn("refusing", str(caught.exception))
+
+    def test_anything_that_is_not_a_file_is_refused(self):
+        import tarfile as tf
+        with self.assertRaises(SystemExit):
+            self.unpack.answers(self.packed({"adirectory": b""}, kind=tf.DIRTYPE))
+
+    def test_an_answer_with_nothing_in_it_is_not_an_answer(self):
+        """A fetch that reached the school and got nothing would otherwise
+        leave an empty directory, and the build would fail further off."""
+        with self.assertRaises(SystemExit):
+            self.unpack.answers(self.packed({}))
+
+    def test_it_writes_them_where_it_was_told(self):
+        import json as js, tempfile as tmp
+        with tmp.TemporaryDirectory() as work:
+            reply = os.path.join(work, "reply.json")
+            with open(reply, "w", encoding="utf-8") as fh:
+                js.dump(self.packed({"tera-tt-68.json": b'{"a": 1}'}), fh)
+            into = os.path.join(work, "not", "there", "yet")
+            said = io.StringIO()
+            keep, sys.stdout = sys.stdout, said
+            try:
+                self.assertEqual(self.unpack.main([reply, into]), 0)
+            finally:
+                sys.stdout = keep
+            with open(os.path.join(into, "tera-tt-68.json"), encoding="utf-8") as fh:
+                self.assertEqual(fh.read(), '{"a": 1}')
+            self.assertIn("unpacked 1 answers", said.getvalue())
+
+    def test_it_says_how_to_be_used(self):
+        with self.assertRaises(SystemExit) as caught:
+            self.unpack.main(["only-one"])
+        self.assertIn("unpack.py", str(caught.exception))

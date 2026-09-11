@@ -2,6 +2,12 @@
  *
  *     node tests/js/live.mjs            compare against the last accepted week
  *     node tests/js/live.mjs --accept   take today's week as the reference
+ *     node tests/js/live.mjs --cache D  build from answers already in D
+ *
+ * With no --cache it fetches from the school, which is what works by hand. The
+ * daily check passes one, because the school's server does not answer a GitHub
+ * runner: the answers are fetched for it by the build Lambda, which is on the
+ * network the school does answer.
  *
  * Nothing in this repository changes when the school edits its timetable, so
  * every other test here can be green while the page is wrong. This is the one
@@ -44,12 +50,13 @@ function report(title, lines, limit = 20) {
 }
 
 const accept = process.argv.includes("--accept");
+const cache = process.argv[process.argv.indexOf("--cache") + 1];
 /* The page stamps itself only when the publisher asks it to, and this build is
    not that one, so the day is taken here. It is what the next run reports back
    as the day the week it holds was read. */
 const today = new Date().toISOString().slice(0, 10);
 
-const data = buildLivePage();
+const data = buildLivePage(process.argv.includes("--cache") ? cache : null);
 const shot = capture(data);
 const renders = Object.values(shot).reduce((n, r) => n + Object.keys(r.classes).length, 0);
 console.log(`${today}: ${data.schools.length} timetables, ${renders} renders`);

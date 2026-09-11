@@ -43,16 +43,24 @@ export function buildPage() {
   return built(["--cache", join(root, "tests", "fixtures"), "--year", "2026"]);
 }
 
-/* The same page, from the school's own server rather than the frozen copy, and
-   for the year the calendar is in. Into a cache directory of its own, thrown
-   away after: a check that can read a cache somebody else filled is a check
-   that can pass on yesterday's answer. */
-export function buildLivePage() {
-  const cache = mkdtempSync(join(tmpdir(), "live-"));
+/* The same page, from this week's answers rather than the frozen copy, and for
+   the year the calendar is in.
+
+   Given a directory, it builds from what is already in it. That is how the
+   daily check runs: the school's server does not answer a GitHub runner, so
+   the answers are fetched for it and handed over, and only the generator and
+   the renderer are the checkout's own.
+
+   Given nothing, it fetches, into a directory of its own that is thrown away
+   after. A check that can read a cache somebody else filled is a check that
+   can pass on yesterday's answer. */
+export function buildLivePage(cache) {
+  if (cache) return built(["--cache", cache]);
+  const mine = mkdtempSync(join(tmpdir(), "live-"));
   try {
-    return built(["--cache", cache, "--refresh"]);
+    return built(["--cache", mine, "--refresh"]);
   } finally {
-    rmSync(cache, { recursive: true, force: true });
+    rmSync(mine, { recursive: true, force: true });
   }
 }
 

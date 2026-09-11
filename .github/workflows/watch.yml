@@ -2,14 +2,21 @@ name: watch
 
 # The school edits its timetable in EduPage, and nothing in this repository
 # changes when it does. So every test here can be green while the page is
-# wrong. This builds from the school's own server and asks two questions: does
-# every class still draw a week, and has anything moved since the last week
-# somebody accepted.
+# wrong. This asks what the school published today and answers two questions:
+# does every class still draw a week, and has anything moved since the last
+# week somebody accepted.
 #
 # In the afternoon on purpose. The rebuild that reaches the site runs in the
-# middle of the night, which is no time to be fixing anything, and the school
+# middle of the night, which is no hour to be fixing anything, and the school
 # rarely publishes after the school day. A failure here leaves the rest of the
-# afternoon to answer it, and the page that is live stays live meanwhile.
+# afternoon to answer it, before the night carries the change to the site.
+#
+# The answers are asked for rather than fetched. The school's server does not
+# answer a GitHub runner — a connection to it times out, over either address —
+# and it does answer the build Lambda, which is why the nightly rebuild works.
+# So the function is asked to fetch and hand them back, and only the generator
+# and the renderer here are the checkout's own. Fetching, and nothing else:
+# nothing is rendered in AWS and nothing is published.
 #
 # The reference week is not committed. It is an output, and committing it would
 # turn every timetable edit into a commit. It is kept in the cache below, and
@@ -34,6 +41,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 concurrency:
   group: watch
@@ -48,26 +56,77 @@ jobs:
         with:
           python-version: "3.13"
 
+      - name: Is there anything to ask?
+        id: ready
+        env:
+          ROLE: ${{ secrets.AWS_PUBLISH_ROLE }}
+          FUNCTION: ${{ secrets.AWS_BUILD_FUNCTION }}
+        run: |
+          # Both, or neither: with only the role set, the invoke below asks for
+          # a function called "" and fails somewhere much less obvious.
+          if [ -n "$ROLE" ] && [ -n "$FUNCTION" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::AWS_PUBLISH_ROLE and AWS_BUILD_FUNCTION are not both set — skipping. Run deploy/deploy.sh secrets."
+          fi
+
+      - name: Where does the function live?
+        id: conf
+        if: steps.ready.outputs.ready == 'true'
+        run: |
+          # Read, not sourced: tool.conf is a settings file, and `.` would run
+          # whatever a branch happened to put in it.
+          region=$(grep -m1 '^REGION=' deploy/tool.conf | cut -d= -f2)
+          echo "region=$region" >> "$GITHUB_OUTPUT"
+
+      - uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708  # v5
+        if: steps.ready.outputs.ready == 'true'
+        with:
+          role-to-assume: ${{ secrets.AWS_PUBLISH_ROLE }}
+          aws-region: ${{ steps.conf.outputs.region }}
+
+      - name: Ask the school, through AWS
+        if: steps.ready.outputs.ready == 'true'
+        env:
+          # Through the environment, not interpolated into the script: a
+          # secret is still a string someone typed, and `${{ }}` pastes it
+          # into the shell before the shell ever sees a quote.
+          FUNCTION: ${{ secrets.AWS_BUILD_FUNCTION }}
+        run: |
+          # Into the runner's own scratch, not the checkout: the answers are
+          # the school's and they are not part of this repository.
+          aws lambda invoke --function-name "$FUNCTION" \
+            --cli-binary-format raw-in-base64-out --payload '{"fetch": true}' \
+            "$RUNNER_TEMP/reply.json" > /dev/null
+          # The CLI exits nought even when the function raised, so whether that
+          # reply is an answer at all is decided by the script, under test.
+          python3 deploy/unpack.py "$RUNNER_TEMP/reply.json" "$RUNNER_TEMP/cache"
+
       # Restoring and saving are separate steps on purpose. The one-step cache
-      # action writes back at the end of the job whatever it finds, a failed
-      # job included, and a reference written over a failure is a warning that
-      # sounds once and then agrees with itself.
+      # action writes back at the end of the job, a failed job included, and a
+      # reference written over a failure is a warning that sounds once and then
+      # agrees with itself.
       #
       # The key never matches, so the run always falls back to the newest week
       # saved under the prefix. GitHub drops a cache nothing has read for seven
       # days, which a run every weekday keeps from happening; if it ever does,
       # the next run has nothing to compare against, says so, and starts again.
       - uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830  # v4
+        if: steps.ready.outputs.ready == 'true'
         with:
           path: .live
           key: week-${{ github.run_id }}
           restore-keys: week-
 
       - name: Has the school changed anything?
-        run: node tests/js/live.mjs ${{ inputs.accept && '--accept' || '' }}
+        if: steps.ready.outputs.ready == 'true'
+        run: |
+          node tests/js/live.mjs --cache "$RUNNER_TEMP/cache" \
+            ${{ inputs.accept && '--accept' || '' }}
 
       - uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830  # v4
-        if: success()
+        if: success() && steps.ready.outputs.ready == 'true'
         with:
           path: .live
           key: week-${{ github.run_id }}

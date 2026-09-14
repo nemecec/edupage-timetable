@@ -1018,6 +1018,10 @@ function applyStrings() {
      ask, in the words the checkbox itself carries. */
   const printedNote = document.getElementById("printedNote");
   if (printedNote) printedNote.textContent = t("settings.printed", t("showQr"));
+  /* And the same for the picture, whose button is at the top of the page while
+     everything that shapes it is down here in the print panel. */
+  const pngHelp = document.getElementById("pngHelp");
+  if (pngHelp) pngHelp.textContent = t("png.help", t("png.download"));
   /* A control with no visible label still has to say what it is out loud. */
   document.querySelectorAll("[data-i18n-aria]").forEach(el => {
     el.setAttribute("aria-label", t(el.dataset.i18nAria));
@@ -2868,12 +2872,21 @@ const FOLDED = { "ä": "a", "ö": "o", "õ": "o", "ü": "u", "š": "s", "ž": "z
 const plainName = (value) =>
   String(value).replace(/[äöõüšžÄÖÕÜŠŽ]/g, (c) => FOLDED[c]);
 
+/* A name out of pieces a reader would recognise, safe on any file system. */
+const fileName = (parts, extension) =>
+  parts.map(part => icsSafe(plainName(part))).filter(part => part !== "x")
+       .join("-") + extension;
+
 function icsFileName() {
   const term = currentSchool().cal || {};
-  return [t("cal.file")].concat(icsParts()).concat(term.a ? [term.a] : [])
-    .map(part => icsSafe(plainName(part))).filter(part => part !== "x")
-    .join("-") + ".ics";
+  return fileName([t("cal.file")].concat(icsParts())
+                                 .concat(term.a ? [term.a] : []), ".ics");
 }
+
+/* The same first word as the calendar file, since `cal.file` is the plain
+   word for a timetable and the two are one week in two formats. No term in it,
+   though: a picture is that week, not a year of them. */
+const sheetFileName = () => fileName([t("cal.file")].concat(icsParts()), ".png");
 
 /* Repaint the grid but leave the legend alone. Its color inputs are live DOM
    nodes, and replacing one while the native picker is open closes the picker —
@@ -4168,6 +4181,185 @@ document.getElementById("doprint").addEventListener("click", () => {
   } finally {
     leavePrint();
   }
+});
+
+/* ----- the sheet as a picture --------------------------------------------
+
+   A printer that makes nothing at all of the page will print a picture of it
+   without complaint. That is not a fault this page can fix, and it is one it
+   can go around: the same sheet, drawn once here and handed over as a PNG.
+
+   Nothing here lays out a timetable. The page does that, for paper, and this
+   photographs what the page laid out — so the paper edge, the cut sheet, the
+   copies on it and the QR code are the settings the reader already chose, and
+   there is no second renderer to keep in step with the first.
+
+   The way it is drawn: a copy of the printed body goes inside an SVG, the SVG
+   goes into an image, and the image is drawn onto a canvas. A browser will
+   rasterize an SVG for nothing, so this is a few dozen lines rather than a
+   drawing library. */
+const XHTML = "http://www.w3.org/1999/xhtml";
+const SVGNS = "http://www.w3.org/2000/svg";
+/* Three picture pixels to the CSS pixel, which is 288 to the inch on A4. Type
+   still has edges at that, and the file stays near a megabyte. */
+const PICTURE_SCALE = 3;
+
+/* The page's own rules, with the print-only ones turned on.
+ *
+ * An SVG drawn into an image is screen media, so `@media print` would not
+ * apply and the picture would carry the panels and the top bar. The rules come
+ * out of the stylesheet the browser has already parsed, rather than out of the
+ * text of it: the browser's own reading of its own CSS is the one that counts.
+ *
+ * `:root` becomes `body`, because the picture has no document element for the
+ * custom properties to sit on. The body it does have carries them instead. */
+function printedRules() {
+  const written = (rule) =>
+    rule.type === CSSRule.STYLE_RULE
+      ? rule.selectorText.replace(/:root/g, "body") + "{" + rule.style.cssText + "}"
+      : rule.cssText;
+  const out = [];
+  const take = (rule) => {
+    if (rule.type !== CSSRule.MEDIA_RULE) { out.push(written(rule)); return; }
+    const media = rule.conditionText || rule.media.mediaText || "";
+    if (/print/.test(media)) { for (const inner of rule.cssRules) take(inner); return; }
+    out.push("@media " + media + "{" +
+             Array.from(rule.cssRules, written).join("\n") + "}");
+  };
+  for (const sheet of document.styleSheets) {
+    let rules;
+    /* A stylesheet from somewhere else cannot be read. The page has none of
+       its own, and an extension can put one there. */
+    try { rules = sheet.cssRules; } catch (e) { continue; }
+    for (const rule of rules) take(rule);
+  }
+  return out.join("\n");
+}
+
+/* One A4 page with the printed body on it, as an SVG.
+ *
+ * The paper is the whole page and not the timetable's own box, because the
+ * point of the file is to be printed: what comes out has to be the sheet the
+ * printer would have made, paper edge and all. */
+function sheetSvg() {
+  const body = document.body.cloneNode(true);
+  /* The data blob is most of the file and none of the picture, and a script
+     inside an image never runs anyway. The stylesheets are written out again
+     below with the print rules turned on, so keeping the originals would only
+     undo that. */
+  body.querySelectorAll("script, style").forEach(node => node.remove());
+  /* The sheet size, the number of copies and the typefaces are custom
+     properties on the document element, which the picture has not got. */
+  body.setAttribute("style",
+                    [document.documentElement.getAttribute("style") || "",
+                     document.body.getAttribute("style") || "",
+                     "margin:0"].join(";"));
+  const rules = document.createElementNS(XHTML, "style");
+  rules.textContent = printedRules();
+  body.insertBefore(rules, body.firstChild);
+
+  const [wide, tall] = tiling().portrait ? [210, 297] : [297, 210];
+  const edge = state.printMargin;
+  const svg = document.createElementNS(SVGNS, "svg");
+  svg.setAttribute("xmlns", SVGNS);
+  svg.setAttribute("width", String(Math.round(wide * MM)));
+  svg.setAttribute("height", String(Math.round(tall * MM)));
+  const held = document.createElementNS(SVGNS, "foreignObject");
+  held.setAttribute("x", String(edge * MM));
+  held.setAttribute("y", String(edge * MM));
+  held.setAttribute("width", String((wide - 2 * edge) * MM));
+  held.setAttribute("height", String((tall - 2 * edge) * MM));
+  held.appendChild(body);
+  svg.appendChild(held);
+  return svg;
+}
+
+/* Some browsers answer an SVG with a page inside it with a blank rectangle and
+   report nothing wrong. Twenty lines across the sheet say whether anything
+   landed on it, and a blank file is worse than a message. */
+function drewNothing(sheet) {
+  const ink = sheet.getContext("2d");
+  for (let n = 1; n < 20; n++) {
+    let row;
+    try {
+      row = ink.getImageData(0, Math.floor(sheet.height * n / 20),
+                             sheet.width, 1).data;
+    } catch (e) {
+      return false;                  // unreadable: the file itself will say
+    }
+    for (let i = 0; i < row.length; i += 4)
+      if (row[i] < 250 || row[i + 1] < 250 || row[i + 2] < 250) return false;
+  }
+  return true;
+}
+
+/* The sheet, taken off a page that is on screen.
+ *
+ * The page is in print layout only for as long as it takes to copy the body,
+ * and nothing is painted between the two, so the reader sees no flicker. The
+ * copy carries the layout away with it, and the drawing that follows can take
+ * as long as it likes. */
+function printedSvg() {
+  enterPrint();
+  try { return sheetSvg(); } finally { leavePrint(); }
+}
+
+/* The sheet as a PNG. */
+function sheetPicture(scale) {
+  const svg = printedSvg();
+  const wide = Number(svg.getAttribute("width"));
+  const tall = Number(svg.getAttribute("height"));
+  const markup = new XMLSerializer().serializeToString(svg);
+  return new Promise((drawn, refused) => {
+    const picture = new Image();
+    picture.onload = () => {
+      const sheet = document.createElement("canvas");
+      sheet.width = Math.round(wide * scale);
+      sheet.height = Math.round(tall * scale);
+      const ink = sheet.getContext("2d");
+      /* The paper. Where nothing is drawn the canvas stays transparent, and
+         transparent comes out as whatever is behind it. */
+      ink.fillStyle = "#fff";
+      ink.fillRect(0, 0, sheet.width, sheet.height);
+      ink.setTransform(scale, 0, 0, scale, 0, 0);
+      ink.drawImage(picture, 0, 0);
+      if (drewNothing(sheet)) { refused(new Error("nothing was drawn")); return; }
+      /* A browser that will not let the drawing be read back throws here. */
+      try {
+        sheet.toBlob(blob => blob ? drawn(blob) : refused(new Error("no file")),
+                     "image/png");
+      } catch (e) {
+        refused(e);
+      }
+    };
+    picture.onerror = () => refused(new Error("the sheet could not be drawn"));
+    picture.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(markup);
+  });
+}
+
+/* Drawn when it is asked for, like the calendar file: it is the one thing on
+   the page that costs real time to make, and it is wanted once a term. */
+const pngGet = document.getElementById("pngGet");
+const pngNote = document.getElementById("pngNote");
+pngGet.addEventListener("click", () => {
+  pngNote.hidden = true;
+  /* So a second press cannot start a second drawing on top of the first. */
+  pngGet.disabled = true;
+  sheetPicture(PICTURE_SCALE).then(blob => {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = sheetFileName();
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    /* Freed on the next turn of the loop, as the calendar file is: revoking it
+       while the click is still being handled cancels the download. */
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  }).catch(() => {
+    pngNote.textContent = t("png.failed");
+    pngNote.hidden = false;
+  }).then(() => { pngGet.disabled = false; });
 });
 
 /* ----- counting the visit ------------------------------------------------

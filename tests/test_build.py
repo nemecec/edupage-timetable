@@ -1410,10 +1410,15 @@ class Documentation(unittest.TestCase):
                 (r"(?<![A-Za-z_.$])Function\s*\(", "the Function constructor"),
                 (r"XMLHttpRequest", "XMLHttpRequest"),
                 (r"WebSocket", "a WebSocket"),
-                (r"sendBeacon", "sendBeacon"),
-                (r"new\s+Image\s*\(", "an image beacon")):
+                (r"sendBeacon", "sendBeacon")):
             with self.subTest(looking_for=what):
                 self.assertEqual(re.findall(pattern, page), [], what)
+        # An image is the classic silent beacon, and the page makes exactly
+        # one: the picture of the printed sheet, which is handed a data: URL
+        # and never an address. What it asks the network for is checked in the
+        # browser rather than in the text, by NothingReachesTheNetwork.
+        self.assertEqual(len(re.findall(r"new\s+Image\s*\(", page)), 1,
+                         "a second image; only the picture of the sheet may")
         # Two fetches: the fault report and the message a reader writes.
         self.assertEqual(len(re.findall(r"(?<![A-Za-z_.$])fetch\s*\(", page)), 2)
 

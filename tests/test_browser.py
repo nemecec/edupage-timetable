@@ -1581,6 +1581,262 @@ class WhenItBreaks(InABrowser):
         self.assertFalse(got["hidden"], "the preview stayed shut")
         self.assertEqual(json.loads(got["shown"])["who"], "mari@example.test")
 
+class TheSheetAsAPicture(InABrowser):
+    """The printed sheet, drawn into a PNG.
+
+    It exists for a printer that makes nothing of the page and prints a picture
+    of it without complaint. So the thing to hold is that the picture is the
+    printed sheet and not the screen: same paper, same edge, same way round.
+    """
+
+    def picture(self, scale=1, setup=""):
+        """Draw the sheet and say what came back. Scale 1, because these ask
+        what was drawn and not how finely."""
+        return json.loads(self.browser.eval(
+            setup +
+            ";sheetPicture(%s).then(function (blob) {"
+            "  return new Promise(function (ok) {"
+            "    var reader = new FileReader();"
+            "    reader.onload = function () {"
+            "      ok(JSON.stringify({size: blob.size, type: blob.type,"
+            "                         head: reader.result.slice(0, 40)}));"
+            "    };"
+            "    reader.readAsDataURL(blob);"
+            "  });"
+            "})" % scale))
+
+    def test_the_button_and_its_message_are_where_the_reader_is_looking(self):
+        """Nobody opens the print panel when the printer misbehaves. The
+        button and anything it has to say stand in the open, beside Print."""
+        got = self.js(
+            "var button = document.getElementById('pngGet');"
+            "var note = document.getElementById('pngNote');"
+            "return {beside: !!button.closest('.topactions'),"
+            "        next: button.nextElementSibling.id,"
+            "        shut: !!note.closest('details'),"
+            "        says: document.getElementById('pngHelp').textContent};")
+        self.assertTrue(got["beside"], "the button left the top of the page")
+        self.assertEqual(got["next"], "doprint", "it is no longer beside Print")
+        self.assertFalse(got["shut"], "the message hides inside a shut panel")
+        # The panel that shapes the picture points at the button by its label,
+        # so a rename or a language cannot part the two.
+        self.assertIn("Save as PNG", got["says"])
+
+    def test_what_comes_back_is_a_png_of_the_week(self):
+        self.show("68", "8")
+        got = self.picture()
+        self.assertEqual(got["type"], "image/png")
+        self.assertTrue(got["head"].startswith("data:image/png;base64,iVBORw0KGgo"),
+                        got["head"])
+        # A blank A4 page is a few kilobytes. A week of lessons is not.
+        self.assertGreater(got["size"], 30000, "the sheet looks empty")
+
+    def test_the_picture_is_taken_of_the_sheet_and_not_of_the_screen(self):
+        """Print layout is a moment, here as at the printer: entered to copy
+        the page and left again. Never entered, the picture is the screen; never
+        left, the reader is looking at a sheet they cannot use."""
+        self.show("68", "8")
+        got = self.js(
+            "var svg = printedSvg();"
+            "return {inside: svg.querySelector('body').className,"
+            "        after: document.body.className};")
+        self.assertIn("printview", got["inside"], "the screen was drawn instead")
+        self.assertEqual(got["after"], "", "the page was left laid out for paper")
+
+    def test_the_file_opens_as_paper_of_the_size_that_was_asked_for(self):
+        """Read back the way anything else would read it. A page drawn on
+        nothing is transparent, and transparent is not paper: it comes out as
+        whatever is behind it, which on some printers is black."""
+        self.show("68", "8")
+        got = json.loads(self.browser.eval(
+            "sheetPicture(2).then(function (blob) {"
+            "  return new Promise(function (ok) {"
+            "    var url = URL.createObjectURL(blob), shown = new Image();"
+            "    shown.onload = function () {"
+            "      var box = document.createElement('canvas');"
+            "      box.width = shown.width; box.height = shown.height;"
+            "      var ink = box.getContext('2d');"
+            "      ink.drawImage(shown, 0, 0);"
+            "      URL.revokeObjectURL(url);"
+            "      ok(JSON.stringify({wide: shown.width, tall: shown.height,"
+            "        corner: Array.from(ink.getImageData(2, 2, 1, 1).data)}));"
+            "    };"
+            "    shown.src = url;"
+            "  });"
+            "})"))
+        self.assertEqual([got["wide"], got["tall"]], [2246, 1588],
+                         "A4 landscape at twice 96 dots to the inch")
+        self.assertEqual(got["corner"], [255, 255, 255, 255], "the paper is not white")
+
+    def test_the_picture_is_the_printed_page_and_not_the_screen(self):
+        """An SVG drawn into an image is screen media, so the print rules have
+        to be turned on by hand. Left as they are, the picture carries the
+        settings panels and the top bar."""
+        got = self.js(
+            "var rules = printedRules();"
+            "return {print: rules.indexOf('@media print') >= 0,"
+            "        root: rules.indexOf(':root') >= 0,"
+            "        colors: rules.indexOf('print-color-adjust') >= 0,"
+            "        panels: /\\.panel[^{]*\\{[^}]*display: *none/.test(rules)};")
+        self.assertFalse(got["print"], "the print rules are still behind a query")
+        self.assertFalse(got["root"], "the picture has no document element")
+        self.assertTrue(got["colors"], "the rule that keeps the colors is gone")
+        self.assertTrue(got["panels"], "the panels would be drawn on the sheet")
+
+    def test_the_sheet_the_reader_chose_reaches_the_picture(self):
+        """The sheet size, the copies and the typefaces are custom properties
+        on the document element, which the picture has not got."""
+        got = self.js(
+            "state.printSheet = 'ipad11a16'; printing = true; render();"
+            "var svg = sheetSvg(); printing = false; render();"
+            "var body = svg.querySelector('body');"
+            "return {style: body.getAttribute('style'),"
+            "        classes: body.className,"
+            "        scripts: svg.querySelectorAll('script').length};")
+        self.assertIn("--cutw", got["style"], "the sheet size was left behind")
+        self.assertIn("cutsheet", got["classes"])
+        self.assertEqual(got["scripts"], 0, "the page's data rode along")
+
+    def test_the_paper_is_a4_the_way_round_the_sheet_asks_for(self):
+        """Eight small cards fit a portrait page and six a landscape one, so
+        the printed page turns — and the picture of it has to turn as well."""
+        got = self.js(
+            "function paper() {"
+            "  printing = true; render();"
+            "  var svg = sheetSvg(); printing = false; render();"
+            "  return [Number(svg.getAttribute('width')),"
+            "          Number(svg.getAttribute('height'))];"
+            "}"
+            "var flat = paper();"
+            "state.printSheet = 'custom'; state.printWidth = 100;"
+            "state.printHeight = 60;"
+            "return {flat: flat, tall: paper(), turned: tiling().portrait};")
+        self.assertEqual(got["flat"], [1123, 794], "A4 landscape at 96 dots")
+        self.assertTrue(got["turned"], "the cards no longer turn the paper")
+        self.assertEqual(got["tall"], [794, 1123], "A4 portrait at 96 dots")
+
+    def test_the_paper_edge_the_reader_set_is_left_around_the_sheet(self):
+        got = self.js(
+            "function edge(mm) {"
+            "  state.printMargin = mm; printing = true; render();"
+            "  var svg = sheetSvg(); printing = false; render();"
+            "  var held = svg.querySelector('foreignObject');"
+            "  return [Number(held.getAttribute('x')),"
+            "          Math.round(Number(held.getAttribute('width')))];"
+            "}"
+            "return {five: edge(5), fifteen: edge(15)};")
+        self.assertAlmostEqual(got["five"][0], 5 * 96 / 25.4, places=3,
+                               msg="the sheet does not start at the paper edge")
+        # Twice the edge comes off the width, so a wider edge is a smaller sheet.
+        self.assertEqual(got["five"][1] - got["fifteen"][1],
+                         round(20 * 96 / 25.4), "the edge did not take its room")
+
+    def test_a_blank_sheet_is_refused_rather_than_handed_over(self):
+        """Some browsers answer an SVG with a page inside it with a blank
+        rectangle and no error at all. A blank file is worse than a message."""
+        got = self.js(
+            "function sheet(mark) {"
+            "  var box = document.createElement('canvas');"
+            "  box.width = 200; box.height = 100;"
+            "  var ink = box.getContext('2d');"
+            "  ink.fillStyle = '#fff'; ink.fillRect(0, 0, 200, 100);"
+            "  if (mark) { ink.fillStyle = '#000'; ink.fillRect(99, 49, 2, 2); }"
+            "  return box;"
+            "}"
+            "return {blank: drewNothing(sheet(false)),"
+            "        drawn: drewNothing(sheet(true))};")
+        self.assertTrue(got["blank"], "a blank sheet was called a drawing")
+        self.assertFalse(got["drawn"], "a drawn sheet was called blank")
+
+    def test_the_button_hands_over_a_named_file(self):
+        self.show("68", "8")
+        got = json.loads(self.browser.eval(
+            "new Promise(function (ok) {"
+            "  var was = HTMLAnchorElement.prototype.click, name = null;"
+            "  HTMLAnchorElement.prototype.click = function () { name = this.download; };"
+            "  document.getElementById('pngGet').click();"
+            "  var tries = 0;"
+            "  (function look() {"
+            "    if (name || tries++ > 200) {"
+            "      HTMLAnchorElement.prototype.click = was;"
+            "      ok(JSON.stringify({name: name,"
+            "        quiet: document.getElementById('pngNote').hidden,"
+            "        ready: !document.getElementById('pngGet').disabled}));"
+            "      return;"
+            "    }"
+            "    setTimeout(look, 50);"
+            "  })();"
+            "})"))
+        self.assertTrue(got["name"], "nothing was handed over")
+        self.assertTrue(got["name"].endswith(".png"), got["name"])
+        self.assertIn("ProTERA-8", got["name"],
+                      "the file does not say which week it holds")
+        self.assertTrue(got["quiet"], "a working download said something went wrong")
+        self.assertTrue(got["ready"], "the button never came back")
+
+    def test_a_sheet_that_came_out_blank_is_never_saved(self):
+        """The check above knows a blank sheet when it sees one. This says it
+        is asked: a browser that draws an empty rectangle and reports nothing
+        wrong has to be caught here, or the reader saves a white page."""
+        self.show("68", "8")
+        got = json.loads(self.browser.eval(
+            "new Promise(function (ok) {"
+            "  var Real = window.Image, saved = null;"
+            "  var nothing = \"data:image/svg+xml,%3Csvg%20xmlns='http:"
+            "//www.w3.org/2000/svg'%20width='1123'%20height='794'%3E%3C/svg%3E\";"
+            "  var real = Object.getOwnPropertyDescriptor("
+            "    HTMLImageElement.prototype, 'src');"
+            "  window.Image = function () {"
+            "    var blank = new Real();"
+            "    Object.defineProperty(blank, 'src', {"
+            "      set: function () { real.set.call(blank, nothing); },"
+            "      get: function () { return real.get.call(blank); }});"
+            "    return blank;"
+            "  };"
+            "  var was = HTMLAnchorElement.prototype.click;"
+            "  HTMLAnchorElement.prototype.click = function () { saved = this.download; };"
+            "  document.getElementById('pngGet').click();"
+            "  var note = document.getElementById('pngNote'), tries = 0;"
+            "  (function look() {"
+            "    if (!note.hidden || saved || tries++ > 200) {"
+            "      window.Image = Real;"
+            "      HTMLAnchorElement.prototype.click = was;"
+            "      ok(JSON.stringify({saved: saved, said: note.textContent,"
+            "                         shown: !note.hidden}));"
+            "      return;"
+            "    }"
+            "    setTimeout(look, 50);"
+            "  })();"
+            "})"))
+        self.assertIsNone(got["saved"], "a blank page was saved")
+        self.assertTrue(got["shown"], "the reader was told nothing")
+        self.assertIn("Print", got["said"])
+
+    def test_a_browser_that_cannot_draw_is_told_so_rather_than_handed_nothing(self):
+        got = json.loads(self.browser.eval(
+            "new Promise(function (ok) {"
+            "  var was = window.Image;"
+            "  window.Image = function () {"
+            "    var me = this;"
+            "    setTimeout(function () { if (me.onerror) me.onerror(); }, 0);"
+            "  };"
+            "  document.getElementById('pngGet').click();"
+            "  var note = document.getElementById('pngNote'), tries = 0;"
+            "  (function look() {"
+            "    if (!note.hidden || tries++ > 200) {"
+            "      window.Image = was;"
+            "      ok(JSON.stringify({said: note.textContent, shown: !note.hidden,"
+            "        ready: !document.getElementById('pngGet').disabled}));"
+            "      return;"
+            "    }"
+            "    setTimeout(look, 50);"
+            "  })();"
+            "})"))
+        self.assertTrue(got["shown"], "the reader was told nothing")
+        self.assertIn("Print", got["said"])
+        self.assertTrue(got["ready"], "the button never came back")
+
+
 class NothingReachesTheNetwork(InABrowser):
     """The page is one file. A request leaving it is a fault, whatever it is
     for: it is served from a cache the school does not control, and a reader on
@@ -1591,6 +1847,21 @@ class NothingReachesTheNetwork(InABrowser):
             "return {entries: performance.getEntriesByType('resource')"
             "  .map(function (e) { return e.name; })"
             "  .filter(function (n) { return n.indexOf('file://') !== 0; })};")
+        self.assertEqual(asked["entries"], [])
+
+    def test_drawing_the_sheet_asks_for_nothing_either(self):
+        """The picture goes through an image, which is how a page phones home
+        without looking like it. This one is handed a data: URL, and here is
+        the browser's own record of what it asked for."""
+        self.show("68", "8")
+        asked = json.loads(self.browser.eval(
+            "performance.clearResourceTimings();"
+            "sheetPicture(1).then(function () {"
+            "  return JSON.stringify({entries:"
+            "    performance.getEntriesByType('resource')"
+            "      .map(function (e) { return e.name; })"
+            "      .filter(function (n) { return n.indexOf('file://') !== 0; })});"
+            "})"))
         self.assertEqual(asked["entries"], [])
 
     def test_printing_asks_for_nothing_either(self):

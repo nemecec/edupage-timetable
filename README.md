@@ -1276,6 +1276,37 @@ period grid, which needs no times.
   instead, which was worse than nothing: an address too long for a code is far
   too long to type. The page's other furniture — the
   disclaimer, the source link, the controls — stays on screen.
+- **Save as PNG** writes the same sheet out as a picture. It is there for a
+  printer that makes nothing at all of the page and prints a picture of it
+  without complaint. It stands beside Print, which is where somebody whose
+  printer has just misbehaved is looking, and not in the print panel, which is
+  not a panel anybody opens at that moment. Everything in that panel shapes it
+  all the same — the paper edge, the cut sheet, the copies on the page and the
+  QR code — so the panel carries a line saying so, in the button's own words.
+  What comes out is a whole A4 page, the way round the sheet asks for, so it
+  prints at full size like any other picture.
+
+  Nothing here lays out a timetable. The page does that, for paper, and this
+  photographs what the page laid out: it enters print layout, copies the body
+  into an SVG `foreignObject`, and draws that through an `Image` onto a canvas.
+  Nothing is painted between entering print layout and leaving it, so the
+  reader sees no flicker, and there is no second renderer to keep in step with
+  the first. No library either — a browser rasterizes an SVG for nothing.
+
+  Two things have to be done by hand. An SVG drawn into an image is screen
+  media, so the `@media print` rules are unwrapped and the picture would
+  otherwise carry the panels and the top bar; they are read out of the
+  stylesheet the browser has already parsed rather than out of the text of it.
+  And `:root` becomes `body`, because the picture has no document element for
+  the sheet size, the number of copies and the typefaces to sit on.
+
+  Three picture pixels to the CSS pixel, which is 288 to the inch on A4: type
+  still has edges at that, and the file stays near a megabyte. Some browsers
+  answer an SVG with a page inside it with a blank rectangle and report nothing
+  wrong, so twenty lines are read across the sheet before it is handed over. A
+  browser that cannot draw it is told to print instead, rather than handed a
+  blank file. That message stands under the top bar with the other notices, and
+  not in the panel, because a message inside a shut panel is one nobody reads.
 - **Save and restore settings** holds the whole configuration as JSON, to copy
   or to paste back, and **Reset all settings**. The panel says in a sentence
   what the box is for, because "settings as JSON" means nothing to a parent. A
@@ -1653,6 +1684,13 @@ which is verification that disappears when the terminal is closed. The first
 run of the checked-in version found a real fault: a ten-minute break, scaled
 down to fit a full week onto one sheet, came out three pixels shorter than the
 line of type inside it.
+
+The picture of the sheet is asked the same way, because a canvas is another
+thing a stub cannot answer. The tests draw it, read the file back as an image,
+and check that it is A4 the way round the sheet asked for, that the paper under
+it is white, and that the print rules reached it rather than the screen's. Two
+more press the button itself: one for the file it hands over, and one for a
+browser that cannot draw, which has to say so rather than save a blank page.
 
 The rest of the file presses things: Share, Apply, Reset, the subject switches,
 the whole event editor from the add button to the drop button, a display

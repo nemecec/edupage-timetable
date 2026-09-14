@@ -126,6 +126,12 @@ STRINGS = {
                       "at full size, then cut along the dashed line."),
         "sheet.cutMany": ("{0} of this sheet fit on one A4 page. Print it at "
                           "full size, then cut along the dashed lines."),
+        "png.download": "Save as PNG",
+        "png.help": ("{0}, at the top of the page, writes this same sheet as "
+                     "a picture — for a printer that makes nothing of the page "
+                     "itself. Open the picture and print it at full size."),
+        "png.failed": ("This browser could not draw the picture. Print the "
+                       "page instead."),
         "showGaps": "Free time between lessons",
         "showAxis": "Times down the side",
         "gap": "Break",
@@ -324,6 +330,12 @@ STRINGS = {
                       "täissuuruses ja lõika mööda katkendjoont."),
         "sheet.cutMany": ("Ühele A4 lehele mahub {0} sellist lehte. Trüki "
                           "täissuuruses ja lõika mööda katkendjooni."),
+        "png.download": "Salvesta PNGna",
+        "png.help": ("Nupp {0} lehe ülaservas kirjutab sellesama lehe pildina "
+                     "— printeri jaoks, mis lehest endast midagi välja ei tee. "
+                     "Ava pilt ja trüki see täissuuruses."),
+        "png.failed": ("See brauser ei osanud pilti joonistada. Trüki leht "
+                       "selle asemel."),
         "showGaps": "Vaba aeg tundide vahel",
         "showAxis": "Kellaajad ääres",
         "gap": "Paus",
@@ -3165,7 +3177,10 @@ PAGE = """<!DOCTYPE html>
   /* The heading takes what is left; the actions keep their corner. Without the
      zero minimum a long validity line pushes them onto their own row. */
   .topbar > :first-child { flex: 1 1 auto; min-width: 0; }
-  .topactions { flex: 0 0 auto; display: flex; gap: 8px; align-items: center; }
+  /* Wrapping, because four controls do not fit the corner of a phone, and a
+     page that scrolls sideways is worse than one that takes two rows. */
+  .topactions { flex: 0 0 auto; display: flex; flex-wrap: wrap; gap: 8px;
+                align-items: center; justify-content: flex-end; }
   @media (max-width: 700px) { .topbar { flex-wrap: wrap; } }
   button.go { background: #12805c; border-color: #0e6b4d; color: #fff; font-weight: 600; }
   button.go:hover { background: #0e6b4d; border-color: #0e6b4d; color: #fff; }
@@ -3699,12 +3714,21 @@ PAGE = """<!DOCTYPE html>
   <div class="topactions">
     <select id="lang" data-i18n-aria="lang"></select>
     <button id="share" data-i18n="share"></button>
+    <!-- Beside Print, because it is the other way of taking the sheet away:
+         a printer that makes nothing at all of the page prints a picture of
+         it without complaint. What the picture holds is set in the print
+         panel, the same as what the printer is handed. -->
+    <button id="pngGet" data-i18n="png.download"></button>
     <button id="doprint" class="go" data-i18n="print"></button>
   </div>
 </div>
 <!-- Only ever shown when the clipboard refused: the link has to be somewhere
      the reader can actually select it. -->
 <input id="shareBox" class="sharebox off" readonly aria-label="Link">
+
+<!-- Under the button it belongs to, and not in the print panel: a message
+     inside a shut panel is a message nobody reads. -->
+<p class="linkwarn" id="pngNote" role="status" hidden></p>
 
 <!-- A link this page wrote and cannot read. Above the filter, because it is
      about the whole page rather than about any one control in it. -->
@@ -3946,6 +3970,10 @@ PAGE = """<!DOCTYPE html>
           </span>
         </div>
       </div>
+      <!-- The button is at the top of the page, next to Print. Everything in
+           this panel shapes what it writes, so the panel has to say so, and it
+           names the button in the button's own words. -->
+      <p class="sub help" id="pngHelp"></p>
       <p class="sub help" id="cutNote" hidden></p>
     </div>
   </div>

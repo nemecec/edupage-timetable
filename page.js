@@ -358,8 +358,10 @@ function onlySubjects(bag) {
         kept[field] = value[field];
       }
     }
-    /* Only true is worth keeping. False is what every other row already says. */
-    if (value.hide === true) kept.hide = true;
+    /* Both answers are kept here. Which of them says nothing is a question
+       about the subject rather than about the value, and tidySubjects asks
+       it. */
+    if (typeof value.hide === "boolean") kept.hide = value.hide;
     if (Object.keys(kept).length) out[subject] = kept;
   }
   return out;
@@ -878,7 +880,7 @@ function resolveClash(which) {
   clash = null;
   save();
   renderLanguages(); renderSchools(); renderClasses();
-  applyStrings(); renderDivisions(); syncPerClassInputs(); render();
+  applyStrings(); renderDivisions(); renderQuiet(); syncPerClassInputs(); render();
 }
 
 /* A copy of what this browser had, before anything is written over it. The
@@ -1195,20 +1197,35 @@ function colorFor(subject) {
   return own.textColor ? paint(base.bg) : base;
 }
 
-/* A row the reader has turned off. Not every subject in a timetable is every
+/* Subjects the page keeps back until a reader asks for them. A support lesson
+   runs beside the lesson it supports rather than instead of it, so drawing it
+   halves the column for every child who does not go to it — and most do not.
+   The generator says which subjects these are, and the filter offers each one
+   a checkbox. */
+const QUIET = new Set(DATA.quiet || []);
+
+/* Whether a subject is drawn. Not every subject in a timetable is every
    child's: a choir sits in the class's week and in nobody else's afternoon.
    Turning one off leaves the hole it made, which the day then reads as a
-   break or as time to go home, both of which are true. */
+   break or as time to go home, both of which are true.
+
+   The reader's own answer wins wherever they gave one. Where they gave none,
+   the list above decides, which is how a subject can start out undrawn. */
 function hidden(name) {
-  return ((state.subjects || {})[name] || {}).hide === true;
+  const said = ((state.subjects || {})[name] || {}).hide;
+  return typeof said === "boolean" ? said : QUIET.has(name);
 }
 
 /* An entry that says nothing is not worth keeping, in storage or in a link. */
 function tidySubjects() {
   for (const [subject, entry] of Object.entries(state.subjects || {})) {
     if (entry.style === state.subjectColorStyle) delete entry.style;
+    /* An answer the page would have given on its own. Kept as a presence and
+       not as a truth: for a subject that starts out undrawn, "show it" is
+       false and is the whole of what the reader said. */
+    if (entry.hide === QUIET.has(subject)) delete entry.hide;
     if (!entry.label && !entry.short && !entry.style && !entry.backgroundColor &&
-        !entry.textColor && !entry.hide) {
+        !entry.textColor && entry.hide === undefined) {
       delete state.subjects[subject];
     }
   }
@@ -2903,6 +2920,7 @@ function render() {
   state.school = school.n; state.class = cls.n;
   syncDisplayControls();
   syncPerClassInputs();
+  syncQuiet();
 
   renderFooter(school);
   showLinkFault();
@@ -3120,8 +3138,8 @@ function refreshSubjectSample(name) {
    the row stays where it is and only its own look changes. */
 function setSubjectShown(name, on) {
   const entry = state.subjects[name] || (state.subjects[name] = {});
-  if (on) delete entry.hide; else entry.hide = true;
-  tidySubjects();
+  entry.hide = !on;
+  tidySubjects();     // which drops it again where it says nothing
   save();
   render();
 }
@@ -3266,6 +3284,36 @@ function renderDivisions() {
   });
 }
 
+/* The subjects the page keeps back, as a checkbox each, for the class on
+   screen. Only the ones this class has: a switch for a lesson nobody here goes
+   to is a question nobody can answer. The same setting the subject table
+   holds, reached from where a reader is choosing what to look at. */
+function renderQuiet() {
+  const host = document.getElementById("quiet");
+  const names = [...new Set(currentClass().e.map(e => e.s))]
+    .filter(name => QUIET.has(name)).sort();
+  document.getElementById("quietRow").hidden = !names.length;
+  host.innerHTML = names.map(name =>
+    '<div class="line"><label class="inline">' +
+    '<input type="checkbox" data-quiet="' + esc(name) + '">' +
+    "<span>" + esc(plainSubject(name)) + "</span></label></div>").join("");
+  host.querySelectorAll("input").forEach(box => {
+    box.addEventListener("change",
+                         () => setSubjectShown(box.dataset.quiet, box.checked));
+  });
+}
+
+/* Which of them are ticked. Every render says so, including the one that
+   follows each rebuild above, and the subject table holds the same switch —
+   so a box ticked there shows here without either knowing about the other.
+   Set rather than rebuilt: rebuilding takes the box out from under the
+   pointer that just clicked it. */
+function syncQuiet() {
+  document.querySelectorAll("#quiet input[data-quiet]").forEach(box => {
+    box.checked = !hidden(box.dataset.quiet);
+  });
+}
+
 /* Moving to a school the reader picked, which decides its own class.
 
    The class they were on belongs to the school they left and says nothing
@@ -3282,11 +3330,11 @@ function goToSchool(key) {
 
 document.getElementById("school").addEventListener("change", (ev) => {
   goToSchool(ev.target.value);
-  save(); renderClasses(); renderDivisions(); syncPerClassInputs(); render();
+  save(); renderClasses(); renderDivisions(); renderQuiet(); syncPerClassInputs(); render();
 });
 document.getElementById("klass").addEventListener("change", (ev) => {
   state.class = ev.target.value;
-  save(); renderDivisions(); syncPerClassInputs(); render();
+  save(); renderDivisions(); renderQuiet(); syncPerClassInputs(); render();
 });
 
 function bindToggle(id, key) {
@@ -3637,7 +3685,7 @@ const settingsMsg = document.getElementById("settingsMsg");
 
 document.getElementById("lang").addEventListener("change", (ev) => {
   state.lang = ev.target.value;
-  save(); applyStrings(); renderDivisions(); render();
+  save(); applyStrings(); renderDivisions(); renderQuiet(); render();
 });
 
 /* Everything back to how the page opens, except where the reader is: clearing
@@ -3653,7 +3701,7 @@ function resetSettings() {
   const { school, class: klass, lang } = state;
   state = Object.assign(defaults(), { school, class: klass, lang });
   save();
-  renderDivisions(); syncPerClassInputs(); render();
+  renderDivisions(); renderQuiet(); syncPerClassInputs(); render();
   return JSON.stringify(slim(state), null, 2);
 }
 
@@ -3760,7 +3808,7 @@ function applySettingsText(text) {
   if (!currentSchool().c.some(c => c.n === state.class)) state.class = currentSchool().c[0].n;
   save();
   renderLanguages(); renderSchools(); renderClasses();
-  applyStrings(); renderDivisions(); syncPerClassInputs(); render();
+  applyStrings(); renderDivisions(); renderQuiet(); syncPerClassInputs(); render();
   return t("settings.applied");
 }
 
@@ -4609,7 +4657,7 @@ renderLanguages();
 renderSchools();
 renderClasses();
 applyStrings();
-renderDivisions();
+renderDivisions(); renderQuiet();
 syncPerClassInputs();
 openFilterIfNeeded();
 render();

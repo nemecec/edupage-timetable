@@ -76,6 +76,18 @@ class WholePage(unittest.TestCase):
         self.assertEqual([s["tt"] for s in self.data["schools"]],
                          ["68", "68", "104", "105", "103"])
 
+    def test_the_page_is_told_which_subjects_to_keep_back(self):
+        """Õpiabi is TäheTERA's support lesson. It runs beside the lesson it
+        supports rather than instead of it, so drawing it halves the column for
+        every child who does not go to it. The name lives here, not in the
+        page: one line to change when the school renames it, or adds another.
+        """
+        self.assertEqual(self.data["quiet"], ["Õpiabi"])
+        self.assertIn('id="quietRow"', self.page, "the filter offers no switch")
+        for lang in ("en", "et"):
+            self.assertIn("quietHeading", self.data["strings"][lang],
+                          f"the row has no heading in {lang}")
+
     def test_the_fixtures_actually_produce_a_timetable(self):
         """The one that stops every invariant below being vacuous.
 

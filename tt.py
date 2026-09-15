@@ -195,6 +195,7 @@ STRINGS = {
         "appName": "School timetable",
         "filter": "Filter",
         "groupsHeading": "Show only these study groups:",
+        "quietHeading": "Show these as well:",
         "titleHeading": "Title:",
         "studentName": "Student name",
         "schoolName": "School name",
@@ -400,6 +401,7 @@ STRINGS = {
         "appName": "Kooli tunniplaan",
         "filter": "Filter",
         "groupsHeading": "Näita ainult neid õpperühmi:",
+        "quietHeading": "Näita ka neid:",
         "titleHeading": "Pealkiri:",
         "studentName": "Õpilase nimi",
         "schoolName": "Kooli nimi",
@@ -2991,6 +2993,12 @@ MEAL_BREAKS = frozenset({"Söömine", "Amps", "Hommikuamps", "Lõuna",
 # gapKind in page.js.
 WORKED_OUT_LUNCH = "lunch"
 
+# Subjects the page keeps back until a reader asks for one. A support lesson
+# runs beside the lesson it supports rather than instead of it, so drawing it
+# halves the column for every child who does not go to it — and most do not.
+# Each of these gets a checkbox in the filter, for the classes that have it.
+QUIET_SUBJECTS = ["Õpiabi"]
+
 # The page's own mark: a week, one column a day, hanging from the morning
 # down. Inline, so no browser asks for /favicon.ico and is handed the 404
 # page as an image.
@@ -3766,6 +3774,15 @@ PAGE = """<!DOCTYPE html>
       <div class="row" id="divisions" style="margin-top:6px;padding-top:0;border-top:none"></div>
     </div>
   </div>
+  <!-- Subjects the page keeps back until they are asked for. Here rather than
+       in the subject table, which is where colors and names are chosen: this is
+       a question about which of the week to look at, like the groups above. -->
+  <div class="row" id="quietRow" hidden>
+    <div class="field" style="width:100%">
+      <label data-i18n="quietHeading"></label>
+      <div class="checklist" id="quiet"></div>
+    </div>
+  </div>
 </details>
 
 <details class="panel" id="displayPanel">
@@ -4255,6 +4272,7 @@ def render_html(schools, edupage, year, initial_school, initial_class, lang="en"
         "languages": [list(x) for x in LANGUAGES],
         "strings": STRINGS,
         "palette": dict(palette(all_subjects, lessons), **break_palette(gaps)),
+        "quiet": QUIET_SUBJECTS,
         "schools": entries_data,
     }
     # A literal "</" closes the block early. A literal "<!--<script" opens a

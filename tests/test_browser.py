@@ -1837,6 +1837,91 @@ class TheSheetAsAPicture(InABrowser):
         self.assertTrue(got["ready"], "the button never came back")
 
 
+class SubjectsTheFilterKeepsBack(InABrowser):
+    """A subject the page does not draw until it is asked for.
+
+    LõunaTERA's Heliis has Tantsuõpetus running beside Üldõpetus on a Thursday,
+    neither in a study group. That is the shape a support lesson has: two boxes
+    sharing one column, where a child who goes to only one of them wants the
+    other to have the whole width. The fixtures are frozen and carry no support
+    lesson, so these put Tantsuõpetus on the list and ask the same questions
+    of it.
+    """
+
+    def quiet(self, name="Tantsuõpetus"):
+        """Put one subject on the list, then draw LõunaTERA's Heliis."""
+        return self.js(
+            "QUIET.add(%s);"
+            "state.school = '105'; state.class = 'Heliis';"
+            "renderClasses(); renderDivisions(); renderQuiet();"
+            "syncPerClassInputs(); render();"
+            "return {row: document.getElementById('quietRow').hidden,"
+            "        label: (document.querySelector('#quiet span') || {}).textContent,"
+            "        checked: (document.querySelector('#quiet input') || {}).checked};"
+            % json.dumps(name))
+
+    def thursday(self):
+        """Every box drawn on the Thursday, with the width it was given."""
+        return self.js(
+            "return {boxes: Array.from(document.querySelectorAll('#grid .ev'))"
+            "  .filter(function (e) { return /Tantsu|Üldõpetus/.test(e.textContent); })"
+            "  .map(function (e) { return (/Tantsu/.test(e.textContent)"
+            "       ? 'Tantsuõpetus' : 'Üldõpetus') + ' ' + e.style.width; })};")
+
+    def test_the_lesson_beside_it_takes_the_whole_column(self):
+        shown = self.quiet()
+        self.assertFalse(shown["row"], "the filter offers no switch")
+        self.assertEqual(shown["label"], "Tantsuõpetus")
+        self.assertFalse(shown["checked"], "it starts out drawn")
+
+        away = self.thursday()["boxes"]
+        self.assertTrue(away, "nothing was drawn at all")
+        self.assertFalse([box for box in away if box.startswith("Tantsu")],
+                         "the subject is still drawn")
+        self.assertTrue([box for box in away if "100%" in box],
+                        "the lesson beside it did not take the column: %s" % away)
+
+        both = self.js(
+            "var box = document.querySelector('#quiet input');"
+            "box.checked = true; box.dispatchEvent(new Event('change'));"
+            "return {boxes: Array.from(document.querySelectorAll('#grid .ev'))"
+            "  .filter(function (e) { return /Tantsu|Üldõpetus/.test(e.textContent); })"
+            "  .map(function (e) { return (/Tantsu/.test(e.textContent)"
+            "       ? 'Tantsuõpetus' : 'Üldõpetus') + ' ' + e.style.width; })};")["boxes"]
+        self.assertTrue([box for box in both if box.startswith("Tantsu")],
+                        "asking for it drew nothing")
+        self.assertTrue([box for box in both if box.startswith("Tantsu") and "50%" in box],
+                        "the two do not share the column: %s" % both)
+
+    def test_a_class_without_one_is_asked_nothing(self):
+        """A switch for a lesson nobody here goes to is a question nobody can
+        answer."""
+        shown = self.js(
+            "QUIET.add('Tantsuõpetus');"
+            "state.school = '68'; state.class = '8';"
+            "renderClasses(); renderDivisions(); renderQuiet();"
+            "syncPerClassInputs(); render();"
+            "return {row: document.getElementById('quietRow').hidden,"
+            "        boxes: document.querySelectorAll('#quiet input').length};")
+        self.assertTrue(shown["row"], "an empty row is shown")
+        self.assertEqual(shown["boxes"], 0)
+
+    def test_the_subject_table_and_the_filter_say_the_same_thing(self):
+        """Two ways to reach one switch. Either must show what the other did,
+        or the reader is told two different things about one week."""
+        self.quiet()
+        agreed = self.js(
+            "var row = document.querySelector('#legend tr[data-subject=\"Tantsuõpetus\"]');"
+            "var inTable = row.querySelector('.subjshow');"
+            "var started = inTable.checked;"
+            "inTable.checked = true; inTable.dispatchEvent(new Event('change', {bubbles: true}));"
+            "var after = document.querySelector('#quiet input').checked;"
+            "return {started: started, filterFollowed: after};")
+        self.assertFalse(agreed["started"], "the table showed it as drawn")
+        self.assertTrue(agreed["filterFollowed"],
+                        "the filter did not follow the subject table")
+
+
 class NothingReachesTheNetwork(InABrowser):
     """The page is one file. A request leaving it is a fault, whatever it is
     for: it is served from a cache the school does not control, and a reader on

@@ -622,6 +622,24 @@ period grid, which needs no times.
   Only the option says so. The value stays the code, which is what the pick is
   stored under and what a shared link carries.
 
+  **Show these as well** is the last row, and it appears only for a class that
+  has such a subject. Some lessons run beside the lesson they support rather
+  than instead of it: TäheTERA's *Õpiabi* sits next to Üldõpetus or Eesti keel
+  on the same hour. Drawn, it halves the column for every child who does not go
+  to it, and most do not, so the page keeps it back until somebody ticks the
+  box. Ticked, the two share the hour side by side. Unticked, the lesson beside
+  it has the whole column, and there is no hole: they cover the same minutes.
+
+  Which subjects these are is the generator's to say, in `QUIET_SUBJECTS`, and
+  the page is handed the list. One line to change when the school renames one
+  or adds another, and no school's vocabulary inside the page.
+
+  It is the same switch the subject table carries, reached from where a reader
+  is choosing what to look at rather than from where they choose colors. Either
+  one shows what the other did. What is stored is only the answer the page
+  would not have given on its own: for an ordinary subject that is "hide it",
+  and for one of these it is "show it".
+
   Where a division carries more than one subject and a group more than one
   teacher, each name says what that teacher takes — *I A (Eesti k: Hanna-Stina
   Vigel, Eng: Jane Eskla)* — in the division's own subject order, so two options
@@ -1438,6 +1456,13 @@ Some of these choices are not obvious:
   its own and art left on the generated palette. One global switch cannot
   express that. This map is not per class: a subject keeps its color wherever it
   turns up, which is rather the point of coloring it.
+
+  An entry can also carry `hide`, which is whether the subject is drawn. It is
+  written down only where it differs from what the page would do on its own, so
+  for most subjects the entry appears when one is switched off and goes when it
+  is switched back on. For a subject the generator keeps back it is the other
+  way round: `"hide": false` is the reader asking for it, and that is what
+  travels in the link.
 - **The subject list is the same table** as the events list, one subject to a
   row. It starts collapsed, because a class has twenty-odd subjects and most
   people never touch it. Every row carries a **Label** field. The school's own

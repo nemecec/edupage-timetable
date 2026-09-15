@@ -45,6 +45,10 @@ const DATA = {
   },
   palette: { Matemaatika: { bg: "#83EC9B", fg: "#14171A" },
              Kunst: { bg: "#F6C1ED", fg: "#14171A" } },
+  /* A subject the page keeps back until it is asked for. No lesson here goes
+     by that name, so it changes nothing that is drawn and the rules about it
+     can still be asked. */
+  quiet: ["Õpiabi"],
   schools: [{
     n: "68", tt: "68", l: "A school", t: "A school 2026", v: "", b: true,
     /* A term, so the calendar export has dates to work from. Without one it

@@ -2765,6 +2765,40 @@ test("one control in an event row writes to one field of the event", () => {
   run(`state = defaults(); myOwn().events = [];`);
 });
 
+test("a subject on the quiet list is not drawn until it is asked for", () => {
+  /* A support lesson runs beside the lesson it supports rather than instead of
+     it, so drawing it halves the column for every child who does not go to
+     it. The generator names those subjects; nothing else about them differs. */
+  run(`state = defaults();`);
+  assert.equal(json(`hidden("Õpiabi")`), true, "it was drawn with nobody asking");
+  assert.equal(json(`hidden("Matemaatika")`), false, "an ordinary subject went quiet");
+  assert.deepEqual(json(`DATA.quiet`), ["Õpiabi"], "the page was not told which");
+});
+
+test("the answer that is kept is the one the page would not have given", () => {
+  /* Storage carries the reader's choice and nothing else. For an ordinary
+     subject that means "hide it"; for a quiet one it means "show it". The
+     other way round, the entry is what the page does anyway and goes. */
+  run(`state = defaults();`);
+
+  run(`setSubjectShown("Õpiabi", true);`);
+  assert.equal(json(`hidden("Õpiabi")`), false, "asking for it did nothing");
+  assert.deepEqual(json(`state.subjects["Õpiabi"]`), { hide: false },
+                   "the asking was not written down");
+
+  run(`setSubjectShown("Õpiabi", false);`);
+  assert.equal(json(`hidden("Õpiabi")`), true, "it stayed on");
+  assert.equal(json(`state.subjects["Õpiabi"] === undefined`), true,
+               "an entry saying what the page does anyway was kept");
+
+  /* And through a link, which is the path that guards against a hand-edited
+     file: a quiet subject asked for has to survive the round trip. */
+  run(`setSubjectShown("Õpiabi", true);`);
+  assert.deepEqual(json(`normalise(JSON.parse(JSON.stringify(slim(state)))).subjects`),
+                   { "Õpiabi": { hide: false } });
+  run(`state = defaults();`);
+});
+
 test("a subject the reader does not take can be switched off", () => {
   /* Not every subject in a timetable is every child's: a choir sits in the
      class's week and in nobody else's afternoon. */
@@ -2789,8 +2823,10 @@ test("a subject the reader does not take can be switched off", () => {
   assert.equal(json(`state.subjects["Matemaatika"].hide`), true);
   assert.deepEqual(json(`normalise(JSON.parse(JSON.stringify(slim(state)))).subjects`),
                    { Matemaatika: { hide: true } });
-  assert.deepEqual(json(`onlySubjects({ A: { hide: false }, B: { hide: "yes" } })`), {},
-                   "anything but true was kept");
+  /* Both answers survive the reader, because which of them says nothing
+     depends on the subject. Anything that is not an answer does not. */
+  assert.deepEqual(json(`onlySubjects({ A: { hide: false }, B: { hide: "yes" } })`),
+                   { A: { hide: false } }, "the reader was not believed");
   run(`setSubjectShown("Matemaatika", true);`);
   assert.ok(day().includes("Matemaatika"), "switching it back on did nothing");
   assert.equal(json(`Object.keys(state.subjects)`).length, 0,

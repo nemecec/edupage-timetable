@@ -1,17 +1,19 @@
-/* Does the page still draw a week, whatever the school published today?
+/* Two checks on what the page draws from whatever the school published.
  *
- * The golden records answer a different question: did anything move since the
- * last time somebody looked. They are built from the frozen fixtures, so they
- * cannot notice a change at the school — which is the change nothing in this
- * repository can see coming.
+ * The golden records are built from the frozen fixtures, so they cannot notice
+ * a change at the school — the change nothing in this repository sees coming.
+ * These read the live week instead, in the same lines the records are made of,
+ * so a change to how a render is written down reaches both at once.
  *
- * This asks what the records cannot. It is deliberately not a comparison. The
- * school edits its timetable most days, and a check that fails on every edit
- * is a check that gets ignored by the second week. These are the things that
- * hold for every correct render and for no broken one.
+ * `problems` asks whether every class still draws a week: things that hold for
+ * every correct render and for no broken one. A failure there is ours.
  *
- * It reads the same lines the records are made of, so a change to how a render
- * is written down is a change both files see at once.
+ * `differences` asks what changed since the week somebody last accepted, and
+ * sorts it by whether anything moved. A box that moved, grew or shrank, or a
+ * class that came or went, changes how the week is drawn, and only a person
+ * can say the page still reads right with it. A room, a teacher or a subject
+ * changing inside a box that stayed where it was is drawn in the space it
+ * always had, and needs nobody.
  */
 
 /* "t0" is nought, "tnull" is nothing at all, and the difference is the whole
@@ -98,29 +100,77 @@ export function firstDifferences(was, now, limit = 6) {
   return lines.join("\n");
 }
 
-/* What moved between two captures of the same school's week.
+/* A line with its words taken out, so that what is left is where things are.
  *
- * One entry per class, because that is the unit somebody can go and look at.
- * A class that appeared or disappeared gets a line of its own: it means the
- * school republished, and it is the change most worth reading twice. */
+ * A box keeps its day and its four numbers, and loses its kind, its subject and
+ * everything written in it. The ruler and the height of the day are nothing but
+ * position, and stay whole. A cut keeps where it is and how tall. A table has
+ * no coordinates, so a row of one keeps how many of its cells are filled, which
+ * is as near to a shape as a table comes. */
+function shape(line) {
+  const part = line.split(" | ");
+  if (part[0] === "axis" || part[0] === "body") return line;
+  if (part[0] === "cut") return part.slice(0, 3).join(" | ");
+  if (part[0] === "empty") return "empty";
+  if (/^r\d+$/.test(part[0])) return part[0] + " | " + (part.length - 1);
+  return [part[0], ...part.slice(3, 7)].join(" | ");
+}
+
+/* The same rectangles in whatever order the page wrote them: two lessons at
+   one hour can come out either way round, and that is not a move. */
+const outline = (lines) => lines.map(shape).sort();
+const sameShape = (a, b) => JSON.stringify(outline(a)) === JSON.stringify(outline(b));
+
+/* What changed between two captures of the same school's week, as two lists.
+ *
+ * `moved` is anything that changes how the week is drawn: a box that moved or
+ * changed size, one that came or went, the ruler, the height of the day, and a
+ * class or a whole timetable that appeared or disappeared — which means the
+ * school republished, and is the change most worth reading twice.
+ *
+ * `reworded` is a class whose boxes are all where they were, with something
+ * different written in them: a room, a teacher, two lessons trading places.
+ *
+ * One entry per class, because that is the unit somebody can go and look at. */
 export function differences(was, now) {
-  const found = [];
+  const moved = [], reworded = [];
   const schools = [...new Set([...Object.keys(was), ...Object.keys(now)])].sort();
   for (const number of schools) {
     const before = was[number], after = now[number];
     const where = (after || before).school || number;
-    if (!after) { found.push(`${where}: the whole timetable is gone`); continue; }
-    if (!before) { found.push(`${where}: a timetable that was not there before`); continue; }
+    if (!after) { moved.push(`${where}: the whole timetable is gone`); continue; }
+    if (!before) { moved.push(`${where}: a timetable that was not there before`); continue; }
 
     const names = [...new Set([...Object.keys(before.classes || {}),
                                ...Object.keys(after.classes || {})])].sort();
     for (const name of names) {
       const a = (before.classes || {})[name], b = (after.classes || {})[name];
-      if (!b) { found.push(`${where} ${name}: gone`); continue; }
-      if (!a) { found.push(`${where} ${name}: new`); continue; }
+      if (!b) { moved.push(`${where} ${name}: gone`); continue; }
+      if (!a) { moved.push(`${where} ${name}: new`); continue; }
       if (JSON.stringify(a) === JSON.stringify(b)) continue;
-      found.push(`${where} ${name}: draws differently now\n` + firstDifferences(a, b));
+      if (sameShape(a, b)) {
+        reworded.push(`${where} ${name}: reads differently now\n` + firstDifferences(a, b));
+      } else {
+        moved.push(`${where} ${name}: draws differently now\n` + firstDifferences(a, b));
+      }
     }
   }
-  return found;
+  return { moved, reworded };
+}
+
+/* What one afternoon's run decides, from today's capture and the week last
+ * accepted. Apart from the script that fetches and prints, so every way it can
+ * go can be asked without a school or a Python.
+ *
+ * A run passes when every class draws and nothing moved, and a run that passes
+ * is the one that becomes the reference. `last` is null on a first run and when
+ * accepting. `ours` says the page's own code is not what took the reference, so
+ * a move may be ours rather than the school's. */
+export function verdict(shot, last, code) {
+  const wrong = problems(shot);
+  if (wrong.length || !last) {
+    return { pass: !wrong.length, wrong, moved: [], reworded: [], ours: false };
+  }
+  const { moved, reworded } = differences(last.shot, shot);
+  return { pass: !moved.length, wrong, moved, reworded, ours: last.code !== code };
 }

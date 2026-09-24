@@ -14,21 +14,22 @@
  * check that looks at what the school published today.
  *
  * Two questions, in order. Does every class still draw — which is a fault, and
- * ours. And has anything moved since the last accepted week — which is a
+ * ours. And has any box moved since the last accepted week — which is a
  * change, and the school's, and only a person can say whether the page still
- * reads correctly with it.
+ * reads correctly with it. A box that stayed where it was with a new room or
+ * teacher in it is reported and passes.
  *
  * The reference is not committed. It is an output, and committing it would
  * turn every timetable edit into a commit. It lives in the workflow's cache,
- * written only after a clean run, so a change goes on failing every afternoon
- * until somebody has looked at it.
+ * written only after a run that passes, so a moved box goes on failing every
+ * afternoon until somebody has looked at it.
  */
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildLivePage, capture } from "./render.mjs";
-import { differences, problems } from "./sane.mjs";
+import { verdict } from "./sane.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const REFERENCE = join(root, ".live", "week.json");
@@ -43,10 +44,10 @@ function codeVersion() {
 }
 
 /* Enough to act on, and not a wall nobody reads to the end of. */
-function report(title, lines, limit = 20) {
-  console.error(title + ":");
-  for (const line of lines.slice(0, limit)) console.error("  " + line.replace(/\n/g, "\n  "));
-  if (lines.length > limit) console.error(`  ... and ${lines.length - limit} more`);
+function report(title, lines, say = console.error, limit = 20) {
+  say(title + ":");
+  for (const line of lines.slice(0, limit)) say("  " + line.replace(/\n/g, "\n  "));
+  if (lines.length > limit) say(`  ... and ${lines.length - limit} more`);
 }
 
 const accept = process.argv.includes("--accept");
@@ -67,38 +68,49 @@ function keep() {
     { read: today, code: codeVersion(), shot }, null, 1) + "\n");
 }
 
+const last = !accept && existsSync(REFERENCE)
+  ? JSON.parse(readFileSync(REFERENCE, "utf8")) : null;
+const said = verdict(shot, last, codeVersion());
+
 /* A box the renderer could not place is a fault rather than a change, and no
    reference is written over one. Accepting does not make it right either. */
-const wrong = problems(shot);
-if (wrong.length) {
-  report(`${wrong.length} things the page cannot draw`, wrong);
+if (said.wrong.length) {
+  report(`${said.wrong.length} things the page cannot draw`, said.wrong);
   process.exit(1);
 }
 console.log("every class draws a week");
 
+/* A week that passes is the week the next run compares against. One that only
+   reads differently is written over too, or the same new room would be
+   reported every afternoon — and a week written each day keeps the cache from
+   expiring. */
+if (said.pass) keep();
+
 if (accept) {
-  keep();
   console.log("accepted: today is the reference now");
   process.exit(0);
 }
-
-if (!existsSync(REFERENCE)) {
-  keep();
+if (!last) {
   console.log("nothing to compare against yet — today is the reference now");
   process.exit(0);
 }
 
-const last = JSON.parse(readFileSync(REFERENCE, "utf8"));
-const moved = differences(last.shot, shot);
-if (!moved.length) {
-  keep();          // the same week, freshly stamped, so the cache stays warm
+if (said.pass) {
+  if (said.reworded.length) {
+    report(`${said.reworded.length} changes of wording since ${last.read}, ` +
+           "in boxes that stayed where they were", said.reworded, console.log);
+  }
   console.log(`nothing has moved since ${last.read}`);
   process.exit(0);
 }
 
-if (last.code !== codeVersion())
+if (said.ours)
   console.error("the page's own code changed since the reference was taken, " +
                 "so some of this is ours rather than the school's.\n");
-report(`${moved.length} changes since ${last.read}`, moved);
+report(`${said.moved.length} changes since ${last.read}`, said.moved);
+if (said.reworded.length) {
+  report(`\nand ${said.reworded.length} changes of wording, which would pass on their own`,
+         said.reworded);
+}
 console.error('\nRead the page, then run this workflow by hand with "accept" ticked.');
 process.exit(1);

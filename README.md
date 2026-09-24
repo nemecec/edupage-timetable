@@ -1804,17 +1804,32 @@ was measured first against the boxes the records already hold, and each is
 shown failing on one damaged line in `tests/js/sane.test.mjs`. They are faults
 rather than changes, and they are ours.
 
-The second is whether anything moved since the last week somebody accepted.
-That is a change rather than a fault, it is the school's, and only a person can
-say whether the page still reads correctly with it. The failure names the
-school, the class and the lines that differ, in the same words the golden
-failure uses, because both call the same reader.
+The second is whether anything moved since the last week somebody accepted,
+and the answer comes in two parts.
+
+A move is a box that is somewhere else or another size, a box that came or
+went, a clock that moved, a day of another height, or a class or a whole
+timetable that appeared or disappeared. That is a change rather than a fault,
+it is the school's, and only a person can say whether the page still reads
+correctly with it, so it fails the run. The failure names the school, the class
+and the lines that differ, in the same words the golden failure uses, because
+both call the same reader.
+
+A change of wording is everything else: a new room, a new teacher, two lessons
+trading places in slots that stayed where they were. Every box is drawn in the
+space it already had, so the run lists these in its log and passes. This is the
+kind of change the school makes most often, and a check that fails on each one
+is a check that stops being read. Whether the boxes
+moved is decided on their positions alone, in any order: two lessons at the
+same hour can be written either way round, and that is not a move. The
+decision is `verdict` in `tests/js/sane.mjs`, and each way it can go has a test.
 
 The reference week is not committed. It is an output, and committing it would
 turn every timetable edit into a commit. It lives in the workflow's cache under
 a `week-` key, restored by prefix so a run always compares against the newest
-one. It is written only after a clean run, so a change goes on failing every
-afternoon until somebody has read the page and accepted it:
+one. It is written after every run that passes, so a change of wording is
+reported once rather than every afternoon, and never after one that fails, so a
+move goes on failing until somebody has read the page and accepted it:
 
     run the workflow by hand with "accept" ticked
 

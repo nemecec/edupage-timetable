@@ -15,7 +15,7 @@ import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { goldenDir } from "./render.mjs";
-import { differences, firstDifferences, problems } from "./sane.mjs";
+import { differences, firstDifferences, problems, verdict } from "./sane.mjs";
 
 /* Read afresh every time, so no test can damage the next one's copy. */
 function known() {
@@ -171,35 +171,175 @@ test("the checks read the lines the records are written in", () => {
 });
 
 test("a week that did not move reads as no change at all", () => {
-  assert.deepEqual(differences(known(), known()), []);
+  assert.deepEqual(differences(known(), known()), { moved: [], reworded: [] });
 });
 
-test("a lesson that moved is one line naming the class", () => {
+/* Change the first class of the first school, and say what the diff makes of
+   it. */
+function afterEdit(edit) {
   const now = known();
   const record = Object.values(now)[0];
   const name = Object.keys(record.classes)[0];
-  record.classes[name] = bend(TOP, "t123")(record.classes[name].slice());
-  const moved = differences(known(), now);
-  assert.equal(moved.length, 1);
-  assert.match(moved[0], new RegExp(`${record.school} ${name}: draws differently now`));
-  assert.match(moved[0], /was: .*\n {2}now: /);
+  record.classes[name] = edit(record.classes[name].slice());
+  return { ...differences(known(), now), where: `${record.school} ${name}` };
+}
+
+function isAMove(edit, why) {
+  const { moved, reworded, where } = afterEdit(edit);
+  assert.equal(moved.length, 1, why + " was not called a move");
+  assert.equal(reworded.length, 0, why + " was called a change of wording");
+  assert.match(moved[0], new RegExp(`${where}: draws differently now`));
+}
+
+function isAChangeOfWording(edit, why) {
+  const { moved, reworded, where } = afterEdit(edit);
+  assert.deepEqual(moved, [], why + " was called a move");
+  assert.equal(reworded.length, 1, why + " went unreported");
+  assert.match(reworded[0], new RegExp(`${where}: reads differently now`));
+  assert.match(reworded[0], /was: .*\n {2}now: /);
+}
+
+test("a lesson that moved or changed size is a move", () => {
+  isAMove(bend(TOP, "t123"), "a later start");
+  isAMove(bend(HEIGHT, "h999"), "a longer lesson");
+  isAMove(bend(LEFT, "l12.3"), "a lesson in another lane");
+  isAMove(bend(WIDTH, "w12.3"), "a narrower lesson");
+  isAMove(bend(0, "Sunday"), "a lesson on another day");
 });
 
-test("a class or a timetable that comes or goes is its own line", () => {
+test("a lesson that came or went is a move", () => {
+  isAMove(lines => lines.filter((line, i) => i !== lines.findIndex(isBox)), "a lesson gone");
+  isAMove(lines => lines.concat(bend(TOP, "t9")([lines.find(isBox)])), "a lesson added");
+});
+
+test("the ruler and the height of the day are shape too", () => {
+  isAMove(lines => lines.map(line => line.startsWith("axis") && !/t0 \|/.test(line)
+                                    ? line.replace(/\| t(\d+) \|/, "| t1$1 |") : line),
+          "a clock that moved");
+  isAMove(lines => lines.map(line => line.startsWith("body") ? "body | h1" : line),
+          "a day of another height");
+});
+
+test("a room, a teacher or a subject in a box that stayed put is only wording", () => {
+  isAChangeOfWording(lines => {
+    const at = lines.findIndex(isBox), part = lines[at].split(" | ");
+    part[TEXT] = part[TEXT] + " · room 999";
+    lines[at] = part.join(" | ");
+    return lines;
+  }, "a new room");
+  isAChangeOfWording(bend(2, "Someone else's subject"), "a new subject");
+  isAChangeOfWording(bend(1, "ev brk"), "a lesson drawn as a break");
+});
+
+test("two lessons trading places is only wording", () => {
+  /* SädeTERA's 3. S did this one Friday: English and Üldõpetus swapped hours,
+     and every box stayed exactly where it was. */
+  isAChangeOfWording(lines => {
+    const [one, two] = lines.map((line, i) => [line, i]).filter(([line]) => isBox(line));
+    const a = one[0].split(" | "), b = two[0].split(" | ");
+    [a[2], b[2]] = [b[2], a[2]];
+    [a[TEXT], b[TEXT]] = [b[TEXT], a[TEXT]];
+    lines[one[1]] = a.join(" | ");
+    lines[two[1]] = b.join(" | ");
+    return lines;
+  }, "a swap");
+});
+
+test("the order the boxes are written in is not a move", () => {
+  isAChangeOfWording(lines => {
+    const [one, two] = lines.map((line, i) => i).filter(i => isBox(lines[i]));
+    [lines[one], lines[two]] = [lines[two], lines[one]];
+    return lines;
+  }, "two boxes written the other way round");
+});
+
+test("a cut keeps its place as shape and its title as wording", () => {
+  const cut = { s: { school: "S", classes: { c: [
+    "Monday | ev | Mat | t0 | h80 | l0 | w100 | 9.00 Mat",
+    "axis | t hour | t0 | 9.00", "cut | t100 | h30 | 12.00–14.00", "body | h300"] } } };
+  const retitled = structuredClone(cut);
+  retitled.s.classes.c[2] = "cut | t100 | h30 | 12.00–15.00";
+  const shifted = structuredClone(cut);
+  shifted.s.classes.c[2] = "cut | t110 | h30 | 12.00–14.00";
+  assert.equal(differences(cut, retitled).reworded.length, 1);
+  assert.deepEqual(differences(cut, retitled).moved, []);
+  assert.equal(differences(cut, shifted).moved.length, 1);
+});
+
+test("a table's shape is how many cells each row fills", () => {
+  const table = { s: { school: "S", classes: { c: ["r0 | Mon | Tue", "r1 | 1 | Mat | Kun"] } } };
+  const renamed = structuredClone(table);
+  renamed.s.classes.c[1] = "r1 | 1 | Eesti | Kun";
+  const fuller = structuredClone(table);
+  fuller.s.classes.c[1] = "r1 | 1 | Mat | Kun | Ing";
+  assert.deepEqual(differences(table, renamed).moved, []);
+  assert.equal(differences(table, renamed).reworded.length, 1);
+  assert.equal(differences(table, fuller).moved.length, 1);
+});
+
+test("a class or a timetable that comes or goes is a move", () => {
   const gone = known();
   const record = Object.values(gone)[0];
   const name = Object.keys(record.classes)[0];
   delete record.classes[name];
-  assert.deepEqual(differences(known(), gone), [`${record.school} ${name}: gone`]);
-  assert.deepEqual(differences(gone, known()), [`${record.school} ${name}: new`]);
+  assert.deepEqual(differences(known(), gone).moved, [`${record.school} ${name}: gone`]);
+  assert.deepEqual(differences(gone, known()).moved, [`${record.school} ${name}: new`]);
 
   const fewer = known();
   const number = Object.keys(fewer)[0];
   const school = fewer[number].school;
   delete fewer[number];
-  assert.deepEqual(differences(known(), fewer), [`${school}: the whole timetable is gone`]);
-  assert.deepEqual(differences(fewer, known()),
+  assert.deepEqual(differences(known(), fewer).moved,
+                   [`${school}: the whole timetable is gone`]);
+  assert.deepEqual(differences(fewer, known()).moved,
                    [`${school}: a timetable that was not there before`]);
+});
+
+/* What the afternoon run does with each of those. */
+const reference = (shot, code = "abc") => ({ read: "2026-09-01", code, shot });
+
+test("the run passes on a week that only reads differently, and fails on a move", () => {
+  const now = known();
+  const record = Object.values(now)[0];
+  const name = Object.keys(record.classes)[0];
+  record.classes[name] = bend(2, "Another subject")(record.classes[name].slice());
+  const passing = verdict(now, reference(known()), "abc");
+  assert.equal(passing.pass, true, "a change of wording failed the run");
+  assert.equal(passing.reworded.length, 1, "the change of wording went unreported");
+
+  record.classes[name] = bend(TOP, "t123")(record.classes[name].slice());
+  const failing = verdict(now, reference(known()), "abc");
+  assert.equal(failing.pass, false, "a move passed the run");
+  assert.equal(failing.moved.length, 1);
+
+  assert.equal(verdict(known(), reference(known()), "abc").pass, true,
+               "a week with nothing new failed the run");
+});
+
+test("a fault fails the run whatever the reference says, and accepting it too", () => {
+  const broken = known();
+  const record = Object.values(broken)[0];
+  const name = Object.keys(record.classes)[0];
+  record.classes[name] = bend(TOP, "tnull")(record.classes[name].slice());
+  const compared = verdict(broken, reference(known()), "abc");
+  assert.equal(compared.pass, false);
+  assert.ok(compared.wrong.length, "the fault went unnamed");
+  assert.equal(verdict(broken, null, "abc").pass, false, "accepting a fault passed");
+});
+
+test("with nothing to compare against, a week that draws passes", () => {
+  const first = verdict(known(), null, "abc");
+  assert.equal(first.pass, true);
+  assert.deepEqual([first.moved, first.reworded], [[], []]);
+});
+
+test("the run says when our own code is not what took the reference", () => {
+  const now = known();
+  const record = Object.values(now)[0];
+  const name = Object.keys(record.classes)[0];
+  record.classes[name] = bend(TOP, "t123")(record.classes[name].slice());
+  assert.equal(verdict(now, reference(known(), "abc"), "abc").ours, false);
+  assert.equal(verdict(now, reference(known(), "abc"), "def").ours, true);
 });
 
 test("the diff shows the line that changed and not the whole class", () => {

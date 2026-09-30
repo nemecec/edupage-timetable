@@ -822,11 +822,13 @@ class AnHourThatReplacesLessons(unittest.TestCase):
 class MergingABlock(unittest.TestCase):
     """A published block holding two subjects in sequence is one box."""
 
-    def entry(self, subject, period, duration=1, groups=(), who="", room=""):
+    def entry(self, subject, period, duration=1, groups=(), who="", room="", lesson=None):
         # The same fields a real extracted entry has, including the school's own
         # abbreviation: a merged box carries one per member, and a stand-in that
-        # left it out would not notice if that stopped working.
+        # left it out would not notice if that stopped working. One lesson per
+        # subject unless told otherwise, which is what a card per period is.
         return {"subject": subject, "subjectShort": subject[:3],
+                "lesson": lesson or subject,
                 "startPeriod": period, "period": period, "day": 0,
                 "duration": duration, "groups": list(groups), "part": 0, "slot": 1,
                 "teachers": [who] if who else [], "teacherShorts": [who[:2]] if who else [],
@@ -896,6 +898,26 @@ class MergingABlock(unittest.TestCase):
         self.assertEqual(len(got), 1)
         self.assertIsNone(got[0]["names"], "one subject needs no list of names")
         self.assertEqual(got[0]["duration"], 2)
+
+    def test_a_second_lesson_of_the_same_subject_does_not_double_the_first(self):
+        # TäheTERA 3.k, a Wednesday: Üldõpetus on both periods of the block,
+        # recorded as a card per period, and a second Üldõpetus with another
+        # teacher on the second period only. Told apart by subject alone, the
+        # three were three boxes, and the first lesson was drawn beside itself.
+        got = tt.merge_blocks([
+            self.entry("Üldõpetus", 1, who="Sikk", lesson="*87"),
+            self.entry("Üldõpetus", 2, who="Sikk", lesson="*87"),
+            self.entry("Üldõpetus", 2, who="Isak", room="304 õpiabi", lesson="*183")])
+        self.assertEqual(sorted((e["teachers"][0], e["startPeriod"], e["duration"]) for e in got),
+                         [("Isak", 2, 1), ("Sikk", 1, 2)])
+
+    def test_the_same_holds_for_a_group(self):
+        got = tt.merge_blocks([
+            self.entry("Inglise keel", 1, groups=["I A"], who="Tamm", lesson="*1"),
+            self.entry("Inglise keel", 2, groups=["I A"], who="Tamm", lesson="*1"),
+            self.entry("Inglise keel", 2, groups=["I A"], who="Kask", lesson="*2")])
+        self.assertEqual(sorted((e["teachers"][0], e["duration"]) for e in got),
+                         [("Kask", 1), ("Tamm", 2)])
 
     def test_choices_that_each_span_the_block_stay_apart_but_do_not_double(self):
         # Hispaania keel or Prantsuse keel, each recorded once per period.

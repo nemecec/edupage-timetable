@@ -2163,6 +2163,10 @@ def extract(result, class_name, n_periods=None, cfg=None, period_times=None,
             # the school later moves keeps its identity and a second import
             # corrects the entry instead of drawing a second one beside it.
             "card": card["id"],
+            # And the lesson it is a period of. A lesson recorded as one card
+            # per period has one card per period and one lesson, which is how
+            # its periods are told from another lesson of the same subject.
+            "lesson": lesson["id"],
             "subject": subject.get("name", "?"),
             "subjectShort": subject.get("short", "?"),
             "schoolColor": subject.get("color", ""),
@@ -2362,8 +2366,7 @@ def merge_blocks(entries):
             for x in here:
                 split.setdefault((x["subject"], tuple(x["groups"])), []).append(x)
             for run in split.values():
-                one = len(run) > 1 and len({x["startPeriod"] for x in run}) == len(run)
-                out.append(_one_box(run)) if one else out.extend(run)
+                out.extend(_one_box_per_lesson(run))
             continue
         starts = {x["startPeriod"] for x in here}
         if len(starts) == len(here):
@@ -2373,15 +2376,34 @@ def merge_blocks(entries):
         for x in here:
             by_subject.setdefault(x["subject"], []).append(x)
         for group in by_subject.values():
-            # Only a subject spread across distinct periods is one lesson. The
-            # same subject twice on one period is two, taught side by side.
-            if len(group) == 1 or len({x["startPeriod"] for x in group}) < len(group):
-                out.extend(group)
-            else:
-                out.append(_one_box(group))
+            out.extend(_one_box_per_lesson(group))
 
     out.sort(key=lambda e: (e["day"], e["period"], e["subject"], "/".join(e["groups"])))
     return out
+
+
+def _one_box_per_lesson(run):
+    """One subject's entries in one block, as the boxes they are.
+
+    Spread across distinct periods, they are one lesson and one box. Twice on
+    one period, they are two lessons taught side by side — but each of those
+    can still cover both periods, so they are told apart by the lesson each
+    card belongs to and merged one lesson at a time. TäheTERA's 3.k has
+    Üldõpetus on both periods of a Wednesday block and a second Üldõpetus, with
+    another teacher, on the second period only; merged by subject alone, the
+    first was drawn beside itself.
+    """
+    if len(run) == 1:
+        return run
+    if len({x["startPeriod"] for x in run}) == len(run):
+        return [_one_box(run)]
+    by_lesson = {}
+    for x in run:
+        by_lesson.setdefault(x["lesson"], []).append(x)
+    if len(by_lesson) == 1:
+        # One lesson placed twice on one period: nothing tells the two apart.
+        return run
+    return [box for lesson in by_lesson.values() for box in _one_box_per_lesson(lesson)]
 
 
 def _one_box(here):

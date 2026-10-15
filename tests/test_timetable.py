@@ -559,7 +559,16 @@ class AGroupTheSchoolLeftUnnamed(unittest.TestCase):
                         "durationperiods": duration})
         cards = [{"lessonid": x["id"], "period": period, "days": day,
                   "classroomids": []} for x in lessons]
-        return ({"cards": cards}, {"id": "*me", "name": "5.l"},
+        # Each division lists its groups, and a group no longer says which
+        # division it is in: that is the shape EduPage exports.
+        divisions = {}
+        for g in groups:
+            div = divisions.setdefault(g["divisionid"], {
+                "id": g["divisionid"], "classid": g["classid"], "groupids": []})
+            div["groupids"].append(g["id"])
+            del g["divisionid"]
+        return ({"cards": cards, "divisions": list(divisions.values())},
+                {"id": "*me", "name": "5.l"},
                 {g["id"]: g for g in groups}, {x["id"]: x for x in lessons})
 
     def answer(self, *args, **kw):

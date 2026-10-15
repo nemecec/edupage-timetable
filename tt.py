@@ -2088,6 +2088,11 @@ def name_whole_class_groups(T, cls, groups, lessons):
                 if g in groups and groups[g]["classid"] == cls["id"]
                 and not groups[g]["entireclass"]]
 
+    # A group's division, read off the divisions, which list their groups, and
+    # not off the group: an export does not always write `divisionid` there.
+    # The divisions' own lists are what the pickers are built from below.
+    division_of = {g: div["id"] for div in T["divisions"] for g in div["groupids"]}
+
     named = {}
     for here in placed.values():
         by_subject = {}
@@ -2104,7 +2109,7 @@ def name_whole_class_groups(T, cls, groups, lessons):
                                     if g in groups and not groups[g]["entireclass"]})
                 if len(elsewhere) != 1:
                     continue
-                division = own_groups(grouped[0])[0]["divisionid"]
+                division = division_of.get(own_groups(grouped[0])[0]["id"])
                 named[lesson["id"]] = (elsewhere[0], division)
     return named
 

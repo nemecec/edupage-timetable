@@ -29,7 +29,7 @@ FIXTURE_FILES = ("tera-ttlist-2026.json", "tera-tt-68.json", "tera-tt-104.json",
                  "tera-tt-105.json", "tera-tt-103.json")
 
 
-def build(*args):
+def build(*args, cache=FIXTURES):
     """Run the generator against the fixtures and return the payload it embedded.
 
     Nothing here may reach the network. The generator treats `--cache` as a
@@ -38,20 +38,20 @@ def build(*args):
     school's rate limit, with the suite none the wiser. Every call is checked
     for that afterwards.
     """
-    before = set(os.listdir(FIXTURES))
+    before = set(os.listdir(cache))
     with tempfile.TemporaryDirectory() as tmp:
         out = os.path.join(tmp, "page.html")
         done = subprocess.run(
             # The year is named, not derived: the fixtures are one year's, and
             # a suite that depends on today's date starts failing in a summer.
-            [sys.executable, os.path.join(ROOT, "tt.py"), "--cache", FIXTURES,
+            [sys.executable, os.path.join(ROOT, "tt.py"), "--cache", cache,
              "--year", "2026", "-o", out, *args],
             capture_output=True, text=True, cwd=ROOT)
         if done.returncode != 0:
             raise AssertionError(done.stderr)
         with open(out, encoding="utf-8") as fh:
             page = fh.read()
-    fetched = sorted(set(os.listdir(FIXTURES)) - before)
+    fetched = sorted(set(os.listdir(cache)) - before)
     assert not fetched, ("the build went to the network and cached %s — the "
                          "fixtures no longer describe what was tested" % fetched)
     blob = re.search(r'<script id="data" type="application/json">(.*?)</script>', page, re.S)
@@ -75,6 +75,27 @@ class WholePage(unittest.TestCase):
                           "LõunaTERA", "TäheTERA"])
         self.assertEqual([s["tt"] for s in self.data["schools"]],
                          ["68", "68", "104", "105", "103"])
+
+    def test_a_group_need_not_say_which_division_it_is_in(self):
+        """EduPage's export can carry `divisionid` on a group as null: in
+        October 2026 it did, for every school at once. Read off the group, it
+        threw for TäheTERA and the whole timetable was skipped. The divisions list their
+        own groups, and that is enough: the page built without the field is the
+        page built with it."""
+        with tempfile.TemporaryDirectory() as bare:
+            for name in os.listdir(FIXTURES):
+                with open(os.path.join(FIXTURES, name), encoding="utf-8") as fh:
+                    raw = json.load(fh)
+                for table in ((raw.get("r") or {}).get("dbiAccessorRes") or {}).get("tables", []):
+                    if table["id"] == "groups":
+                        for group in table["data_rows"]:
+                            group.pop("divisionid", None)
+                with open(os.path.join(bare, name), "w", encoding="utf-8") as fh:
+                    json.dump(raw, fh, ensure_ascii=False)
+            _, data = build(cache=bare)
+        self.assertEqual([s["l"] for s in data["schools"]],
+                         [s["l"] for s in self.data["schools"]], "a timetable went missing")
+        self.assertEqual(data, self.data)
 
     def test_the_page_is_told_which_subjects_to_keep_back(self):
         """Õpiabi is TäheTERA's support lesson. It runs beside the lesson it
